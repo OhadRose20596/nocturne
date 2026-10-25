@@ -1,0 +1,70 @@
+== date: 2026-10-10T15:28:07Z  from: MMF4FWRG4R  to: 192.168.1.219
+== route
+  interface: en0
+== ping -c 20 -i 0.2
+PING 192.168.1.219 (192.168.1.219): 56 data bytes
+64 bytes from 192.168.1.219: icmp_seq=0 ttl=64 time=7.711 ms
+64 bytes from 192.168.1.219: icmp_seq=1 ttl=64 time=6.932 ms
+64 bytes from 192.168.1.219: icmp_seq=2 ttl=64 time=8.301 ms
+64 bytes from 192.168.1.219: icmp_seq=3 ttl=64 time=6.928 ms
+64 bytes from 192.168.1.219: icmp_seq=4 ttl=64 time=10.015 ms
+64 bytes from 192.168.1.219: icmp_seq=5 ttl=64 time=7.206 ms
+64 bytes from 192.168.1.219: icmp_seq=6 ttl=64 time=8.082 ms
+64 bytes from 192.168.1.219: icmp_seq=7 ttl=64 time=7.138 ms
+64 bytes from 192.168.1.219: icmp_seq=8 ttl=64 time=8.197 ms
+64 bytes from 192.168.1.219: icmp_seq=9 ttl=64 time=6.879 ms
+64 bytes from 192.168.1.219: icmp_seq=10 ttl=64 time=7.765 ms
+64 bytes from 192.168.1.219: icmp_seq=11 ttl=64 time=6.853 ms
+64 bytes from 192.168.1.219: icmp_seq=12 ttl=64 time=8.672 ms
+64 bytes from 192.168.1.219: icmp_seq=13 ttl=64 time=7.465 ms
+64 bytes from 192.168.1.219: icmp_seq=14 ttl=64 time=6.850 ms
+64 bytes from 192.168.1.219: icmp_seq=15 ttl=64 time=7.861 ms
+64 bytes from 192.168.1.219: icmp_seq=16 ttl=64 time=10.565 ms
+64 bytes from 192.168.1.219: icmp_seq=17 ttl=64 time=8.486 ms
+64 bytes from 192.168.1.219: icmp_seq=18 ttl=64 time=7.688 ms
+64 bytes from 192.168.1.219: icmp_seq=19 ttl=64 time=6.879 ms
+
+--- 192.168.1.219 ping statistics ---
+20 packets transmitted, 20 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 6.850/7.824/10.565/1.005 ms
+== iperf3 -c 192.168.1.219 -t 10
+Connecting to host 192.168.1.219, port 5201
+[  5] local 192.168.1.242 port 52812 connected to 192.168.1.219 port 5201
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec  6.50 MBytes  54.5 Mbits/sec   40    136 KBytes       
+[  5]   1.00-2.00   sec  7.38 MBytes  61.8 Mbits/sec    0    199 KBytes       
+[  5]   2.00-3.01   sec  9.50 MBytes  79.5 Mbits/sec    4    249 KBytes       
+[  5]   3.01-4.01   sec  11.5 MBytes  96.5 Mbits/sec    0    307 KBytes       
+[  5]   4.01-5.01   sec  4.38 MBytes  36.7 Mbits/sec   64    320 KBytes       
+[  5]   5.01-6.01   sec  2.50 MBytes  21.0 Mbits/sec    0    331 KBytes       
+[  5]   6.01-7.00   sec  1.62 MBytes  13.7 Mbits/sec    4    338 KBytes       
+[  5]   7.00-8.01   sec  3.88 MBytes  32.4 Mbits/sec    0    354 KBytes       
+[  5]   8.01-9.01   sec  3.75 MBytes  31.5 Mbits/sec    2    378 KBytes       
+[  5]   9.01-10.00  sec  4.62 MBytes  38.9 Mbits/sec    0    395 KBytes       
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.00  sec  55.6 MBytes  46.6 Mbits/sec  114            sender
+[  5]   0.00-10.04  sec  55.1 MBytes  46.1 Mbits/sec                  receiver
+
+iperf Done.
+== iperf3 -c 192.168.1.219 -t 10 -R (reverse)
+Connecting to host 192.168.1.219, port 5201
+Reverse mode, remote host 192.168.1.219 is sending
+[  5] local 192.168.1.242 port 52815 connected to 192.168.1.219 port 5201
+[ ID] Interval           Transfer     Bitrate
+[  5]   0.00-1.00   sec  17.1 MBytes   144 Mbits/sec                  
+[  5]   1.00-2.01   sec  35.1 MBytes   293 Mbits/sec                  
+[  5]   2.01-3.00   sec  35.1 MBytes   295 Mbits/sec                  
+[  5]   3.00-4.00   sec  31.8 MBytes   266 Mbits/sec                  
+[  5]   4.00-5.01   sec  31.0 MBytes   260 Mbits/sec                  
+[  5]   5.01-6.00   sec  31.1 MBytes   261 Mbits/sec                  
+[  5]   6.00-7.00   sec  34.1 MBytes   287 Mbits/sec                  
+[  5]   7.00-8.01   sec  32.9 MBytes   275 Mbits/sec                  
+[  5]   8.01-9.01   sec  30.5 MBytes   256 Mbits/sec                  
+[  5]   9.01-10.01  sec  10.0 MBytes  83.9 Mbits/sec                  
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.06  sec   293 MBytes   244 Mbits/sec  196            sender
+[  5]   0.00-10.01  sec   289 MBytes   242 Mbits/sec                  receiver
+
+iperf Done.

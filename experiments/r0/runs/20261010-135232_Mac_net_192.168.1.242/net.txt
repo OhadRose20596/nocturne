@@ -1,0 +1,72 @@
+== date: 2026-10-10T13:52:32Z  from: Mac  to: 192.168.1.242
+== route
+  interface: en0
+== tailscale status (peer line)
+(peer not in tailscale status)
+== tailscale ping
+Tailscale is stopped.
+== ping -c 20 -i 0.2
+PING 192.168.1.242 (192.168.1.242): 56 data bytes
+Request timeout for icmp_seq 0
+Request timeout for icmp_seq 1
+Request timeout for icmp_seq 2
+Request timeout for icmp_seq 3
+Request timeout for icmp_seq 4
+Request timeout for icmp_seq 5
+Request timeout for icmp_seq 6
+Request timeout for icmp_seq 7
+Request timeout for icmp_seq 8
+Request timeout for icmp_seq 9
+Request timeout for icmp_seq 10
+Request timeout for icmp_seq 11
+Request timeout for icmp_seq 12
+Request timeout for icmp_seq 13
+Request timeout for icmp_seq 14
+Request timeout for icmp_seq 15
+Request timeout for icmp_seq 16
+Request timeout for icmp_seq 17
+Request timeout for icmp_seq 18
+
+--- 192.168.1.242 ping statistics ---
+20 packets transmitted, 0 packets received, 100.0% packet loss
+== iperf3 -c 192.168.1.242 -t 10
+Connecting to host 192.168.1.242, port 5201
+[  5] local 192.168.1.219 port 51394 connected to 192.168.1.242 port 5201
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec  33.0 MBytes   275 Mbits/sec  816   1.60 MBytes       
+[  5]   1.00-2.01   sec  32.8 MBytes   275 Mbits/sec    0   2.92 MBytes       
+[  5]   2.01-3.01   sec  31.8 MBytes   266 Mbits/sec    0   3.05 MBytes       
+[  5]   3.01-4.01   sec  31.8 MBytes   266 Mbits/sec    0   2.74 MBytes       
+[  5]   4.01-5.01   sec  28.8 MBytes   241 Mbits/sec    0   2.46 MBytes       
+[  5]   5.01-6.00   sec  31.1 MBytes   261 Mbits/sec    0   2.52 MBytes       
+[  5]   6.00-7.01   sec  33.1 MBytes   278 Mbits/sec    0   2.63 MBytes       
+[  5]   7.01-8.01   sec  34.9 MBytes   293 Mbits/sec    0   3.03 MBytes       
+[  5]   8.01-9.01   sec  33.4 MBytes   280 Mbits/sec    0   2.45 MBytes       
+[  5]   9.01-10.01  sec  30.9 MBytes   259 Mbits/sec    0   3.04 MBytes       
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.01  sec   321 MBytes   269 Mbits/sec  816            sender
+[  5]   0.00-10.07  sec   320 MBytes   267 Mbits/sec                  receiver
+
+iperf Done.
+== iperf3 -c 192.168.1.242 -t 10 -R (reverse)
+Connecting to host 192.168.1.242, port 5201
+Reverse mode, remote host 192.168.1.242 is sending
+[  5] local 192.168.1.219 port 51396 connected to 192.168.1.242 port 5201
+[ ID] Interval           Transfer     Bitrate
+[  5]   0.00-1.00   sec  19.6 MBytes   164 Mbits/sec                  
+[  5]   1.00-2.00   sec  36.8 MBytes   309 Mbits/sec                  
+[  5]   2.00-3.00   sec  33.5 MBytes   281 Mbits/sec                  
+[  5]   3.00-4.01   sec  32.0 MBytes   267 Mbits/sec                  
+[  5]   4.01-5.00   sec  36.1 MBytes   304 Mbits/sec                  
+[  5]   5.00-6.01   sec  33.6 MBytes   281 Mbits/sec                  
+[  5]   6.01-7.01   sec  35.6 MBytes   299 Mbits/sec                  
+[  5]   7.01-8.00   sec  36.2 MBytes   305 Mbits/sec                  
+[  5]   8.00-9.00   sec  36.8 MBytes   308 Mbits/sec                  
+[  5]   9.00-10.01  sec  37.4 MBytes   313 Mbits/sec                  
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.03  sec   342 MBytes   286 Mbits/sec   27            sender
+[  5]   0.00-10.01  sec   338 MBytes   283 Mbits/sec                  receiver
+
+iperf Done.

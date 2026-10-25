@@ -1,0 +1,2449 @@
+0.00.063.823 I cmn  common_param: common_params_print_info: build 1 (1e7bcf3) with AppleClang 21.0.0.21000334 for Darwin arm64
+0.00.063.825 I cmn  common_param: common_params_print_info: verbosity = 2147483647 (adjust with the `-lv N` CLI arg)
+0.00.063.825 I cmn  common_param: device_info:
+0.00.063.827 I cmn  common_param:   - MTL0    : Apple M3 (12124 MiB, 12123 MiB free)
+0.00.063.828 I cmn  common_param:   - BLAS    : Accelerate (0 MiB, 0 MiB free)
+0.00.063.835 I cmn  common_param:   - CPU     : Apple M3 (16384 MiB, 16384 MiB free)
+0.00.093.481 I cmn  common_param:   - RPC0    : 192.168.1.242:50052 (18186 MiB, 18185 MiB free)
+0.00.093.496 I cmn  common_param: system_info: n_threads = 4 (n_threads_batch = 4) / 8 | MTL : EMBED_LIBRARY = 1 | CPU : NEON = 1 | ARM_FMA = 1 | FP16_VA = 1 | MATMUL_INT8 = 1 | DOTPROD = 1 | ACCELERATE = 1 | REPACK = 1 | 
+0.00.093.512 I srv          init: running without SSL
+0.00.093.541 I srv          init: using 7 threads for HTTP server
+0.00.093.552 D srv          init: serve nocache for _app/version.json
+0.00.093.610 D srv          init: serve nocache for build.json
+0.00.093.614 D srv          init: serve nocache for manifest.webmanifest
+0.00.093.622 D srv          init: serve nocache for sw.js
+0.00.093.662 W srv  llama_server: -----------------
+0.00.093.663 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.093.663 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.093.663 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.093.663 W srv  llama_server: -----------------
+0.00.093.668 I srv         start: binding port with default address family
+0.00.094.983 I srv    load_model: loading model '/Users/ohadrosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf'
+0.00.094.985 I srv    load_model: local path '/Users/ohadrosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf'
+0.00.094.997 I cmn  common_init_: fitting params to device memory ...
+0.00.094.997 I cmn  common_init_: (for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on)
+0.00.095.006 I common_params_fit_impl: getting device memory data for initial parameters:
+0.00.121.982 I llama_model_loader: loaded meta data with 38 key-value pairs and 339 tensors from /Users/ohadrosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf (version GGUF V3 (latest))
+0.00.121.989 I llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+0.00.121.991 I llama_model_loader: - kv   0:                       general.architecture str              = qwen2
+0.00.121.991 I llama_model_loader: - kv   1:                               general.type str              = model
+0.00.121.991 I llama_model_loader: - kv   2:                               general.name str              = Qwen2.5 7B Instruct
+0.00.121.992 I llama_model_loader: - kv   3:                           general.finetune str              = Instruct
+0.00.121.992 I llama_model_loader: - kv   4:                           general.basename str              = Qwen2.5
+0.00.121.992 I llama_model_loader: - kv   5:                         general.size_label str              = 7B
+0.00.121.993 I llama_model_loader: - kv   6:                            general.license str              = apache-2.0
+0.00.121.994 I llama_model_loader: - kv   7:                       general.license.link str              = https://huggingface.co/Qwen/Qwen2.5-7...
+0.00.121.995 I llama_model_loader: - kv   8:                   general.base_model.count u32              = 1
+0.00.121.996 I llama_model_loader: - kv   9:                  general.base_model.0.name str              = Qwen2.5 7B
+0.00.121.996 I llama_model_loader: - kv  10:          general.base_model.0.organization str              = Qwen
+0.00.121.997 I llama_model_loader: - kv  11:              general.base_model.0.repo_url str              = https://huggingface.co/Qwen/Qwen2.5-7B
+0.00.122.001 I llama_model_loader: - kv  12:                               general.tags arr[str,2]       = ["chat", "text-generation"]
+0.00.122.001 I llama_model_loader: - kv  13:                          general.languages arr[str,1]       = ["en"]
+0.00.122.002 I llama_model_loader: - kv  14:                          qwen2.block_count u32              = 28
+0.00.122.002 I llama_model_loader: - kv  15:                       qwen2.context_length u32              = 32768
+0.00.122.002 I llama_model_loader: - kv  16:                     qwen2.embedding_length u32              = 3584
+0.00.122.003 I llama_model_loader: - kv  17:                  qwen2.feed_forward_length u32              = 18944
+0.00.122.003 I llama_model_loader: - kv  18:                 qwen2.attention.head_count u32              = 28
+0.00.122.003 I llama_model_loader: - kv  19:              qwen2.attention.head_count_kv u32              = 4
+0.00.122.005 I llama_model_loader: - kv  20:                       qwen2.rope.freq_base f32              = 1000000.000000
+0.00.122.006 I llama_model_loader: - kv  21:     qwen2.attention.layer_norm_rms_epsilon f32              = 0.000001
+0.00.122.006 I llama_model_loader: - kv  22:                          general.file_type u32              = 15
+0.00.122.007 I llama_model_loader: - kv  23:                       tokenizer.ggml.model str              = gpt2
+0.00.122.007 I llama_model_loader: - kv  24:                         tokenizer.ggml.pre str              = qwen2
+0.00.134.551 I llama_model_loader: - kv  25:                      tokenizer.ggml.tokens arr[str,152064]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+0.00.138.176 I llama_model_loader: - kv  26:                  tokenizer.ggml.token_type arr[i32,152064]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+0.00.150.767 I llama_model_loader: - kv  27:                      tokenizer.ggml.merges arr[str,151387]  = ["Ġ Ġ", "ĠĠ ĠĠ", "i n", "Ġ t",...
+0.00.150.769 I llama_model_loader: - kv  28:                tokenizer.ggml.eos_token_id u32              = 151645
+0.00.150.769 I llama_model_loader: - kv  29:            tokenizer.ggml.padding_token_id u32              = 151643
+0.00.150.769 I llama_model_loader: - kv  30:                tokenizer.ggml.bos_token_id u32              = 151643
+0.00.150.770 I llama_model_loader: - kv  31:               tokenizer.ggml.add_bos_token bool             = false
+0.00.150.772 I llama_model_loader: - kv  32:                    tokenizer.chat_template str              = {%- if tools %}\n    {{- '<|im_start|>...
+0.00.150.772 I llama_model_loader: - kv  33:               general.quantization_version u32              = 2
+0.00.150.773 I llama_model_loader: - kv  34:                      quantize.imatrix.file str              = /models_out/Qwen2.5-7B-Instruct-GGUF/...
+0.00.150.774 I llama_model_loader: - kv  35:                   quantize.imatrix.dataset str              = /training_dir/calibration_datav3.txt
+0.00.150.774 I llama_model_loader: - kv  36:             quantize.imatrix.entries_count i32              = 196
+0.00.150.776 I llama_model_loader: - kv  37:              quantize.imatrix.chunks_count i32              = 128
+0.00.150.777 I llama_model_loader: - type  f32:  141 tensors
+0.00.150.777 I llama_model_loader: - type q4_K:  169 tensors
+0.00.150.777 I llama_model_loader: - type q6_K:   29 tensors
+0.00.150.779 I print_info: file format = GGUF V3 (latest)
+0.00.150.780 I print_info: file type   = Q4_K - Medium
+0.00.150.780 I print_info: file size   = 4.36 GiB (4.91 BPW) 
+0.00.181.520 I llama_prepare_model_devices: using device RPC0 (192.168.1.242:50052) (unknown id) - 18185 MiB free
+0.00.181.522 I llama_prepare_model_devices: using device MTL0 (Apple M3) (unknown id) - 12123 MiB free
+0.00.204.669 D init_tokenizer: initializing tokenizer for type 2
+0.00.207.072 I load: 0 unused tokens
+0.00.207.082 D load: control token: 151659 '<|fim_prefix|>' is not marked as EOG
+0.00.207.082 D load: control token: 151656 '<|video_pad|>' is not marked as EOG
+0.00.207.082 D load: control token: 151655 '<|image_pad|>' is not marked as EOG
+0.00.207.082 D load: control token: 151653 '<|vision_end|>' is not marked as EOG
+0.00.207.083 D load: control token: 151652 '<|vision_start|>' is not marked as EOG
+0.00.207.083 D load: control token: 151651 '<|quad_end|>' is not marked as EOG
+0.00.207.083 D load: control token: 151649 '<|box_end|>' is not marked as EOG
+0.00.207.083 D load: control token: 151648 '<|box_start|>' is not marked as EOG
+0.00.207.084 D load: control token: 151646 '<|object_ref_start|>' is not marked as EOG
+0.00.207.084 D load: control token: 151644 '<|im_start|>' is not marked as EOG
+0.00.207.246 D load: control token: 151661 '<|fim_suffix|>' is not marked as EOG
+0.00.207.260 D load: control token: 151647 '<|object_ref_end|>' is not marked as EOG
+0.00.207.569 W load: control-looking token: 128247 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.00.207.661 D load: control token: 151660 '<|fim_middle|>' is not marked as EOG
+0.00.207.899 D load: control token: 151654 '<|vision_pad|>' is not marked as EOG
+0.00.208.041 D load: control token: 151650 '<|quad_start|>' is not marked as EOG
+0.00.214.547 I load: printing all EOG tokens:
+0.00.214.548 I load:   - 128247 ('</s>')
+0.00.214.548 I load:   - 151643 ('<|endoftext|>')
+0.00.214.548 I load:   - 151645 ('<|im_end|>')
+0.00.214.549 I load:   - 151662 ('<|fim_pad|>')
+0.00.214.549 I load:   - 151663 ('<|repo_name|>')
+0.00.214.549 I load:   - 151664 ('<|file_sep|>')
+0.00.214.616 I load: special tokens cache size = 23
+0.00.239.100 I load: token to piece cache size = 0.9310 MB
+0.00.239.108 I print_info: arch                  = qwen2
+0.00.239.109 I print_info: vocab_only            = 0
+0.00.239.109 I print_info: no_alloc              = 1
+0.00.239.109 I print_info: n_ctx_train           = 32768
+0.00.239.110 I print_info: n_embd_inp            = 3584
+0.00.239.110 I print_info: n_embd                = 3584
+0.00.239.110 I print_info: n_embd_out            = 3584
+0.00.239.110 I print_info: n_layer               = 28
+0.00.239.110 I print_info: n_layer_all           = 28
+0.00.239.116 I print_info: n_head                = 28
+0.00.239.117 I print_info: n_head_kv             = 4
+0.00.239.117 I print_info: n_rot                 = 128
+0.00.239.117 I print_info: n_swa                 = 0
+0.00.239.118 I print_info: is_swa_any            = 0
+0.00.239.118 I print_info: non_causal_type       = 0
+0.00.239.118 I print_info: n_embd_head_k         = 128
+0.00.239.118 I print_info: n_embd_head_v         = 128
+0.00.239.119 I print_info: n_gqa                 = 7
+0.00.239.120 I print_info: n_embd_k_gqa          = 512
+0.00.239.120 I print_info: n_embd_v_gqa          = 512
+0.00.239.121 I print_info: f_norm_eps            = 0.0e+00
+0.00.239.121 I print_info: f_norm_rms_eps        = 1.0e-06
+0.00.239.121 I print_info: f_clamp_kqv           = 0.0e+00
+0.00.239.121 I print_info: f_max_alibi_bias      = 0.0e+00
+0.00.239.122 I print_info: f_logit_scale         = 0.0e+00
+0.00.239.122 I print_info: f_attn_scale          = 0.0e+00
+0.00.239.122 I print_info: f_attn_value_scale    = 0.0000
+0.00.239.123 I print_info: n_ff                  = 18944
+0.00.239.123 I print_info: n_expert              = 0
+0.00.239.123 I print_info: n_expert_used         = 0
+0.00.239.124 I print_info: n_expert_groups       = 0
+0.00.239.124 I print_info: n_group_used          = 0
+0.00.239.124 I print_info: causal attn           = 1
+0.00.239.124 I print_info: pooling type          = -1
+0.00.239.124 I print_info: rope type             = 2
+0.00.239.124 I print_info: rope scaling          = linear
+0.00.239.124 I print_info: freq_base_train       = 1000000.0
+0.00.239.125 I print_info: freq_scale_train      = 1
+0.00.239.125 I print_info: n_ctx_orig_yarn       = 32768
+0.00.239.125 I print_info: rope_yarn_log_mul     = 0.0000
+0.00.239.125 I print_info: rope_finetuned        = unknown
+0.00.239.126 I print_info: model type            = 7B
+0.00.239.127 I print_info: model params          = 7.62 B
+0.00.239.127 I print_info: general.name          = Qwen2.5 7B Instruct
+0.00.239.127 I print_info: vocab type            = BPE
+0.00.239.128 I print_info: n_vocab               = 152064
+0.00.239.128 I print_info: n_merges              = 151387
+0.00.239.128 I print_info: BOS token             = 151643 '<|endoftext|>'
+0.00.239.128 I print_info: EOS token             = 151645 '<|im_end|>'
+0.00.239.128 I print_info: EOT token             = 151645 '<|im_end|>'
+0.00.239.129 I print_info: PAD token             = 151643 '<|endoftext|>'
+0.00.239.129 I print_info: LF token              = 198 'Ċ'
+0.00.239.129 I print_info: FIM PRE token         = 151659 '<|fim_prefix|>'
+0.00.239.129 I print_info: FIM SUF token         = 151661 '<|fim_suffix|>'
+0.00.239.129 I print_info: FIM MID token         = 151660 '<|fim_middle|>'
+0.00.239.130 I print_info: FIM PAD token         = 151662 '<|fim_pad|>'
+0.00.239.130 I print_info: FIM REP token         = 151663 '<|repo_name|>'
+0.00.239.130 I print_info: FIM SEP token         = 151664 '<|file_sep|>'
+0.00.239.130 I print_info: EOG token             = 128247 '</s>'
+0.00.239.130 I print_info: EOG token             = 151643 '<|endoftext|>'
+0.00.239.131 I print_info: EOG token             = 151645 '<|im_end|>'
+0.00.239.131 I print_info: EOG token             = 151662 '<|fim_pad|>'
+0.00.239.131 I print_info: EOG token             = 151663 '<|repo_name|>'
+0.00.239.131 I print_info: EOG token             = 151664 '<|file_sep|>'
+0.00.239.131 I print_info: max token length      = 256
+0.00.268.302 I load_tensors: loading model tensors, this can take a while... (load_mode = none)
+0.00.308.564 D load_tensors: layer   0 assigned to device RPC0, is_swa = 0
+0.00.308.565 D load_tensors: layer   1 assigned to device RPC0, is_swa = 0
+0.00.308.566 D load_tensors: layer   2 assigned to device RPC0, is_swa = 0
+0.00.308.566 D load_tensors: layer   3 assigned to device RPC0, is_swa = 0
+0.00.308.566 D load_tensors: layer   4 assigned to device RPC0, is_swa = 0
+0.00.308.566 D load_tensors: layer   5 assigned to device RPC0, is_swa = 0
+0.00.308.567 D load_tensors: layer   6 assigned to device RPC0, is_swa = 0
+0.00.308.567 D load_tensors: layer   7 assigned to device RPC0, is_swa = 0
+0.00.308.567 D load_tensors: layer   8 assigned to device RPC0, is_swa = 0
+0.00.308.567 D load_tensors: layer   9 assigned to device RPC0, is_swa = 0
+0.00.308.568 D load_tensors: layer  10 assigned to device RPC0, is_swa = 0
+0.00.308.568 D load_tensors: layer  11 assigned to device RPC0, is_swa = 0
+0.00.308.568 D load_tensors: layer  12 assigned to device RPC0, is_swa = 0
+0.00.308.568 D load_tensors: layer  13 assigned to device RPC0, is_swa = 0
+0.00.308.568 D load_tensors: layer  14 assigned to device RPC0, is_swa = 0
+0.00.308.569 D load_tensors: layer  15 assigned to device MTL0, is_swa = 0
+0.00.308.569 D load_tensors: layer  16 assigned to device MTL0, is_swa = 0
+0.00.308.569 D load_tensors: layer  17 assigned to device MTL0, is_swa = 0
+0.00.308.569 D load_tensors: layer  18 assigned to device MTL0, is_swa = 0
+0.00.308.570 D load_tensors: layer  19 assigned to device MTL0, is_swa = 0
+0.00.308.570 D load_tensors: layer  20 assigned to device MTL0, is_swa = 0
+0.00.308.570 D load_tensors: layer  21 assigned to device MTL0, is_swa = 0
+0.00.308.570 D load_tensors: layer  22 assigned to device MTL0, is_swa = 0
+0.00.308.570 D load_tensors: layer  23 assigned to device MTL0, is_swa = 0
+0.00.308.571 D load_tensors: layer  24 assigned to device MTL0, is_swa = 0
+0.00.308.571 D load_tensors: layer  25 assigned to device MTL0, is_swa = 0
+0.00.308.571 D load_tensors: layer  26 assigned to device MTL0, is_swa = 0
+0.00.308.572 D load_tensors: layer  27 assigned to device MTL0, is_swa = 0
+0.00.308.572 D load_tensors: layer  28 assigned to device MTL0, is_swa = 0
+0.00.308.579 D create_tensor: loading tensor token_embd.weight
+0.00.308.602 D create_tensor: loading tensor output_norm.weight
+0.00.308.611 D create_tensor: loading tensor output.weight
+0.00.308.619 D create_tensor: loading tensor output.bias
+0.00.308.620 D create_tensor: loading tensor blk.0.attn_norm.weight
+0.00.308.628 D create_tensor: loading tensor blk.0.attn_qkv.weight
+0.00.308.630 D create_tensor: loading tensor blk.0.attn_q.weight
+0.00.308.635 D create_tensor: loading tensor blk.0.attn_k.weight
+0.00.308.641 D create_tensor: loading tensor blk.0.attn_v.weight
+0.00.308.646 D create_tensor: loading tensor blk.0.attn_q.bias
+0.00.308.650 D create_tensor: loading tensor blk.0.attn_k.bias
+0.00.308.656 D create_tensor: loading tensor blk.0.attn_v.bias
+0.00.308.660 D create_tensor: loading tensor blk.0.attn_output.weight
+0.00.308.666 D create_tensor: loading tensor blk.0.ffn_norm.weight
+0.00.308.671 D create_tensor: loading tensor blk.0.ffn_gate.weight
+0.00.308.675 D create_tensor: loading tensor blk.0.ffn_down.weight
+0.00.308.680 D create_tensor: loading tensor blk.0.ffn_up.weight
+0.00.308.685 D create_tensor: loading tensor blk.1.attn_norm.weight
+0.00.308.689 D create_tensor: loading tensor blk.1.attn_qkv.weight
+0.00.308.690 D create_tensor: loading tensor blk.1.attn_q.weight
+0.00.308.694 D create_tensor: loading tensor blk.1.attn_k.weight
+0.00.308.698 D create_tensor: loading tensor blk.1.attn_v.weight
+0.00.308.703 D create_tensor: loading tensor blk.1.attn_q.bias
+0.00.308.708 D create_tensor: loading tensor blk.1.attn_k.bias
+0.00.308.713 D create_tensor: loading tensor blk.1.attn_v.bias
+0.00.308.718 D create_tensor: loading tensor blk.1.attn_output.weight
+0.00.308.723 D create_tensor: loading tensor blk.1.ffn_norm.weight
+0.00.308.727 D create_tensor: loading tensor blk.1.ffn_gate.weight
+0.00.308.732 D create_tensor: loading tensor blk.1.ffn_down.weight
+0.00.308.736 D create_tensor: loading tensor blk.1.ffn_up.weight
+0.00.308.741 D create_tensor: loading tensor blk.2.attn_norm.weight
+0.00.308.746 D create_tensor: loading tensor blk.2.attn_qkv.weight
+0.00.308.747 D create_tensor: loading tensor blk.2.attn_q.weight
+0.00.308.752 D create_tensor: loading tensor blk.2.attn_k.weight
+0.00.308.757 D create_tensor: loading tensor blk.2.attn_v.weight
+0.00.308.762 D create_tensor: loading tensor blk.2.attn_q.bias
+0.00.308.766 D create_tensor: loading tensor blk.2.attn_k.bias
+0.00.308.771 D create_tensor: loading tensor blk.2.attn_v.bias
+0.00.308.776 D create_tensor: loading tensor blk.2.attn_output.weight
+0.00.308.780 D create_tensor: loading tensor blk.2.ffn_norm.weight
+0.00.308.785 D create_tensor: loading tensor blk.2.ffn_gate.weight
+0.00.308.790 D create_tensor: loading tensor blk.2.ffn_down.weight
+0.00.308.795 D create_tensor: loading tensor blk.2.ffn_up.weight
+0.00.308.799 D create_tensor: loading tensor blk.3.attn_norm.weight
+0.00.308.805 D create_tensor: loading tensor blk.3.attn_qkv.weight
+0.00.308.806 D create_tensor: loading tensor blk.3.attn_q.weight
+0.00.308.810 D create_tensor: loading tensor blk.3.attn_k.weight
+0.00.308.814 D create_tensor: loading tensor blk.3.attn_v.weight
+0.00.308.818 D create_tensor: loading tensor blk.3.attn_q.bias
+0.00.308.823 D create_tensor: loading tensor blk.3.attn_k.bias
+0.00.308.827 D create_tensor: loading tensor blk.3.attn_v.bias
+0.00.308.832 D create_tensor: loading tensor blk.3.attn_output.weight
+0.00.308.836 D create_tensor: loading tensor blk.3.ffn_norm.weight
+0.00.308.841 D create_tensor: loading tensor blk.3.ffn_gate.weight
+0.00.308.845 D create_tensor: loading tensor blk.3.ffn_down.weight
+0.00.308.850 D create_tensor: loading tensor blk.3.ffn_up.weight
+0.00.308.856 D create_tensor: loading tensor blk.4.attn_norm.weight
+0.00.308.860 D create_tensor: loading tensor blk.4.attn_qkv.weight
+0.00.308.861 D create_tensor: loading tensor blk.4.attn_q.weight
+0.00.308.866 D create_tensor: loading tensor blk.4.attn_k.weight
+0.00.308.870 D create_tensor: loading tensor blk.4.attn_v.weight
+0.00.308.875 D create_tensor: loading tensor blk.4.attn_q.bias
+0.00.308.879 D create_tensor: loading tensor blk.4.attn_k.bias
+0.00.308.883 D create_tensor: loading tensor blk.4.attn_v.bias
+0.00.308.887 D create_tensor: loading tensor blk.4.attn_output.weight
+0.00.308.891 D create_tensor: loading tensor blk.4.ffn_norm.weight
+0.00.308.896 D create_tensor: loading tensor blk.4.ffn_gate.weight
+0.00.308.900 D create_tensor: loading tensor blk.4.ffn_down.weight
+0.00.308.904 D create_tensor: loading tensor blk.4.ffn_up.weight
+0.00.308.909 D create_tensor: loading tensor blk.5.attn_norm.weight
+0.00.308.913 D create_tensor: loading tensor blk.5.attn_qkv.weight
+0.00.308.914 D create_tensor: loading tensor blk.5.attn_q.weight
+0.00.308.918 D create_tensor: loading tensor blk.5.attn_k.weight
+0.00.308.922 D create_tensor: loading tensor blk.5.attn_v.weight
+0.00.308.926 D create_tensor: loading tensor blk.5.attn_q.bias
+0.00.308.930 D create_tensor: loading tensor blk.5.attn_k.bias
+0.00.308.935 D create_tensor: loading tensor blk.5.attn_v.bias
+0.00.308.939 D create_tensor: loading tensor blk.5.attn_output.weight
+0.00.308.943 D create_tensor: loading tensor blk.5.ffn_norm.weight
+0.00.308.948 D create_tensor: loading tensor blk.5.ffn_gate.weight
+0.00.308.952 D create_tensor: loading tensor blk.5.ffn_down.weight
+0.00.308.956 D create_tensor: loading tensor blk.5.ffn_up.weight
+0.00.308.961 D create_tensor: loading tensor blk.6.attn_norm.weight
+0.00.308.965 D create_tensor: loading tensor blk.6.attn_qkv.weight
+0.00.308.967 D create_tensor: loading tensor blk.6.attn_q.weight
+0.00.308.972 D create_tensor: loading tensor blk.6.attn_k.weight
+0.00.308.976 D create_tensor: loading tensor blk.6.attn_v.weight
+0.00.308.981 D create_tensor: loading tensor blk.6.attn_q.bias
+0.00.308.984 D create_tensor: loading tensor blk.6.attn_k.bias
+0.00.308.989 D create_tensor: loading tensor blk.6.attn_v.bias
+0.00.308.994 D create_tensor: loading tensor blk.6.attn_output.weight
+0.00.308.999 D create_tensor: loading tensor blk.6.ffn_norm.weight
+0.00.309.003 D create_tensor: loading tensor blk.6.ffn_gate.weight
+0.00.309.007 D create_tensor: loading tensor blk.6.ffn_down.weight
+0.00.309.012 D create_tensor: loading tensor blk.6.ffn_up.weight
+0.00.309.019 D create_tensor: loading tensor blk.7.attn_norm.weight
+0.00.309.024 D create_tensor: loading tensor blk.7.attn_qkv.weight
+0.00.309.026 D create_tensor: loading tensor blk.7.attn_q.weight
+0.00.309.031 D create_tensor: loading tensor blk.7.attn_k.weight
+0.00.309.036 D create_tensor: loading tensor blk.7.attn_v.weight
+0.00.309.041 D create_tensor: loading tensor blk.7.attn_q.bias
+0.00.309.045 D create_tensor: loading tensor blk.7.attn_k.bias
+0.00.309.051 D create_tensor: loading tensor blk.7.attn_v.bias
+0.00.309.056 D create_tensor: loading tensor blk.7.attn_output.weight
+0.00.309.060 D create_tensor: loading tensor blk.7.ffn_norm.weight
+0.00.309.065 D create_tensor: loading tensor blk.7.ffn_gate.weight
+0.00.309.069 D create_tensor: loading tensor blk.7.ffn_down.weight
+0.00.309.073 D create_tensor: loading tensor blk.7.ffn_up.weight
+0.00.309.078 D create_tensor: loading tensor blk.8.attn_norm.weight
+0.00.309.083 D create_tensor: loading tensor blk.8.attn_qkv.weight
+0.00.309.085 D create_tensor: loading tensor blk.8.attn_q.weight
+0.00.309.089 D create_tensor: loading tensor blk.8.attn_k.weight
+0.00.309.094 D create_tensor: loading tensor blk.8.attn_v.weight
+0.00.309.098 D create_tensor: loading tensor blk.8.attn_q.bias
+0.00.309.104 D create_tensor: loading tensor blk.8.attn_k.bias
+0.00.309.108 D create_tensor: loading tensor blk.8.attn_v.bias
+0.00.309.113 D create_tensor: loading tensor blk.8.attn_output.weight
+0.00.309.117 D create_tensor: loading tensor blk.8.ffn_norm.weight
+0.00.309.122 D create_tensor: loading tensor blk.8.ffn_gate.weight
+0.00.309.127 D create_tensor: loading tensor blk.8.ffn_down.weight
+0.00.309.131 D create_tensor: loading tensor blk.8.ffn_up.weight
+0.00.309.136 D create_tensor: loading tensor blk.9.attn_norm.weight
+0.00.309.140 D create_tensor: loading tensor blk.9.attn_qkv.weight
+0.00.309.142 D create_tensor: loading tensor blk.9.attn_q.weight
+0.00.309.147 D create_tensor: loading tensor blk.9.attn_k.weight
+0.00.309.151 D create_tensor: loading tensor blk.9.attn_v.weight
+0.00.309.156 D create_tensor: loading tensor blk.9.attn_q.bias
+0.00.309.160 D create_tensor: loading tensor blk.9.attn_k.bias
+0.00.309.166 D create_tensor: loading tensor blk.9.attn_v.bias
+0.00.309.170 D create_tensor: loading tensor blk.9.attn_output.weight
+0.00.309.176 D create_tensor: loading tensor blk.9.ffn_norm.weight
+0.00.309.180 D create_tensor: loading tensor blk.9.ffn_gate.weight
+0.00.309.184 D create_tensor: loading tensor blk.9.ffn_down.weight
+0.00.309.189 D create_tensor: loading tensor blk.9.ffn_up.weight
+0.00.309.195 D create_tensor: loading tensor blk.10.attn_norm.weight
+0.00.309.200 D create_tensor: loading tensor blk.10.attn_qkv.weight
+0.00.309.202 D create_tensor: loading tensor blk.10.attn_q.weight
+0.00.309.207 D create_tensor: loading tensor blk.10.attn_k.weight
+0.00.309.212 D create_tensor: loading tensor blk.10.attn_v.weight
+0.00.309.217 D create_tensor: loading tensor blk.10.attn_q.bias
+0.00.309.222 D create_tensor: loading tensor blk.10.attn_k.bias
+0.00.309.226 D create_tensor: loading tensor blk.10.attn_v.bias
+0.00.309.232 D create_tensor: loading tensor blk.10.attn_output.weight
+0.00.309.237 D create_tensor: loading tensor blk.10.ffn_norm.weight
+0.00.309.241 D create_tensor: loading tensor blk.10.ffn_gate.weight
+0.00.309.246 D create_tensor: loading tensor blk.10.ffn_down.weight
+0.00.309.251 D create_tensor: loading tensor blk.10.ffn_up.weight
+0.00.309.256 D create_tensor: loading tensor blk.11.attn_norm.weight
+0.00.309.260 D create_tensor: loading tensor blk.11.attn_qkv.weight
+0.00.309.263 D create_tensor: loading tensor blk.11.attn_q.weight
+0.00.309.268 D create_tensor: loading tensor blk.11.attn_k.weight
+0.00.309.274 D create_tensor: loading tensor blk.11.attn_v.weight
+0.00.309.278 D create_tensor: loading tensor blk.11.attn_q.bias
+0.00.309.282 D create_tensor: loading tensor blk.11.attn_k.bias
+0.00.309.288 D create_tensor: loading tensor blk.11.attn_v.bias
+0.00.309.292 D create_tensor: loading tensor blk.11.attn_output.weight
+0.00.309.297 D create_tensor: loading tensor blk.11.ffn_norm.weight
+0.00.309.302 D create_tensor: loading tensor blk.11.ffn_gate.weight
+0.00.309.306 D create_tensor: loading tensor blk.11.ffn_down.weight
+0.00.309.311 D create_tensor: loading tensor blk.11.ffn_up.weight
+0.00.309.315 D create_tensor: loading tensor blk.12.attn_norm.weight
+0.00.309.319 D create_tensor: loading tensor blk.12.attn_qkv.weight
+0.00.309.321 D create_tensor: loading tensor blk.12.attn_q.weight
+0.00.309.325 D create_tensor: loading tensor blk.12.attn_k.weight
+0.00.309.330 D create_tensor: loading tensor blk.12.attn_v.weight
+0.00.309.335 D create_tensor: loading tensor blk.12.attn_q.bias
+0.00.309.339 D create_tensor: loading tensor blk.12.attn_k.bias
+0.00.309.344 D create_tensor: loading tensor blk.12.attn_v.bias
+0.00.309.350 D create_tensor: loading tensor blk.12.attn_output.weight
+0.00.309.355 D create_tensor: loading tensor blk.12.ffn_norm.weight
+0.00.309.361 D create_tensor: loading tensor blk.12.ffn_gate.weight
+0.00.309.365 D create_tensor: loading tensor blk.12.ffn_down.weight
+0.00.309.370 D create_tensor: loading tensor blk.12.ffn_up.weight
+0.00.309.374 D create_tensor: loading tensor blk.13.attn_norm.weight
+0.00.309.379 D create_tensor: loading tensor blk.13.attn_qkv.weight
+0.00.309.381 D create_tensor: loading tensor blk.13.attn_q.weight
+0.00.309.385 D create_tensor: loading tensor blk.13.attn_k.weight
+0.00.309.391 D create_tensor: loading tensor blk.13.attn_v.weight
+0.00.309.395 D create_tensor: loading tensor blk.13.attn_q.bias
+0.00.309.400 D create_tensor: loading tensor blk.13.attn_k.bias
+0.00.309.404 D create_tensor: loading tensor blk.13.attn_v.bias
+0.00.309.409 D create_tensor: loading tensor blk.13.attn_output.weight
+0.00.309.414 D create_tensor: loading tensor blk.13.ffn_norm.weight
+0.00.309.419 D create_tensor: loading tensor blk.13.ffn_gate.weight
+0.00.309.424 D create_tensor: loading tensor blk.13.ffn_down.weight
+0.00.309.429 D create_tensor: loading tensor blk.13.ffn_up.weight
+0.00.309.435 D create_tensor: loading tensor blk.14.attn_norm.weight
+0.00.309.440 D create_tensor: loading tensor blk.14.attn_qkv.weight
+0.00.309.442 D create_tensor: loading tensor blk.14.attn_q.weight
+0.00.309.446 D create_tensor: loading tensor blk.14.attn_k.weight
+0.00.309.451 D create_tensor: loading tensor blk.14.attn_v.weight
+0.00.309.455 D create_tensor: loading tensor blk.14.attn_q.bias
+0.00.309.460 D create_tensor: loading tensor blk.14.attn_k.bias
+0.00.309.476 D create_tensor: loading tensor blk.14.attn_v.bias
+0.00.309.480 D create_tensor: loading tensor blk.14.attn_output.weight
+0.00.309.486 D create_tensor: loading tensor blk.14.ffn_norm.weight
+0.00.309.490 D create_tensor: loading tensor blk.14.ffn_gate.weight
+0.00.309.495 D create_tensor: loading tensor blk.14.ffn_down.weight
+0.00.309.500 D create_tensor: loading tensor blk.14.ffn_up.weight
+0.00.309.505 D create_tensor: loading tensor blk.15.attn_norm.weight
+0.00.309.510 D create_tensor: loading tensor blk.15.attn_qkv.weight
+0.00.309.512 D create_tensor: loading tensor blk.15.attn_q.weight
+0.00.309.517 D create_tensor: loading tensor blk.15.attn_k.weight
+0.00.309.522 D create_tensor: loading tensor blk.15.attn_v.weight
+0.00.309.527 D create_tensor: loading tensor blk.15.attn_q.bias
+0.00.309.531 D create_tensor: loading tensor blk.15.attn_k.bias
+0.00.309.536 D create_tensor: loading tensor blk.15.attn_v.bias
+0.00.309.540 D create_tensor: loading tensor blk.15.attn_output.weight
+0.00.309.545 D create_tensor: loading tensor blk.15.ffn_norm.weight
+0.00.309.550 D create_tensor: loading tensor blk.15.ffn_gate.weight
+0.00.309.554 D create_tensor: loading tensor blk.15.ffn_down.weight
+0.00.309.559 D create_tensor: loading tensor blk.15.ffn_up.weight
+0.00.309.563 D create_tensor: loading tensor blk.16.attn_norm.weight
+0.00.309.569 D create_tensor: loading tensor blk.16.attn_qkv.weight
+0.00.309.571 D create_tensor: loading tensor blk.16.attn_q.weight
+0.00.309.575 D create_tensor: loading tensor blk.16.attn_k.weight
+0.00.309.580 D create_tensor: loading tensor blk.16.attn_v.weight
+0.00.309.585 D create_tensor: loading tensor blk.16.attn_q.bias
+0.00.309.590 D create_tensor: loading tensor blk.16.attn_k.bias
+0.00.309.595 D create_tensor: loading tensor blk.16.attn_v.bias
+0.00.309.600 D create_tensor: loading tensor blk.16.attn_output.weight
+0.00.309.605 D create_tensor: loading tensor blk.16.ffn_norm.weight
+0.00.309.609 D create_tensor: loading tensor blk.16.ffn_gate.weight
+0.00.309.614 D create_tensor: loading tensor blk.16.ffn_down.weight
+0.00.309.619 D create_tensor: loading tensor blk.16.ffn_up.weight
+0.00.309.623 D create_tensor: loading tensor blk.17.attn_norm.weight
+0.00.309.629 D create_tensor: loading tensor blk.17.attn_qkv.weight
+0.00.309.630 D create_tensor: loading tensor blk.17.attn_q.weight
+0.00.309.636 D create_tensor: loading tensor blk.17.attn_k.weight
+0.00.309.640 D create_tensor: loading tensor blk.17.attn_v.weight
+0.00.309.645 D create_tensor: loading tensor blk.17.attn_q.bias
+0.00.309.650 D create_tensor: loading tensor blk.17.attn_k.bias
+0.00.309.654 D create_tensor: loading tensor blk.17.attn_v.bias
+0.00.309.657 D create_tensor: loading tensor blk.17.attn_output.weight
+0.00.309.662 D create_tensor: loading tensor blk.17.ffn_norm.weight
+0.00.309.667 D create_tensor: loading tensor blk.17.ffn_gate.weight
+0.00.309.671 D create_tensor: loading tensor blk.17.ffn_down.weight
+0.00.309.675 D create_tensor: loading tensor blk.17.ffn_up.weight
+0.00.309.680 D create_tensor: loading tensor blk.18.attn_norm.weight
+0.00.309.685 D create_tensor: loading tensor blk.18.attn_qkv.weight
+0.00.309.687 D create_tensor: loading tensor blk.18.attn_q.weight
+0.00.309.692 D create_tensor: loading tensor blk.18.attn_k.weight
+0.00.309.696 D create_tensor: loading tensor blk.18.attn_v.weight
+0.00.309.701 D create_tensor: loading tensor blk.18.attn_q.bias
+0.00.309.707 D create_tensor: loading tensor blk.18.attn_k.bias
+0.00.309.712 D create_tensor: loading tensor blk.18.attn_v.bias
+0.00.309.718 D create_tensor: loading tensor blk.18.attn_output.weight
+0.00.309.723 D create_tensor: loading tensor blk.18.ffn_norm.weight
+0.00.309.728 D create_tensor: loading tensor blk.18.ffn_gate.weight
+0.00.309.732 D create_tensor: loading tensor blk.18.ffn_down.weight
+0.00.309.736 D create_tensor: loading tensor blk.18.ffn_up.weight
+0.00.309.741 D create_tensor: loading tensor blk.19.attn_norm.weight
+0.00.309.745 D create_tensor: loading tensor blk.19.attn_qkv.weight
+0.00.309.747 D create_tensor: loading tensor blk.19.attn_q.weight
+0.00.309.753 D create_tensor: loading tensor blk.19.attn_k.weight
+0.00.309.758 D create_tensor: loading tensor blk.19.attn_v.weight
+0.00.309.764 D create_tensor: loading tensor blk.19.attn_q.bias
+0.00.309.769 D create_tensor: loading tensor blk.19.attn_k.bias
+0.00.309.774 D create_tensor: loading tensor blk.19.attn_v.bias
+0.00.309.779 D create_tensor: loading tensor blk.19.attn_output.weight
+0.00.309.784 D create_tensor: loading tensor blk.19.ffn_norm.weight
+0.00.309.790 D create_tensor: loading tensor blk.19.ffn_gate.weight
+0.00.309.795 D create_tensor: loading tensor blk.19.ffn_down.weight
+0.00.309.799 D create_tensor: loading tensor blk.19.ffn_up.weight
+0.00.309.803 D create_tensor: loading tensor blk.20.attn_norm.weight
+0.00.309.809 D create_tensor: loading tensor blk.20.attn_qkv.weight
+0.00.309.811 D create_tensor: loading tensor blk.20.attn_q.weight
+0.00.309.817 D create_tensor: loading tensor blk.20.attn_k.weight
+0.00.309.822 D create_tensor: loading tensor blk.20.attn_v.weight
+0.00.309.828 D create_tensor: loading tensor blk.20.attn_q.bias
+0.00.309.833 D create_tensor: loading tensor blk.20.attn_k.bias
+0.00.309.839 D create_tensor: loading tensor blk.20.attn_v.bias
+0.00.309.843 D create_tensor: loading tensor blk.20.attn_output.weight
+0.00.309.849 D create_tensor: loading tensor blk.20.ffn_norm.weight
+0.00.309.853 D create_tensor: loading tensor blk.20.ffn_gate.weight
+0.00.309.858 D create_tensor: loading tensor blk.20.ffn_down.weight
+0.00.309.863 D create_tensor: loading tensor blk.20.ffn_up.weight
+0.00.309.868 D create_tensor: loading tensor blk.21.attn_norm.weight
+0.00.309.873 D create_tensor: loading tensor blk.21.attn_qkv.weight
+0.00.309.875 D create_tensor: loading tensor blk.21.attn_q.weight
+0.00.309.880 D create_tensor: loading tensor blk.21.attn_k.weight
+0.00.309.885 D create_tensor: loading tensor blk.21.attn_v.weight
+0.00.309.891 D create_tensor: loading tensor blk.21.attn_q.bias
+0.00.309.896 D create_tensor: loading tensor blk.21.attn_k.bias
+0.00.309.901 D create_tensor: loading tensor blk.21.attn_v.bias
+0.00.309.905 D create_tensor: loading tensor blk.21.attn_output.weight
+0.00.309.909 D create_tensor: loading tensor blk.21.ffn_norm.weight
+0.00.309.915 D create_tensor: loading tensor blk.21.ffn_gate.weight
+0.00.309.921 D create_tensor: loading tensor blk.21.ffn_down.weight
+0.00.309.926 D create_tensor: loading tensor blk.21.ffn_up.weight
+0.00.309.931 D create_tensor: loading tensor blk.22.attn_norm.weight
+0.00.309.936 D create_tensor: loading tensor blk.22.attn_qkv.weight
+0.00.309.938 D create_tensor: loading tensor blk.22.attn_q.weight
+0.00.309.943 D create_tensor: loading tensor blk.22.attn_k.weight
+0.00.309.948 D create_tensor: loading tensor blk.22.attn_v.weight
+0.00.309.954 D create_tensor: loading tensor blk.22.attn_q.bias
+0.00.309.959 D create_tensor: loading tensor blk.22.attn_k.bias
+0.00.309.964 D create_tensor: loading tensor blk.22.attn_v.bias
+0.00.309.969 D create_tensor: loading tensor blk.22.attn_output.weight
+0.00.309.973 D create_tensor: loading tensor blk.22.ffn_norm.weight
+0.00.309.977 D create_tensor: loading tensor blk.22.ffn_gate.weight
+0.00.309.981 D create_tensor: loading tensor blk.22.ffn_down.weight
+0.00.309.986 D create_tensor: loading tensor blk.22.ffn_up.weight
+0.00.309.991 D create_tensor: loading tensor blk.23.attn_norm.weight
+0.00.309.996 D create_tensor: loading tensor blk.23.attn_qkv.weight
+0.00.309.997 D create_tensor: loading tensor blk.23.attn_q.weight
+0.00.310.002 D create_tensor: loading tensor blk.23.attn_k.weight
+0.00.310.007 D create_tensor: loading tensor blk.23.attn_v.weight
+0.00.310.012 D create_tensor: loading tensor blk.23.attn_q.bias
+0.00.310.017 D create_tensor: loading tensor blk.23.attn_k.bias
+0.00.310.022 D create_tensor: loading tensor blk.23.attn_v.bias
+0.00.310.027 D create_tensor: loading tensor blk.23.attn_output.weight
+0.00.310.033 D create_tensor: loading tensor blk.23.ffn_norm.weight
+0.00.310.038 D create_tensor: loading tensor blk.23.ffn_gate.weight
+0.00.310.043 D create_tensor: loading tensor blk.23.ffn_down.weight
+0.00.310.048 D create_tensor: loading tensor blk.23.ffn_up.weight
+0.00.310.054 D create_tensor: loading tensor blk.24.attn_norm.weight
+0.00.310.059 D create_tensor: loading tensor blk.24.attn_qkv.weight
+0.00.310.061 D create_tensor: loading tensor blk.24.attn_q.weight
+0.00.310.067 D create_tensor: loading tensor blk.24.attn_k.weight
+0.00.310.072 D create_tensor: loading tensor blk.24.attn_v.weight
+0.00.310.077 D create_tensor: loading tensor blk.24.attn_q.bias
+0.00.310.083 D create_tensor: loading tensor blk.24.attn_k.bias
+0.00.310.088 D create_tensor: loading tensor blk.24.attn_v.bias
+0.00.310.093 D create_tensor: loading tensor blk.24.attn_output.weight
+0.00.310.098 D create_tensor: loading tensor blk.24.ffn_norm.weight
+0.00.310.103 D create_tensor: loading tensor blk.24.ffn_gate.weight
+0.00.310.108 D create_tensor: loading tensor blk.24.ffn_down.weight
+0.00.310.115 D create_tensor: loading tensor blk.24.ffn_up.weight
+0.00.310.120 D create_tensor: loading tensor blk.25.attn_norm.weight
+0.00.310.125 D create_tensor: loading tensor blk.25.attn_qkv.weight
+0.00.310.127 D create_tensor: loading tensor blk.25.attn_q.weight
+0.00.310.133 D create_tensor: loading tensor blk.25.attn_k.weight
+0.00.310.138 D create_tensor: loading tensor blk.25.attn_v.weight
+0.00.310.143 D create_tensor: loading tensor blk.25.attn_q.bias
+0.00.310.149 D create_tensor: loading tensor blk.25.attn_k.bias
+0.00.310.154 D create_tensor: loading tensor blk.25.attn_v.bias
+0.00.310.160 D create_tensor: loading tensor blk.25.attn_output.weight
+0.00.310.165 D create_tensor: loading tensor blk.25.ffn_norm.weight
+0.00.310.170 D create_tensor: loading tensor blk.25.ffn_gate.weight
+0.00.310.175 D create_tensor: loading tensor blk.25.ffn_down.weight
+0.00.310.180 D create_tensor: loading tensor blk.25.ffn_up.weight
+0.00.310.187 D create_tensor: loading tensor blk.26.attn_norm.weight
+0.00.310.193 D create_tensor: loading tensor blk.26.attn_qkv.weight
+0.00.310.195 D create_tensor: loading tensor blk.26.attn_q.weight
+0.00.310.201 D create_tensor: loading tensor blk.26.attn_k.weight
+0.00.310.206 D create_tensor: loading tensor blk.26.attn_v.weight
+0.00.310.212 D create_tensor: loading tensor blk.26.attn_q.bias
+0.00.310.217 D create_tensor: loading tensor blk.26.attn_k.bias
+0.00.310.222 D create_tensor: loading tensor blk.26.attn_v.bias
+0.00.310.227 D create_tensor: loading tensor blk.26.attn_output.weight
+0.00.310.233 D create_tensor: loading tensor blk.26.ffn_norm.weight
+0.00.310.238 D create_tensor: loading tensor blk.26.ffn_gate.weight
+0.00.310.243 D create_tensor: loading tensor blk.26.ffn_down.weight
+0.00.310.248 D create_tensor: loading tensor blk.26.ffn_up.weight
+0.00.310.253 D create_tensor: loading tensor blk.27.attn_norm.weight
+0.00.310.259 D create_tensor: loading tensor blk.27.attn_qkv.weight
+0.00.310.261 D create_tensor: loading tensor blk.27.attn_q.weight
+0.00.310.267 D create_tensor: loading tensor blk.27.attn_k.weight
+0.00.310.272 D create_tensor: loading tensor blk.27.attn_v.weight
+0.00.310.278 D create_tensor: loading tensor blk.27.attn_q.bias
+0.00.310.284 D create_tensor: loading tensor blk.27.attn_k.bias
+0.00.310.290 D create_tensor: loading tensor blk.27.attn_v.bias
+0.00.310.296 D create_tensor: loading tensor blk.27.attn_output.weight
+0.00.310.302 D create_tensor: loading tensor blk.27.ffn_norm.weight
+0.00.310.308 D create_tensor: loading tensor blk.27.ffn_gate.weight
+0.00.310.314 D create_tensor: loading tensor blk.27.ffn_down.weight
+0.00.310.319 D create_tensor: loading tensor blk.27.ffn_up.weight
+0.00.310.327 D create_tensor: loading tensor blk.0.attn_q.scale
+0.00.310.329 D create_tensor: loading tensor blk.0.attn_k.scale
+0.00.310.330 D create_tensor: loading tensor blk.0.attn_v.scale
+0.00.310.331 D create_tensor: loading tensor blk.0.attn_output.scale
+0.00.310.333 D create_tensor: loading tensor blk.0.ffn_gate.scale
+0.00.310.334 D create_tensor: loading tensor blk.0.ffn_down.scale
+0.00.310.336 D create_tensor: loading tensor blk.0.ffn_up.scale
+0.00.310.338 D create_tensor: loading tensor blk.0.attn_q.input_scale
+0.00.310.339 D create_tensor: loading tensor blk.0.attn_k.input_scale
+0.00.310.341 D create_tensor: loading tensor blk.0.attn_v.input_scale
+0.00.310.342 D create_tensor: loading tensor blk.0.attn_output.input_scale
+0.00.310.344 D create_tensor: loading tensor blk.0.ffn_gate.input_scale
+0.00.310.345 D create_tensor: loading tensor blk.0.ffn_down.input_scale
+0.00.310.347 D create_tensor: loading tensor blk.0.ffn_up.input_scale
+0.00.310.349 D create_tensor: loading tensor blk.1.attn_q.scale
+0.00.310.350 D create_tensor: loading tensor blk.1.attn_k.scale
+0.00.310.352 D create_tensor: loading tensor blk.1.attn_v.scale
+0.00.310.353 D create_tensor: loading tensor blk.1.attn_output.scale
+0.00.310.355 D create_tensor: loading tensor blk.1.ffn_gate.scale
+0.00.310.356 D create_tensor: loading tensor blk.1.ffn_down.scale
+0.00.310.358 D create_tensor: loading tensor blk.1.ffn_up.scale
+0.00.310.359 D create_tensor: loading tensor blk.1.attn_q.input_scale
+0.00.310.360 D create_tensor: loading tensor blk.1.attn_k.input_scale
+0.00.310.362 D create_tensor: loading tensor blk.1.attn_v.input_scale
+0.00.310.363 D create_tensor: loading tensor blk.1.attn_output.input_scale
+0.00.310.365 D create_tensor: loading tensor blk.1.ffn_gate.input_scale
+0.00.310.366 D create_tensor: loading tensor blk.1.ffn_down.input_scale
+0.00.310.368 D create_tensor: loading tensor blk.1.ffn_up.input_scale
+0.00.310.369 D create_tensor: loading tensor blk.2.attn_q.scale
+0.00.310.371 D create_tensor: loading tensor blk.2.attn_k.scale
+0.00.310.372 D create_tensor: loading tensor blk.2.attn_v.scale
+0.00.310.374 D create_tensor: loading tensor blk.2.attn_output.scale
+0.00.310.375 D create_tensor: loading tensor blk.2.ffn_gate.scale
+0.00.310.377 D create_tensor: loading tensor blk.2.ffn_down.scale
+0.00.310.378 D create_tensor: loading tensor blk.2.ffn_up.scale
+0.00.310.380 D create_tensor: loading tensor blk.2.attn_q.input_scale
+0.00.310.381 D create_tensor: loading tensor blk.2.attn_k.input_scale
+0.00.310.383 D create_tensor: loading tensor blk.2.attn_v.input_scale
+0.00.310.384 D create_tensor: loading tensor blk.2.attn_output.input_scale
+0.00.310.386 D create_tensor: loading tensor blk.2.ffn_gate.input_scale
+0.00.310.387 D create_tensor: loading tensor blk.2.ffn_down.input_scale
+0.00.310.389 D create_tensor: loading tensor blk.2.ffn_up.input_scale
+0.00.310.391 D create_tensor: loading tensor blk.3.attn_q.scale
+0.00.310.392 D create_tensor: loading tensor blk.3.attn_k.scale
+0.00.310.394 D create_tensor: loading tensor blk.3.attn_v.scale
+0.00.310.395 D create_tensor: loading tensor blk.3.attn_output.scale
+0.00.310.396 D create_tensor: loading tensor blk.3.ffn_gate.scale
+0.00.310.398 D create_tensor: loading tensor blk.3.ffn_down.scale
+0.00.310.399 D create_tensor: loading tensor blk.3.ffn_up.scale
+0.00.310.401 D create_tensor: loading tensor blk.3.attn_q.input_scale
+0.00.310.402 D create_tensor: loading tensor blk.3.attn_k.input_scale
+0.00.310.404 D create_tensor: loading tensor blk.3.attn_v.input_scale
+0.00.310.405 D create_tensor: loading tensor blk.3.attn_output.input_scale
+0.00.310.407 D create_tensor: loading tensor blk.3.ffn_gate.input_scale
+0.00.310.408 D create_tensor: loading tensor blk.3.ffn_down.input_scale
+0.00.310.410 D create_tensor: loading tensor blk.3.ffn_up.input_scale
+0.00.310.411 D create_tensor: loading tensor blk.4.attn_q.scale
+0.00.310.413 D create_tensor: loading tensor blk.4.attn_k.scale
+0.00.310.414 D create_tensor: loading tensor blk.4.attn_v.scale
+0.00.310.416 D create_tensor: loading tensor blk.4.attn_output.scale
+0.00.310.417 D create_tensor: loading tensor blk.4.ffn_gate.scale
+0.00.310.419 D create_tensor: loading tensor blk.4.ffn_down.scale
+0.00.310.420 D create_tensor: loading tensor blk.4.ffn_up.scale
+0.00.310.422 D create_tensor: loading tensor blk.4.attn_q.input_scale
+0.00.310.423 D create_tensor: loading tensor blk.4.attn_k.input_scale
+0.00.310.424 D create_tensor: loading tensor blk.4.attn_v.input_scale
+0.00.310.426 D create_tensor: loading tensor blk.4.attn_output.input_scale
+0.00.310.427 D create_tensor: loading tensor blk.4.ffn_gate.input_scale
+0.00.310.429 D create_tensor: loading tensor blk.4.ffn_down.input_scale
+0.00.310.430 D create_tensor: loading tensor blk.4.ffn_up.input_scale
+0.00.310.432 D create_tensor: loading tensor blk.5.attn_q.scale
+0.00.310.433 D create_tensor: loading tensor blk.5.attn_k.scale
+0.00.310.435 D create_tensor: loading tensor blk.5.attn_v.scale
+0.00.310.436 D create_tensor: loading tensor blk.5.attn_output.scale
+0.00.310.438 D create_tensor: loading tensor blk.5.ffn_gate.scale
+0.00.310.439 D create_tensor: loading tensor blk.5.ffn_down.scale
+0.00.310.440 D create_tensor: loading tensor blk.5.ffn_up.scale
+0.00.310.442 D create_tensor: loading tensor blk.5.attn_q.input_scale
+0.00.310.443 D create_tensor: loading tensor blk.5.attn_k.input_scale
+0.00.310.445 D create_tensor: loading tensor blk.5.attn_v.input_scale
+0.00.310.446 D create_tensor: loading tensor blk.5.attn_output.input_scale
+0.00.310.448 D create_tensor: loading tensor blk.5.ffn_gate.input_scale
+0.00.310.449 D create_tensor: loading tensor blk.5.ffn_down.input_scale
+0.00.310.451 D create_tensor: loading tensor blk.5.ffn_up.input_scale
+0.00.310.452 D create_tensor: loading tensor blk.6.attn_q.scale
+0.00.310.454 D create_tensor: loading tensor blk.6.attn_k.scale
+0.00.310.455 D create_tensor: loading tensor blk.6.attn_v.scale
+0.00.310.457 D create_tensor: loading tensor blk.6.attn_output.scale
+0.00.310.458 D create_tensor: loading tensor blk.6.ffn_gate.scale
+0.00.310.460 D create_tensor: loading tensor blk.6.ffn_down.scale
+0.00.310.462 D create_tensor: loading tensor blk.6.ffn_up.scale
+0.00.310.463 D create_tensor: loading tensor blk.6.attn_q.input_scale
+0.00.310.465 D create_tensor: loading tensor blk.6.attn_k.input_scale
+0.00.310.466 D create_tensor: loading tensor blk.6.attn_v.input_scale
+0.00.310.468 D create_tensor: loading tensor blk.6.attn_output.input_scale
+0.00.310.469 D create_tensor: loading tensor blk.6.ffn_gate.input_scale
+0.00.310.471 D create_tensor: loading tensor blk.6.ffn_down.input_scale
+0.00.310.473 D create_tensor: loading tensor blk.6.ffn_up.input_scale
+0.00.310.474 D create_tensor: loading tensor blk.7.attn_q.scale
+0.00.310.476 D create_tensor: loading tensor blk.7.attn_k.scale
+0.00.310.477 D create_tensor: loading tensor blk.7.attn_v.scale
+0.00.310.479 D create_tensor: loading tensor blk.7.attn_output.scale
+0.00.310.481 D create_tensor: loading tensor blk.7.ffn_gate.scale
+0.00.310.482 D create_tensor: loading tensor blk.7.ffn_down.scale
+0.00.310.484 D create_tensor: loading tensor blk.7.ffn_up.scale
+0.00.310.486 D create_tensor: loading tensor blk.7.attn_q.input_scale
+0.00.310.487 D create_tensor: loading tensor blk.7.attn_k.input_scale
+0.00.310.489 D create_tensor: loading tensor blk.7.attn_v.input_scale
+0.00.310.491 D create_tensor: loading tensor blk.7.attn_output.input_scale
+0.00.310.492 D create_tensor: loading tensor blk.7.ffn_gate.input_scale
+0.00.310.494 D create_tensor: loading tensor blk.7.ffn_down.input_scale
+0.00.310.496 D create_tensor: loading tensor blk.7.ffn_up.input_scale
+0.00.310.497 D create_tensor: loading tensor blk.8.attn_q.scale
+0.00.310.499 D create_tensor: loading tensor blk.8.attn_k.scale
+0.00.310.501 D create_tensor: loading tensor blk.8.attn_v.scale
+0.00.310.503 D create_tensor: loading tensor blk.8.attn_output.scale
+0.00.310.504 D create_tensor: loading tensor blk.8.ffn_gate.scale
+0.00.310.506 D create_tensor: loading tensor blk.8.ffn_down.scale
+0.00.310.508 D create_tensor: loading tensor blk.8.ffn_up.scale
+0.00.310.509 D create_tensor: loading tensor blk.8.attn_q.input_scale
+0.00.310.511 D create_tensor: loading tensor blk.8.attn_k.input_scale
+0.00.310.513 D create_tensor: loading tensor blk.8.attn_v.input_scale
+0.00.310.515 D create_tensor: loading tensor blk.8.attn_output.input_scale
+0.00.310.516 D create_tensor: loading tensor blk.8.ffn_gate.input_scale
+0.00.310.518 D create_tensor: loading tensor blk.8.ffn_down.input_scale
+0.00.310.520 D create_tensor: loading tensor blk.8.ffn_up.input_scale
+0.00.310.522 D create_tensor: loading tensor blk.9.attn_q.scale
+0.00.310.523 D create_tensor: loading tensor blk.9.attn_k.scale
+0.00.310.525 D create_tensor: loading tensor blk.9.attn_v.scale
+0.00.310.527 D create_tensor: loading tensor blk.9.attn_output.scale
+0.00.310.529 D create_tensor: loading tensor blk.9.ffn_gate.scale
+0.00.310.530 D create_tensor: loading tensor blk.9.ffn_down.scale
+0.00.310.532 D create_tensor: loading tensor blk.9.ffn_up.scale
+0.00.310.534 D create_tensor: loading tensor blk.9.attn_q.input_scale
+0.00.310.536 D create_tensor: loading tensor blk.9.attn_k.input_scale
+0.00.310.538 D create_tensor: loading tensor blk.9.attn_v.input_scale
+0.00.310.540 D create_tensor: loading tensor blk.9.attn_output.input_scale
+0.00.310.541 D create_tensor: loading tensor blk.9.ffn_gate.input_scale
+0.00.310.543 D create_tensor: loading tensor blk.9.ffn_down.input_scale
+0.00.310.545 D create_tensor: loading tensor blk.9.ffn_up.input_scale
+0.00.310.547 D create_tensor: loading tensor blk.10.attn_q.scale
+0.00.310.549 D create_tensor: loading tensor blk.10.attn_k.scale
+0.00.310.550 D create_tensor: loading tensor blk.10.attn_v.scale
+0.00.310.552 D create_tensor: loading tensor blk.10.attn_output.scale
+0.00.310.554 D create_tensor: loading tensor blk.10.ffn_gate.scale
+0.00.310.556 D create_tensor: loading tensor blk.10.ffn_down.scale
+0.00.310.558 D create_tensor: loading tensor blk.10.ffn_up.scale
+0.00.310.560 D create_tensor: loading tensor blk.10.attn_q.input_scale
+0.00.310.561 D create_tensor: loading tensor blk.10.attn_k.input_scale
+0.00.310.563 D create_tensor: loading tensor blk.10.attn_v.input_scale
+0.00.310.565 D create_tensor: loading tensor blk.10.attn_output.input_scale
+0.00.310.567 D create_tensor: loading tensor blk.10.ffn_gate.input_scale
+0.00.310.569 D create_tensor: loading tensor blk.10.ffn_down.input_scale
+0.00.310.571 D create_tensor: loading tensor blk.10.ffn_up.input_scale
+0.00.310.572 D create_tensor: loading tensor blk.11.attn_q.scale
+0.00.310.574 D create_tensor: loading tensor blk.11.attn_k.scale
+0.00.310.576 D create_tensor: loading tensor blk.11.attn_v.scale
+0.00.310.578 D create_tensor: loading tensor blk.11.attn_output.scale
+0.00.310.579 D create_tensor: loading tensor blk.11.ffn_gate.scale
+0.00.310.581 D create_tensor: loading tensor blk.11.ffn_down.scale
+0.00.310.582 D create_tensor: loading tensor blk.11.ffn_up.scale
+0.00.310.584 D create_tensor: loading tensor blk.11.attn_q.input_scale
+0.00.310.586 D create_tensor: loading tensor blk.11.attn_k.input_scale
+0.00.310.587 D create_tensor: loading tensor blk.11.attn_v.input_scale
+0.00.310.589 D create_tensor: loading tensor blk.11.attn_output.input_scale
+0.00.310.591 D create_tensor: loading tensor blk.11.ffn_gate.input_scale
+0.00.310.592 D create_tensor: loading tensor blk.11.ffn_down.input_scale
+0.00.310.594 D create_tensor: loading tensor blk.11.ffn_up.input_scale
+0.00.310.596 D create_tensor: loading tensor blk.12.attn_q.scale
+0.00.310.597 D create_tensor: loading tensor blk.12.attn_k.scale
+0.00.310.599 D create_tensor: loading tensor blk.12.attn_v.scale
+0.00.310.601 D create_tensor: loading tensor blk.12.attn_output.scale
+0.00.310.602 D create_tensor: loading tensor blk.12.ffn_gate.scale
+0.00.310.604 D create_tensor: loading tensor blk.12.ffn_down.scale
+0.00.310.606 D create_tensor: loading tensor blk.12.ffn_up.scale
+0.00.310.607 D create_tensor: loading tensor blk.12.attn_q.input_scale
+0.00.310.609 D create_tensor: loading tensor blk.12.attn_k.input_scale
+0.00.310.611 D create_tensor: loading tensor blk.12.attn_v.input_scale
+0.00.310.613 D create_tensor: loading tensor blk.12.attn_output.input_scale
+0.00.310.614 D create_tensor: loading tensor blk.12.ffn_gate.input_scale
+0.00.310.616 D create_tensor: loading tensor blk.12.ffn_down.input_scale
+0.00.310.618 D create_tensor: loading tensor blk.12.ffn_up.input_scale
+0.00.310.619 D create_tensor: loading tensor blk.13.attn_q.scale
+0.00.310.621 D create_tensor: loading tensor blk.13.attn_k.scale
+0.00.310.622 D create_tensor: loading tensor blk.13.attn_v.scale
+0.00.310.624 D create_tensor: loading tensor blk.13.attn_output.scale
+0.00.310.626 D create_tensor: loading tensor blk.13.ffn_gate.scale
+0.00.310.627 D create_tensor: loading tensor blk.13.ffn_down.scale
+0.00.310.629 D create_tensor: loading tensor blk.13.ffn_up.scale
+0.00.310.630 D create_tensor: loading tensor blk.13.attn_q.input_scale
+0.00.310.632 D create_tensor: loading tensor blk.13.attn_k.input_scale
+0.00.310.634 D create_tensor: loading tensor blk.13.attn_v.input_scale
+0.00.310.635 D create_tensor: loading tensor blk.13.attn_output.input_scale
+0.00.310.637 D create_tensor: loading tensor blk.13.ffn_gate.input_scale
+0.00.310.638 D create_tensor: loading tensor blk.13.ffn_down.input_scale
+0.00.310.640 D create_tensor: loading tensor blk.13.ffn_up.input_scale
+0.00.310.642 D create_tensor: loading tensor blk.14.attn_q.scale
+0.00.310.643 D create_tensor: loading tensor blk.14.attn_k.scale
+0.00.310.645 D create_tensor: loading tensor blk.14.attn_v.scale
+0.00.310.647 D create_tensor: loading tensor blk.14.attn_output.scale
+0.00.310.648 D create_tensor: loading tensor blk.14.ffn_gate.scale
+0.00.310.650 D create_tensor: loading tensor blk.14.ffn_down.scale
+0.00.310.652 D create_tensor: loading tensor blk.14.ffn_up.scale
+0.00.310.654 D create_tensor: loading tensor blk.14.attn_q.input_scale
+0.00.310.655 D create_tensor: loading tensor blk.14.attn_k.input_scale
+0.00.310.657 D create_tensor: loading tensor blk.14.attn_v.input_scale
+0.00.310.659 D create_tensor: loading tensor blk.14.attn_output.input_scale
+0.00.310.660 D create_tensor: loading tensor blk.14.ffn_gate.input_scale
+0.00.310.662 D create_tensor: loading tensor blk.14.ffn_down.input_scale
+0.00.310.664 D create_tensor: loading tensor blk.14.ffn_up.input_scale
+0.00.310.665 D create_tensor: loading tensor blk.15.attn_q.scale
+0.00.310.667 D create_tensor: loading tensor blk.15.attn_k.scale
+0.00.310.669 D create_tensor: loading tensor blk.15.attn_v.scale
+0.00.310.670 D create_tensor: loading tensor blk.15.attn_output.scale
+0.00.310.672 D create_tensor: loading tensor blk.15.ffn_gate.scale
+0.00.310.674 D create_tensor: loading tensor blk.15.ffn_down.scale
+0.00.310.676 D create_tensor: loading tensor blk.15.ffn_up.scale
+0.00.310.678 D create_tensor: loading tensor blk.15.attn_q.input_scale
+0.00.310.679 D create_tensor: loading tensor blk.15.attn_k.input_scale
+0.00.310.681 D create_tensor: loading tensor blk.15.attn_v.input_scale
+0.00.310.683 D create_tensor: loading tensor blk.15.attn_output.input_scale
+0.00.310.685 D create_tensor: loading tensor blk.15.ffn_gate.input_scale
+0.00.310.686 D create_tensor: loading tensor blk.15.ffn_down.input_scale
+0.00.310.688 D create_tensor: loading tensor blk.15.ffn_up.input_scale
+0.00.310.690 D create_tensor: loading tensor blk.16.attn_q.scale
+0.00.310.692 D create_tensor: loading tensor blk.16.attn_k.scale
+0.00.310.693 D create_tensor: loading tensor blk.16.attn_v.scale
+0.00.310.695 D create_tensor: loading tensor blk.16.attn_output.scale
+0.00.310.696 D create_tensor: loading tensor blk.16.ffn_gate.scale
+0.00.310.698 D create_tensor: loading tensor blk.16.ffn_down.scale
+0.00.310.700 D create_tensor: loading tensor blk.16.ffn_up.scale
+0.00.310.701 D create_tensor: loading tensor blk.16.attn_q.input_scale
+0.00.310.703 D create_tensor: loading tensor blk.16.attn_k.input_scale
+0.00.310.705 D create_tensor: loading tensor blk.16.attn_v.input_scale
+0.00.310.706 D create_tensor: loading tensor blk.16.attn_output.input_scale
+0.00.310.708 D create_tensor: loading tensor blk.16.ffn_gate.input_scale
+0.00.310.709 D create_tensor: loading tensor blk.16.ffn_down.input_scale
+0.00.310.711 D create_tensor: loading tensor blk.16.ffn_up.input_scale
+0.00.310.713 D create_tensor: loading tensor blk.17.attn_q.scale
+0.00.310.714 D create_tensor: loading tensor blk.17.attn_k.scale
+0.00.310.716 D create_tensor: loading tensor blk.17.attn_v.scale
+0.00.310.718 D create_tensor: loading tensor blk.17.attn_output.scale
+0.00.310.719 D create_tensor: loading tensor blk.17.ffn_gate.scale
+0.00.310.721 D create_tensor: loading tensor blk.17.ffn_down.scale
+0.00.310.723 D create_tensor: loading tensor blk.17.ffn_up.scale
+0.00.310.724 D create_tensor: loading tensor blk.17.attn_q.input_scale
+0.00.310.726 D create_tensor: loading tensor blk.17.attn_k.input_scale
+0.00.310.728 D create_tensor: loading tensor blk.17.attn_v.input_scale
+0.00.310.729 D create_tensor: loading tensor blk.17.attn_output.input_scale
+0.00.310.731 D create_tensor: loading tensor blk.17.ffn_gate.input_scale
+0.00.310.733 D create_tensor: loading tensor blk.17.ffn_down.input_scale
+0.00.310.734 D create_tensor: loading tensor blk.17.ffn_up.input_scale
+0.00.310.736 D create_tensor: loading tensor blk.18.attn_q.scale
+0.00.310.738 D create_tensor: loading tensor blk.18.attn_k.scale
+0.00.310.739 D create_tensor: loading tensor blk.18.attn_v.scale
+0.00.310.741 D create_tensor: loading tensor blk.18.attn_output.scale
+0.00.310.743 D create_tensor: loading tensor blk.18.ffn_gate.scale
+0.00.310.745 D create_tensor: loading tensor blk.18.ffn_down.scale
+0.00.310.746 D create_tensor: loading tensor blk.18.ffn_up.scale
+0.00.310.748 D create_tensor: loading tensor blk.18.attn_q.input_scale
+0.00.310.750 D create_tensor: loading tensor blk.18.attn_k.input_scale
+0.00.310.752 D create_tensor: loading tensor blk.18.attn_v.input_scale
+0.00.310.753 D create_tensor: loading tensor blk.18.attn_output.input_scale
+0.00.310.926 D create_tensor: loading tensor blk.18.ffn_gate.input_scale
+0.00.310.928 D create_tensor: loading tensor blk.18.ffn_down.input_scale
+0.00.310.930 D create_tensor: loading tensor blk.18.ffn_up.input_scale
+0.00.310.932 D create_tensor: loading tensor blk.19.attn_q.scale
+0.00.310.934 D create_tensor: loading tensor blk.19.attn_k.scale
+0.00.310.936 D create_tensor: loading tensor blk.19.attn_v.scale
+0.00.310.937 D create_tensor: loading tensor blk.19.attn_output.scale
+0.00.310.939 D create_tensor: loading tensor blk.19.ffn_gate.scale
+0.00.310.941 D create_tensor: loading tensor blk.19.ffn_down.scale
+0.00.310.943 D create_tensor: loading tensor blk.19.ffn_up.scale
+0.00.310.945 D create_tensor: loading tensor blk.19.attn_q.input_scale
+0.00.310.946 D create_tensor: loading tensor blk.19.attn_k.input_scale
+0.00.310.948 D create_tensor: loading tensor blk.19.attn_v.input_scale
+0.00.310.950 D create_tensor: loading tensor blk.19.attn_output.input_scale
+0.00.310.952 D create_tensor: loading tensor blk.19.ffn_gate.input_scale
+0.00.310.953 D create_tensor: loading tensor blk.19.ffn_down.input_scale
+0.00.310.955 D create_tensor: loading tensor blk.19.ffn_up.input_scale
+0.00.310.957 D create_tensor: loading tensor blk.20.attn_q.scale
+0.00.310.959 D create_tensor: loading tensor blk.20.attn_k.scale
+0.00.310.961 D create_tensor: loading tensor blk.20.attn_v.scale
+0.00.310.963 D create_tensor: loading tensor blk.20.attn_output.scale
+0.00.310.965 D create_tensor: loading tensor blk.20.ffn_gate.scale
+0.00.310.967 D create_tensor: loading tensor blk.20.ffn_down.scale
+0.00.310.969 D create_tensor: loading tensor blk.20.ffn_up.scale
+0.00.310.971 D create_tensor: loading tensor blk.20.attn_q.input_scale
+0.00.310.972 D create_tensor: loading tensor blk.20.attn_k.input_scale
+0.00.310.974 D create_tensor: loading tensor blk.20.attn_v.input_scale
+0.00.310.976 D create_tensor: loading tensor blk.20.attn_output.input_scale
+0.00.310.978 D create_tensor: loading tensor blk.20.ffn_gate.input_scale
+0.00.310.980 D create_tensor: loading tensor blk.20.ffn_down.input_scale
+0.00.310.982 D create_tensor: loading tensor blk.20.ffn_up.input_scale
+0.00.310.984 D create_tensor: loading tensor blk.21.attn_q.scale
+0.00.310.986 D create_tensor: loading tensor blk.21.attn_k.scale
+0.00.310.988 D create_tensor: loading tensor blk.21.attn_v.scale
+0.00.310.989 D create_tensor: loading tensor blk.21.attn_output.scale
+0.00.310.991 D create_tensor: loading tensor blk.21.ffn_gate.scale
+0.00.310.993 D create_tensor: loading tensor blk.21.ffn_down.scale
+0.00.310.995 D create_tensor: loading tensor blk.21.ffn_up.scale
+0.00.310.997 D create_tensor: loading tensor blk.21.attn_q.input_scale
+0.00.310.999 D create_tensor: loading tensor blk.21.attn_k.input_scale
+0.00.311.001 D create_tensor: loading tensor blk.21.attn_v.input_scale
+0.00.311.002 D create_tensor: loading tensor blk.21.attn_output.input_scale
+0.00.311.004 D create_tensor: loading tensor blk.21.ffn_gate.input_scale
+0.00.311.006 D create_tensor: loading tensor blk.21.ffn_down.input_scale
+0.00.311.008 D create_tensor: loading tensor blk.21.ffn_up.input_scale
+0.00.311.010 D create_tensor: loading tensor blk.22.attn_q.scale
+0.00.311.012 D create_tensor: loading tensor blk.22.attn_k.scale
+0.00.311.013 D create_tensor: loading tensor blk.22.attn_v.scale
+0.00.311.015 D create_tensor: loading tensor blk.22.attn_output.scale
+0.00.311.017 D create_tensor: loading tensor blk.22.ffn_gate.scale
+0.00.311.019 D create_tensor: loading tensor blk.22.ffn_down.scale
+0.00.311.021 D create_tensor: loading tensor blk.22.ffn_up.scale
+0.00.311.023 D create_tensor: loading tensor blk.22.attn_q.input_scale
+0.00.311.025 D create_tensor: loading tensor blk.22.attn_k.input_scale
+0.00.311.027 D create_tensor: loading tensor blk.22.attn_v.input_scale
+0.00.311.029 D create_tensor: loading tensor blk.22.attn_output.input_scale
+0.00.311.031 D create_tensor: loading tensor blk.22.ffn_gate.input_scale
+0.00.311.033 D create_tensor: loading tensor blk.22.ffn_down.input_scale
+0.00.311.035 D create_tensor: loading tensor blk.22.ffn_up.input_scale
+0.00.311.036 D create_tensor: loading tensor blk.23.attn_q.scale
+0.00.311.038 D create_tensor: loading tensor blk.23.attn_k.scale
+0.00.311.040 D create_tensor: loading tensor blk.23.attn_v.scale
+0.00.311.042 D create_tensor: loading tensor blk.23.attn_output.scale
+0.00.311.044 D create_tensor: loading tensor blk.23.ffn_gate.scale
+0.00.311.046 D create_tensor: loading tensor blk.23.ffn_down.scale
+0.00.311.048 D create_tensor: loading tensor blk.23.ffn_up.scale
+0.00.311.050 D create_tensor: loading tensor blk.23.attn_q.input_scale
+0.00.311.052 D create_tensor: loading tensor blk.23.attn_k.input_scale
+0.00.311.054 D create_tensor: loading tensor blk.23.attn_v.input_scale
+0.00.311.056 D create_tensor: loading tensor blk.23.attn_output.input_scale
+0.00.311.058 D create_tensor: loading tensor blk.23.ffn_gate.input_scale
+0.00.311.059 D create_tensor: loading tensor blk.23.ffn_down.input_scale
+0.00.311.061 D create_tensor: loading tensor blk.23.ffn_up.input_scale
+0.00.311.063 D create_tensor: loading tensor blk.24.attn_q.scale
+0.00.311.065 D create_tensor: loading tensor blk.24.attn_k.scale
+0.00.311.067 D create_tensor: loading tensor blk.24.attn_v.scale
+0.00.311.069 D create_tensor: loading tensor blk.24.attn_output.scale
+0.00.311.071 D create_tensor: loading tensor blk.24.ffn_gate.scale
+0.00.311.073 D create_tensor: loading tensor blk.24.ffn_down.scale
+0.00.311.075 D create_tensor: loading tensor blk.24.ffn_up.scale
+0.00.311.077 D create_tensor: loading tensor blk.24.attn_q.input_scale
+0.00.311.079 D create_tensor: loading tensor blk.24.attn_k.input_scale
+0.00.311.081 D create_tensor: loading tensor blk.24.attn_v.input_scale
+0.00.311.083 D create_tensor: loading tensor blk.24.attn_output.input_scale
+0.00.311.085 D create_tensor: loading tensor blk.24.ffn_gate.input_scale
+0.00.311.087 D create_tensor: loading tensor blk.24.ffn_down.input_scale
+0.00.311.089 D create_tensor: loading tensor blk.24.ffn_up.input_scale
+0.00.311.091 D create_tensor: loading tensor blk.25.attn_q.scale
+0.00.311.093 D create_tensor: loading tensor blk.25.attn_k.scale
+0.00.311.095 D create_tensor: loading tensor blk.25.attn_v.scale
+0.00.311.097 D create_tensor: loading tensor blk.25.attn_output.scale
+0.00.311.099 D create_tensor: loading tensor blk.25.ffn_gate.scale
+0.00.311.101 D create_tensor: loading tensor blk.25.ffn_down.scale
+0.00.311.103 D create_tensor: loading tensor blk.25.ffn_up.scale
+0.00.311.106 D create_tensor: loading tensor blk.25.attn_q.input_scale
+0.00.311.108 D create_tensor: loading tensor blk.25.attn_k.input_scale
+0.00.311.110 D create_tensor: loading tensor blk.25.attn_v.input_scale
+0.00.311.112 D create_tensor: loading tensor blk.25.attn_output.input_scale
+0.00.311.114 D create_tensor: loading tensor blk.25.ffn_gate.input_scale
+0.00.311.116 D create_tensor: loading tensor blk.25.ffn_down.input_scale
+0.00.311.118 D create_tensor: loading tensor blk.25.ffn_up.input_scale
+0.00.311.120 D create_tensor: loading tensor blk.26.attn_q.scale
+0.00.311.122 D create_tensor: loading tensor blk.26.attn_k.scale
+0.00.311.124 D create_tensor: loading tensor blk.26.attn_v.scale
+0.00.311.126 D create_tensor: loading tensor blk.26.attn_output.scale
+0.00.311.128 D create_tensor: loading tensor blk.26.ffn_gate.scale
+0.00.311.131 D create_tensor: loading tensor blk.26.ffn_down.scale
+0.00.311.133 D create_tensor: loading tensor blk.26.ffn_up.scale
+0.00.311.135 D create_tensor: loading tensor blk.26.attn_q.input_scale
+0.00.311.137 D create_tensor: loading tensor blk.26.attn_k.input_scale
+0.00.311.139 D create_tensor: loading tensor blk.26.attn_v.input_scale
+0.00.311.141 D create_tensor: loading tensor blk.26.attn_output.input_scale
+0.00.311.143 D create_tensor: loading tensor blk.26.ffn_gate.input_scale
+0.00.311.145 D create_tensor: loading tensor blk.26.ffn_down.input_scale
+0.00.311.148 D create_tensor: loading tensor blk.26.ffn_up.input_scale
+0.00.311.150 D create_tensor: loading tensor blk.27.attn_q.scale
+0.00.311.152 D create_tensor: loading tensor blk.27.attn_k.scale
+0.00.311.154 D create_tensor: loading tensor blk.27.attn_v.scale
+0.00.311.157 D create_tensor: loading tensor blk.27.attn_output.scale
+0.00.311.159 D create_tensor: loading tensor blk.27.ffn_gate.scale
+0.00.311.162 D create_tensor: loading tensor blk.27.ffn_down.scale
+0.00.311.164 D create_tensor: loading tensor blk.27.ffn_up.scale
+0.00.311.167 D create_tensor: loading tensor blk.27.attn_q.input_scale
+0.00.311.169 D create_tensor: loading tensor blk.27.attn_k.input_scale
+0.00.311.171 D create_tensor: loading tensor blk.27.attn_v.input_scale
+0.00.311.174 D create_tensor: loading tensor blk.27.attn_output.input_scale
+0.00.311.176 D create_tensor: loading tensor blk.27.ffn_gate.input_scale
+0.00.311.179 D create_tensor: loading tensor blk.27.ffn_down.input_scale
+0.00.311.181 D create_tensor: loading tensor blk.27.ffn_up.input_scale
+0.00.311.185 D done_getting_tensors: tensor 'token_embd.weight' (q4_K) (and 0 others) cannot be used with preferred buffer type CPU_REPACK, using CPU instead
+0.00.339.070 I load_tensors: offloading output layer to GPU
+0.00.339.072 I load_tensors: offloading 27 repeating layers to GPU
+0.00.339.072 I load_tensors: offloaded 29/29 layers to GPU
+0.00.339.073 I load_tensors:          CPU model buffer size =     0.00 MiB
+0.00.339.074 I load_tensors:         MTL0 model buffer size =     0.00 MiB
+0.00.339.074 I load_tensors: RPC0[192.168.1.242:50052] model buffer size =     0.00 MiB
+0.00.339.641 I llama_context: constructing llama_context
+0.00.339.643 I llama_context: n_seq_max             = 1
+0.00.339.644 I llama_context: n_ctx                 = 2048
+0.00.339.644 I llama_context: n_ctx_seq             = 2048
+0.00.339.644 I llama_context: n_batch               = 2048
+0.00.339.644 I llama_context: n_ubatch              = 512
+0.00.339.645 I llama_context: causal_attn           = 1
+0.00.339.645 I llama_context: flash_attn            = auto
+0.00.339.645 I llama_context: kv_unified            = false
+0.00.339.646 I llama_context: freq_base             = 1000000.0
+0.00.339.646 I llama_context: freq_scale            = 1
+0.00.339.647 I llama_context: n_rs_seq              = 0
+0.00.339.647 I llama_context: n_outputs_max         = 1
+0.00.339.647 I llama_context: n_outputs_max_per_seq = 1
+0.00.339.647 I llama_context: n_ctx_seq (2048) < n_ctx_train (32768) -- the full capacity of the model will not be utilized
+0.00.362.182 I ggml_metal_init: allocating
+0.00.362.223 I ggml_metal_init: found device: Apple M3
+0.00.362.229 I ggml_metal_init: picking default device: Apple M3
+0.00.362.278 I ggml_metal_init: use fusion         = true
+0.00.362.279 I ggml_metal_init: use concurrency    = true
+0.00.362.279 I ggml_metal_init: use graph optimize = true
+0.00.362.288 D set_abort_callback: call
+0.00.362.353 I llama_context:        CPU  output buffer size =     0.58 MiB
+0.00.362.381 D llama_kv_cache: layer   0: dev = RPC0
+0.00.362.387 D llama_kv_cache: layer   1: dev = RPC0
+0.00.362.389 D llama_kv_cache: layer   2: dev = RPC0
+0.00.362.390 D llama_kv_cache: layer   3: dev = RPC0
+0.00.362.391 D llama_kv_cache: layer   4: dev = RPC0
+0.00.362.393 D llama_kv_cache: layer   5: dev = RPC0
+0.00.362.394 D llama_kv_cache: layer   6: dev = RPC0
+0.00.362.395 D llama_kv_cache: layer   7: dev = RPC0
+0.00.362.396 D llama_kv_cache: layer   8: dev = RPC0
+0.00.362.398 D llama_kv_cache: layer   9: dev = RPC0
+0.00.362.399 D llama_kv_cache: layer  10: dev = RPC0
+0.00.362.400 D llama_kv_cache: layer  11: dev = RPC0
+0.00.362.403 D llama_kv_cache: layer  12: dev = RPC0
+0.00.362.404 D llama_kv_cache: layer  13: dev = RPC0
+0.00.362.405 D llama_kv_cache: layer  14: dev = RPC0
+0.00.362.406 D llama_kv_cache: layer  15: dev = MTL0
+0.00.362.410 D llama_kv_cache: layer  16: dev = MTL0
+0.00.362.411 D llama_kv_cache: layer  17: dev = MTL0
+0.00.362.412 D llama_kv_cache: layer  18: dev = MTL0
+0.00.362.413 D llama_kv_cache: layer  19: dev = MTL0
+0.00.362.414 D llama_kv_cache: layer  20: dev = MTL0
+0.00.362.415 D llama_kv_cache: layer  21: dev = MTL0
+0.00.362.416 D llama_kv_cache: layer  22: dev = MTL0
+0.00.362.416 D llama_kv_cache: layer  23: dev = MTL0
+0.00.362.418 D llama_kv_cache: layer  24: dev = MTL0
+0.00.362.418 D llama_kv_cache: layer  25: dev = MTL0
+0.00.362.419 D llama_kv_cache: layer  26: dev = MTL0
+0.00.362.422 D llama_kv_cache: layer  27: dev = MTL0
+0.00.362.423 I llama_kv_cache:       MTL0 KV buffer size =     0.00 MiB
+0.00.362.424 I llama_kv_cache: RPC0[192.168.1.242:50052] KV buffer size =     0.00 MiB
+0.00.362.427 I llama_kv_cache: size =  112.00 MiB (  2048 cells,  28 layers,  1/1 seqs), K (f16):   56.00 MiB, V (f16):   56.00 MiB
+0.00.362.427 I llama_kv_cache: attn_rot_k = 0, n_embd_head_k_all = 128
+0.00.362.428 I llama_kv_cache: attn_rot_v = 0, n_embd_head_k_all = 128
+0.00.362.428 D llama_context: enumerating backends
+0.00.362.430 D llama_context: backend_ptrs.size() = 4
+0.00.372.171 I sched_reserve: reserving ...
+0.00.372.176 D sched_reserve: max_nodes = 2712
+0.00.372.337 D sched_reserve: reserving full memory module
+0.00.372.346 D sched_reserve: worst-case: n_tokens = 512, n_seqs = 1, n_outputs = 1
+0.00.372.349 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.00.373.094 I resolve_fused_ops: Flash Attention enabled
+0.00.373.096 I resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+0.00.373.097 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.00.373.684 I resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+0.00.373.686 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.00.374.259 I resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+0.00.374.261 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.00.374.829 I resolve_fused_ops: fused DeepSeek V4 HC post enabled
+0.00.374.831 D graph_reserve: reserving a graph for ubatch with n_tokens =  512, n_seqs =  1, n_outputs =    1
+0.00.424.597 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.00.425.569 D graph_reserve: reserving a graph for ubatch with n_tokens =  512, n_seqs =  1, n_outputs =    1
+0.00.426.489 I sched_reserve: RPC0[192.168.1.242:50052] compute buffer size =   127.01 MiB
+0.00.426.492 I sched_reserve:       MTL0 compute buffer size =   127.01 MiB
+0.00.426.493 I sched_reserve:        CPU compute buffer size =    16.01 MiB
+0.00.426.493 I sched_reserve:        CPU compute buffer size =    16.01 MiB
+0.00.426.494 I sched_reserve: graph nodes  = 958
+0.00.426.494 I sched_reserve: graph splits = 3
+0.00.426.495 I sched_reserve: reserve took 54.32 ms, sched copies = 1
+0.00.448.463 I common_memory_breakdown_print: | memory breakdown [MiB]         | total    free    self   model   context   compute    unaccounted |
+0.00.448.472 I common_memory_breakdown_print: |   - RPC0 (192.168.1.242:50052) | 18186 = 18185 + (2182 =  1995 +      60 +     127) +       -2182 |
+0.00.448.472 I common_memory_breakdown_print: |   - MTL0 (Apple M3)            | 12124 = 12123 + (2351 =  2172 +      52 +     127) +       -2350 |
+0.00.448.473 I common_memory_breakdown_print: |   - Host                       |                   324 =   292 +       0 +      32                |
+0.00.448.600 I ggml_metal_free: deallocating
+0.00.469.164 I common_params_fit_impl: projected memory use with initial parameters [MiB]:
+0.00.469.169 I common_params_fit_impl:   - RPC0 (192.168.1.242:50052):  18186 total,   2182 used,  16002 free vs. target of   1024
+0.00.469.170 I common_params_fit_impl:   - MTL0 (Apple M3)           :  12124 total,   2351 used,   9772 free vs. target of   1024
+0.00.469.171 I common_params_fit_impl: projected to use 4534 MiB of device memory vs. 30309 MiB of free device memory
+0.00.469.171 I common_params_fit_impl: targets for free memory can be met on all devices, no changes needed
+0.00.469.172 I common_fit_params: successfully fit params to free device memory
+0.00.469.176 I common_fit_params: fitting params to free memory took 0.37 seconds
+0.00.503.239 I llama_model_loader: loaded meta data with 38 key-value pairs and 339 tensors from /Users/ohadrosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf (version GGUF V3 (latest))
+0.00.503.249 I llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+0.00.503.252 I llama_model_loader: - kv   0:                       general.architecture str              = qwen2
+0.00.503.253 I llama_model_loader: - kv   1:                               general.type str              = model
+0.00.503.253 I llama_model_loader: - kv   2:                               general.name str              = Qwen2.5 7B Instruct
+0.00.503.254 I llama_model_loader: - kv   3:                           general.finetune str              = Instruct
+0.00.503.254 I llama_model_loader: - kv   4:                           general.basename str              = Qwen2.5
+0.00.503.254 I llama_model_loader: - kv   5:                         general.size_label str              = 7B
+0.00.503.255 I llama_model_loader: - kv   6:                            general.license str              = apache-2.0
+0.00.503.256 I llama_model_loader: - kv   7:                       general.license.link str              = https://huggingface.co/Qwen/Qwen2.5-7...
+0.00.503.257 I llama_model_loader: - kv   8:                   general.base_model.count u32              = 1
+0.00.503.257 I llama_model_loader: - kv   9:                  general.base_model.0.name str              = Qwen2.5 7B
+0.00.503.258 I llama_model_loader: - kv  10:          general.base_model.0.organization str              = Qwen
+0.00.503.258 I llama_model_loader: - kv  11:              general.base_model.0.repo_url str              = https://huggingface.co/Qwen/Qwen2.5-7B
+0.00.503.263 I llama_model_loader: - kv  12:                               general.tags arr[str,2]       = ["chat", "text-generation"]
+0.00.503.264 I llama_model_loader: - kv  13:                          general.languages arr[str,1]       = ["en"]
+0.00.503.264 I llama_model_loader: - kv  14:                          qwen2.block_count u32              = 28
+0.00.503.265 I llama_model_loader: - kv  15:                       qwen2.context_length u32              = 32768
+0.00.503.265 I llama_model_loader: - kv  16:                     qwen2.embedding_length u32              = 3584
+0.00.503.266 I llama_model_loader: - kv  17:                  qwen2.feed_forward_length u32              = 18944
+0.00.503.266 I llama_model_loader: - kv  18:                 qwen2.attention.head_count u32              = 28
+0.00.503.266 I llama_model_loader: - kv  19:              qwen2.attention.head_count_kv u32              = 4
+0.00.503.268 I llama_model_loader: - kv  20:                       qwen2.rope.freq_base f32              = 1000000.000000
+0.00.503.269 I llama_model_loader: - kv  21:     qwen2.attention.layer_norm_rms_epsilon f32              = 0.000001
+0.00.503.270 I llama_model_loader: - kv  22:                          general.file_type u32              = 15
+0.00.503.270 I llama_model_loader: - kv  23:                       tokenizer.ggml.model str              = gpt2
+0.00.503.270 I llama_model_loader: - kv  24:                         tokenizer.ggml.pre str              = qwen2
+0.00.517.026 I llama_model_loader: - kv  25:                      tokenizer.ggml.tokens arr[str,152064]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+0.00.520.811 I llama_model_loader: - kv  26:                  tokenizer.ggml.token_type arr[i32,152064]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+0.00.533.781 I llama_model_loader: - kv  27:                      tokenizer.ggml.merges arr[str,151387]  = ["Ġ Ġ", "ĠĠ ĠĠ", "i n", "Ġ t",...
+0.00.533.784 I llama_model_loader: - kv  28:                tokenizer.ggml.eos_token_id u32              = 151645
+0.00.533.784 I llama_model_loader: - kv  29:            tokenizer.ggml.padding_token_id u32              = 151643
+0.00.533.785 I llama_model_loader: - kv  30:                tokenizer.ggml.bos_token_id u32              = 151643
+0.00.533.785 I llama_model_loader: - kv  31:               tokenizer.ggml.add_bos_token bool             = false
+0.00.533.788 I llama_model_loader: - kv  32:                    tokenizer.chat_template str              = {%- if tools %}\n    {{- '<|im_start|>...
+0.00.533.788 I llama_model_loader: - kv  33:               general.quantization_version u32              = 2
+0.00.533.789 I llama_model_loader: - kv  34:                      quantize.imatrix.file str              = /models_out/Qwen2.5-7B-Instruct-GGUF/...
+0.00.533.790 I llama_model_loader: - kv  35:                   quantize.imatrix.dataset str              = /training_dir/calibration_datav3.txt
+0.00.533.790 I llama_model_loader: - kv  36:             quantize.imatrix.entries_count i32              = 196
+0.00.533.791 I llama_model_loader: - kv  37:              quantize.imatrix.chunks_count i32              = 128
+0.00.533.791 I llama_model_loader: - type  f32:  141 tensors
+0.00.533.792 I llama_model_loader: - type q4_K:  169 tensors
+0.00.533.792 I llama_model_loader: - type q6_K:   29 tensors
+0.00.533.794 I print_info: file format = GGUF V3 (latest)
+0.00.533.795 I print_info: file type   = Q4_K - Medium
+0.00.533.795 I print_info: file size   = 4.36 GiB (4.91 BPW) 
+0.00.562.800 I llama_prepare_model_devices: using device RPC0 (192.168.1.242:50052) (unknown id) - 18185 MiB free
+0.00.562.801 I llama_prepare_model_devices: using device MTL0 (Apple M3) (unknown id) - 12123 MiB free
+0.00.587.014 D init_tokenizer: initializing tokenizer for type 2
+0.00.589.142 I load: 0 unused tokens
+0.00.589.152 D load: control token: 151659 '<|fim_prefix|>' is not marked as EOG
+0.00.589.153 D load: control token: 151656 '<|video_pad|>' is not marked as EOG
+0.00.589.153 D load: control token: 151655 '<|image_pad|>' is not marked as EOG
+0.00.589.153 D load: control token: 151653 '<|vision_end|>' is not marked as EOG
+0.00.589.154 D load: control token: 151652 '<|vision_start|>' is not marked as EOG
+0.00.589.154 D load: control token: 151651 '<|quad_end|>' is not marked as EOG
+0.00.589.154 D load: control token: 151649 '<|box_end|>' is not marked as EOG
+0.00.589.154 D load: control token: 151648 '<|box_start|>' is not marked as EOG
+0.00.589.155 D load: control token: 151646 '<|object_ref_start|>' is not marked as EOG
+0.00.589.155 D load: control token: 151644 '<|im_start|>' is not marked as EOG
+0.00.589.332 D load: control token: 151661 '<|fim_suffix|>' is not marked as EOG
+0.00.589.349 D load: control token: 151647 '<|object_ref_end|>' is not marked as EOG
+0.00.589.679 W load: control-looking token: 128247 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.00.589.779 D load: control token: 151660 '<|fim_middle|>' is not marked as EOG
+0.00.590.044 D load: control token: 151654 '<|vision_pad|>' is not marked as EOG
+0.00.590.197 D load: control token: 151650 '<|quad_start|>' is not marked as EOG
+0.00.596.599 I load: printing all EOG tokens:
+0.00.596.600 I load:   - 128247 ('</s>')
+0.00.596.601 I load:   - 151643 ('<|endoftext|>')
+0.00.596.601 I load:   - 151645 ('<|im_end|>')
+0.00.596.601 I load:   - 151662 ('<|fim_pad|>')
+0.00.596.601 I load:   - 151663 ('<|repo_name|>')
+0.00.596.602 I load:   - 151664 ('<|file_sep|>')
+0.00.596.666 I load: special tokens cache size = 23
+0.00.620.059 I load: token to piece cache size = 0.9310 MB
+0.00.620.066 I print_info: arch                  = qwen2
+0.00.620.067 I print_info: vocab_only            = 0
+0.00.620.067 I print_info: no_alloc              = 0
+0.00.620.067 I print_info: n_ctx_train           = 32768
+0.00.620.067 I print_info: n_embd_inp            = 3584
+0.00.620.068 I print_info: n_embd                = 3584
+0.00.620.068 I print_info: n_embd_out            = 3584
+0.00.620.068 I print_info: n_layer               = 28
+0.00.620.068 I print_info: n_layer_all           = 28
+0.00.620.073 I print_info: n_head                = 28
+0.00.620.074 I print_info: n_head_kv             = 4
+0.00.620.074 I print_info: n_rot                 = 128
+0.00.620.075 I print_info: n_swa                 = 0
+0.00.620.075 I print_info: is_swa_any            = 0
+0.00.620.075 I print_info: non_causal_type       = 0
+0.00.620.075 I print_info: n_embd_head_k         = 128
+0.00.620.075 I print_info: n_embd_head_v         = 128
+0.00.620.076 I print_info: n_gqa                 = 7
+0.00.620.077 I print_info: n_embd_k_gqa          = 512
+0.00.620.077 I print_info: n_embd_v_gqa          = 512
+0.00.620.078 I print_info: f_norm_eps            = 0.0e+00
+0.00.620.078 I print_info: f_norm_rms_eps        = 1.0e-06
+0.00.620.079 I print_info: f_clamp_kqv           = 0.0e+00
+0.00.620.079 I print_info: f_max_alibi_bias      = 0.0e+00
+0.00.620.079 I print_info: f_logit_scale         = 0.0e+00
+0.00.620.079 I print_info: f_attn_scale          = 0.0e+00
+0.00.620.080 I print_info: f_attn_value_scale    = 0.0000
+0.00.620.080 I print_info: n_ff                  = 18944
+0.00.620.080 I print_info: n_expert              = 0
+0.00.620.081 I print_info: n_expert_used         = 0
+0.00.620.081 I print_info: n_expert_groups       = 0
+0.00.620.081 I print_info: n_group_used          = 0
+0.00.620.081 I print_info: causal attn           = 1
+0.00.620.081 I print_info: pooling type          = -1
+0.00.620.081 I print_info: rope type             = 2
+0.00.620.082 I print_info: rope scaling          = linear
+0.00.620.082 I print_info: freq_base_train       = 1000000.0
+0.00.620.082 I print_info: freq_scale_train      = 1
+0.00.620.082 I print_info: n_ctx_orig_yarn       = 32768
+0.00.620.082 I print_info: rope_yarn_log_mul     = 0.0000
+0.00.620.083 I print_info: rope_finetuned        = unknown
+0.00.620.084 I print_info: model type            = 7B
+0.00.620.084 I print_info: model params          = 7.62 B
+0.00.620.084 I print_info: general.name          = Qwen2.5 7B Instruct
+0.00.620.085 I print_info: vocab type            = BPE
+0.00.620.085 I print_info: n_vocab               = 152064
+0.00.620.085 I print_info: n_merges              = 151387
+0.00.620.086 I print_info: BOS token             = 151643 '<|endoftext|>'
+0.00.620.086 I print_info: EOS token             = 151645 '<|im_end|>'
+0.00.620.086 I print_info: EOT token             = 151645 '<|im_end|>'
+0.00.620.086 I print_info: PAD token             = 151643 '<|endoftext|>'
+0.00.620.086 I print_info: LF token              = 198 'Ċ'
+0.00.620.087 I print_info: FIM PRE token         = 151659 '<|fim_prefix|>'
+0.00.620.087 I print_info: FIM SUF token         = 151661 '<|fim_suffix|>'
+0.00.620.087 I print_info: FIM MID token         = 151660 '<|fim_middle|>'
+0.00.620.087 I print_info: FIM PAD token         = 151662 '<|fim_pad|>'
+0.00.620.087 I print_info: FIM REP token         = 151663 '<|repo_name|>'
+0.00.620.088 I print_info: FIM SEP token         = 151664 '<|file_sep|>'
+0.00.620.088 I print_info: EOG token             = 128247 '</s>'
+0.00.620.088 I print_info: EOG token             = 151643 '<|endoftext|>'
+0.00.620.088 I print_info: EOG token             = 151645 '<|im_end|>'
+0.00.620.088 I print_info: EOG token             = 151662 '<|fim_pad|>'
+0.00.620.089 I print_info: EOG token             = 151663 '<|repo_name|>'
+0.00.620.089 I print_info: EOG token             = 151664 '<|file_sep|>'
+0.00.620.089 I print_info: max token length      = 256
+0.00.678.268 I load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+0.00.678.277 D load_tensors: layer   0 assigned to device RPC0, is_swa = 0
+0.00.678.278 D load_tensors: layer   1 assigned to device RPC0, is_swa = 0
+0.00.678.278 D load_tensors: layer   2 assigned to device RPC0, is_swa = 0
+0.00.678.278 D load_tensors: layer   3 assigned to device RPC0, is_swa = 0
+0.00.678.278 D load_tensors: layer   4 assigned to device RPC0, is_swa = 0
+0.00.678.279 D load_tensors: layer   5 assigned to device RPC0, is_swa = 0
+0.00.678.279 D load_tensors: layer   6 assigned to device RPC0, is_swa = 0
+0.00.678.279 D load_tensors: layer   7 assigned to device RPC0, is_swa = 0
+0.00.678.279 D load_tensors: layer   8 assigned to device RPC0, is_swa = 0
+0.00.678.279 D load_tensors: layer   9 assigned to device RPC0, is_swa = 0
+0.00.678.280 D load_tensors: layer  10 assigned to device RPC0, is_swa = 0
+0.00.678.280 D load_tensors: layer  11 assigned to device RPC0, is_swa = 0
+0.00.678.280 D load_tensors: layer  12 assigned to device RPC0, is_swa = 0
+0.00.678.280 D load_tensors: layer  13 assigned to device RPC0, is_swa = 0
+0.00.678.281 D load_tensors: layer  14 assigned to device RPC0, is_swa = 0
+0.00.678.281 D load_tensors: layer  15 assigned to device MTL0, is_swa = 0
+0.00.678.281 D load_tensors: layer  16 assigned to device MTL0, is_swa = 0
+0.00.678.281 D load_tensors: layer  17 assigned to device MTL0, is_swa = 0
+0.00.678.281 D load_tensors: layer  18 assigned to device MTL0, is_swa = 0
+0.00.678.282 D load_tensors: layer  19 assigned to device MTL0, is_swa = 0
+0.00.678.282 D load_tensors: layer  20 assigned to device MTL0, is_swa = 0
+0.00.678.282 D load_tensors: layer  21 assigned to device MTL0, is_swa = 0
+0.00.678.282 D load_tensors: layer  22 assigned to device MTL0, is_swa = 0
+0.00.678.282 D load_tensors: layer  23 assigned to device MTL0, is_swa = 0
+0.00.678.283 D load_tensors: layer  24 assigned to device MTL0, is_swa = 0
+0.00.678.283 D load_tensors: layer  25 assigned to device MTL0, is_swa = 0
+0.00.678.283 D load_tensors: layer  26 assigned to device MTL0, is_swa = 0
+0.00.678.283 D load_tensors: layer  27 assigned to device MTL0, is_swa = 0
+0.00.678.284 D load_tensors: layer  28 assigned to device MTL0, is_swa = 0
+0.00.678.288 D create_tensor: loading tensor token_embd.weight
+0.00.678.310 D create_tensor: loading tensor output_norm.weight
+0.00.678.318 D create_tensor: loading tensor output.weight
+0.00.678.325 D create_tensor: loading tensor output.bias
+0.00.678.326 D create_tensor: loading tensor blk.0.attn_norm.weight
+0.00.678.334 D create_tensor: loading tensor blk.0.attn_qkv.weight
+0.00.678.335 D create_tensor: loading tensor blk.0.attn_q.weight
+0.00.678.341 D create_tensor: loading tensor blk.0.attn_k.weight
+0.00.678.345 D create_tensor: loading tensor blk.0.attn_v.weight
+0.00.678.350 D create_tensor: loading tensor blk.0.attn_q.bias
+0.00.678.354 D create_tensor: loading tensor blk.0.attn_k.bias
+0.00.678.359 D create_tensor: loading tensor blk.0.attn_v.bias
+0.00.678.363 D create_tensor: loading tensor blk.0.attn_output.weight
+0.00.678.368 D create_tensor: loading tensor blk.0.ffn_norm.weight
+0.00.678.372 D create_tensor: loading tensor blk.0.ffn_gate.weight
+0.00.678.376 D create_tensor: loading tensor blk.0.ffn_down.weight
+0.00.678.381 D create_tensor: loading tensor blk.0.ffn_up.weight
+0.00.678.385 D create_tensor: loading tensor blk.1.attn_norm.weight
+0.00.678.390 D create_tensor: loading tensor blk.1.attn_qkv.weight
+0.00.678.391 D create_tensor: loading tensor blk.1.attn_q.weight
+0.00.678.395 D create_tensor: loading tensor blk.1.attn_k.weight
+0.00.678.399 D create_tensor: loading tensor blk.1.attn_v.weight
+0.00.678.403 D create_tensor: loading tensor blk.1.attn_q.bias
+0.00.678.407 D create_tensor: loading tensor blk.1.attn_k.bias
+0.00.678.412 D create_tensor: loading tensor blk.1.attn_v.bias
+0.00.678.416 D create_tensor: loading tensor blk.1.attn_output.weight
+0.00.678.421 D create_tensor: loading tensor blk.1.ffn_norm.weight
+0.00.678.424 D create_tensor: loading tensor blk.1.ffn_gate.weight
+0.00.678.428 D create_tensor: loading tensor blk.1.ffn_down.weight
+0.00.678.432 D create_tensor: loading tensor blk.1.ffn_up.weight
+0.00.678.436 D create_tensor: loading tensor blk.2.attn_norm.weight
+0.00.678.441 D create_tensor: loading tensor blk.2.attn_qkv.weight
+0.00.678.443 D create_tensor: loading tensor blk.2.attn_q.weight
+0.00.678.447 D create_tensor: loading tensor blk.2.attn_k.weight
+0.00.678.452 D create_tensor: loading tensor blk.2.attn_v.weight
+0.00.678.457 D create_tensor: loading tensor blk.2.attn_q.bias
+0.00.678.460 D create_tensor: loading tensor blk.2.attn_k.bias
+0.00.678.465 D create_tensor: loading tensor blk.2.attn_v.bias
+0.00.678.469 D create_tensor: loading tensor blk.2.attn_output.weight
+0.00.678.474 D create_tensor: loading tensor blk.2.ffn_norm.weight
+0.00.678.478 D create_tensor: loading tensor blk.2.ffn_gate.weight
+0.00.678.482 D create_tensor: loading tensor blk.2.ffn_down.weight
+0.00.678.486 D create_tensor: loading tensor blk.2.ffn_up.weight
+0.00.678.491 D create_tensor: loading tensor blk.3.attn_norm.weight
+0.00.678.495 D create_tensor: loading tensor blk.3.attn_qkv.weight
+0.00.678.496 D create_tensor: loading tensor blk.3.attn_q.weight
+0.00.678.500 D create_tensor: loading tensor blk.3.attn_k.weight
+0.00.678.504 D create_tensor: loading tensor blk.3.attn_v.weight
+0.00.678.509 D create_tensor: loading tensor blk.3.attn_q.bias
+0.00.678.514 D create_tensor: loading tensor blk.3.attn_k.bias
+0.00.678.518 D create_tensor: loading tensor blk.3.attn_v.bias
+0.00.678.524 D create_tensor: loading tensor blk.3.attn_output.weight
+0.00.678.529 D create_tensor: loading tensor blk.3.ffn_norm.weight
+0.00.678.533 D create_tensor: loading tensor blk.3.ffn_gate.weight
+0.00.678.537 D create_tensor: loading tensor blk.3.ffn_down.weight
+0.00.678.541 D create_tensor: loading tensor blk.3.ffn_up.weight
+0.00.678.545 D create_tensor: loading tensor blk.4.attn_norm.weight
+0.00.678.549 D create_tensor: loading tensor blk.4.attn_qkv.weight
+0.00.678.551 D create_tensor: loading tensor blk.4.attn_q.weight
+0.00.678.555 D create_tensor: loading tensor blk.4.attn_k.weight
+0.00.678.559 D create_tensor: loading tensor blk.4.attn_v.weight
+0.00.678.564 D create_tensor: loading tensor blk.4.attn_q.bias
+0.00.678.568 D create_tensor: loading tensor blk.4.attn_k.bias
+0.00.678.572 D create_tensor: loading tensor blk.4.attn_v.bias
+0.00.678.576 D create_tensor: loading tensor blk.4.attn_output.weight
+0.00.678.580 D create_tensor: loading tensor blk.4.ffn_norm.weight
+0.00.678.585 D create_tensor: loading tensor blk.4.ffn_gate.weight
+0.00.678.588 D create_tensor: loading tensor blk.4.ffn_down.weight
+0.00.678.592 D create_tensor: loading tensor blk.4.ffn_up.weight
+0.00.678.596 D create_tensor: loading tensor blk.5.attn_norm.weight
+0.00.678.600 D create_tensor: loading tensor blk.5.attn_qkv.weight
+0.00.678.602 D create_tensor: loading tensor blk.5.attn_q.weight
+0.00.678.606 D create_tensor: loading tensor blk.5.attn_k.weight
+0.00.678.610 D create_tensor: loading tensor blk.5.attn_v.weight
+0.00.678.614 D create_tensor: loading tensor blk.5.attn_q.bias
+0.00.678.618 D create_tensor: loading tensor blk.5.attn_k.bias
+0.00.678.622 D create_tensor: loading tensor blk.5.attn_v.bias
+0.00.678.626 D create_tensor: loading tensor blk.5.attn_output.weight
+0.00.678.630 D create_tensor: loading tensor blk.5.ffn_norm.weight
+0.00.678.634 D create_tensor: loading tensor blk.5.ffn_gate.weight
+0.00.678.638 D create_tensor: loading tensor blk.5.ffn_down.weight
+0.00.678.642 D create_tensor: loading tensor blk.5.ffn_up.weight
+0.00.678.647 D create_tensor: loading tensor blk.6.attn_norm.weight
+0.00.678.651 D create_tensor: loading tensor blk.6.attn_qkv.weight
+0.00.678.653 D create_tensor: loading tensor blk.6.attn_q.weight
+0.00.678.658 D create_tensor: loading tensor blk.6.attn_k.weight
+0.00.678.662 D create_tensor: loading tensor blk.6.attn_v.weight
+0.00.678.667 D create_tensor: loading tensor blk.6.attn_q.bias
+0.00.678.670 D create_tensor: loading tensor blk.6.attn_k.bias
+0.00.678.674 D create_tensor: loading tensor blk.6.attn_v.bias
+0.00.678.678 D create_tensor: loading tensor blk.6.attn_output.weight
+0.00.678.683 D create_tensor: loading tensor blk.6.ffn_norm.weight
+0.00.678.687 D create_tensor: loading tensor blk.6.ffn_gate.weight
+0.00.678.692 D create_tensor: loading tensor blk.6.ffn_down.weight
+0.00.678.696 D create_tensor: loading tensor blk.6.ffn_up.weight
+0.00.678.700 D create_tensor: loading tensor blk.7.attn_norm.weight
+0.00.678.705 D create_tensor: loading tensor blk.7.attn_qkv.weight
+0.00.678.706 D create_tensor: loading tensor blk.7.attn_q.weight
+0.00.678.711 D create_tensor: loading tensor blk.7.attn_k.weight
+0.00.678.715 D create_tensor: loading tensor blk.7.attn_v.weight
+0.00.678.720 D create_tensor: loading tensor blk.7.attn_q.bias
+0.00.678.724 D create_tensor: loading tensor blk.7.attn_k.bias
+0.00.678.729 D create_tensor: loading tensor blk.7.attn_v.bias
+0.00.678.734 D create_tensor: loading tensor blk.7.attn_output.weight
+0.00.678.739 D create_tensor: loading tensor blk.7.ffn_norm.weight
+0.00.678.744 D create_tensor: loading tensor blk.7.ffn_gate.weight
+0.00.678.748 D create_tensor: loading tensor blk.7.ffn_down.weight
+0.00.678.752 D create_tensor: loading tensor blk.7.ffn_up.weight
+0.00.678.756 D create_tensor: loading tensor blk.8.attn_norm.weight
+0.00.678.761 D create_tensor: loading tensor blk.8.attn_qkv.weight
+0.00.678.763 D create_tensor: loading tensor blk.8.attn_q.weight
+0.00.678.767 D create_tensor: loading tensor blk.8.attn_k.weight
+0.00.678.771 D create_tensor: loading tensor blk.8.attn_v.weight
+0.00.678.775 D create_tensor: loading tensor blk.8.attn_q.bias
+0.00.678.780 D create_tensor: loading tensor blk.8.attn_k.bias
+0.00.678.784 D create_tensor: loading tensor blk.8.attn_v.bias
+0.00.678.789 D create_tensor: loading tensor blk.8.attn_output.weight
+0.00.678.793 D create_tensor: loading tensor blk.8.ffn_norm.weight
+0.00.678.798 D create_tensor: loading tensor blk.8.ffn_gate.weight
+0.00.678.803 D create_tensor: loading tensor blk.8.ffn_down.weight
+0.00.678.807 D create_tensor: loading tensor blk.8.ffn_up.weight
+0.00.678.811 D create_tensor: loading tensor blk.9.attn_norm.weight
+0.00.678.816 D create_tensor: loading tensor blk.9.attn_qkv.weight
+0.00.678.817 D create_tensor: loading tensor blk.9.attn_q.weight
+0.00.678.823 D create_tensor: loading tensor blk.9.attn_k.weight
+0.00.678.828 D create_tensor: loading tensor blk.9.attn_v.weight
+0.00.678.833 D create_tensor: loading tensor blk.9.attn_q.bias
+0.00.678.838 D create_tensor: loading tensor blk.9.attn_k.bias
+0.00.678.844 D create_tensor: loading tensor blk.9.attn_v.bias
+0.00.678.848 D create_tensor: loading tensor blk.9.attn_output.weight
+0.00.678.853 D create_tensor: loading tensor blk.9.ffn_norm.weight
+0.00.678.859 D create_tensor: loading tensor blk.9.ffn_gate.weight
+0.00.678.863 D create_tensor: loading tensor blk.9.ffn_down.weight
+0.00.678.868 D create_tensor: loading tensor blk.9.ffn_up.weight
+0.00.678.873 D create_tensor: loading tensor blk.10.attn_norm.weight
+0.00.678.877 D create_tensor: loading tensor blk.10.attn_qkv.weight
+0.00.678.879 D create_tensor: loading tensor blk.10.attn_q.weight
+0.00.678.883 D create_tensor: loading tensor blk.10.attn_k.weight
+0.00.678.887 D create_tensor: loading tensor blk.10.attn_v.weight
+0.00.678.892 D create_tensor: loading tensor blk.10.attn_q.bias
+0.00.678.897 D create_tensor: loading tensor blk.10.attn_k.bias
+0.00.678.902 D create_tensor: loading tensor blk.10.attn_v.bias
+0.00.678.909 D create_tensor: loading tensor blk.10.attn_output.weight
+0.00.678.914 D create_tensor: loading tensor blk.10.ffn_norm.weight
+0.00.678.918 D create_tensor: loading tensor blk.10.ffn_gate.weight
+0.00.678.923 D create_tensor: loading tensor blk.10.ffn_down.weight
+0.00.678.927 D create_tensor: loading tensor blk.10.ffn_up.weight
+0.00.678.931 D create_tensor: loading tensor blk.11.attn_norm.weight
+0.00.678.935 D create_tensor: loading tensor blk.11.attn_qkv.weight
+0.00.678.937 D create_tensor: loading tensor blk.11.attn_q.weight
+0.00.678.942 D create_tensor: loading tensor blk.11.attn_k.weight
+0.00.678.947 D create_tensor: loading tensor blk.11.attn_v.weight
+0.00.678.952 D create_tensor: loading tensor blk.11.attn_q.bias
+0.00.678.956 D create_tensor: loading tensor blk.11.attn_k.bias
+0.00.678.960 D create_tensor: loading tensor blk.11.attn_v.bias
+0.00.678.964 D create_tensor: loading tensor blk.11.attn_output.weight
+0.00.678.969 D create_tensor: loading tensor blk.11.ffn_norm.weight
+0.00.678.974 D create_tensor: loading tensor blk.11.ffn_gate.weight
+0.00.678.978 D create_tensor: loading tensor blk.11.ffn_down.weight
+0.00.678.982 D create_tensor: loading tensor blk.11.ffn_up.weight
+0.00.678.986 D create_tensor: loading tensor blk.12.attn_norm.weight
+0.00.678.991 D create_tensor: loading tensor blk.12.attn_qkv.weight
+0.00.678.993 D create_tensor: loading tensor blk.12.attn_q.weight
+0.00.678.998 D create_tensor: loading tensor blk.12.attn_k.weight
+0.00.679.002 D create_tensor: loading tensor blk.12.attn_v.weight
+0.00.679.007 D create_tensor: loading tensor blk.12.attn_q.bias
+0.00.679.023 D create_tensor: loading tensor blk.12.attn_k.bias
+0.00.679.027 D create_tensor: loading tensor blk.12.attn_v.bias
+0.00.679.032 D create_tensor: loading tensor blk.12.attn_output.weight
+0.00.679.036 D create_tensor: loading tensor blk.12.ffn_norm.weight
+0.00.679.040 D create_tensor: loading tensor blk.12.ffn_gate.weight
+0.00.679.044 D create_tensor: loading tensor blk.12.ffn_down.weight
+0.00.679.048 D create_tensor: loading tensor blk.12.ffn_up.weight
+0.00.679.052 D create_tensor: loading tensor blk.13.attn_norm.weight
+0.00.679.056 D create_tensor: loading tensor blk.13.attn_qkv.weight
+0.00.679.058 D create_tensor: loading tensor blk.13.attn_q.weight
+0.00.679.062 D create_tensor: loading tensor blk.13.attn_k.weight
+0.00.679.067 D create_tensor: loading tensor blk.13.attn_v.weight
+0.00.679.071 D create_tensor: loading tensor blk.13.attn_q.bias
+0.00.679.076 D create_tensor: loading tensor blk.13.attn_k.bias
+0.00.679.080 D create_tensor: loading tensor blk.13.attn_v.bias
+0.00.679.084 D create_tensor: loading tensor blk.13.attn_output.weight
+0.00.679.088 D create_tensor: loading tensor blk.13.ffn_norm.weight
+0.00.679.092 D create_tensor: loading tensor blk.13.ffn_gate.weight
+0.00.679.096 D create_tensor: loading tensor blk.13.ffn_down.weight
+0.00.679.100 D create_tensor: loading tensor blk.13.ffn_up.weight
+0.00.679.104 D create_tensor: loading tensor blk.14.attn_norm.weight
+0.00.679.108 D create_tensor: loading tensor blk.14.attn_qkv.weight
+0.00.679.110 D create_tensor: loading tensor blk.14.attn_q.weight
+0.00.679.114 D create_tensor: loading tensor blk.14.attn_k.weight
+0.00.679.118 D create_tensor: loading tensor blk.14.attn_v.weight
+0.00.679.123 D create_tensor: loading tensor blk.14.attn_q.bias
+0.00.679.127 D create_tensor: loading tensor blk.14.attn_k.bias
+0.00.679.131 D create_tensor: loading tensor blk.14.attn_v.bias
+0.00.679.136 D create_tensor: loading tensor blk.14.attn_output.weight
+0.00.679.140 D create_tensor: loading tensor blk.14.ffn_norm.weight
+0.00.679.144 D create_tensor: loading tensor blk.14.ffn_gate.weight
+0.00.679.149 D create_tensor: loading tensor blk.14.ffn_down.weight
+0.00.679.154 D create_tensor: loading tensor blk.14.ffn_up.weight
+0.00.679.159 D create_tensor: loading tensor blk.15.attn_norm.weight
+0.00.679.163 D create_tensor: loading tensor blk.15.attn_qkv.weight
+0.00.679.165 D create_tensor: loading tensor blk.15.attn_q.weight
+0.00.679.169 D create_tensor: loading tensor blk.15.attn_k.weight
+0.00.679.175 D create_tensor: loading tensor blk.15.attn_v.weight
+0.00.679.179 D create_tensor: loading tensor blk.15.attn_q.bias
+0.00.679.183 D create_tensor: loading tensor blk.15.attn_k.bias
+0.00.679.188 D create_tensor: loading tensor blk.15.attn_v.bias
+0.00.679.192 D create_tensor: loading tensor blk.15.attn_output.weight
+0.00.679.196 D create_tensor: loading tensor blk.15.ffn_norm.weight
+0.00.679.201 D create_tensor: loading tensor blk.15.ffn_gate.weight
+0.00.679.205 D create_tensor: loading tensor blk.15.ffn_down.weight
+0.00.679.209 D create_tensor: loading tensor blk.15.ffn_up.weight
+0.00.679.213 D create_tensor: loading tensor blk.16.attn_norm.weight
+0.00.679.217 D create_tensor: loading tensor blk.16.attn_qkv.weight
+0.00.679.219 D create_tensor: loading tensor blk.16.attn_q.weight
+0.00.679.223 D create_tensor: loading tensor blk.16.attn_k.weight
+0.00.679.227 D create_tensor: loading tensor blk.16.attn_v.weight
+0.00.679.232 D create_tensor: loading tensor blk.16.attn_q.bias
+0.00.679.236 D create_tensor: loading tensor blk.16.attn_k.bias
+0.00.679.240 D create_tensor: loading tensor blk.16.attn_v.bias
+0.00.679.244 D create_tensor: loading tensor blk.16.attn_output.weight
+0.00.679.248 D create_tensor: loading tensor blk.16.ffn_norm.weight
+0.00.679.252 D create_tensor: loading tensor blk.16.ffn_gate.weight
+0.00.679.256 D create_tensor: loading tensor blk.16.ffn_down.weight
+0.00.679.261 D create_tensor: loading tensor blk.16.ffn_up.weight
+0.00.679.265 D create_tensor: loading tensor blk.17.attn_norm.weight
+0.00.679.270 D create_tensor: loading tensor blk.17.attn_qkv.weight
+0.00.679.272 D create_tensor: loading tensor blk.17.attn_q.weight
+0.00.679.276 D create_tensor: loading tensor blk.17.attn_k.weight
+0.00.679.281 D create_tensor: loading tensor blk.17.attn_v.weight
+0.00.679.285 D create_tensor: loading tensor blk.17.attn_q.bias
+0.00.679.289 D create_tensor: loading tensor blk.17.attn_k.bias
+0.00.679.293 D create_tensor: loading tensor blk.17.attn_v.bias
+0.00.679.297 D create_tensor: loading tensor blk.17.attn_output.weight
+0.00.679.302 D create_tensor: loading tensor blk.17.ffn_norm.weight
+0.00.679.306 D create_tensor: loading tensor blk.17.ffn_gate.weight
+0.00.679.310 D create_tensor: loading tensor blk.17.ffn_down.weight
+0.00.679.315 D create_tensor: loading tensor blk.17.ffn_up.weight
+0.00.679.319 D create_tensor: loading tensor blk.18.attn_norm.weight
+0.00.679.324 D create_tensor: loading tensor blk.18.attn_qkv.weight
+0.00.679.326 D create_tensor: loading tensor blk.18.attn_q.weight
+0.00.679.330 D create_tensor: loading tensor blk.18.attn_k.weight
+0.00.679.335 D create_tensor: loading tensor blk.18.attn_v.weight
+0.00.679.339 D create_tensor: loading tensor blk.18.attn_q.bias
+0.00.679.344 D create_tensor: loading tensor blk.18.attn_k.bias
+0.00.679.348 D create_tensor: loading tensor blk.18.attn_v.bias
+0.00.679.354 D create_tensor: loading tensor blk.18.attn_output.weight
+0.00.679.358 D create_tensor: loading tensor blk.18.ffn_norm.weight
+0.00.679.363 D create_tensor: loading tensor blk.18.ffn_gate.weight
+0.00.679.367 D create_tensor: loading tensor blk.18.ffn_down.weight
+0.00.679.371 D create_tensor: loading tensor blk.18.ffn_up.weight
+0.00.679.376 D create_tensor: loading tensor blk.19.attn_norm.weight
+0.00.679.380 D create_tensor: loading tensor blk.19.attn_qkv.weight
+0.00.679.382 D create_tensor: loading tensor blk.19.attn_q.weight
+0.00.679.386 D create_tensor: loading tensor blk.19.attn_k.weight
+0.00.679.391 D create_tensor: loading tensor blk.19.attn_v.weight
+0.00.679.395 D create_tensor: loading tensor blk.19.attn_q.bias
+0.00.679.399 D create_tensor: loading tensor blk.19.attn_k.bias
+0.00.679.404 D create_tensor: loading tensor blk.19.attn_v.bias
+0.00.679.409 D create_tensor: loading tensor blk.19.attn_output.weight
+0.00.679.413 D create_tensor: loading tensor blk.19.ffn_norm.weight
+0.00.679.418 D create_tensor: loading tensor blk.19.ffn_gate.weight
+0.00.679.422 D create_tensor: loading tensor blk.19.ffn_down.weight
+0.00.679.427 D create_tensor: loading tensor blk.19.ffn_up.weight
+0.00.679.431 D create_tensor: loading tensor blk.20.attn_norm.weight
+0.00.679.436 D create_tensor: loading tensor blk.20.attn_qkv.weight
+0.00.679.438 D create_tensor: loading tensor blk.20.attn_q.weight
+0.00.679.443 D create_tensor: loading tensor blk.20.attn_k.weight
+0.00.679.447 D create_tensor: loading tensor blk.20.attn_v.weight
+0.00.679.452 D create_tensor: loading tensor blk.20.attn_q.bias
+0.00.679.457 D create_tensor: loading tensor blk.20.attn_k.bias
+0.00.679.461 D create_tensor: loading tensor blk.20.attn_v.bias
+0.00.679.466 D create_tensor: loading tensor blk.20.attn_output.weight
+0.00.679.471 D create_tensor: loading tensor blk.20.ffn_norm.weight
+0.00.679.475 D create_tensor: loading tensor blk.20.ffn_gate.weight
+0.00.679.479 D create_tensor: loading tensor blk.20.ffn_down.weight
+0.00.679.483 D create_tensor: loading tensor blk.20.ffn_up.weight
+0.00.679.488 D create_tensor: loading tensor blk.21.attn_norm.weight
+0.00.679.495 D create_tensor: loading tensor blk.21.attn_qkv.weight
+0.00.679.497 D create_tensor: loading tensor blk.21.attn_q.weight
+0.00.679.502 D create_tensor: loading tensor blk.21.attn_k.weight
+0.00.679.507 D create_tensor: loading tensor blk.21.attn_v.weight
+0.00.679.511 D create_tensor: loading tensor blk.21.attn_q.bias
+0.00.679.515 D create_tensor: loading tensor blk.21.attn_k.bias
+0.00.679.520 D create_tensor: loading tensor blk.21.attn_v.bias
+0.00.679.524 D create_tensor: loading tensor blk.21.attn_output.weight
+0.00.679.529 D create_tensor: loading tensor blk.21.ffn_norm.weight
+0.00.679.533 D create_tensor: loading tensor blk.21.ffn_gate.weight
+0.00.679.537 D create_tensor: loading tensor blk.21.ffn_down.weight
+0.00.679.542 D create_tensor: loading tensor blk.21.ffn_up.weight
+0.00.679.547 D create_tensor: loading tensor blk.22.attn_norm.weight
+0.00.679.552 D create_tensor: loading tensor blk.22.attn_qkv.weight
+0.00.679.554 D create_tensor: loading tensor blk.22.attn_q.weight
+0.00.679.558 D create_tensor: loading tensor blk.22.attn_k.weight
+0.00.679.563 D create_tensor: loading tensor blk.22.attn_v.weight
+0.00.679.569 D create_tensor: loading tensor blk.22.attn_q.bias
+0.00.679.574 D create_tensor: loading tensor blk.22.attn_k.bias
+0.00.679.578 D create_tensor: loading tensor blk.22.attn_v.bias
+0.00.679.583 D create_tensor: loading tensor blk.22.attn_output.weight
+0.00.679.587 D create_tensor: loading tensor blk.22.ffn_norm.weight
+0.00.679.592 D create_tensor: loading tensor blk.22.ffn_gate.weight
+0.00.679.596 D create_tensor: loading tensor blk.22.ffn_down.weight
+0.00.679.601 D create_tensor: loading tensor blk.22.ffn_up.weight
+0.00.679.605 D create_tensor: loading tensor blk.23.attn_norm.weight
+0.00.679.610 D create_tensor: loading tensor blk.23.attn_qkv.weight
+0.00.679.612 D create_tensor: loading tensor blk.23.attn_q.weight
+0.00.679.616 D create_tensor: loading tensor blk.23.attn_k.weight
+0.00.679.621 D create_tensor: loading tensor blk.23.attn_v.weight
+0.00.679.625 D create_tensor: loading tensor blk.23.attn_q.bias
+0.00.679.629 D create_tensor: loading tensor blk.23.attn_k.bias
+0.00.679.634 D create_tensor: loading tensor blk.23.attn_v.bias
+0.00.679.639 D create_tensor: loading tensor blk.23.attn_output.weight
+0.00.679.643 D create_tensor: loading tensor blk.23.ffn_norm.weight
+0.00.679.647 D create_tensor: loading tensor blk.23.ffn_gate.weight
+0.00.679.652 D create_tensor: loading tensor blk.23.ffn_down.weight
+0.00.679.656 D create_tensor: loading tensor blk.23.ffn_up.weight
+0.00.679.661 D create_tensor: loading tensor blk.24.attn_norm.weight
+0.00.679.666 D create_tensor: loading tensor blk.24.attn_qkv.weight
+0.00.679.668 D create_tensor: loading tensor blk.24.attn_q.weight
+0.00.679.673 D create_tensor: loading tensor blk.24.attn_k.weight
+0.00.679.678 D create_tensor: loading tensor blk.24.attn_v.weight
+0.00.679.682 D create_tensor: loading tensor blk.24.attn_q.bias
+0.00.679.687 D create_tensor: loading tensor blk.24.attn_k.bias
+0.00.679.692 D create_tensor: loading tensor blk.24.attn_v.bias
+0.00.679.696 D create_tensor: loading tensor blk.24.attn_output.weight
+0.00.679.701 D create_tensor: loading tensor blk.24.ffn_norm.weight
+0.00.679.706 D create_tensor: loading tensor blk.24.ffn_gate.weight
+0.00.679.710 D create_tensor: loading tensor blk.24.ffn_down.weight
+0.00.679.715 D create_tensor: loading tensor blk.24.ffn_up.weight
+0.00.679.720 D create_tensor: loading tensor blk.25.attn_norm.weight
+0.00.679.724 D create_tensor: loading tensor blk.25.attn_qkv.weight
+0.00.679.726 D create_tensor: loading tensor blk.25.attn_q.weight
+0.00.679.731 D create_tensor: loading tensor blk.25.attn_k.weight
+0.00.679.736 D create_tensor: loading tensor blk.25.attn_v.weight
+0.00.679.740 D create_tensor: loading tensor blk.25.attn_q.bias
+0.00.679.745 D create_tensor: loading tensor blk.25.attn_k.bias
+0.00.679.750 D create_tensor: loading tensor blk.25.attn_v.bias
+0.00.679.755 D create_tensor: loading tensor blk.25.attn_output.weight
+0.00.679.760 D create_tensor: loading tensor blk.25.ffn_norm.weight
+0.00.679.765 D create_tensor: loading tensor blk.25.ffn_gate.weight
+0.00.679.769 D create_tensor: loading tensor blk.25.ffn_down.weight
+0.00.679.773 D create_tensor: loading tensor blk.25.ffn_up.weight
+0.00.679.779 D create_tensor: loading tensor blk.26.attn_norm.weight
+0.00.679.783 D create_tensor: loading tensor blk.26.attn_qkv.weight
+0.00.679.785 D create_tensor: loading tensor blk.26.attn_q.weight
+0.00.679.790 D create_tensor: loading tensor blk.26.attn_k.weight
+0.00.679.796 D create_tensor: loading tensor blk.26.attn_v.weight
+0.00.679.801 D create_tensor: loading tensor blk.26.attn_q.bias
+0.00.679.805 D create_tensor: loading tensor blk.26.attn_k.bias
+0.00.679.809 D create_tensor: loading tensor blk.26.attn_v.bias
+0.00.679.814 D create_tensor: loading tensor blk.26.attn_output.weight
+0.00.679.819 D create_tensor: loading tensor blk.26.ffn_norm.weight
+0.00.679.824 D create_tensor: loading tensor blk.26.ffn_gate.weight
+0.00.679.829 D create_tensor: loading tensor blk.26.ffn_down.weight
+0.00.679.833 D create_tensor: loading tensor blk.26.ffn_up.weight
+0.00.679.838 D create_tensor: loading tensor blk.27.attn_norm.weight
+0.00.679.844 D create_tensor: loading tensor blk.27.attn_qkv.weight
+0.00.679.846 D create_tensor: loading tensor blk.27.attn_q.weight
+0.00.679.851 D create_tensor: loading tensor blk.27.attn_k.weight
+0.00.679.856 D create_tensor: loading tensor blk.27.attn_v.weight
+0.00.679.861 D create_tensor: loading tensor blk.27.attn_q.bias
+0.00.679.866 D create_tensor: loading tensor blk.27.attn_k.bias
+0.00.679.871 D create_tensor: loading tensor blk.27.attn_v.bias
+0.00.679.876 D create_tensor: loading tensor blk.27.attn_output.weight
+0.00.679.881 D create_tensor: loading tensor blk.27.ffn_norm.weight
+0.00.679.886 D create_tensor: loading tensor blk.27.ffn_gate.weight
+0.00.679.891 D create_tensor: loading tensor blk.27.ffn_down.weight
+0.00.679.897 D create_tensor: loading tensor blk.27.ffn_up.weight
+0.00.679.902 D create_tensor: loading tensor blk.0.attn_q.scale
+0.00.679.903 D create_tensor: loading tensor blk.0.attn_k.scale
+0.00.679.905 D create_tensor: loading tensor blk.0.attn_v.scale
+0.00.679.906 D create_tensor: loading tensor blk.0.attn_output.scale
+0.00.679.908 D create_tensor: loading tensor blk.0.ffn_gate.scale
+0.00.679.910 D create_tensor: loading tensor blk.0.ffn_down.scale
+0.00.679.911 D create_tensor: loading tensor blk.0.ffn_up.scale
+0.00.679.913 D create_tensor: loading tensor blk.0.attn_q.input_scale
+0.00.679.914 D create_tensor: loading tensor blk.0.attn_k.input_scale
+0.00.679.915 D create_tensor: loading tensor blk.0.attn_v.input_scale
+0.00.679.917 D create_tensor: loading tensor blk.0.attn_output.input_scale
+0.00.679.918 D create_tensor: loading tensor blk.0.ffn_gate.input_scale
+0.00.679.920 D create_tensor: loading tensor blk.0.ffn_down.input_scale
+0.00.679.921 D create_tensor: loading tensor blk.0.ffn_up.input_scale
+0.00.679.923 D create_tensor: loading tensor blk.1.attn_q.scale
+0.00.679.925 D create_tensor: loading tensor blk.1.attn_k.scale
+0.00.679.926 D create_tensor: loading tensor blk.1.attn_v.scale
+0.00.679.928 D create_tensor: loading tensor blk.1.attn_output.scale
+0.00.679.929 D create_tensor: loading tensor blk.1.ffn_gate.scale
+0.00.679.930 D create_tensor: loading tensor blk.1.ffn_down.scale
+0.00.679.932 D create_tensor: loading tensor blk.1.ffn_up.scale
+0.00.679.933 D create_tensor: loading tensor blk.1.attn_q.input_scale
+0.00.679.934 D create_tensor: loading tensor blk.1.attn_k.input_scale
+0.00.679.936 D create_tensor: loading tensor blk.1.attn_v.input_scale
+0.00.679.937 D create_tensor: loading tensor blk.1.attn_output.input_scale
+0.00.679.939 D create_tensor: loading tensor blk.1.ffn_gate.input_scale
+0.00.679.940 D create_tensor: loading tensor blk.1.ffn_down.input_scale
+0.00.679.941 D create_tensor: loading tensor blk.1.ffn_up.input_scale
+0.00.679.943 D create_tensor: loading tensor blk.2.attn_q.scale
+0.00.679.944 D create_tensor: loading tensor blk.2.attn_k.scale
+0.00.679.945 D create_tensor: loading tensor blk.2.attn_v.scale
+0.00.679.947 D create_tensor: loading tensor blk.2.attn_output.scale
+0.00.679.948 D create_tensor: loading tensor blk.2.ffn_gate.scale
+0.00.679.950 D create_tensor: loading tensor blk.2.ffn_down.scale
+0.00.679.951 D create_tensor: loading tensor blk.2.ffn_up.scale
+0.00.679.953 D create_tensor: loading tensor blk.2.attn_q.input_scale
+0.00.679.954 D create_tensor: loading tensor blk.2.attn_k.input_scale
+0.00.679.955 D create_tensor: loading tensor blk.2.attn_v.input_scale
+0.00.679.957 D create_tensor: loading tensor blk.2.attn_output.input_scale
+0.00.679.958 D create_tensor: loading tensor blk.2.ffn_gate.input_scale
+0.00.679.960 D create_tensor: loading tensor blk.2.ffn_down.input_scale
+0.00.679.961 D create_tensor: loading tensor blk.2.ffn_up.input_scale
+0.00.679.963 D create_tensor: loading tensor blk.3.attn_q.scale
+0.00.679.964 D create_tensor: loading tensor blk.3.attn_k.scale
+0.00.679.965 D create_tensor: loading tensor blk.3.attn_v.scale
+0.00.679.967 D create_tensor: loading tensor blk.3.attn_output.scale
+0.00.679.968 D create_tensor: loading tensor blk.3.ffn_gate.scale
+0.00.679.970 D create_tensor: loading tensor blk.3.ffn_down.scale
+0.00.679.971 D create_tensor: loading tensor blk.3.ffn_up.scale
+0.00.679.972 D create_tensor: loading tensor blk.3.attn_q.input_scale
+0.00.679.974 D create_tensor: loading tensor blk.3.attn_k.input_scale
+0.00.679.975 D create_tensor: loading tensor blk.3.attn_v.input_scale
+0.00.679.977 D create_tensor: loading tensor blk.3.attn_output.input_scale
+0.00.679.978 D create_tensor: loading tensor blk.3.ffn_gate.input_scale
+0.00.679.979 D create_tensor: loading tensor blk.3.ffn_down.input_scale
+0.00.679.981 D create_tensor: loading tensor blk.3.ffn_up.input_scale
+0.00.679.982 D create_tensor: loading tensor blk.4.attn_q.scale
+0.00.679.984 D create_tensor: loading tensor blk.4.attn_k.scale
+0.00.679.985 D create_tensor: loading tensor blk.4.attn_v.scale
+0.00.679.987 D create_tensor: loading tensor blk.4.attn_output.scale
+0.00.679.988 D create_tensor: loading tensor blk.4.ffn_gate.scale
+0.00.679.989 D create_tensor: loading tensor blk.4.ffn_down.scale
+0.00.679.991 D create_tensor: loading tensor blk.4.ffn_up.scale
+0.00.679.992 D create_tensor: loading tensor blk.4.attn_q.input_scale
+0.00.679.994 D create_tensor: loading tensor blk.4.attn_k.input_scale
+0.00.679.995 D create_tensor: loading tensor blk.4.attn_v.input_scale
+0.00.679.997 D create_tensor: loading tensor blk.4.attn_output.input_scale
+0.00.679.998 D create_tensor: loading tensor blk.4.ffn_gate.input_scale
+0.00.680.000 D create_tensor: loading tensor blk.4.ffn_down.input_scale
+0.00.680.001 D create_tensor: loading tensor blk.4.ffn_up.input_scale
+0.00.680.003 D create_tensor: loading tensor blk.5.attn_q.scale
+0.00.680.004 D create_tensor: loading tensor blk.5.attn_k.scale
+0.00.680.006 D create_tensor: loading tensor blk.5.attn_v.scale
+0.00.680.007 D create_tensor: loading tensor blk.5.attn_output.scale
+0.00.680.008 D create_tensor: loading tensor blk.5.ffn_gate.scale
+0.00.680.010 D create_tensor: loading tensor blk.5.ffn_down.scale
+0.00.680.011 D create_tensor: loading tensor blk.5.ffn_up.scale
+0.00.680.013 D create_tensor: loading tensor blk.5.attn_q.input_scale
+0.00.680.014 D create_tensor: loading tensor blk.5.attn_k.input_scale
+0.00.680.016 D create_tensor: loading tensor blk.5.attn_v.input_scale
+0.00.680.017 D create_tensor: loading tensor blk.5.attn_output.input_scale
+0.00.680.019 D create_tensor: loading tensor blk.5.ffn_gate.input_scale
+0.00.680.020 D create_tensor: loading tensor blk.5.ffn_down.input_scale
+0.00.680.022 D create_tensor: loading tensor blk.5.ffn_up.input_scale
+0.00.680.023 D create_tensor: loading tensor blk.6.attn_q.scale
+0.00.680.025 D create_tensor: loading tensor blk.6.attn_k.scale
+0.00.680.026 D create_tensor: loading tensor blk.6.attn_v.scale
+0.00.680.028 D create_tensor: loading tensor blk.6.attn_output.scale
+0.00.680.030 D create_tensor: loading tensor blk.6.ffn_gate.scale
+0.00.680.031 D create_tensor: loading tensor blk.6.ffn_down.scale
+0.00.680.033 D create_tensor: loading tensor blk.6.ffn_up.scale
+0.00.680.034 D create_tensor: loading tensor blk.6.attn_q.input_scale
+0.00.680.036 D create_tensor: loading tensor blk.6.attn_k.input_scale
+0.00.680.037 D create_tensor: loading tensor blk.6.attn_v.input_scale
+0.00.680.039 D create_tensor: loading tensor blk.6.attn_output.input_scale
+0.00.680.040 D create_tensor: loading tensor blk.6.ffn_gate.input_scale
+0.00.680.042 D create_tensor: loading tensor blk.6.ffn_down.input_scale
+0.00.680.044 D create_tensor: loading tensor blk.6.ffn_up.input_scale
+0.00.680.045 D create_tensor: loading tensor blk.7.attn_q.scale
+0.00.680.047 D create_tensor: loading tensor blk.7.attn_k.scale
+0.00.680.049 D create_tensor: loading tensor blk.7.attn_v.scale
+0.00.680.050 D create_tensor: loading tensor blk.7.attn_output.scale
+0.00.680.052 D create_tensor: loading tensor blk.7.ffn_gate.scale
+0.00.680.054 D create_tensor: loading tensor blk.7.ffn_down.scale
+0.00.680.055 D create_tensor: loading tensor blk.7.ffn_up.scale
+0.00.680.057 D create_tensor: loading tensor blk.7.attn_q.input_scale
+0.00.680.059 D create_tensor: loading tensor blk.7.attn_k.input_scale
+0.00.680.060 D create_tensor: loading tensor blk.7.attn_v.input_scale
+0.00.680.062 D create_tensor: loading tensor blk.7.attn_output.input_scale
+0.00.680.064 D create_tensor: loading tensor blk.7.ffn_gate.input_scale
+0.00.680.065 D create_tensor: loading tensor blk.7.ffn_down.input_scale
+0.00.680.067 D create_tensor: loading tensor blk.7.ffn_up.input_scale
+0.00.680.069 D create_tensor: loading tensor blk.8.attn_q.scale
+0.00.680.071 D create_tensor: loading tensor blk.8.attn_k.scale
+0.00.680.072 D create_tensor: loading tensor blk.8.attn_v.scale
+0.00.680.074 D create_tensor: loading tensor blk.8.attn_output.scale
+0.00.680.076 D create_tensor: loading tensor blk.8.ffn_gate.scale
+0.00.680.077 D create_tensor: loading tensor blk.8.ffn_down.scale
+0.00.680.079 D create_tensor: loading tensor blk.8.ffn_up.scale
+0.00.680.081 D create_tensor: loading tensor blk.8.attn_q.input_scale
+0.00.680.083 D create_tensor: loading tensor blk.8.attn_k.input_scale
+0.00.680.084 D create_tensor: loading tensor blk.8.attn_v.input_scale
+0.00.680.086 D create_tensor: loading tensor blk.8.attn_output.input_scale
+0.00.680.088 D create_tensor: loading tensor blk.8.ffn_gate.input_scale
+0.00.680.089 D create_tensor: loading tensor blk.8.ffn_down.input_scale
+0.00.680.091 D create_tensor: loading tensor blk.8.ffn_up.input_scale
+0.00.680.093 D create_tensor: loading tensor blk.9.attn_q.scale
+0.00.680.095 D create_tensor: loading tensor blk.9.attn_k.scale
+0.00.680.096 D create_tensor: loading tensor blk.9.attn_v.scale
+0.00.680.098 D create_tensor: loading tensor blk.9.attn_output.scale
+0.00.680.100 D create_tensor: loading tensor blk.9.ffn_gate.scale
+0.00.680.102 D create_tensor: loading tensor blk.9.ffn_down.scale
+0.00.680.103 D create_tensor: loading tensor blk.9.ffn_up.scale
+0.00.680.105 D create_tensor: loading tensor blk.9.attn_q.input_scale
+0.00.680.107 D create_tensor: loading tensor blk.9.attn_k.input_scale
+0.00.680.109 D create_tensor: loading tensor blk.9.attn_v.input_scale
+0.00.680.111 D create_tensor: loading tensor blk.9.attn_output.input_scale
+0.00.680.112 D create_tensor: loading tensor blk.9.ffn_gate.input_scale
+0.00.680.114 D create_tensor: loading tensor blk.9.ffn_down.input_scale
+0.00.680.116 D create_tensor: loading tensor blk.9.ffn_up.input_scale
+0.00.680.118 D create_tensor: loading tensor blk.10.attn_q.scale
+0.00.680.120 D create_tensor: loading tensor blk.10.attn_k.scale
+0.00.680.122 D create_tensor: loading tensor blk.10.attn_v.scale
+0.00.680.124 D create_tensor: loading tensor blk.10.attn_output.scale
+0.00.680.126 D create_tensor: loading tensor blk.10.ffn_gate.scale
+0.00.680.127 D create_tensor: loading tensor blk.10.ffn_down.scale
+0.00.680.129 D create_tensor: loading tensor blk.10.ffn_up.scale
+0.00.680.131 D create_tensor: loading tensor blk.10.attn_q.input_scale
+0.00.680.133 D create_tensor: loading tensor blk.10.attn_k.input_scale
+0.00.680.134 D create_tensor: loading tensor blk.10.attn_v.input_scale
+0.00.680.136 D create_tensor: loading tensor blk.10.attn_output.input_scale
+0.00.680.138 D create_tensor: loading tensor blk.10.ffn_gate.input_scale
+0.00.680.140 D create_tensor: loading tensor blk.10.ffn_down.input_scale
+0.00.680.142 D create_tensor: loading tensor blk.10.ffn_up.input_scale
+0.00.680.143 D create_tensor: loading tensor blk.11.attn_q.scale
+0.00.680.145 D create_tensor: loading tensor blk.11.attn_k.scale
+0.00.680.147 D create_tensor: loading tensor blk.11.attn_v.scale
+0.00.680.149 D create_tensor: loading tensor blk.11.attn_output.scale
+0.00.680.150 D create_tensor: loading tensor blk.11.ffn_gate.scale
+0.00.680.152 D create_tensor: loading tensor blk.11.ffn_down.scale
+0.00.680.153 D create_tensor: loading tensor blk.11.ffn_up.scale
+0.00.680.155 D create_tensor: loading tensor blk.11.attn_q.input_scale
+0.00.680.157 D create_tensor: loading tensor blk.11.attn_k.input_scale
+0.00.680.158 D create_tensor: loading tensor blk.11.attn_v.input_scale
+0.00.680.160 D create_tensor: loading tensor blk.11.attn_output.input_scale
+0.00.680.162 D create_tensor: loading tensor blk.11.ffn_gate.input_scale
+0.00.680.163 D create_tensor: loading tensor blk.11.ffn_down.input_scale
+0.00.680.165 D create_tensor: loading tensor blk.11.ffn_up.input_scale
+0.00.680.167 D create_tensor: loading tensor blk.12.attn_q.scale
+0.00.680.168 D create_tensor: loading tensor blk.12.attn_k.scale
+0.00.680.170 D create_tensor: loading tensor blk.12.attn_v.scale
+0.00.680.172 D create_tensor: loading tensor blk.12.attn_output.scale
+0.00.680.173 D create_tensor: loading tensor blk.12.ffn_gate.scale
+0.00.680.175 D create_tensor: loading tensor blk.12.ffn_down.scale
+0.00.680.177 D create_tensor: loading tensor blk.12.ffn_up.scale
+0.00.680.178 D create_tensor: loading tensor blk.12.attn_q.input_scale
+0.00.680.180 D create_tensor: loading tensor blk.12.attn_k.input_scale
+0.00.680.182 D create_tensor: loading tensor blk.12.attn_v.input_scale
+0.00.680.184 D create_tensor: loading tensor blk.12.attn_output.input_scale
+0.00.680.185 D create_tensor: loading tensor blk.12.ffn_gate.input_scale
+0.00.680.187 D create_tensor: loading tensor blk.12.ffn_down.input_scale
+0.00.680.189 D create_tensor: loading tensor blk.12.ffn_up.input_scale
+0.00.680.190 D create_tensor: loading tensor blk.13.attn_q.scale
+0.00.680.192 D create_tensor: loading tensor blk.13.attn_k.scale
+0.00.680.193 D create_tensor: loading tensor blk.13.attn_v.scale
+0.00.680.195 D create_tensor: loading tensor blk.13.attn_output.scale
+0.00.680.197 D create_tensor: loading tensor blk.13.ffn_gate.scale
+0.00.680.198 D create_tensor: loading tensor blk.13.ffn_down.scale
+0.00.680.200 D create_tensor: loading tensor blk.13.ffn_up.scale
+0.00.680.201 D create_tensor: loading tensor blk.13.attn_q.input_scale
+0.00.680.203 D create_tensor: loading tensor blk.13.attn_k.input_scale
+0.00.680.205 D create_tensor: loading tensor blk.13.attn_v.input_scale
+0.00.680.206 D create_tensor: loading tensor blk.13.attn_output.input_scale
+0.00.680.208 D create_tensor: loading tensor blk.13.ffn_gate.input_scale
+0.00.680.209 D create_tensor: loading tensor blk.13.ffn_down.input_scale
+0.00.680.211 D create_tensor: loading tensor blk.13.ffn_up.input_scale
+0.00.680.213 D create_tensor: loading tensor blk.14.attn_q.scale
+0.00.680.214 D create_tensor: loading tensor blk.14.attn_k.scale
+0.00.680.216 D create_tensor: loading tensor blk.14.attn_v.scale
+0.00.680.218 D create_tensor: loading tensor blk.14.attn_output.scale
+0.00.680.219 D create_tensor: loading tensor blk.14.ffn_gate.scale
+0.00.680.221 D create_tensor: loading tensor blk.14.ffn_down.scale
+0.00.680.223 D create_tensor: loading tensor blk.14.ffn_up.scale
+0.00.680.224 D create_tensor: loading tensor blk.14.attn_q.input_scale
+0.00.680.226 D create_tensor: loading tensor blk.14.attn_k.input_scale
+0.00.680.228 D create_tensor: loading tensor blk.14.attn_v.input_scale
+0.00.680.229 D create_tensor: loading tensor blk.14.attn_output.input_scale
+0.00.680.231 D create_tensor: loading tensor blk.14.ffn_gate.input_scale
+0.00.680.233 D create_tensor: loading tensor blk.14.ffn_down.input_scale
+0.00.680.234 D create_tensor: loading tensor blk.14.ffn_up.input_scale
+0.00.680.236 D create_tensor: loading tensor blk.15.attn_q.scale
+0.00.680.238 D create_tensor: loading tensor blk.15.attn_k.scale
+0.00.680.240 D create_tensor: loading tensor blk.15.attn_v.scale
+0.00.680.241 D create_tensor: loading tensor blk.15.attn_output.scale
+0.00.680.243 D create_tensor: loading tensor blk.15.ffn_gate.scale
+0.00.680.245 D create_tensor: loading tensor blk.15.ffn_down.scale
+0.00.680.247 D create_tensor: loading tensor blk.15.ffn_up.scale
+0.00.680.248 D create_tensor: loading tensor blk.15.attn_q.input_scale
+0.00.680.250 D create_tensor: loading tensor blk.15.attn_k.input_scale
+0.00.680.252 D create_tensor: loading tensor blk.15.attn_v.input_scale
+0.00.680.254 D create_tensor: loading tensor blk.15.attn_output.input_scale
+0.00.680.255 D create_tensor: loading tensor blk.15.ffn_gate.input_scale
+0.00.680.257 D create_tensor: loading tensor blk.15.ffn_down.input_scale
+0.00.680.259 D create_tensor: loading tensor blk.15.ffn_up.input_scale
+0.00.680.261 D create_tensor: loading tensor blk.16.attn_q.scale
+0.00.680.262 D create_tensor: loading tensor blk.16.attn_k.scale
+0.00.680.264 D create_tensor: loading tensor blk.16.attn_v.scale
+0.00.680.266 D create_tensor: loading tensor blk.16.attn_output.scale
+0.00.680.267 D create_tensor: loading tensor blk.16.ffn_gate.scale
+0.00.680.269 D create_tensor: loading tensor blk.16.ffn_down.scale
+0.00.680.270 D create_tensor: loading tensor blk.16.ffn_up.scale
+0.00.680.272 D create_tensor: loading tensor blk.16.attn_q.input_scale
+0.00.680.274 D create_tensor: loading tensor blk.16.attn_k.input_scale
+0.00.680.275 D create_tensor: loading tensor blk.16.attn_v.input_scale
+0.00.680.277 D create_tensor: loading tensor blk.16.attn_output.input_scale
+0.00.680.279 D create_tensor: loading tensor blk.16.ffn_gate.input_scale
+0.00.680.280 D create_tensor: loading tensor blk.16.ffn_down.input_scale
+0.00.680.282 D create_tensor: loading tensor blk.16.ffn_up.input_scale
+0.00.680.284 D create_tensor: loading tensor blk.17.attn_q.scale
+0.00.680.285 D create_tensor: loading tensor blk.17.attn_k.scale
+0.00.680.287 D create_tensor: loading tensor blk.17.attn_v.scale
+0.00.680.289 D create_tensor: loading tensor blk.17.attn_output.scale
+0.00.680.290 D create_tensor: loading tensor blk.17.ffn_gate.scale
+0.00.680.292 D create_tensor: loading tensor blk.17.ffn_down.scale
+0.00.680.293 D create_tensor: loading tensor blk.17.ffn_up.scale
+0.00.680.295 D create_tensor: loading tensor blk.17.attn_q.input_scale
+0.00.680.297 D create_tensor: loading tensor blk.17.attn_k.input_scale
+0.00.680.298 D create_tensor: loading tensor blk.17.attn_v.input_scale
+0.00.680.300 D create_tensor: loading tensor blk.17.attn_output.input_scale
+0.00.680.302 D create_tensor: loading tensor blk.17.ffn_gate.input_scale
+0.00.680.303 D create_tensor: loading tensor blk.17.ffn_down.input_scale
+0.00.680.305 D create_tensor: loading tensor blk.17.ffn_up.input_scale
+0.00.680.307 D create_tensor: loading tensor blk.18.attn_q.scale
+0.00.680.308 D create_tensor: loading tensor blk.18.attn_k.scale
+0.00.680.310 D create_tensor: loading tensor blk.18.attn_v.scale
+0.00.680.312 D create_tensor: loading tensor blk.18.attn_output.scale
+0.00.680.314 D create_tensor: loading tensor blk.18.ffn_gate.scale
+0.00.680.315 D create_tensor: loading tensor blk.18.ffn_down.scale
+0.00.680.317 D create_tensor: loading tensor blk.18.ffn_up.scale
+0.00.680.319 D create_tensor: loading tensor blk.18.attn_q.input_scale
+0.00.680.320 D create_tensor: loading tensor blk.18.attn_k.input_scale
+0.00.680.322 D create_tensor: loading tensor blk.18.attn_v.input_scale
+0.00.680.324 D create_tensor: loading tensor blk.18.attn_output.input_scale
+0.00.680.326 D create_tensor: loading tensor blk.18.ffn_gate.input_scale
+0.00.680.327 D create_tensor: loading tensor blk.18.ffn_down.input_scale
+0.00.680.329 D create_tensor: loading tensor blk.18.ffn_up.input_scale
+0.00.680.331 D create_tensor: loading tensor blk.19.attn_q.scale
+0.00.680.333 D create_tensor: loading tensor blk.19.attn_k.scale
+0.00.680.335 D create_tensor: loading tensor blk.19.attn_v.scale
+0.00.680.336 D create_tensor: loading tensor blk.19.attn_output.scale
+0.00.680.338 D create_tensor: loading tensor blk.19.ffn_gate.scale
+0.00.680.340 D create_tensor: loading tensor blk.19.ffn_down.scale
+0.00.680.342 D create_tensor: loading tensor blk.19.ffn_up.scale
+0.00.680.344 D create_tensor: loading tensor blk.19.attn_q.input_scale
+0.00.680.345 D create_tensor: loading tensor blk.19.attn_k.input_scale
+0.00.680.347 D create_tensor: loading tensor blk.19.attn_v.input_scale
+0.00.680.349 D create_tensor: loading tensor blk.19.attn_output.input_scale
+0.00.680.351 D create_tensor: loading tensor blk.19.ffn_gate.input_scale
+0.00.680.353 D create_tensor: loading tensor blk.19.ffn_down.input_scale
+0.00.680.354 D create_tensor: loading tensor blk.19.ffn_up.input_scale
+0.00.680.356 D create_tensor: loading tensor blk.20.attn_q.scale
+0.00.680.359 D create_tensor: loading tensor blk.20.attn_k.scale
+0.00.680.360 D create_tensor: loading tensor blk.20.attn_v.scale
+0.00.680.363 D create_tensor: loading tensor blk.20.attn_output.scale
+0.00.680.364 D create_tensor: loading tensor blk.20.ffn_gate.scale
+0.00.680.809 D create_tensor: loading tensor blk.20.ffn_down.scale
+0.00.680.813 D create_tensor: loading tensor blk.20.ffn_up.scale
+0.00.680.815 D create_tensor: loading tensor blk.20.attn_q.input_scale
+0.00.680.817 D create_tensor: loading tensor blk.20.attn_k.input_scale
+0.00.680.818 D create_tensor: loading tensor blk.20.attn_v.input_scale
+0.00.680.821 D create_tensor: loading tensor blk.20.attn_output.input_scale
+0.00.680.822 D create_tensor: loading tensor blk.20.ffn_gate.input_scale
+0.00.680.824 D create_tensor: loading tensor blk.20.ffn_down.input_scale
+0.00.680.826 D create_tensor: loading tensor blk.20.ffn_up.input_scale
+0.00.680.828 D create_tensor: loading tensor blk.21.attn_q.scale
+0.00.680.830 D create_tensor: loading tensor blk.21.attn_k.scale
+0.00.680.832 D create_tensor: loading tensor blk.21.attn_v.scale
+0.00.680.834 D create_tensor: loading tensor blk.21.attn_output.scale
+0.00.680.836 D create_tensor: loading tensor blk.21.ffn_gate.scale
+0.00.680.838 D create_tensor: loading tensor blk.21.ffn_down.scale
+0.00.680.839 D create_tensor: loading tensor blk.21.ffn_up.scale
+0.00.680.841 D create_tensor: loading tensor blk.21.attn_q.input_scale
+0.00.680.843 D create_tensor: loading tensor blk.21.attn_k.input_scale
+0.00.680.845 D create_tensor: loading tensor blk.21.attn_v.input_scale
+0.00.680.847 D create_tensor: loading tensor blk.21.attn_output.input_scale
+0.00.680.849 D create_tensor: loading tensor blk.21.ffn_gate.input_scale
+0.00.680.851 D create_tensor: loading tensor blk.21.ffn_down.input_scale
+0.00.680.853 D create_tensor: loading tensor blk.21.ffn_up.input_scale
+0.00.680.855 D create_tensor: loading tensor blk.22.attn_q.scale
+0.00.680.856 D create_tensor: loading tensor blk.22.attn_k.scale
+0.00.680.858 D create_tensor: loading tensor blk.22.attn_v.scale
+0.00.680.860 D create_tensor: loading tensor blk.22.attn_output.scale
+0.00.680.862 D create_tensor: loading tensor blk.22.ffn_gate.scale
+0.00.680.864 D create_tensor: loading tensor blk.22.ffn_down.scale
+0.00.680.866 D create_tensor: loading tensor blk.22.ffn_up.scale
+0.00.680.868 D create_tensor: loading tensor blk.22.attn_q.input_scale
+0.00.680.870 D create_tensor: loading tensor blk.22.attn_k.input_scale
+0.00.680.871 D create_tensor: loading tensor blk.22.attn_v.input_scale
+0.00.680.873 D create_tensor: loading tensor blk.22.attn_output.input_scale
+0.00.680.875 D create_tensor: loading tensor blk.22.ffn_gate.input_scale
+0.00.680.877 D create_tensor: loading tensor blk.22.ffn_down.input_scale
+0.00.680.879 D create_tensor: loading tensor blk.22.ffn_up.input_scale
+0.00.680.881 D create_tensor: loading tensor blk.23.attn_q.scale
+0.00.680.883 D create_tensor: loading tensor blk.23.attn_k.scale
+0.00.680.885 D create_tensor: loading tensor blk.23.attn_v.scale
+0.00.680.887 D create_tensor: loading tensor blk.23.attn_output.scale
+0.00.680.889 D create_tensor: loading tensor blk.23.ffn_gate.scale
+0.00.680.891 D create_tensor: loading tensor blk.23.ffn_down.scale
+0.00.680.892 D create_tensor: loading tensor blk.23.ffn_up.scale
+0.00.680.894 D create_tensor: loading tensor blk.23.attn_q.input_scale
+0.00.680.896 D create_tensor: loading tensor blk.23.attn_k.input_scale
+0.00.680.898 D create_tensor: loading tensor blk.23.attn_v.input_scale
+0.00.680.900 D create_tensor: loading tensor blk.23.attn_output.input_scale
+0.00.680.902 D create_tensor: loading tensor blk.23.ffn_gate.input_scale
+0.00.680.904 D create_tensor: loading tensor blk.23.ffn_down.input_scale
+0.00.680.906 D create_tensor: loading tensor blk.23.ffn_up.input_scale
+0.00.680.908 D create_tensor: loading tensor blk.24.attn_q.scale
+0.00.680.910 D create_tensor: loading tensor blk.24.attn_k.scale
+0.00.680.912 D create_tensor: loading tensor blk.24.attn_v.scale
+0.00.680.914 D create_tensor: loading tensor blk.24.attn_output.scale
+0.00.680.916 D create_tensor: loading tensor blk.24.ffn_gate.scale
+0.00.680.918 D create_tensor: loading tensor blk.24.ffn_down.scale
+0.00.680.920 D create_tensor: loading tensor blk.24.ffn_up.scale
+0.00.680.922 D create_tensor: loading tensor blk.24.attn_q.input_scale
+0.00.680.924 D create_tensor: loading tensor blk.24.attn_k.input_scale
+0.00.680.926 D create_tensor: loading tensor blk.24.attn_v.input_scale
+0.00.680.928 D create_tensor: loading tensor blk.24.attn_output.input_scale
+0.00.680.930 D create_tensor: loading tensor blk.24.ffn_gate.input_scale
+0.00.680.932 D create_tensor: loading tensor blk.24.ffn_down.input_scale
+0.00.680.934 D create_tensor: loading tensor blk.24.ffn_up.input_scale
+0.00.680.936 D create_tensor: loading tensor blk.25.attn_q.scale
+0.00.680.938 D create_tensor: loading tensor blk.25.attn_k.scale
+0.00.680.940 D create_tensor: loading tensor blk.25.attn_v.scale
+0.00.680.942 D create_tensor: loading tensor blk.25.attn_output.scale
+0.00.680.944 D create_tensor: loading tensor blk.25.ffn_gate.scale
+0.00.680.946 D create_tensor: loading tensor blk.25.ffn_down.scale
+0.00.680.948 D create_tensor: loading tensor blk.25.ffn_up.scale
+0.00.680.950 D create_tensor: loading tensor blk.25.attn_q.input_scale
+0.00.680.952 D create_tensor: loading tensor blk.25.attn_k.input_scale
+0.00.680.954 D create_tensor: loading tensor blk.25.attn_v.input_scale
+0.00.680.956 D create_tensor: loading tensor blk.25.attn_output.input_scale
+0.00.680.959 D create_tensor: loading tensor blk.25.ffn_gate.input_scale
+0.00.680.961 D create_tensor: loading tensor blk.25.ffn_down.input_scale
+0.00.680.963 D create_tensor: loading tensor blk.25.ffn_up.input_scale
+0.00.680.965 D create_tensor: loading tensor blk.26.attn_q.scale
+0.00.680.967 D create_tensor: loading tensor blk.26.attn_k.scale
+0.00.680.969 D create_tensor: loading tensor blk.26.attn_v.scale
+0.00.680.971 D create_tensor: loading tensor blk.26.attn_output.scale
+0.00.680.973 D create_tensor: loading tensor blk.26.ffn_gate.scale
+0.00.680.975 D create_tensor: loading tensor blk.26.ffn_down.scale
+0.00.680.977 D create_tensor: loading tensor blk.26.ffn_up.scale
+0.00.680.979 D create_tensor: loading tensor blk.26.attn_q.input_scale
+0.00.680.981 D create_tensor: loading tensor blk.26.attn_k.input_scale
+0.00.680.984 D create_tensor: loading tensor blk.26.attn_v.input_scale
+0.00.680.986 D create_tensor: loading tensor blk.26.attn_output.input_scale
+0.00.680.988 D create_tensor: loading tensor blk.26.ffn_gate.input_scale
+0.00.680.990 D create_tensor: loading tensor blk.26.ffn_down.input_scale
+0.00.680.992 D create_tensor: loading tensor blk.26.ffn_up.input_scale
+0.00.680.994 D create_tensor: loading tensor blk.27.attn_q.scale
+0.00.680.997 D create_tensor: loading tensor blk.27.attn_k.scale
+0.00.680.999 D create_tensor: loading tensor blk.27.attn_v.scale
+0.00.681.001 D create_tensor: loading tensor blk.27.attn_output.scale
+0.00.681.004 D create_tensor: loading tensor blk.27.ffn_gate.scale
+0.00.681.006 D create_tensor: loading tensor blk.27.ffn_down.scale
+0.00.681.009 D create_tensor: loading tensor blk.27.ffn_up.scale
+0.00.681.011 D create_tensor: loading tensor blk.27.attn_q.input_scale
+0.00.681.014 D create_tensor: loading tensor blk.27.attn_k.input_scale
+0.00.681.016 D create_tensor: loading tensor blk.27.attn_v.input_scale
+0.00.681.018 D create_tensor: loading tensor blk.27.attn_output.input_scale
+0.00.681.021 D create_tensor: loading tensor blk.27.ffn_gate.input_scale
+0.00.681.023 D create_tensor: loading tensor blk.27.ffn_down.input_scale
+0.00.681.026 D create_tensor: loading tensor blk.27.ffn_up.input_scale
+0.00.681.030 D done_getting_tensors: tensor 'token_embd.weight' (q4_K) (and 0 others) cannot be used with preferred buffer type CPU_REPACK, using CPU instead
+0.00.849.470 D ggml_metal_log_allocated_size: allocated buffer, size =  2172.19 MiB, ( 2172.64 / 12124.17)
+0.01.181.284 I load_tensors: offloading output layer to GPU
+0.01.181.293 I load_tensors: offloading 27 repeating layers to GPU
+0.01.181.294 I load_tensors: offloaded 29/29 layers to GPU
+0.01.181.299 I load_tensors:   CPU_Mapped model buffer size =   292.36 MiB
+0.01.181.300 I load_tensors:  MTL0_Mapped model buffer size =  2172.17 MiB
+0.01.181.301 I load_tensors: RPC0[192.168.1.242:50052] model buffer size =  1995.92 MiB
+0.24.413.617 I cmn  common_init_: added </s> logit bias = -inf
+0.24.413.802 I cmn  common_init_: added <|endoftext|> logit bias = -inf
+0.24.413.803 I cmn  common_init_: added <|im_end|> logit bias = -inf
+0.24.413.805 I cmn  common_init_: added <|fim_pad|> logit bias = -inf
+0.24.413.805 I cmn  common_init_: added <|repo_name|> logit bias = -inf
+0.24.413.806 I cmn  common_init_: added <|file_sep|> logit bias = -inf
+0.24.413.927 I llama_context: constructing llama_context
+0.24.413.931 I llama_context: n_seq_max             = 1
+0.24.413.932 I llama_context: n_ctx                 = 2048
+0.24.413.932 I llama_context: n_ctx_seq             = 2048
+0.24.413.932 I llama_context: n_batch               = 2048
+0.24.413.933 I llama_context: n_ubatch              = 512
+0.24.413.933 I llama_context: causal_attn           = 1
+0.24.413.934 I llama_context: flash_attn            = auto
+0.24.413.935 I llama_context: kv_unified            = false
+0.24.413.937 I llama_context: freq_base             = 1000000.0
+0.24.413.937 I llama_context: freq_scale            = 1
+0.24.413.937 I llama_context: n_rs_seq              = 0
+0.24.413.938 I llama_context: n_outputs_max         = 1
+0.24.413.938 I llama_context: n_outputs_max_per_seq = 1
+0.24.413.938 I llama_context: n_ctx_seq (2048) < n_ctx_train (32768) -- the full capacity of the model will not be utilized
+0.24.413.951 I ggml_metal_init: allocating
+0.24.413.997 I ggml_metal_init: found device: Apple M3
+0.24.414.003 I ggml_metal_init: picking default device: Apple M3
+0.24.414.078 I ggml_metal_init: use fusion         = true
+0.24.414.078 I ggml_metal_init: use concurrency    = true
+0.24.414.078 I ggml_metal_init: use graph optimize = true
+0.24.414.121 D set_abort_callback: call
+0.24.414.413 I llama_context:        CPU  output buffer size =     0.58 MiB
+0.24.414.453 D llama_kv_cache: layer   0: dev = RPC0
+0.24.414.479 D llama_kv_cache: layer   1: dev = RPC0
+0.24.414.481 D llama_kv_cache: layer   2: dev = RPC0
+0.24.414.484 D llama_kv_cache: layer   3: dev = RPC0
+0.24.414.485 D llama_kv_cache: layer   4: dev = RPC0
+0.24.414.488 D llama_kv_cache: layer   5: dev = RPC0
+0.24.414.490 D llama_kv_cache: layer   6: dev = RPC0
+0.24.414.491 D llama_kv_cache: layer   7: dev = RPC0
+0.24.414.493 D llama_kv_cache: layer   8: dev = RPC0
+0.24.414.495 D llama_kv_cache: layer   9: dev = RPC0
+0.24.414.497 D llama_kv_cache: layer  10: dev = RPC0
+0.24.414.498 D llama_kv_cache: layer  11: dev = RPC0
+0.24.414.504 D llama_kv_cache: layer  12: dev = RPC0
+0.24.414.505 D llama_kv_cache: layer  13: dev = RPC0
+0.24.414.506 D llama_kv_cache: layer  14: dev = RPC0
+0.24.414.508 D llama_kv_cache: layer  15: dev = MTL0
+0.24.414.522 D llama_kv_cache: layer  16: dev = MTL0
+0.24.414.524 D llama_kv_cache: layer  17: dev = MTL0
+0.24.414.525 D llama_kv_cache: layer  18: dev = MTL0
+0.24.414.527 D llama_kv_cache: layer  19: dev = MTL0
+0.24.414.528 D llama_kv_cache: layer  20: dev = MTL0
+0.24.414.529 D llama_kv_cache: layer  21: dev = MTL0
+0.24.414.530 D llama_kv_cache: layer  22: dev = MTL0
+0.24.414.531 D llama_kv_cache: layer  23: dev = MTL0
+0.24.414.533 D llama_kv_cache: layer  24: dev = MTL0
+0.24.414.534 D llama_kv_cache: layer  25: dev = MTL0
+0.24.414.536 D llama_kv_cache: layer  26: dev = MTL0
+0.24.414.539 D llama_kv_cache: layer  27: dev = MTL0
+0.24.419.399 I llama_kv_cache:       MTL0 KV buffer size =    52.00 MiB
+0.24.569.325 I llama_kv_cache: RPC0[192.168.1.242:50052] KV buffer size =    60.00 MiB
+0.24.569.562 I llama_kv_cache: size =  112.00 MiB (  2048 cells,  28 layers,  1/1 seqs), K (f16):   56.00 MiB, V (f16):   56.00 MiB
+0.24.569.570 I llama_kv_cache: attn_rot_k = 0, n_embd_head_k_all = 128
+0.24.569.571 I llama_kv_cache: attn_rot_v = 0, n_embd_head_k_all = 128
+0.24.569.574 D llama_context: enumerating backends
+0.24.569.594 D llama_context: backend_ptrs.size() = 4
+0.24.591.113 I sched_reserve: reserving ...
+0.24.591.129 D sched_reserve: max_nodes = 2712
+0.24.591.630 D sched_reserve: reserving full memory module
+0.24.591.641 D sched_reserve: worst-case: n_tokens = 512, n_seqs = 1, n_outputs = 1
+0.24.591.644 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.24.592.792 I resolve_fused_ops: Flash Attention enabled
+0.24.592.800 I resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+0.24.592.801 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.24.593.710 I resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+0.24.593.720 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.24.594.502 I resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+0.24.594.513 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.24.595.273 I resolve_fused_ops: fused DeepSeek V4 HC post enabled
+0.24.595.280 D graph_reserve: reserving a graph for ubatch with n_tokens =  512, n_seqs =  1, n_outputs =    1
+0.24.759.768 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.25.112.544 D graph_reserve: reserving a graph for ubatch with n_tokens =  512, n_seqs =  1, n_outputs =    1
+0.25.114.205 I sched_reserve: RPC0[192.168.1.242:50052] compute buffer size =   127.01 MiB
+0.25.114.223 I sched_reserve:       MTL0 compute buffer size =   127.01 MiB
+0.25.114.224 I sched_reserve:        CPU compute buffer size =    16.01 MiB
+0.25.114.225 I sched_reserve: graph nodes  = 958
+0.25.114.225 I sched_reserve: graph splits = 3
+0.25.114.227 I sched_reserve: reserve took 523.11 ms, sched copies = 1
+0.25.114.424 I cmn          init: llama threadpool init, n_threads = 4
+0.25.114.678 D attach_threadpool: call
+0.25.114.682 D set_adapters_lora: adapters = 0x0
+0.25.114.683 D adapters_lora_are_same: adapters = 0x0
+0.25.114.685 I cmn  common_init_: warming up the model with an empty run - please wait ... (--no-warmup to disable)
+0.25.791.279 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rms_norm_mul_f32_4', name = 'kernel_rms_norm_mul_f32_4'
+0.25.791.830 D ggml_metal_library_compile_pipeline: loaded kernel_rms_norm_mul_f32_4                     0x10365d080 | th_max = 1024 | th_width =   32
+0.25.791.923 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_q4_K_f32', name = 'kernel_mul_mv_q4_K_f32_nsg=2_ne12=1_r2=1_r3=1_split=0'
+0.25.792.261 D ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_q4_K_f32_nsg=2_ne12=1_r2=1_r3=1_split=0      0x10365d900 | th_max = 1024 | th_width =   32
+0.25.792.308 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0'
+0.25.792.560 D ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0      0x10365e180 | th_max = 1024 | th_width =   32
+0.25.792.620 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rope_neox_f32', name = 'kernel_rope_neox_f32_imrope=0_is_back=0'
+0.25.792.822 D ggml_metal_library_compile_pipeline: loaded kernel_rope_neox_f32_imrope=0_is_back=0       0x10365f800 | th_max = 1024 | th_width =   32
+0.25.792.845 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_set_rows_f32_i64_f16', name = 'kernel_set_rows_f32_i64_f16'
+0.25.792.974 D ggml_metal_library_compile_pipeline: loaded kernel_set_rows_f32_i64_f16                   0x10365fb80 | th_max = 1024 | th_width =   32
+0.25.793.154 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_f16_dk128_dv128', name = 'kernel_flash_attn_ext_vec_f16_dk128_dv128_mask=1_sink=0_bias=0_scap=0_kvpad=0_sparse=0_ns10=512_ns20=512_nsg=1_nwg=32'
+0.25.793.423 D ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_f16_dk128_dv128_mask=1_sink=0_bias=0_scap=0_kvpad=0_sparse=0_ns10=512_ns20=512_nsg=1_nwg=32      0x10365ff00 | th_max = 1024 | th_width =   32
+0.25.793.445 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_reduce', name = 'kernel_flash_attn_ext_vec_reduce_dv=128_nwg=32'
+0.25.793.609 D ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_reduce_dv=128_nwg=32     0x789bc78000 | th_max = 1024 | th_width =   32
+0.25.793.642 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=0_cb=0'
+0.25.793.786 D ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=0_cb=0     0x789bc78380 | th_max = 1024 | th_width =   32
+0.25.793.955 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_swiglu_f32', name = 'kernel_swiglu_f32'
+0.25.794.079 D ggml_metal_library_compile_pipeline: loaded kernel_swiglu_f32                            0x789bc78700 | th_max = 1024 | th_width =   32
+0.25.795.218 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_q6_K_f32', name = 'kernel_mul_mv_q6_K_f32_nsg=2_ne12=1_r2=1_r3=1_split=0'
+0.25.795.436 D ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_q6_K_f32_nsg=2_ne12=1_r2=1_r3=1_split=0     0x789bc78e00 | th_max = 1024 | th_width =   32
+0.25.800.507 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_get_rows_f32', name = 'kernel_get_rows_f32'
+0.25.800.754 D ggml_metal_library_compile_pipeline: loaded kernel_get_rows_f32                          0x789bc79180 | th_max = 1024 | th_width =   32
+0.26.139.764 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 2048, kv_unified = 'false'
+0.26.139.772 I spec common_specu: no implementations specified for speculative decoding
+0.26.139.773 I slot   load_model: id  0 | task -1 | new slot, n_ctx = 2048
+0.26.139.787 D slot        reset: id  0 | task -1 | 
+0.26.139.843 I srv    load_model: prompt cache is enabled, size limit: 8192 MiB
+0.26.139.844 I srv    load_model: use `--cache-ram 0` to disable the prompt cache
+0.26.139.844 I srv    load_model: for more info see https://github.com/ggml-org/llama.cpp/pull/16391
+0.26.139.845 I srv    load_model: context checkpoints enabled, max = 32, min spacing = 8192
+0.26.139.859 I srv          init: idle slots will be saved to prompt cache upon starting a new task
+0.26.139.859 D srv          init: __TEST_TAG_CACHE_IDLE_SLOTS_ENABLED__
+0.26.142.398 D common_chat_templates_apply_jinja: using differential autoparser
+0.26.142.410 D [1m[38;5;126m=== Starting differential analysis ===
+[0m0.26.142.411 D [1m[38;5;214mPhase 1: Reasoning analysis
+[0m0.26.143.329 D [1m[38;5;214mPhase 2: Content analysis
+[0m0.26.144.355 D [1m[38;5;214mPhase 3: Tool call analysis
+[0m0.26.145.671 D 
+--- Reasoning & Content Structure ---
+0.26.145.678 D user_msg_start: <|im_start|>user
+0.26.145.678 D assistant_msg_start: <|im_start|>assistant
+0.26.145.679 D reasoning_mode: NONE
+0.26.145.680 D reasoning_start: ''
+0.26.145.680 D reasoning_end: ''
+0.26.145.681 D content_mode: PLAIN
+0.26.145.681 D content_start: ''
+0.26.145.681 D content_end: ''
+0.26.145.682 D 
+--- Tool Call Structure ---
+0.26.145.682 D tool_mode: JSON_NATIVE
+0.26.145.682 D supports_tools: true
+0.26.145.683 D supports_parallel_calls: true
+0.26.145.683 D tool_section_start: ''
+0.26.145.683 D tool_section_end: ''
+0.26.145.683 D per_call_start: '<tool_call>
+'
+0.26.145.683 D per_call_end: '</tool_call>'
+0.26.145.684 D func_name_prefix: ''
+0.26.145.684 D func_name_suffix: ''
+0.26.145.684 D func_args_separator: ''
+0.26.145.685 D func_close: ''
+0.26.145.685 D call_id_prefix: ''
+0.26.145.685 D call_id_suffix: ''
+0.26.145.686 D call_id_pos: 'NONE'
+0.26.145.686 D args_start: ''
+0.26.145.686 D args_end: ''
+0.26.145.686 D arg_name_prefix: ''
+0.26.145.687 D arg_name_suffix: ''
+0.26.145.687 D arg_value_prefix: ''
+0.26.145.687 D arg_value_suffix: ''
+0.26.145.687 D name_field: 'name'
+0.26.145.687 D args_field: 'arguments'
+0.26.145.687 D id_field: ''
+0.26.145.687 D gen_id_field: ''
+0.26.145.688 D parameter_order: 'name, arguments'
+0.26.145.688 D [1m[38;5;126m=== Differential analysis complete ===
+[0m0.26.146.290 D common_chat_templates_apply_jinja: generated parser:
+Sequence(Literal(<|im_start|>assistant
+), Epsilon, Tag(content, Until()), End)
+
+parser generation prompt: <|im_start|>assistant
+
+0.26.146.297 I srv          init: init: chat template, example_format: '<|im_start|>system
+You are a helpful assistant<|im_end|>
+<|im_start|>user
+Hello<|im_end|>
+<|im_start|>assistant
+Hi there<|im_end|>
+<|im_start|>user
+How are you?<|im_end|>
+<|im_start|>assistant
+'
+0.26.146.326 D common_chat_templates_apply_jinja: using differential autoparser
+0.26.146.326 D [1m[38;5;126m=== Starting differential analysis ===
+[0m0.26.146.326 D [1m[38;5;214mPhase 1: Reasoning analysis
+[0m0.26.147.088 D [1m[38;5;214mPhase 2: Content analysis
+[0m0.26.147.899 D [1m[38;5;214mPhase 3: Tool call analysis
+[0m0.26.149.119 D 
+--- Reasoning & Content Structure ---
+0.26.149.125 D user_msg_start: <|im_start|>user
+0.26.149.125 D assistant_msg_start: <|im_start|>assistant
+0.26.149.126 D reasoning_mode: NONE
+0.26.149.126 D reasoning_start: ''
+0.26.149.126 D reasoning_end: ''
+0.26.149.127 D content_mode: PLAIN
+0.26.149.127 D content_start: ''
+0.26.149.128 D content_end: ''
+0.26.149.128 D 
+--- Tool Call Structure ---
+0.26.149.128 D tool_mode: JSON_NATIVE
+0.26.149.128 D supports_tools: true
+0.26.149.128 D supports_parallel_calls: true
+0.26.149.129 D tool_section_start: ''
+0.26.149.129 D tool_section_end: ''
+0.26.149.129 D per_call_start: '<tool_call>
+'
+0.26.149.129 D per_call_end: '</tool_call>'
+0.26.149.129 D func_name_prefix: ''
+0.26.149.130 D func_name_suffix: ''
+0.26.149.130 D func_args_separator: ''
+0.26.149.130 D func_close: ''
+0.26.149.130 D call_id_prefix: ''
+0.26.149.130 D call_id_suffix: ''
+0.26.149.130 D call_id_pos: 'NONE'
+0.26.149.131 D args_start: ''
+0.26.149.131 D args_end: ''
+0.26.149.131 D arg_name_prefix: ''
+0.26.149.131 D arg_name_suffix: ''
+0.26.149.131 D arg_value_prefix: ''
+0.26.149.131 D arg_value_suffix: ''
+0.26.149.132 D name_field: 'name'
+0.26.149.132 D args_field: 'arguments'
+0.26.149.132 D id_field: ''
+0.26.149.132 D gen_id_field: ''
+0.26.149.132 D parameter_order: 'name, arguments'
+0.26.149.132 D [1m[38;5;126m=== Differential analysis complete ===
+[0m0.26.149.366 D common_chat_templates_apply_jinja: generated parser:
+Sequence(Literal(<|im_start|>assistant
+), Epsilon, Tag(content, Until()), End)
+
+parser generation prompt: <|im_start|>assistant
+
+0.26.149.369 I srv          init: init: chat template, thinking = 0
+0.26.149.376 I srv          init: preserve_reasoning kwarg: not supported by template
+0.26.149.395 I srv  llama_server: model loaded
+0.26.149.397 I srv  llama_server: listening on http://127.0.0.1:52653
+0.26.149.485 D que    start_loop: processing new tasks
+0.26.149.486 D que    start_loop: update slots
+0.26.149.488 I srv  update_slots: all slots are idle
+0.26.149.489 D que    start_loop: waiting for new tasks
+0.26.215.527 D srv          stop: all tasks already finished, no need to cancel
+0.26.216.458 D srv          stop: all tasks already finished, no need to cancel
+0.26.217.580 D srv          stop: all tasks already finished, no need to cancel
+0.26.218.968 D common_chat_templates_apply_jinja: using differential autoparser
+0.26.218.980 D [1m[38;5;126m=== Starting differential analysis ===
+[0m0.26.218.980 D [1m[38;5;214mPhase 1: Reasoning analysis
+[0m0.26.219.951 D [1m[38;5;214mPhase 2: Content analysis
+[0m0.26.220.826 D [1m[38;5;214mPhase 3: Tool call analysis
+[0m0.26.222.164 D 
+--- Reasoning & Content Structure ---
+0.26.222.175 D user_msg_start: <|im_start|>user
+0.26.222.175 D assistant_msg_start: <|im_start|>assistant
+0.26.222.177 D reasoning_mode: NONE
+0.26.222.177 D reasoning_start: ''
+0.26.222.177 D reasoning_end: ''
+0.26.222.178 D content_mode: PLAIN
+0.26.222.178 D content_start: ''
+0.26.222.178 D content_end: ''
+0.26.222.178 D 
+--- Tool Call Structure ---
+0.26.222.179 D tool_mode: JSON_NATIVE
+0.26.222.179 D supports_tools: true
+0.26.222.180 D supports_parallel_calls: true
+0.26.222.180 D tool_section_start: ''
+0.26.222.180 D tool_section_end: ''
+0.26.222.180 D per_call_start: '<tool_call>
+'
+0.26.222.180 D per_call_end: '</tool_call>'
+0.26.222.181 D func_name_prefix: ''
+0.26.222.181 D func_name_suffix: ''
+0.26.222.181 D func_args_separator: ''
+0.26.222.181 D func_close: ''
+0.26.222.181 D call_id_prefix: ''
+0.26.222.182 D call_id_suffix: ''
+0.26.222.182 D call_id_pos: 'NONE'
+0.26.222.182 D args_start: ''
+0.26.222.183 D args_end: ''
+0.26.222.183 D arg_name_prefix: ''
+0.26.222.183 D arg_name_suffix: ''
+0.26.222.183 D arg_value_prefix: ''
+0.26.222.183 D arg_value_suffix: ''
+0.26.222.183 D name_field: 'name'
+0.26.222.184 D args_field: 'arguments'
+0.26.222.184 D id_field: ''
+0.26.222.184 D gen_id_field: ''
+0.26.222.184 D parameter_order: 'name, arguments'
+0.26.222.184 D [1m[38;5;126m=== Differential analysis complete ===
+[0m0.26.222.449 D common_chat_templates_apply_jinja: generated parser:
+Sequence(Literal(<|im_start|>assistant
+), Epsilon, Tag(content, Until()), End)
+
+parser generation prompt: <|im_start|>assistant
+
+0.26.222.496 I srv  server_strea: conv_id= (empty=1)
+0.26.222.776 I srv    operator(): chat format: peg-native
+0.26.222.807 D srv  eval_llama_c: reasoning budget: tokens=-1, generation_prompt='<|im_start|>assistant
+', start=0 toks, end=0 seqs, forced=0 toks
+0.26.222.847 D res  add_waiting_: add task 0 to waiting list. current waiting = 0 (before add)
+0.26.222.849 D que          post: new task, id = 0/1, front = 0
+0.26.222.883 D que    start_loop: processing new tasks
+0.26.222.885 D que  process_new_: processing task, id = 0
+0.26.222.888 I slot get_availabl: id  0 | task -1 |  - skipping, slot is empty
+0.26.222.889 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+0.26.222.890 I srv  get_availabl: updating prompt cache
+0.26.222.895 I srv          load:  - looking for better prompt, base f_keep = -1.000, f_sim = 0.000
+0.26.222.899 I srv        update:  - cache state: 0 prompts, 0.000 MiB (limits: 8192.000 MiB, 2048 tokens, 8589934592 est)
+0.26.222.899 I srv  get_availabl: prompt cache update took 0.01 ms
+0.26.222.909 D slot launch_slot_: id  0 | task -1 | launching slot : {"id":0,"n_ctx":2048,"speculative":false,"is_processing":false}
+0.26.222.934 D common_sampler_init: prefill token: 151644 = <|im_start|>
+0.26.222.935 D common_sampler_init: prefill token: 77091 = assistant
+0.26.222.936 D common_sampler_init: prefill token: 198 = 
+
+0.26.222.990 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> ?penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.26.222.997 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 64, repeat_penalty = 1.000, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.000
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.26.222.998 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.26.222.999 D que    start_loop: update slots
+0.26.223.001 D srv  update_slots: posting NEXT_RESPONSE
+0.26.223.002 D que          post: new task, id = 1, front = 0
+0.26.223.018 I slot   operator(): id  0 | task 0 | new prompt, n_ctx_slot = 2048, n_keep = 0, task.n_tokens = 30
+0.26.223.025 D res          send: sending result for task id = 0
+0.26.223.025 D res          send: task id = 0 pushed to result queue
+0.26.223.055 I slot   operator(): id  0 | task 0 | cached n_tokens = 0, memory_seq_rm [0, end)
+0.26.223.073 I slot init_sampler: id  0 | task 0 | init sampler, took 0.01 ms, tokens: text = 30, total = 30
+0.26.223.075 D slot   operator(): id  0 | task 0 | main/do_checkpoint = no, pos_min = -1, pos_max = -1
+0.26.223.088 D set_adapters_lora: adapters = 0x0
+0.26.223.089 D adapters_lora_are_same: adapters = 0x0
+0.26.223.090 D set_embeddings: value = 0
+0.26.223.091 D srv        decode: n_batch (effective) = 2048, off = 0
+0.26.223.092 D que  yield_to_que: yielding to queue
+0.26.223.116 D srv          stop: all tasks already finished, no need to cancel
+0.26.223.121 D que  process_new_: processing task, id = 1
+0.26.223.122 D srv  process_sing: decoding, decline task, id_task = 1
+0.26.223.122 D que  process_new_: task declined, id = 1
+0.26.814.099 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q4_K_f32', name = 'kernel_mul_mm_q4_K_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+0.26.814.810 D ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q4_K_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1     0x789bc79500 | th_max = 1024 | th_width =   32
+0.26.814.927 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_blk', name = 'kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64'
+0.26.815.184 D ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64     0x789bc79c00 | th_max = 1024 | th_width =   32
+0.26.815.217 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f16_dk128_dv128', name = 'kernel_flash_attn_ext_f16_dk128_dv128_mask=1_sinks=0_bias=0_scap=0_kvpad=0_bcm=1_ns10=512_ns20=512_nsg=4'
+0.26.815.780 D ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f16_dk128_dv128_mask=1_sinks=0_bias=0_scap=0_kvpad=0_bcm=1_ns10=512_ns20=512_nsg=4     0x789bc79f80 | th_max = 1024 | th_width =   32
+0.26.816.235 D ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q6_K_f32', name = 'kernel_mul_mm_q6_K_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+0.26.816.574 D ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q6_K_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1     0x789bc79880 | th_max = 1024 | th_width =   32
+0.26.908.659 D que  yield_to_que: done yielding to queue
+0.26.909.128 D res          send: sending result for task id = 0
+0.26.909.131 D res          send: task id = 0 pushed to result queue
+0.26.909.136 D slot process_toke: id  0 | task 0 | n_gen = 1, n_remaining = 7, next token:    47 'P'
+0.26.909.138 D que    start_loop: waiting for new tasks
+0.26.909.138 D que    start_loop: processing new tasks
+0.26.909.142 D que  process_new_: processing task, id = 1
+0.26.909.143 D que    start_loop: update slots
+0.26.909.144 D srv  update_slots: posting NEXT_RESPONSE
+0.26.909.145 D que          post: new task, id = 2, front = 0
+0.26.909.149 D slot handle_last_: id  0 | task 0 | slot decode token, id=47, n_ctx = 2048, n_tokens = 30, truncated = 0
+0.26.909.152 D set_adapters_lora: adapters = 0x0
+0.26.909.153 D adapters_lora_are_same: adapters = 0x0
+0.26.909.153 D set_embeddings: value = 0
+0.26.909.154 D srv        decode: n_batch (effective) = 2048, off = 0
+0.26.909.155 D que  yield_to_que: yielding to queue
+0.26.909.165 D que  process_new_: processing task, id = 2
+0.26.909.166 D srv  process_sing: decoding, decline task, id_task = 2
+0.26.909.167 D que  process_new_: task declined, id = 2
+0.26.909.284 D srv    operator(): http: streamed chunk: data: {"choices":[{"finish_reason":null,"index":0,"delta":{"role":"assistant","content":null}}],"created":1791644980,"id":"chatcmpl-WSqAcjRFM01PYQEwapi32nUzIWg0u9Jl","model":"/Users/ohadrosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf","system_fingerprint":"b1-1e7bcf3","object":"chat.completion.chunk"}
+
+data: {"choices":[{"finish_reason":null,"index":0,"delta":{"content":"P"}}],"created":1791644980,"id":"chatcmpl-WSqAcjRFM01PYQEwapi32nUzIWg0u9Jl","model":"/Users/ohadrosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf","system_fingerprint":"b1-1e7bcf3","object":"chat.completion.chunk","timings":{"cache_n":0,"prompt_n":30,"prompt_ms":686.104,"prompt_per_token_ms":22.870133333333335,"prompt_per_second":43.72514954001142,"predicted_n":1,"predicted_ms":0.001,"predicted_per_token_ms":0.0,"predicted_per_second":0.0}}
+
+
+0.27.062.958 D que  yield_to_que: done yielding to queue
+0.27.063.227 D res          send: sending result for task id = 0
+0.27.063.230 D res          send: task id = 0 pushed to result queue
+0.27.063.234 D slot process_toke: id  0 | task 0 | n_gen = 2, n_remaining = 6, next token:   644 'ong'
+0.27.063.237 D que    start_loop: waiting for new tasks
+0.27.063.237 D que    start_loop: processing new tasks
+0.27.063.239 D que  process_new_: processing task, id = 2
+0.27.063.240 D que    start_loop: update slots
+0.27.063.241 D srv  update_slots: posting NEXT_RESPONSE
+0.27.063.243 D que          post: new task, id = 3, front = 0
+0.27.063.246 D slot handle_last_: id  0 | task 0 | slot decode token, id=644, n_ctx = 2048, n_tokens = 31, truncated = 0
+0.27.063.250 D set_adapters_lora: adapters = 0x0
+0.27.063.250 D adapters_lora_are_same: adapters = 0x0
+0.27.063.251 D set_embeddings: value = 0
+0.27.063.252 D srv        decode: n_batch (effective) = 2048, off = 0
+0.27.063.252 D que  yield_to_que: yielding to queue
+0.27.063.261 D que  process_new_: processing task, id = 3
+0.27.063.261 D srv  process_sing: decoding, decline task, id_task = 3
+0.27.063.262 D que  process_new_: task declined, id = 3
+0.27.063.360 D srv    operator(): http: streamed chunk: data: {"choices":[{"finish_reason":null,"index":0,"delta":{"content":"ong"}}],"created":1791644981,"id":"chatcmpl-WSqAcjRFM01PYQEwapi32nUzIWg0u9Jl","model":"/Users/ohadrosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf","system_fingerprint":"b1-1e7bcf3","object":"chat.completion.chunk","timings":{"cache_n":0,"prompt_n":30,"prompt_ms":686.104,"prompt_per_token_ms":22.870133333333335,"prompt_per_second":43.72514954001142,"predicted_n":2,"predicted_ms":154.099,"predicted_per_token_ms":154.099,"predicted_per_second":6.4893347782918775}}
+
+
+0.27.244.335 D que  yield_to_que: done yielding to queue
+0.27.244.624 D res          send: sending result for task id = 0
+0.27.244.629 D res          send: task id = 0 pushed to result queue
+0.27.244.633 D slot process_toke: id  0 | task 0 | n_gen = 3, n_remaining = 5, next token:     0 '!'
+0.27.244.686 D que    start_loop: waiting for new tasks
+0.27.244.686 D que    start_loop: processing new tasks
+0.27.244.688 D que  process_new_: processing task, id = 3
+0.27.244.690 D que    start_loop: update slots
+0.27.244.691 D srv  update_slots: posting NEXT_RESPONSE
+0.27.244.693 D que          post: new task, id = 4, front = 0
+0.27.244.696 D slot handle_last_: id  0 | task 0 | slot decode token, id=0, n_ctx = 2048, n_tokens = 32, truncated = 0
+0.27.244.700 D set_adapters_lora: adapters = 0x0
+0.27.244.701 D adapters_lora_are_same: adapters = 0x0
+0.27.244.701 D set_embeddings: value = 0
+0.27.244.702 D srv        decode: n_batch (effective) = 2048, off = 0
+0.27.244.703 D que  yield_to_que: yielding to queue
+0.27.244.783 D que  process_new_: processing task, id = 4
+0.27.244.783 D srv  process_sing: decoding, decline task, id_task = 4
+0.27.244.784 D que  process_new_: task declined, id = 4
+0.27.244.817 D srv    operator(): http: streamed chunk: data: {"choices":[{"finish_reason":null,"index":0,"delta":{"content":"!"}}],"created":1791644981,"id":"chatcmpl-WSqAcjRFM01PYQEwapi32nUzIWg0u9Jl","model":"/Users/ohadrosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf","system_fingerprint":"b1-1e7bcf3","object":"chat.completion.chunk","timings":{"cache_n":0,"prompt_n":30,"prompt_ms":686.104,"prompt_per_token_ms":22.870133333333335,"prompt_per_second":43.72514954001142,"predicted_n":3,"predicted_ms":335.496,"predicted_per_token_ms":167.748,"predicted_per_second":5.961322936786132}}
+
+
+0.27.416.317 D que  yield_to_que: done yielding to queue
+0.27.416.591 D res          send: sending result for task id = 0
+0.27.416.595 D res          send: task id = 0 pushed to result queue
+0.27.416.599 D slot process_toke: id  0 | task 0 | stopped by EOS
+0.27.416.600 D slot process_toke: id  0 | task 0 | n_gen = 4, n_remaining = 4, next token: 151645 ''
+0.27.416.603 I slot print_timing: id  0 | task 0 | prompt eval time =     686.10 ms /    30 tokens (   22.87 ms per token,    43.73 tokens per second)
+0.27.416.604 I slot print_timing: id  0 | task 0 |        eval time =     507.46 ms /     4 tokens (  169.15 ms per token,     5.91 tokens per second)
+0.27.416.605 I slot print_timing: id  0 | task 0 |       total time =    1193.57 ms /    34 tokens
+0.27.416.606 I slot print_timing: id  0 | task 0 |    graphs reused =          3
+0.27.416.632 D res          send: sending result for task id = 0
+0.27.416.633 D res          send: task id = 0 pushed to result queue
+0.27.416.633 I slot      release: id  0 | task 0 | stop processing: n_tokens = 33, truncated = 0
+0.27.416.635 D slot        reset: id  0 | task 0 | 
+0.27.416.639 D que    start_loop: waiting for new tasks
+0.27.416.639 D que    start_loop: processing new tasks
+0.27.416.641 D que  process_new_: processing task, id = 4
+0.27.416.642 D que    start_loop: update slots
+0.27.416.643 I srv  update_slots: all slots are idle
+0.27.416.643 D que    start_loop: waiting for new tasks
+0.27.416.712 D Parsed message: {"role":"assistant","content":"Pong!"}
+0.27.416.885 D srv    operator(): http: streamed chunk: data: {"choices":[{"finish_reason":"stop","index":0,"delta":{}}],"created":1791644981,"id":"chatcmpl-WSqAcjRFM01PYQEwapi32nUzIWg0u9Jl","model":"/Users/ohadrosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf","system_fingerprint":"b1-1e7bcf3","object":"chat.completion.chunk","timings":{"cache_n":0,"prompt_n":30,"prompt_ms":686.104,"prompt_per_token_ms":22.870133333333335,"prompt_per_second":43.72514954001142,"predicted_n":4,"predicted_ms":507.463,"predicted_per_token_ms":169.15433333333334,"predicted_per_second":5.911761054500525},"__verbose":{"index":0,"content":"","tokens":[],"id_slot":0,"stop":true,"model":"/Users/ohadrosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf","tokens_predicted":4,"tokens_evaluated":30,"generation_settings":{"seed":4294967295,"temperature":0.0,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"top_k":40,"top_p":0.949999988079071,"min_p":0.05000000074505806,"top_n_sigma":-1.0,"xtc_probability":0.0,"xtc_threshold":0.10000000149011612,"typical_p":1.0,"repeat_last_n":64,"repeat_penalty":1.0,"presence_penalty":0.0,"frequency_penalty":0.0,"dry_multiplier":0.0,"dry_base":1.75,"dry_allowed_length":2,"dry_penalty_last_n":64,"dry_sequence_breakers":["\n",":","\"","*"],"mirostat":0,"mirostat_tau":5.0,"mirostat_eta":0.10000000149011612,"adaptive_target":-1.0,"adaptive_decay":0.8999999761581421,"stop":[],"max_tokens":8,"n_predict":8,"n_keep":0,"n_discard":0,"ignore_eos":false,"stream":true,"logit_bias":[],"n_probs":0,"min_keep":0,"grammar":"","grammar_lazy":false,"grammar_triggers":[],"preserved_tokens":[151657,151658],"chat_format":"peg-native","reasoning_format":"deepseek","reasoning_in_content":false,"generation_prompt":"<|im_start|>assistant\n","samplers":["penalties","dry","top_n_sigma","top_k","typ_p","top_p","min_p","xtc","temperature"],"speculative.types":"none","timings_per_token":true,"post_sampling_probs":false,"backend_sampling":false,"lora":[]},"prompt":"<|im_start|>system\nYou are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>\n<|im_start|>user\nping<|im_end|>\n<|im_start|>assistant\n","has_new_line":false,"truncated":false,"stop_type":"eos","stopping_word":"","tokens_cached":33,"timings":{"cache_n":0,"prompt_n":30,"prompt_ms":686.104,"prompt_per_token_ms":22.870133333333335,"prompt_per_second":43.72514954001142,"predicted_n":4,"predicted_ms":507.463,"predicted_per_token_ms":169.15433333333334,"predicted_per_second":5.911761054500525}}}
+
+
+0.27.416.927 D srv    operator(): all results received, terminating stream
+0.27.416.970 D srv    operator(): http: streamed chunk: data: [DONE]
+
+
+0.27.417.000 D srv    operator(): http: stream ended
+0.27.417.005 D res  remove_waiti: remove task 0 from waiting list. current waiting = 1 (before remove)
+0.27.417.006 D srv          stop: all tasks already finished, no need to cancel
+0.27.417.130 D que    start_loop: processing new tasks
+0.27.417.131 D que  process_new_: terminate
+0.27.417.171 I srv    operator(): operator(): cleaning up before exit...
+0.27.525.101 I common_memory_breakdown_print: | memory breakdown [MiB]         | total    free    self   model   context   compute    unaccounted |
+0.27.525.113 I common_memory_breakdown_print: |   - RPC0 (192.168.1.242:50052) | 18186 = 16002 + (2182 =  1995 +      60 +     127) +           0 |
+0.27.525.114 I common_memory_breakdown_print: |   - MTL0 (Apple M3)            | 12124 =  9772 + (2351 =  2172 +      52 +     127) +           0 |
+0.27.525.114 I common_memory_breakdown_print: |   - Host                       |                   308 =   292 +       0 +      16                |
+0.27.525.349 D ~llama_context: RPC0[192.168.1.242:50052] compute buffer size is 127.0098 MiB, matches expectation of 127.0098 MiB
+0.27.525.350 D ~llama_context:       MTL0 compute buffer size is 127.0098 MiB, matches expectation of 127.0098 MiB
+0.27.525.352 D ~llama_context:        CPU compute buffer size is  16.0117 MiB, matches expectation of  16.0117 MiB
+0.27.525.353 D ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+0.27.525.429 I ggml_metal_free: deallocating

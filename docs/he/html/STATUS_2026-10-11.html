@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Nocturne — מצב וממצאים לקראת הפגישה עם חן</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <link rel="stylesheet" href="he.css" />
+</head>
+<body>
+<h1 id="nocturne--מצב-וממצאים-לקראת-הפגישה-עם-חן">Nocturne — מצב וממצאים לקראת הפגישה עם חן</h1>
+<p><strong>מצב (25.10.2026):</strong> תמונת מצב שהוכנה לפגישה עם חן ב-11.10. הממצאים בתוקף. המסגור והיעדים עודכנו אחרי הפגישה: ראו MEETING_CHEN_2026-10-11.md ו-CURRENT_CONTEXT.md.</p>
+<p><strong>תאריך:</strong> 11.10.2026 · <strong>עודכן לאחר ביקורת Codex, I014.</strong> · <em>I015 (Claude): שלוש שורות Air→M5 הפסולות הועברו ל-<code>runs_superseded_ts_syntax/</code> וה-REPORT נוצר מחדש (M5→Air בלבד; קבצים מרובי-תצורות מסומנים INVALID); ה-timeout ב-<code>10_capacity.sh</code> תוקן להרוג את כל עץ התהליכים; המסקנה על יתרון כיוון M5 נמשכה.</em></p>
+<p>המסמך מפריד תוצאות שנצפו, מגבלות איסוף והשערות. הביקורת המפורטת והפניות למזהי הריצות נמצאות ב־<a href="SHARED_RESEARCH_AND_DECISIONS.md#i014--codex--2026-10-11--ביקורת-i012i013-היתכנות-נתמכת-שלוש-שורות-b-פסולות-וr3b-כבר-נמצא-בקבצים">I014 במסמך המשותף</a>. הנתונים המקוריים נשמרו. לא הורץ ניסוי חדש במסגרת הביקורת.</p>
+<h2 id="1-המטרה-והמצב-בפועל">1. המטרה והמצב בפועל</h2>
+<p>החלטת הצוות T1: להראות <strong>היתכנות ויעילות של חלוקת מודל על מחשבים נוספים</strong>, כשהרשת היא אילוץ נתון. המדדים נפרדים: קיבולת תחת מדיניות זיכרון; ביצועי בקשה יחידה; תפוקה תחת עומס לעומת עותקים עצמאיים.</p>
+<p>החומרה שנבדקה: Air M3 עם 16GB ו־M5 עם 24GB, Metal בשניהם, Wi-Fi ביתי, llama.cpp SHA <code>1e7bcf3</code>. NVIDIA ו־N=3 טרם נבדקו.</p>
+<table>
+<thead>
+<tr class="header">
+<th>שלב</th>
+<th>מצב לפי הקבצים</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>R0 — בסיס ומדידות חלוקה</td>
+<td>A קיימת; B תקינה מבחינת תחביר וראיות placement בכיוון M5→Air בלבד; כיוון Air→M5 דורש איסוף מחדש</td>
+</tr>
+<tr class="even">
+<td>R2 — בלוק TP יחיד ובדיקת נכונות</td>
+<td>אין תוצאות מתועדות</td>
+</tr>
+<tr class="odd">
+<td>R3a — קיבולת</td>
+<td>14 ריצות קיימות; היתכנות ראשונית של 32B בחלוקת שכבות נתמכת</td>
+</tr>
+<tr class="even">
+<td>R3b — עומס</td>
+<td><strong>שש ריצות קיימות</strong>, חלוקה מול עותקים עצמאיים בעומסים 1/4/8</td>
+</tr>
+<tr class="odd">
+<td>R3c — trace</td>
+<td>שתי ריצות קצרות של worker, עם ספירת פקודות/בתים ו־graph reuse; אין מדידת זמני המתנה בצד requester</td>
+</tr>
+<tr class="even">
+<td>TP מעל RPC, נכונות מספרית מלאה ו־replay</td>
+<td>טרם הושלמו; ADR-007 פתוח</td>
+</tr>
+</tbody>
+</table>
+<p>אלה pilots, לא השלמת כל דרישות R3. הרצת מודל מלא ב־llama.cpp בחלוקת שכבות אינה ביצוע R2.</p>
+<h2 id="2-התוצאה-המרכזית-32b-עם-offload-מלא-בשני-מחשבים">2. התוצאה המרכזית: 32B עם offload מלא בשני מחשבים</h2>
+<p><strong>הניסוח להצגה:</strong> בניסוי עם Qwen2.5-32B-Instruct Q4_K_M, הקשר מוגדר 2048 ובקשה ל־32 טוקני פלט, הריצות המקומיות עם offload מלא של בלוקי המודל ושכבת הפלט נכשלו בזיכרון GPU. ארבע ריצות בשני המק־ים השלימו generation בכ־3.94–4.44 tok/s עם 65/65 offload. זו הדגמת היתכנות בתצורה שנבדקה, ללא reference מספרי מלא.</p>
+<table>
+<thead>
+<tr class="header">
+<th>תצורה</th>
+<th>תוצאה</th>
+<th>ראיה</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Air מקומי, P1 (<code>-ngl 99 -fit off</code>)</td>
+<td>כשל זיכרון GPU</td>
+<td><a href="../../experiments/r3/capacity/20261010-160552_Mac_cap_local_Qwen2.5-32B-Instruct-Q4_K_M_P1/stderr.log">stderr</a></td>
+</tr>
+<tr class="even">
+<td>M5 מקומי, P1</td>
+<td>כשל זיכרון GPU</td>
+<td><a href="../../experiments/r3/capacity/20261010-160638_MMF4FWRG4R_cap_local_Qwen2.5-32B-Instruct-Q4_K_M_P1/stderr.log">stderr</a></td>
+</tr>
+<tr class="odd">
+<td>M5 מקומי, P2 (<code>-fit on</code>)</td>
+<td>השלים, 58/65 offload, 0.31 tok/s</td>
+<td><a href="../../experiments/r3/capacity/20261010-160717_MMF4FWRG4R_cap_local_Qwen2.5-32B-Instruct-Q4_K_M_P2/stderr.log">stderr</a></td>
+</tr>
+<tr class="even">
+<td>Air מקומי, P2</td>
+<td>wrapper הכריז timeout ב־900s; הלוג מתעד השלמה מאוחרת בכ־17:47 ובכ־0.04 tok/s</td>
+<td><a href="../../experiments/r3/capacity/20261010-160720_Mac_cap_local_Qwen2.5-32B-Instruct-Q4_K_M_P2/stderr.log">stderr</a></td>
+</tr>
+<tr class="odd">
+<td>Air→M5, automatic</td>
+<td>4.06 tok/s; משך כולל 444s</td>
+<td><a href="../../experiments/r3/capacity/20261010-162405_Mac_cap_split_Qwen2.5-32B-Instruct-Q4_K_M_P1/stderr.log">stderr</a></td>
+</tr>
+<tr class="even">
+<td>Air→M5, <code>3,2</code></td>
+<td>4.44 tok/s; משך כולל 79s</td>
+<td><a href="../../experiments/r3/capacity/20261010-164047_Mac_cap_split_Qwen2.5-32B-Instruct-Q4_K_M_P1_ts_3_2/stderr.log">stderr</a></td>
+</tr>
+<tr class="odd">
+<td>M5→Air, automatic</td>
+<td>4.38 tok/s; משך כולל 262s</td>
+<td><a href="../../experiments/r3/capacity/20261010-164354_MMF4FWRG4R_cap_split_Qwen2.5-32B-Instruct-Q4_K_M_P1/stderr.log">stderr</a></td>
+</tr>
+<tr class="even">
+<td>M5→Air, <code>3,2</code></td>
+<td>3.94 tok/s; משך כולל 152s</td>
+<td><a href="../../experiments/r3/capacity/20261010-165043_MMF4FWRG4R_cap_split_Qwen2.5-32B-Instruct-Q4_K_M_P1_ts_3_2/stderr.log">stderr</a></td>
+</tr>
+</tbody>
+</table>
+<p>P1 פירושו offload של כל בלוקי Transformer והפלט; יש עדיין עבודת host ו־CPU embeddings. אין כאן הוכחת היעדר paging. ה־OOM אינו מוכיח שהמלצת Metal של 18.2GB היא גבול קשיח.</p>
+<p><strong>לא לטעון ״32B לא רץ לבד בכלל״:</strong> הוא כן השלים תחת P2. גם יחס decode של כ־13–14 לעומת M5 P2 אינו speedup מבוקר או יחס זמן כולל; ה־offload ומצבי הטעינה/cache שונים. חסרים hash ל־32B בכל צד ברשומות הניסוי, שיא זיכרון של worker, חזרות ואימות מספרי. הנתונים כן תומכים בהיתכנות המצומצמת של P1.</p>
+<h2 id="3-מי-מחשב-אילו-שכבות">3. מי מחשב אילו שכבות?</h2>
+<p>ב־32B יש 64 בלוקים ושכבת פלט המסומנת 64. ה־placement מתוך ריצות הקיבולת מראה:</p>
+<table>
+<thead>
+<tr class="header">
+<th>requester→worker</th>
+<th>חלוקה</th>
+<th>worker</th>
+<th>requester</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Air→M5</td>
+<td>automatic וגם <code>3,2</code></td>
+<td>בלוקים 0–38 על M5</td>
+<td>בלוקים 39–63 ופלט 64 על Air</td>
+</tr>
+<tr class="even">
+<td>M5→Air</td>
+<td>automatic</td>
+<td>בלוקים 0–26 על Air</td>
+<td>בלוקים 27–63 ופלט 64 על M5</td>
+</tr>
+<tr class="odd">
+<td>M5→Air</td>
+<td><code>3,2</code></td>
+<td>בלוקים 0–38 על Air</td>
+<td>בלוקים 39–63 ופלט 64 על M5</td>
+</tr>
+</tbody>
+</table>
+<p>כך רואים איזו עבודה הוקצתה לכל מחשב. <strong>זמן החישוב, זמן ההמתנה ואחוז ניצול המאיץ בכל מחשב עדיין לא נמדדו בנפרד.</strong> שתי ריצות Air→M5 קיבלו אותה חלוקה בפועל, ולכן אין להסיק מהפרש הקצב ביניהן על השפעת יחס החלוקה.</p>
+<h2 id="4-r3b-למודל-7b-עותקים-עצמאיים-ניצחו-בתפוקה-בניסוי-הראשוני">4. R3b: למודל 7B, עותקים עצמאיים ניצחו בתפוקה בניסוי הראשוני</h2>
+<p>השרתים הוגדרו ל־7B Q4_K_M, אותו SHA, <code>-c 4096 -np 8</code>. עומס כולל של 1/4/8 בקשות מקבילות; קלט מדווח 132 טוקנים, פלט 64, 8/32/64 בקשות לכל תצורה. כולן הושלמו. Q חושב מחדש מקובצי <code>requests.jsonl</code> ונמצא תואם לסיכומים.</p>
+<table>
+<thead>
+<tr class="header">
+<th>מקביליות</th>
+<th>Q בחלוקה, tok/s</th>
+<th>Q בעותקים עצמאיים, tok/s</th>
+<th>יחס</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td><a href="../../experiments/r3/load/20261010-165913_Mac_load_split_1,1_wifi_c1/summary.json">8.16</a></td>
+<td><a href="../../experiments/r3/load/20261010-170732_Mac_load_independent_wifi_c1/summary.json">18.40</a></td>
+<td>0.44</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td><a href="../../experiments/r3/load/20261010-170032_Mac_load_split_1,1_wifi_c4/summary.json">18.47</a></td>
+<td><a href="../../experiments/r3/load/20261010-170815_Mac_load_independent_wifi_c4/summary.json">36.91</a></td>
+<td>0.50</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td><a href="../../experiments/r3/load/20261010-170238_Mac_load_split_1,1_wifi_c8/summary.json">21.11</a></td>
+<td><a href="../../experiments/r3/load/20261010-170925_Mac_load_independent_wifi_c8/summary.json">28.90</a></td>
+<td>0.73</td>
+</tr>
+</tbody>
+</table>
+<p>הנתונים תומכים בבחירת עותקים עצמאיים למודל הקטן ולעומסים האלה, לצד ערך הקיבולת של חלוקת מודל גדול. אין חזרות עצמאיות לכל תא; הסדר קבוע; הניתוב הוא round-robin. יש להשלים hash, placement מפורט של השירות ותנאי רשת, ולחזור על סבבים בסדר מתחלף. העלייה בתפוקת החלוקה עם עומס אינה כשלעצמה הוכחה לחפיפת שלבי pipeline.</p>
+<h2 id="5-מה-תקף-בטבלת-7b-ומה-עדיין-שגוי">5. מה תקף בטבלת 7B ומה עדיין שגוי</h2>
+<p>A: כ־20.02 tok/s ב־M3 וכ־26.28 ב־M5. יחס prefill/decode שונה בין המכונות מתיישב עם רגישויות שונות לחישוב ולזיכרון, אך אינו מוכיח את צוואר הבקבוק. קיימת חריגת CV של 5.27% בשורת CPU-prefill ב־M5.</p>
+<p>שלוש ריצות <strong>M5→Air</strong> מתועדות בתחביר הנכון ועם placement מתוך ה־bench:</p>
+<table>
+<thead>
+<tr class="header">
+<th>split מרוחק/מקומי</th>
+<th>decode tok/s</th>
+<th>ממוצע ms/token מתוך avg_ns</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>1/0</code></td>
+<td>5.14 ± 0.56</td>
+<td>196.35</td>
+</tr>
+<tr class="even">
+<td><code>1/1</code></td>
+<td>7.72 ± 1.56</td>
+<td>133.20</td>
+</tr>
+<tr class="odd">
+<td><code>0/1</code></td>
+<td>26.12 ± 0.44</td>
+<td>38.29</td>
+</tr>
+</tbody>
+</table>
+<p>מקור: <a href="../../experiments/r0/runs/">תיקיות הריצות</a>, מזהים <code>20261010-152957</code>, <code>153153</code>, <code>153306</code> של MMF4FWRG4R.</p>
+<p><strong>שלוש שורות Air→M5 בדוח אינן מתוקנות:</strong> הפקודות עדיין מכילות פסיק, ה־JSON כולל ארבע רשומות ולוג ה־placement הוא CLI נפרד. 9.4 tok/s אינו local-only ו־5.3 אינו split שווה. אין להסיק מהן כעת על הורדה ברקע או יתרון כיוון M5 לעומת Air. <a href="../../experiments/r0/REPORT.md">REPORT.md</a> עדיין מציג להן אישור מטעה; נדרש תיקון שער הקבלה ואיסוף מחדש.</p>
+<h2 id="6-מה-הtrace-אומר-ומה-הוא-אינו-מסביר">6. מה ה־trace אומר, ומה הוא אינו מסביר</h2>
+<p>בשלושה צעדי graph בזנב כל session נצפתה קריאת <code>get_tensor</code> אחת: 608,256 בתים עם פלט מרוחק מול 14,336 עם פלט מקומי — פי 42.43. נצפה שימוש ב־<code>GRAPH_RECOMPUTE</code>. מקור: <a href="../../experiments/r3/trace/20261011-024027_MMF4FWRG4R_trace_wifi_s1/summary.json">trace s1</a>, <a href="../../experiments/r3/trace/20261011-024027_MMF4FWRG4R_trace_wifi_s2/summary.json">trace s2</a>.</p>
+<p>זהו בסיס לבחינת מיקום הפלט, <strong>לא מדידת המתנה כוללת אחת ולא הוכחת הסיבה ליתרון <code>1,1</code></strong>: חלוקה זו משנה גם את מיקום בלוקים רבים. בקוד ה־worker, graph_compute/recompute ממתינים להשלמת backend compute; זמן GET עשוי לכלול compute, תורים, העתקות ורשת.</p>
+<p>פער הביצועים בתצורה המבוזרת עדיין אינו מפורק לגורמים. השערת Wi-Fi power-save/jitter לא נבדקה. מדידות הרשת משתנות בין הריצות; אין להצמיד את 12ms ו־250Mbit/s לכל ניסוי. Ethernet הוא בדיקת רגישות מועילה, אך אינו לבדו מפריד רשת מפרוטוקול או מוכיח מנגנון מסוים.</p>
+<p>גם <code>0/1</code> דומה למקומי ב־M5 רק מראה ש<strong>רישום endpoint מרוחק כשעיקר החישוב מקומי</strong> לא שינה מהותית את התפוקה שנצפתה. אין זו ריצת RPC דרך loopback ולא הוכחה שעלות התוכנה היא אפס.</p>
+<h2 id="7-פעולות-ושאלות-לפגישה">7. פעולות ושאלות לפגישה</h2>
+<ol>
+<li>לתקן שער קבלה של B ו־timeout שעוצר וממתין לכל תהליך inference; לאסוף מחדש Air→M5. לשמור את הריצות הישנות כנתוני pilot.</li>
+<li>להשלים זהויות מודלים, שיא זיכרון בשני הצדדים ונכונות; לחזור על סבבי העומס בסדר מתחלף.</li>
+<li>לבחור ניסוי אבחון ממוקד: trace זמנים ב־requester/worker ו/או נקודת Ethernet. אין צורך להפוך זאת לפרויקט אופטימיזציית רשת.</li>
+<li>להמשיך להשתמש ב־llama.cpp לניסויים הקיימים. ADR-007 נשאר פתוח: TP לפי ההיקף שייבחר, timeout אמין, נכונות ו־replay לא הוכחו במלואם; Mac+NVIDIA עדיין לא נבדק.</li>
+</ol>
+<p><strong>לחן:</strong> האם להגדיר הצלחת קיבולת כ־offload מלא של בלוקים ופלט בתנאים המוצהרים? איזה ניסוי N=3 יתרום לשאלת התכנון? מהו היקף TP הנדרש? האם הדגש על בחירה בין מחשב יחיד, עותקים עצמאיים וחלוקה נותן מסגרת מספקת לתרומת המתכנן?</p>
+</body>
+</html>

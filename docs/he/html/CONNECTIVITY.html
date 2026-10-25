@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>קישוריות: איך מחברים שני מחשבים, מכבל ועד אינטרנט</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="he.css" />
+</head>
+<body>
+<h1 id="קישוריות-איך-מחברים-שני-מחשבים-מכבל-ועד-אינטרנט">קישוריות: איך מחברים שני מחשבים, מכבל ועד אינטרנט</h1>
+<p>מדריך מעשי. כל אפשרות: מתי, מה צריך, איך מגדירים, איך בודקים, ואיך מריצים את הסקריפטים שלנו דרכה. נכתב 24.10.2026. אבטחה אינה שיקול בשלב זה (החלטת הצוות). llama.cpp מזהיר "never run the RPC server on an open network". אנחנו מודעים ודוחים את הטיפול בזה. ראו ADR-009.</p>
+<h2 id="0-התשובה-הקצרה-כמה-מזה-נדרש-בכלל">0. התשובה הקצרה: כמה מזה נדרש בכלל</h2>
+<p>לא הרבה. היעדים (O1 עד O5) וההנחיה של חן מדברים על אינטרנט ועל רשת רחבה. T1 אומר שהרשת היא אילוץ נתון ולא יעד. לכן:</p>
+<table>
+<thead>
+<tr class="header">
+<th>דרגה</th>
+<th>מה</th>
+<th>האם נדרש</th>
+<th>למה</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>Wi-Fi ביתי, כמו היום</td>
+<td>כן. הבסיס</td>
+<td>כל התוצאות עד כה נמדדו כך. ממשיכים כך</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>אינטרנט בין דירות, בלי VPN</td>
+<td>כן. זה O3</td>
+<td>זה מה שהפרויקט טוען שהוא יודע לעשות</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>Thunderbolt Bridge בין שני המק-ים</td>
+<td>אופציונלי. אחר צהריים אחד</td>
+<td>עונה על שאלה אבחונית אחת: כמה מתוך 90 עד 150 ms לטוקן של ההופ הוא זנב Wi-Fi וכמה פרוטוקול. שימושי גם אם TP נטען אבל איטי</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>כבל בין מק ל-PC של ליאור</td>
+<td>לא</td>
+<td>המחשבים בדירות שונות. הקישור האמיתי ביניהם הוא אינטרנט</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>Ethernet דרך הראוטר</td>
+<td>לא, אלא אם Wi-Fi לא יציב ביום מדידות</td>
+<td>מתאם אחד למק. פתרון זול לרעש</td>
+</tr>
+</tbody>
+</table>
+<p>המלצה: להמשיך Wi-Fi ואינטרנט. לקנות כבל Thunderbolt אחד (או להשתמש בקיים) ולבצע את דרגה 3 פעם אחת, אחרי ניסוי ה-TP. לא לקנות מתאמי Ethernet עד שיש סיבה.</p>
+<h2 id="1-אותה-רשת-ביתית-lan">1. אותה רשת ביתית (LAN)</h2>
+<h3 id="11-wi-fi-ברירת-המחדל">1.1 Wi-Fi, ברירת המחדל</h3>
+<p>כלום להגדיר. ה-IP מהראוטר. לבדוק שהוא לא השתנה:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="ex">ipconfig</span> getifaddr en0        # macOS</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="fu">hostname</span> -I                   # Linux / WSL2</span></code></pre></div>
+<p>סקריפטים: <code>LINK=wifi OVERLAY=plain LOCATION=lan</code>. ה-worker ללא <code>BIND</code> (זיהוי אוטומטי).</p>
+<h3 id="12-thunderbolt-bridge-מק-אל-מק">1.2 Thunderbolt Bridge, מק אל מק</h3>
+<p>מה צריך: כבל Thunderbolt 3/4 או USB4 (סימן ברק). כבל הטעינה של Apple לא מתאים (USB 2.0 לנתונים).</p>
+<p>הגדרה, בשני המק-ים: System Settings, Network, Thunderbolt Bridge. אם לא מופיע: לחצן "..." ואז Add Service ואז Thunderbolt Bridge. להגדיר IP ידני: M5 <code>10.10.0.1</code>, Air <code>10.10.0.2</code>, מסכה <code>255.255.255.0</code>, בלי router.</p>
+<p>בדיקה:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="ex">ifconfig</span> bridge0 <span class="kw">|</span> <span class="fu">grep</span> <span class="st">&quot;inet &quot;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="fu">ping</span> -c 5 10.10.0.2</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="ex">iperf3</span> -s                       # on the Air</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="ex">iperf3</span> -c 10.10.0.2 -t 10       # on the M5</span></code></pre></div>
+<p>צפוי: ping בסביבות 0.1 עד 0.3 ms, iperf3 בסביבות 10 עד 20 Gbit/s.</p>
+<p>הרצה:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="co"># Air (worker)</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="va">BIND=</span>10.10.0.2 <span class="fu">bash</span> scripts/08_r0.sh worker MTL0</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="co"># M5 (requester)</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a><span class="va">LINK=</span>thunderbolt <span class="va">OVERLAY=</span>plain <span class="va">LOCATION=</span>lan <span class="fu">bash</span> scripts/08_r0.sh rpc 10.10.0.2</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a><span class="fu">bash</span> scripts/10_capacity.sh split ~/models/Qwen2.5-32B-Instruct-Q4_K_M.gguf 10.10.0.2 1,1 P1</span></code></pre></div>
+<p>הערה: כש-Wi-Fi ו-Bridge פעילים יחד, macOS יבחר נתיב לפי ה-IP. כל עוד פונים ל-<code>10.10.0.x</code> התעבורה עוברת בכבל. לוודא ב-<code>net.txt</code> של הריצה (ping של 0.x ms).</p>
+<h3 id="13-ethernet-ישיר-מק-אל-pc">1.3 Ethernet ישיר, מק אל PC</h3>
+<p>מה צריך: מתאם USB-C ל-RJ45 למק (1GbE או 2.5GbE). כבל רשת רגיל אל שקע ה-PC. אין צורך ב-switch או בכבל crossover.</p>
+<p>הגדרה: במק, Network, USB 10/100/1000 LAN, IP ידני <code>10.20.0.1/24</code>. ב-Windows, Settings, Network, Ethernet, Edit IP, Manual, <code>10.20.0.2</code>, mask <code>255.255.255.0</code>. ב-WSL2 ראו סעיף 2.</p>
+<p>בדיקה: <code>ping 10.20.0.2</code>, <code>iperf3</code> כמו למעלה. צפוי: 0.3 ms, 0.9 עד 2.3 Gbit/s.</p>
+<p>סקריפטים: <code>LINK=ethernet OVERLAY=plain LOCATION=lan</code>.</p>
+<h3 id="14-ethernet-דרך-הראוטר">1.4 Ethernet דרך הראוטר</h3>
+<p>אותו מתאם למק. שני כבלים אל הראוטר. ה-IP נשאר מהראוטר (DHCP). להעדיף אם הראוטר קרוב ולא רוצים IP ידני. <code>LINK=ethernet OVERLAY=plain LOCATION=lan</code>.</p>
+<h3 id="15-thunderbolt-networking-מק-אל-pc">1.5 Thunderbolt Networking, מק אל PC</h3>
+<p>רק אם ל-PC יש שקע Thunderbolt 3/4 (ברק ליד השקע, או Thunderbolt Controller ב-Device Manager). ב-desktop עם כרטיס NVIDIA בדרך כלל אין. ב-Windows צריך את Intel Thunderbolt Control Center ולאשר את המק כ-trusted. לפעמים עובד מול מק, לפעמים לא. לא להשקיע בזה. אם עובד: <code>LINK=thunderbolt</code>.</p>
+<h2 id="2-wsl2-במחשב-של-ליאור">2. WSL2 במחשב של ליאור</h2>
+<p>ה-worker רץ בתוך WSL2. כברירת מחדל ל-WSL2 יש רשת NAT פנימית (<code>172.x</code>), שאינה נגישה מבחוץ. חובה אחת משתי הדרכים.</p>
+<h3 id="21-mirrored-networking-מומלץ-windows-11-22h2-ומעלה">2.1 Mirrored networking (מומלץ, Windows 11 22H2 ומעלה)</h3>
+<p>קובץ <code>%UserProfile%\.wslconfig</code>:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="kw">[wsl2]</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="dt">networkingMode</span><span class="ot">=</span><span class="st">mirrored</span></span></code></pre></div>
+<p>ואז <code>wsl --shutdown</code> ופתיחה מחדש. WSL מקבל את ה-IP של Windows עצמו. עובד גם עם Tailscale שמותקן ב-Windows.</p>
+<h3 id="22-port-forward-ידני">2.2 Port forward ידני</h3>
+<p>ב-PowerShell כמנהל, אחרי <code>wsl hostname -I</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a>netsh interface portproxy add v4tov4 listenport=50052 listenaddress=0.<span class="fu">0</span>.<span class="fu">0</span>.<span class="fu">0</span> connectport=50052 connectaddress=&lt;wsl-ip&gt;</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>netsh advfirewall firewall add rule name=<span class="st">&quot;nocturne rpc&quot;</span> <span class="fu">dir</span>=<span class="kw">in</span> action=allow protocol=TCP localport=50052</span></code></pre></div>
+<p>ה-IP של WSL משתנה אחרי reboot. לבדוק כל פעם.</p>
+<p>בשני המקרים ב-WSL: <code>BIND=0.0.0.0 bash scripts/08_r0.sh worker CUDA0</code> (בתוך WSL זה בסדר; החשיפה החוצה נקבעת ב-Windows). ה-requester פונה ל-IP של Windows.</p>
+<h2 id="3-אינטרנט-בלי-tailscale">3. אינטרנט בלי Tailscale</h2>
+<p>המטרה: משתמש פותח את האפליקציה ומצטרף, בלי להתקין VPN ובלי שנדרוש ממנו הגדרות ראוטר. הבעיה היחידה: ה-worker יושב מאחורי ראוטר ביתי עם NAT, ולא ניתן לפתוח אליו חיבור נכנס. חמש דרכים, מהפשוטה לנוחה ביותר.</p>
+<h3 id="31-port-forwarding-בראוטר-של-ה-worker">3.1 Port forwarding בראוטר של ה-worker</h3>
+<p>בממשק הראוטר (בדרך כלל <code>192.168.1.1</code>): Port Forwarding, TCP <code>50052</code> אל ה-IP הפנימי של ה-worker. ה-requester פונה ל-IP הציבורי של הבית.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="ex">curl</span> -4 ifconfig.me           # public IP, on the worker side</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a><span class="va">BIND=</span>0.0.0.0 <span class="fu">bash</span> scripts/08_r0.sh worker MTL0</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a><span class="co"># requester, other home</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a><span class="va">LINK=</span>internet <span class="va">OVERLAY=</span>portforward <span class="va">LOCATION=</span>wan <span class="fu">bash</span> scripts/08_r0.sh rpc <span class="op">&lt;</span>public-ip<span class="op">&gt;</span></span></code></pre></div>
+<p>מגבלות: ה-IP הציבורי משתנה (פתרון: DDNS, סעיף 3.2). חלק מהספקים בישראל נותנים CGNAT (כתובת <code>100.64.x.x</code> עד <code>100.127.x.x</code> בצד ה-WAN של הראוטר), ואז port forwarding לא עובד כלל. לבדוק: אם <code>curl ifconfig.me</code> שונה מה-IP ב-WAN של הראוטר, יש CGNAT. במקרה כזה: סעיף 3.4 או 3.5.</p>
+<h3 id="32-ddns-שם-קבוע-במקום-ip-משתנה">3.2 DDNS: שם קבוע במקום IP משתנה</h3>
+<p>DuckDNS (חינם): <code>nocturne-lior.duckdns.org</code>. הראוטר או סקריפט cron מעדכן את ה-IP. ה-requester פונה לשם. אותו <code>OVERLAY=portforward</code>.</p>
+<h3 id="33-upnp-הראוטר-פותח-את-הפורט-לבד">3.3 UPnP: הראוטר פותח את הפורט לבד</h3>
+<p>רוב הראוטרים הביתיים מאפשרים UPnP. ה-worker יכול לבקש מהראוטר לפתוח <code>50052</code> אוטומטית, בלי שהמשתמש ייגע בראוטר. זה מה שעושים לקוחות BitTorrent.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="ex">brew</span> install miniupnpc        # macOS<span class="kw">;</span> <span class="ex">apt</span> install miniupnpc on Linux</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a><span class="ex">upnpc</span> -r 50052 TCP            # ask the router to map 50052 to this machine</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a><span class="ex">upnpc</span> -l                      # list mappings, see the public IP</span></code></pre></div>
+<p>זה המועמד ל-worker agent של O5: בהפעלה, לנסות UPnP; אם הצליח, להכריז ל-tracker את <code>public-ip:port</code>. אם לא, ליפול לסעיף 3.4. לא פותר CGNAT.</p>
+<h3 id="34-relay-דרך-שרת-ציבורי-קטן-המועמד-הראשי-ל-o5">3.4 Relay דרך שרת ציבורי קטן (המועמד הראשי ל-O5)</h3>
+<p>ל-tracker נדרש ממילא מארח ציבורי קטן (VPS של כ-4 אירו בחודש, או Raspberry Pi עם port forwarding בבית אחד). אותו מארח יכול לשמש גם כ-relay: ה-worker פותח חיבור יוצא אליו (תמיד מותר דרך NAT), והמארח חושף פורט ציבורי שמפנה חזרה ל-worker. אפס הגדרות אצל המשתמש. עובד גם מאחורי CGNAT.</p>
+<p>כלי: <strong>frp</strong> (frps בשרת, frpc ב-worker). קל, יציב, קוד פתוח.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="co"># frps.toml on the public host</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="dt">bindPort </span><span class="ot">=</span><span class="st"> </span><span class="dv">7000</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a><span class="co"># frpc.toml on the worker</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a><span class="dt">serverAddr </span><span class="ot">=</span><span class="st"> &quot;tracker.example.org&quot;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a><span class="dt">serverPort </span><span class="ot">=</span><span class="st"> </span><span class="dv">7000</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a><span class="kw">[[proxies]</span><span class="dt">]</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true"></a><span class="dt">name </span><span class="ot">=</span><span class="st"> &quot;rpc&quot;</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true"></a><span class="dt">type </span><span class="ot">=</span><span class="st"> &quot;tcp&quot;</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true"></a><span class="dt">localIP </span><span class="ot">=</span><span class="st"> &quot;</span><span class="dv">127</span><span class="st">.</span><span class="dv">0</span><span class="st">.</span><span class="fl">0.1</span><span class="st">&quot;</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true"></a><span class="dt">localPort </span><span class="ot">=</span><span class="st"> </span><span class="dv">50052</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true"></a><span class="dt">remotePort </span><span class="ot">=</span><span class="st"> </span><span class="dv">60052</span></span></code></pre></div>
+<p>ה-worker מריץ <code>ggml-rpc-server</code> על <code>127.0.0.1:50052</code> ו-<code>frpc</code>. ה-requester פונה ל-<code>tracker.example.org:60052</code>. ה-tracker יכול להקצות <code>remotePort</code> לכל worker ולפרסם אותו ב-announce. המחיר: כל בייט עובר דרך השרת, הזמן לטוקן בערך כפול, ורוחב הפס של ה-VPS הוא התקרה. לפי T1 זה מקובל.</p>
+<p>חלופה בלי שרת משלנו, לבדיקה מהירה: <strong>bore</strong> (<code>bore local 50052 --to bore.pub</code>) נותן פורט ציבורי תוך שנייה. ללא הבטחת זמינות. טוב לניסוי, לא למוצר.</p>
+<p>סקריפטים: <code>LINK=internet OVERLAY=relay LOCATION=wan</code>.</p>
+<h3 id="35-מנהרת-ssh-הפוכה">3.5 מנהרת SSH הפוכה</h3>
+<p>אם יש שרת עם SSH (אותו VPS):</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="co"># worker</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a><span class="fu">ssh</span> -N -R 0.0.0.0:60052:127.0.0.1:50052 user@tracker.example.org</span></code></pre></div>
+<p>דורש <code>GatewayPorts yes</code> ב-sshd של השרת. אותו רעיון כמו frp, בלי התקנה נוספת. פחות נוח לניהול אוטומטי. <code>OVERLAY=relay</code>.</p>
+<h3 id="36-cloudflare-tunnel">3.6 Cloudflare Tunnel</h3>
+<p><code>cloudflared</code> ב-worker חושף את 50052 דרך Cloudflare בחינם. אבל TCP גולמי דרך Cloudflare דורש <code>cloudflared access tcp</code> גם בצד ה-requester. שני צדדים מתקינים כלי, אז לא נוח יותר מ-Tailscale. לא מומלץ לנו. <code>OVERLAY=tunnel</code>.</p>
+<h3 id="37-ipv6-ישיר">3.7 IPv6 ישיר</h3>
+<p>אם לשני הבתים יש IPv6 מהספק (חלק מספקי הסיבים בישראל), אפשר לפנות ישירות לכתובת ה-IPv6 של ה-worker, רק עם פתיחת firewall בראוטר. אין NAT, אין relay. שתי בדיקות לפני: <code>curl -6 ifconfig.co</code> בשני הצדדים, והאם <code>ggml-rpc-server</code> ב-SHA שלנו מאזין ל-IPv6 (<code>-H</code> עם כתובת IPv6). לא נבדק. אם עובד, זה הפתרון הכי "פתוח" שיש.</p>
+<h3 id="38-מה-עושה-tailscale-ולמה-בכל-זאת-כדאי-להשאיר-אותו-כגיבוי">3.8 מה עושה Tailscale, ולמה בכל זאת כדאי להשאיר אותו כגיבוי</h3>
+<p>Tailscale פותר NAT בשני הצדדים (hole punching) ונופל ל-relay (DERP) כשלא מצליח. זה בדיוק 3.3 ועוד 3.4 אוטומטיים, בתוספת הצפנה. המחיר: כל משתתף מתקין אפליקציה ונכנס לאותה רשת. לאפליקציה לציבור זה חיכוך. לניסויים בין שתי הדירות שלכם זה הכי מהיר להקים. לכן: ניסוי ראשון באינטרנט עם Tailscale (ADR-005), ובמקביל 3.1 או 3.4 כדי להראות שעובד גם בלי. חלופות דומות: ZeroTier, NetBird, WireGuard ידני.</p>
+<h2 id="4-ההמלצה-לבניית-o5-מתכנן-ואפליקציה">4. ההמלצה לבניית O5 (מתכנן ואפליקציה)</h2>
+<p>סולם קישוריות ב-worker agent, אוטומטי, לפי סדר:</p>
+<ol>
+<li>אותה רשת? IP מקומי ישיר.</li>
+<li>UPnP הצליח? <code>public-ip:port</code> ישיר.</li>
+<li>אחרת relay דרך מארח ה-tracker (frp). תמיד עובד.</li>
+</ol>
+<p>ה-tracker מקבל ב-announce את הכתובת שהתקבלה. ה-requester לא צריך לדעת איך. המתכנן מקבל את סוג הנתיב (direct או relay) כנתון, לא כיעד.</p>
+<h2 id="5-טבלת-סיכום">5. טבלת סיכום</h2>
+<table>
+<thead>
+<tr class="header">
+<th>אפשרות</th>
+<th>צדדים</th>
+<th>קושי למשתמש</th>
+<th>מהירות טיפוסית</th>
+<th>CGNAT</th>
+<th>סקריפטים</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Wi-Fi ביתי</td>
+<td>מק, PC</td>
+<td>אין</td>
+<td>50 עד 300 Mbit/s, 10 עד 20 ms</td>
+<td>לא רלוונטי</td>
+<td><code>wifi plain lan</code></td>
+</tr>
+<tr class="even">
+<td>Thunderbolt Bridge</td>
+<td>מק, מק</td>
+<td>כבל אחד, IP ידני</td>
+<td>10 עד 20 Gbit/s, 0.2 ms</td>
+<td>לא רלוונטי</td>
+<td><code>thunderbolt plain lan</code></td>
+</tr>
+<tr class="odd">
+<td>Ethernet ישיר</td>
+<td>מק, PC</td>
+<td>מתאם, IP ידני</td>
+<td>1 עד 2.5 Gbit/s</td>
+<td>לא רלוונטי</td>
+<td><code>ethernet plain lan</code></td>
+</tr>
+<tr class="even">
+<td>Port forward + DDNS</td>
+<td>כל</td>
+<td>הגדרת ראוטר פעם אחת</td>
+<td>לפי העלאה של הבית, 20 עד 100 Mbit/s, 10 עד 40 ms</td>
+<td>נכשל</td>
+<td><code>internet portforward wan</code></td>
+</tr>
+<tr class="odd">
+<td>UPnP</td>
+<td>כל</td>
+<td>אפס</td>
+<td>כנ"ל</td>
+<td>נכשל</td>
+<td><code>internet portforward wan</code></td>
+</tr>
+<tr class="even">
+<td>Relay (frp) דרך מארח ה-tracker</td>
+<td>כל</td>
+<td>אפס</td>
+<td>מוגבל ב-VPS, זמן כפול</td>
+<td>עובד</td>
+<td><code>internet relay wan</code></td>
+</tr>
+<tr class="odd">
+<td>SSH הפוך</td>
+<td>כל</td>
+<td>אפס, דורש שרת</td>
+<td>כנ"ל</td>
+<td>עובד</td>
+<td><code>internet relay wan</code></td>
+</tr>
+<tr class="even">
+<td>IPv6 ישיר</td>
+<td>כל</td>
+<td>firewall בראוטר</td>
+<td>כמו port forward</td>
+<td>אין NAT</td>
+<td><code>internet plain wan</code></td>
+</tr>
+<tr class="odd">
+<td>Tailscale</td>
+<td>כל</td>
+<td>התקנה בכל צד</td>
+<td>ישיר או DERP</td>
+<td>עובד</td>
+<td><code>internet tailscale wan</code></td>
+</tr>
+</tbody>
+</table>
+<p>הסקריפט <code>08_r0.sh</code> מקבל את התוויות האלה (<code>LINK</code>, <code>OVERLAY</code>, <code>LOCATION</code>) ורושם אותן במניפסט של כל ריצה.</p>
+</body>
+</html>

@@ -1,0 +1,1859 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nocturne: הסקריפטים, שורה אחרי שורה</title>
+<style>
+:root { --fg:#1b1b1b; --muted:#5a5a5a; --line:#d9d9d9; --accent:#1f6f3a; --code-bg:#f4f4f4; --th-bg:#e9f3ec; --big:#eef5ff; --big-line:#9dbbe8; --warn-bg:#fff6e5; --warn-line:#e8b24a; --code-col:#f7f7f7; }
+html { direction: rtl; }
+body { font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, "Noto Sans Hebrew", sans-serif;
+       color: var(--fg); background:#fff; max-width: 1080px; margin: 0 auto; padding: 32px 24px 64px;
+       line-height: 1.65; font-size: 16px; direction: rtl; text-align: right; }
+h1, h2, h3, h4 { text-align: right; line-height: 1.3; }
+h1 { font-size: 1.9em; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: .3em; }
+h2 { font-size: 1.5em; margin-top: 2.4em; border-bottom: 2px solid var(--line); padding-bottom: .2em; }
+h2 code { font-size: .95em; }
+h3 { font-size: 1.15em; margin-top: 1.6em; color: var(--accent); }
+h4 { font-size: 1.02em; margin-top: 1.3em; color: #333; }
+p, li { text-align: right; }
+ul, ol { padding-right: 1.6em; padding-left: 0; }
+table { border-collapse: collapse; width: 100%; margin: 1em 0; direction: rtl; font-size: .95em; }
+th, td { border: 1px solid var(--line); padding: .45em .6em; text-align: right; vertical-align: top; }
+th { background: var(--th-bg); }
+tr:nth-child(even) td { background: #fafafa; }
+code, pre, kbd { font-family: ui-monospace, Menlo, Consolas, monospace; direction: ltr; unicode-bidi: isolate; }
+code { background: var(--code-bg); padding: .1em .35em; border-radius: 4px; font-size: .9em; }
+pre { background: var(--code-bg); padding: .8em 1em; border-radius: 6px; overflow-x: auto; text-align: left; line-height: 1.45; font-size: .86em; direction: ltr; }
+pre code { background: none; padding: 0; font-size: 1em; }
+a { color: var(--accent); }
+hr { border: 0; border-top: 1px solid var(--line); margin: 2em 0; }
+strong { font-weight: 650; }
+.muted { color: var(--muted); }
+/* boxes */
+.big { background: var(--big); border: 1px solid var(--big-line); border-right: 6px solid #3b6fc4; border-radius: 6px; padding: .8em 1.1em; margin: 1em 0; }
+.big h4 { margin: 0 0 .4em; color: #2a4f8f; }
+.warn { background: var(--warn-bg); border: 1px solid var(--warn-line); border-right: 6px solid var(--warn-line); border-radius: 6px; padding: .7em 1em; margin: 1em 0; }
+.note { background: #f3f9f4; border-right: 4px solid var(--accent); padding: .6em 1em; margin: 1em 0; }
+/* facts table inside big picture */
+.facts td:first-child { width: 22%; font-weight: 600; background: #e4eefc; }
+/* line by line table */
+table.lines td.c { width: 46%; direction: ltr; text-align: left; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .84em; background: var(--code-col); white-space: pre-wrap; word-break: break-all; }
+table.lines td.e { width: 54%; }
+table.lines th.c { direction: ltr; text-align: left; }
+/* pipeline */
+.pipe { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .7em; margin: 1em 0; }
+.stage { border: 1px solid var(--line); border-top: 5px solid var(--accent); border-radius: 6px; padding: .6em .8em; background: #fff; font-size: .93em; }
+.stage b { display: block; margin-bottom: .3em; }
+.stage.old { border-top-color: #b8b8b8; color: var(--muted); }
+.toc { columns: 2; column-gap: 2em; }
+.toc li { break-inside: avoid; }
+.tag { display: inline-block; font-size: .78em; padding: .05em .5em; border-radius: 999px; background: #e4eefc; color: #2a4f8f; margin-inline-start: .4em; vertical-align: middle; }
+.tag.w { background: #fde8e8; color: #9b2222; }
+.tag.r { background: #e7f5ea; color: #1f6f3a; }
+.tag.any { background: #efe9fb; color: #5a3d9a; }
+@media (max-width: 760px) { .toc { columns: 1; } table.lines td.c, table.lines td.e { display: block; width: auto; } }
+@media print {
+  body { max-width: none; padding: 0; font-size: 11pt; }
+  h2 { page-break-before: always; } table, pre, .big { page-break-inside: avoid; }
+  a { color: inherit; text-decoration: none; }
+  @page { size: A4; margin: 16mm 14mm; }
+}
+</style>
+</head>
+<body>
+
+<h1>Nocturne: הסקריפטים, שורה אחרי שורה</h1>
+<p class="muted">מסמך הסבר לצוות. נכתב 2026-10-24 מול הקוד שב־<code>nocturne/scripts/</code> באותו יום. אם סקריפט ישתנה, ההסבר כאן עלול לפגר אחריו. הקוד תמיד קובע.</p>
+
+<div class="big">
+<h4>למי המסמך ואיך לקרוא אותו</h4>
+<p>המסמך מניח שאינך קורא shell ואינך מכיר את llama.cpp מבפנים. לכל סקריפט יש אותו מבנה: קודם <strong>התמונה הגדולה</strong> (איפה הוא יושב בתהליך, על איזו מכונה מריצים אותו, מה הוא צריך כדי לעבוד ומה הוא משאיר אחריו), אחר כך <strong>איך מפעילים</strong>, אחר כך <strong>הזרימה</strong> בשפה פשוטה, ולבסוף <strong>שורה אחרי שורה</strong>: הקוד בעמודה אחת וההסבר לידו. שורות שהן יחידה אחת (למשל בלוק <code>if</code> של ארבע שורות) מוסברות יחד.</p>
+<p>לפני הסקריפטים יש שני פרקים קצרים: <a href="#primer">מילון shell</a> שמסביר פעם אחת את הסימנים שחוזרים בכל הסקריפטים, ו<a href="#pipeline">מפת התהליך</a> שמראה איך הסקריפטים משתלבים זה בזה. אם בהסבר של שורה מופיע ביטוי לא מוכר, הוא כנראה במילון.</p>
+</div>
+
+<h2 id="toc">תוכן</h2>
+<ul class="toc">
+<li><a href="#primer">מילון shell: הסימנים שחוזרים בכל סקריפט</a></li>
+<li><a href="#pipeline">מפת התהליך: מי מריץ מה, איפה ומתי</a></li>
+<li><a href="#tools">התוכניות שהסקריפטים מפעילים</a></li>
+<li><a href="#s-common"><code>common.sh</code>: ההגדרות המשותפות</a></li>
+<li><a href="#s-00"><code>00_build_llamacpp.sh</code>: בנייה</a></li>
+<li><a href="#s-01"><code>01_list_devices.sh</code>: אילו מכשירים יש</a></li>
+<li><a href="#s-02"><code>02_run_local.sh</code>: בדיקת עשן מקומית</a></li>
+<li><a href="#s-03"><code>03_start_worker.sh</code>: הפעלת worker</a></li>
+<li><a href="#s-04"><code>04_run_two_machines.sh</code>: בדיקת עשן של פיצול</a></li>
+<li><a href="#s-05"><code>05_bench.sh</code>: מדידה (הדור הקודם)</a></li>
+<li><a href="#s-06"><code>06_net_baseline.sh</code>: רשת (הדור הקודם)</a></li>
+<li><a href="#s-07"><code>07_preflight.sh</code>: אינוונטר ובדיקת טעינה</a></li>
+<li><a href="#s-08"><code>08_r0.sh</code>: מקליט הניסוי R0</a></li>
+<li><a href="#s-09"><code>09_r0_report.py</code>: בניית הטבלאות</a></li>
+<li><a href="#s-10"><code>10_capacity.sh</code>: האם המודל נכנס</a></li>
+<li><a href="#s-11"><code>11_load.py</code>: עומס מקבילי</a></li>
+<li><a href="#s-12"><code>12_rpc_trace.py</code>: ניתוח תעבורת RPC</a></li>
+<li><a href="#s-13"><code>13_serve.sh</code>: שרת לניסוי העומס</a></li>
+<li><a href="#s-14"><code>14_build_he_html.sh</code>: מסמכים בעברית</a></li>
+<li><a href="#closing">הערות סיום: מה מיושן, מה כדאי לתקן</a></li>
+</ul>
+
+<h2 id="primer">מילון shell: הסימנים שחוזרים בכל סקריפט</h2>
+<p>סקריפט shell הוא קובץ טקסט שבו כל שורה היא פקודה שהיית יכול להקליד בטרמינל. המחשב קורא אותו מלמעלה למטה ומבצע שורה אחר שורה. הסקריפטים שלנו כתובים ל־bash, ונשמרת תאימות ל־bash 3.2 הישן של macOS (ולכן אין בהם כמה תכונות מודרניות). הטבלה מסבירה את הסימנים שתפגוש שוב ושוב. אפשר לדלג עליה ולחזור אליה כשצריך.</p>
+
+<table class="lines">
+<tr><th class="c">מה כתוב</th><th>מה זה אומר</th></tr>
+<tr><td class="c">#!/usr/bin/env bash</td><td class="e">השורה הראשונה בכל סקריפט. אומרת למערכת ההפעלה "הרץ את הקובץ הזה עם bash". היא לא פקודה אלא הוראה למי שמפעיל את הקובץ.</td></tr>
+<tr><td class="c"># text</td><td class="e">הערה. כל מה שאחרי <code>#</code> עד סוף השורה מתעלמים ממנו. ההערות בראש כל סקריפט הן התיעוד שלו, ובכל הסקריפטים שלנו הן מכילות דוגמאות הפעלה.</td></tr>
+<tr><td class="c">set -euo pipefail</td><td class="e">שלוש הגנות שמופעלות בתחילת הריצה. <code>-e</code>: אם פקודה נכשלת, עצור מיד במקום להמשיך בשקט. <code>-u</code>: שימוש במשתנה שלא הוגדר הוא שגיאה (ולכן תראה הרבה <code>${X:-}</code>, שמעניק ברירת מחדל ריקה). <code>pipefail</code>: בשרשרת של פקודות המחוברות ב־<code>|</code>, כישלון של אחת מהן נחשב כישלון של כולן.</td></tr>
+<tr><td class="c">NAME="value"</td><td class="e">הגדרת משתנה. בלי רווחים סביב <code>=</code>. מכאן והלאה <code>$NAME</code> או <code>${NAME}</code> מתחלפים בערך.</td></tr>
+<tr><td class="c">"${NAME:-default}"</td><td class="e">הערך של <code>NAME</code>, ואם הוא לא הוגדר או ריק, השתמש ב־<code>default</code>. זה המנגנון שבו כל הסקריפטים נותנים ערכי ברירת מחדל שאפשר לדרוס מבחוץ: <code>PP=512 scripts/08_r0.sh ...</code> קובע <code>PP</code> לריצה הזו בלבד.</td></tr>
+<tr><td class="c">"${NAME:+text}"</td><td class="e">ההפך: אם <code>NAME</code> לא ריק, תן <code>text</code>; אחרת כלום. משמש להוסיף פסיק או ארגומנט רק כשיש מה להוסיף.</td></tr>
+<tr><td class="c">$1  $2  "${1:-}"</td><td class="e">הארגומנטים שניתנו לסקריפט בשורת הפקודה, לפי סדרם. <code>scripts/02_run_local.sh MTL0</code> נותן <code>$1=MTL0</code>. <code>$0</code> הוא שם הסקריפט עצמו. בתוך פונקציה, <code>$1</code> הוא הארגומנט של הפונקציה.</td></tr>
+<tr><td class="c">"$@"  "$*"</td><td class="e">כל הארגומנטים ביחד. <code>"$@"</code> שומר על כל ארגומנט כיחידה נפרדת (נכון להעברה הלאה לפקודה אחרת); <code>"$*"</code> מדביק אותם למחרוזת אחת (נכון להדפסה).</td></tr>
+<tr><td class="c">$(command)</td><td class="e">הרץ את הפקודה ושים את מה שהיא הדפיסה במקום הביטוי. <code>HOST="$(hostname -s)"</code> שומר את שם המחשב במשתנה.</td></tr>
+<tr><td class="c">$(( 3 + 4 ))</td><td class="e">חשבון שלמים. <code>$((T1-T0))</code> הוא הפרש שניות.</td></tr>
+<tr><td class="c">. file   (source)</td><td class="e">"טען את הקובץ הזה לתוך הריצה הנוכחית", כאילו שורותיו נכתבו כאן. כך כל סקריפט מקבל את המשתנים והפונקציות של <code>common.sh</code>.</td></tr>
+<tr><td class="c">if [ test ]; then ... else ... fi</td><td class="e">תנאי. הסוגריים המרובעים הם פקודת בדיקה. בדיקות נפוצות: <code>-f X</code> קובץ קיים, <code>-d X</code> תיקייה קיימת, <code>-x X</code> קובץ בר הרצה, <code>-s X</code> קובץ לא ריק, <code>-n "$X"</code> מחרוזת לא ריקה, <code>-z "$X"</code> מחרוזת ריקה, <code>"$A" = "$B"</code> שוויון מחרוזות, <code>"$A" -eq 0</code> שוויון מספרי, <code>!</code> שלילה.</td></tr>
+<tr><td class="c">A &amp;&amp; B</td><td class="e">הרץ B רק אם A הצליחה. נפוץ כקיצור ל־if: <code>[ -n "$DEVICE" ] &amp;&amp; ARGS+=(--device "$DEVICE")</code> פירושו "אם יש device, הוסף אותו לארגומנטים".</td></tr>
+<tr><td class="c">A || B</td><td class="e">הרץ B רק אם A נכשלה. <code>command -v cmake || die "..."</code> פירושו "אם אין cmake, עצור עם הודעה". <code>|| true</code> פירושו "גם אם נכשל, אל תעצור" (עוקף את <code>set -e</code> במקום אחד).</td></tr>
+<tr><td class="c">case "$X" in
+  a) ... ;;
+  b|c) ... ;;
+  *) ... ;;
+esac</td><td class="e">בחירה לפי ערך. אם <code>X</code> הוא <code>a</code> בצע את הענף הראשון; <code>b</code> או <code>c</code> את השני; <code>*</code> הוא "כל השאר". תבניות כמו <code>*:*</code> פירושן "מכיל נקודתיים". כל ענף מסתיים ב־<code>;;</code>.</td></tr>
+<tr><td class="c">name() { ...; }</td><td class="e">הגדרת פונקציה. לא מבצעת כלום עד שקוראים לה בשמה. <code>local X</code> בתוך פונקציה מגדיר משתנה שחי רק בתוכה.</td></tr>
+<tr><td class="c">ARGS=(a b c)
+ARGS+=(d)
+"${ARGS[@]}"</td><td class="e">מערך. הסקריפטים בונים את שורת הפקודה של llama.cpp חתיכה אחר חתיכה במערך <code>ARGS</code>, ובסוף מריצים <code>"$BIN/llama-cli" "${ARGS[@]}"</code>. היתרון: ארגומנט עם רווח (כמו prompt) נשאר יחידה אחת.</td></tr>
+<tr><td class="c">cmd &gt; file
+cmd &gt;&gt; file</td><td class="e">הפניית הפלט הרגיל (stdout) לקובץ. <code>&gt;</code> דורס, <code>&gt;&gt;</code> מוסיף בסוף.</td></tr>
+<tr><td class="c">cmd 2&gt; file
+cmd 2&gt;&amp;1
+cmd &gt;/dev/null 2&gt;&amp;1</td><td class="e">לכל תוכנית יש שני ערוצי פלט: רגיל (1) ושגיאות (2). <code>2&gt;</code> מפנה את ערוץ השגיאות. <code>2&gt;&amp;1</code> מאחד את השגיאות לתוך הפלט הרגיל. <code>/dev/null</code> הוא "פח": הפלט נזרק. חשוב אצלנו: llama.cpp כותב את כל לוג הטעינה (איזו שכבה לאיזה מכשיר) לערוץ השגיאות, ולכן הסקריפטים שומרים אותו בנפרד כ־<code>stderr.log</code>.</td></tr>
+<tr><td class="c">cmd1 | cmd2</td><td class="e">צינור: הפלט של הראשונה הופך לקלט של השנייה. <code>grep X | head -1</code> = "השורות שמכילות X, ומהן רק הראשונה".</td></tr>
+<tr><td class="c">cmd | tee file</td><td class="e"><code>tee</code> מעביר את מה שהוא מקבל גם למסך וגם לקובץ. כך רואים את הריצה בזמן אמת וגם שומרים לוג.</td></tr>
+<tr><td class="c">${PIPESTATUS[0]}</td><td class="e">בצינור, קוד היציאה שרואים הוא של הפקודה האחרונה (<code>tee</code>, שתמיד מצליחה). <code>PIPESTATUS[0]</code> נותן את קוד היציאה של הפקודה הראשונה, כלומר של llama.cpp עצמו. 0 = הצלחה, כל מספר אחר = כישלון.</td></tr>
+<tr><td class="c">$?</td><td class="e">קוד היציאה של הפקודה האחרונה שרצה.</td></tr>
+<tr><td class="c">exit 1</td><td class="e">סיים את הסקריפט עם קוד כישלון. <code>exit 0</code> = הצלחה. מי שמריץ סקריפט בתוך סקריפט בודק את הקוד הזה.</td></tr>
+<tr><td class="c">exec cmd</td><td class="e">"החלף את הסקריפט בפקודה הזו". מהרגע הזה אין יותר סקריפט, יש רק את התוכנית. משמש כשהסקריפט הוא רק עטיפה שמכינה שרת ואז נעלמת (03, 13).</td></tr>
+<tr><td class="c">command -v tool</td><td class="e">"האם הכלי הזה מותקן ואיפה". מצליח אם קיים. בשילוב <code>&gt;/dev/null 2&gt;&amp;1</code> זו בדיקה שקטה.</td></tr>
+<tr><td class="c">cmd &lt;&lt;EOF
+...
+EOF</td><td class="e">heredoc: כל הטקסט עד השורה <code>EOF</code> נשלח כקלט לפקודה (או נכתב לקובץ אם יש <code>&gt; file</code>). עם <code>&lt;&lt;'EOF'</code> (גרשיים) הטקסט נלקח כפי שהוא, בלי להחליף <code>$X</code> בערכים; בלי גרשיים, המשתנים מוחלפים. כך הסקריפטים כותבים קובצי JSON ומריצים קטעי python מתוך bash.</td></tr>
+<tr><td class="c">printf 'fmt' args
+echo text</td><td class="e">הדפסה. <code>printf</code> עם תבנית (<code>%s</code> = שים מחרוזת כאן, <code>\n</code> = שורה חדשה), <code>echo</code> פשוט מדפיס. <code>printf '%q '</code> מדפיס כל ארגומנט בצורה שאפשר להדביק חזרה לטרמינל (עם escaping), וכך נשמרת הפקודה המדויקת ב־<code>cmd.txt</code>.</td></tr>
+<tr><td class="c">grep -E 'pattern' file</td><td class="e">מצא שורות שמתאימות לתבנית (ביטוי רגולרי). דגלים: <code>-q</code> שקט, רק הצלחה/כישלון; <code>-o</code> הדפס רק את החלק שהתאים; <code>-c</code> ספור; <code>-i</code> התעלם מאותיות גדולות/קטנות; <code>-m1</code> עצור אחרי ההתאמה הראשונה; <code>-F</code> חפש טקסט מילולי ולא תבנית. בתבנית: <code>|</code> "או", <code>[0-9]+</code> "ספרה אחת או יותר", <code>.*</code> "כל דבר", <code>^</code> תחילת שורה, <code>$</code> סופה.</td></tr>
+<tr><td class="c">sed -E 's/from/to/'</td><td class="e">החלפת טקסט בכל שורה. <code>s#a#b#</code> זהה, רק עם מפריד אחר כדי שלא יתנגש עם <code>/</code> בתבנית. <code>\1</code> בחלק ה־"to" הוא "הקטע שנתפס בסוגריים בתבנית". <code>sed 's/^/    /'</code> מוסיף הזחה בתחילת כל שורה (להדפסה נאה).</td></tr>
+<tr><td class="c">awk '{print $1}'</td><td class="e">עיבוד לפי עמודות. <code>$1</code> העמודה הראשונה, <code>$NF</code> האחרונה, <code>$(NF-1)</code> הלפני אחרונה. <code>awk '/pattern/{...}'</code> מבצע רק בשורות שמתאימות.</td></tr>
+<tr><td class="c">cut -d' ' -f1
+tr 'a' 'b'
+head -1 / tail -1 / tail -n +2</td><td class="e"><code>cut</code> חותך עמודה לפי מפריד. <code>tr</code> מחליף תו בתו (או מוחק עם <code>-d</code>). <code>head -1</code> השורה הראשונה, <code>tail -1</code> האחרונה, <code>tail -n +2</code> הכול חוץ מהראשונה (דילוג על כותרת).</td></tr>
+<tr><td class="c">basename path
+dirname path</td><td class="e">שם הקובץ בלבד / התיקייה בלבד. <code>basename "$MODEL"</code> נותן את שם קובץ המודל בלי הנתיב.</td></tr>
+<tr><td class="c">mkdir -p dir</td><td class="e">צור תיקייה, כולל תיקיות אב, ואל תתלונן אם כבר קיימת.</td></tr>
+<tr><td class="c">date -u +%Y%m%d-%H%M%S</td><td class="e">התאריך והשעה ב־UTC בפורמט נתון, למשל <code>20261024-091500</code>. זה הבסיס לכל שמות ה־run.</td></tr>
+<tr><td class="c">${X//,//}
+${X%%,*}
+${X#*,}</td><td class="e">עיבוד מחרוזת מובנה. <code>${X//a/b}</code> מחליף כל <code>a</code> ב־<code>b</code> (אצלנו: פסיק ל־slash). <code>${X%%,*}</code> מוחק מהפסיק הראשון עד הסוף (נשאר החלק שלפני הפסיק). <code>${X#*,}</code> מוחק עד הפסיק הראשון כולל (נשאר החלק שאחרי). כך <code>1,0</code> מתפרק ל־<code>1</code> ו־<code>0</code>.</td></tr>
+<tr><td class="c">IFS=','</td><td class="e">התו שלפיו bash מפרק מחרוזת למילים. ברירת המחדל היא רווח. שינוי ל־<code>,</code> מאפשר לולאה על רשימה מופרדת בפסיקים, ואחר כך משחזרים את הערך הקודם.</td></tr>
+<tr><td class="c">cmd &amp;
+PID=$!
+wait $PID</td><td class="e">הרצה ברקע. <code>&amp;</code> לא מחכה לסיום; <code>$!</code> הוא מספר התהליך שהורץ; <code>wait</code> מחכה לו. <code>kill</code>/<code>pkill</code> הורגים תהליך לפי מספר/שם; <code>pgrep</code> בודק אם קיים.</td></tr>
+<tr><td class="c">env VAR=x cmd
+export VAR
+unset VAR</td><td class="e">משתני סביבה: ערכים שתוכנית־בת רואה. <code>env VAR=x cmd</code> מריץ את cmd עם המשתנה; <code>export</code> הופך משתנה רגיל לכזה שתוכניות־בת רואות; <code>unset</code> מוחק אותו.</td></tr>
+<tr><td class="c">script -q -a -F file cmd</td><td class="e">כלי מערכת שמריץ תוכנית בתוך "טרמינל מדומה" ומקליט הכול לקובץ. אנחנו משתמשים בו כי <code>ggml-rpc-server</code> ו־<code>llama-server</code> לא מדפיסים כלום כשהפלט שלהם הולך לצינור (buffering); עם טרמינל מדומה השורות מופיעות מיד, גם על המסך וגם בלוג.</td></tr>
+<tr><td class="c">shellcheck disable=...</td><td class="e">הערה לכלי בדיקת הקוד shellcheck, שיתעלם מאזהרה מסוימת. אין לזה השפעה על הריצה.</td></tr>
+</table>
+
+<h2 id="pipeline">מפת התהליך: מי מריץ מה, איפה ומתי</h2>
+<p>במערכת יש שני תפקידים. <strong>Worker</strong> <span class="tag w">worker</span> הוא מכונה שתורמת את ה־GPU שלה: היא מריצה <code>ggml-rpc-server</code> ומחכה. <strong>Requester</strong> <span class="tag r">requester</span> הוא המכונה שיש לה את ה־prompt: היא מריצה את llama.cpp, מחליטה אילו שכבות יישבו אצלה ואילו אצל ה־worker, ומנהלת את הריצה. כל סקריפט שייך לאחד התפקידים, או לשניהם <span class="tag any">כל מכונה</span>. בבית של אוהד המק M5 (<code>192.168.1.242</code>) שימש בדרך כלל כ־worker והאייר M3 (<code>192.168.1.219</code>) כ־requester, אבל הסקריפטים סימטריים ואפשר להפוך.</p>
+
+<div class="pipe">
+<div class="stage"><b>1. התקנה (פעם אחת לכל מכונה)</b><code>00_build_llamacpp.sh</code> בונה את llama.cpp.<br><code>01_list_devices.sh</code> מגלה את שם ה־GPU.<br><code>07_preflight.sh</code> מוודא שהכול נטען ורושם אינוונטר.</div>
+<div class="stage"><b>2. בדיקת עשן (האם זה בכלל עובד)</b><code>02_run_local.sh</code> prompt אחד על מכונה אחת.<br><code>03_start_worker.sh</code> על ה־worker, ואז<br><code>04_run_two_machines.sh</code> על ה־requester.</div>
+<div class="stage"><b>3. ניסוי R0: טבלאות A, B, C</b><code>08_r0.sh worker</code> על ה־worker.<br><code>08_r0.sh local</code> על כל מכונה.<br><code>08_r0.sh rpc</code> על ה־requester.<br><code>09_r0_report.py</code> בונה את הדוח.</div>
+<div class="stage"><b>4. קיבולת (O4.1, שאלת TP)</b><code>10_capacity.sh local</code> על כל מכונה.<br><code>10_capacity.sh split</code> על ה־requester מול worker פעיל.</div>
+<div class="stage"><b>5. עומס (O4.2)</b><code>13_serve.sh</code> מרים שרת HTTP (solo או split).<br><code>11_load.py</code> מפציץ אותו בבקשות ומודד.</div>
+<div class="stage"><b>6. תעבורה (H1)</b>worker עם <code>GGML_RPC_DEBUG=1</code>, ריצה כלשהי, ואז<br><code>12_rpc_trace.py</code> על הלוג.</div>
+<div class="stage"><b>7. מסמכים</b><code>14_build_he_html.sh</code> הופך את <code>docs/he/*.md</code> ל־HTML בעברית.</div>
+<div class="stage old"><b>מיושן (לא לייצר איתם שורות חדשות)</b><code>05_bench.sh</code> ו־<code>06_net_baseline.sh</code>. הוחלפו ב־<code>08_r0.sh</code>. מוסברים כאן כי הם מופיעים בהיסטוריה.</div>
+</div>
+
+<div class="note">
+<p><strong>העיקרון שחוזר בכל הסקריפטים מ־07 והלאה:</strong> שום מספר לא נכתב ביד. כל ריצה פותחת תיקייה חדשה עם חותמת זמן, שומרת בה את הפקודה המדויקת (<code>cmd.txt</code>), את הפלט הגולמי של התוכנית, וקובץ <code>manifest.json</code> שאומר מי, מתי, על איזה קו, איזו גרסה ואיזה מודל. הדוח נבנה אחר כך מהקבצים האלה. ככה כל מספר בטבלה ניתן לעקיבה אחורה עד הלוג שממנו הוא נולד.</p>
+</div>
+
+<h2 id="tools">התוכניות שהסקריפטים מפעילים</h2>
+<p>הסקריפטים עצמם לא מחשבים כלום. הם מכינים ארגומנטים, מפעילים תוכנית חיצונית, ושומרים את הפלט. אלה התוכניות:</p>
+<table>
+<tr><th>תוכנית</th><th>מאיפה</th><th>מה היא עושה</th><th>מי מפעיל אותה</th></tr>
+<tr><td><code>llama-cli</code></td><td>llama.cpp</td><td>טוענת מודל GGUF, מקבלת prompt, מייצרת טקסט. עם <code>--rpc</code> היא יודעת לשלוח חלק מהשכבות למכונה אחרת. עם <code>--verbose</code> היא מדפיסה איזו שכבה הלכה לאיזה מכשיר.</td><td>02, 04, 08 (placement), 10</td></tr>
+<tr><td><code>llama-bench</code></td><td>llama.cpp</td><td>כלי מדידה: מריץ prefill של PP טוקנים ו־generation של TG טוקנים, חוזר REPS פעמים, ומדווח ממוצע וסטיית תקן של טוקנים לשנייה. זהו המכשיר לכל מספר מהירות בעבודה.</td><td>05, 08</td></tr>
+<tr><td><code>llama-server</code></td><td>llama.cpp</td><td>אותו מנוע, אבל כשרת HTTP שמקבל בקשות במקביל. משמש לניסוי העומס.</td><td>13</td></tr>
+<tr><td><code>ggml-rpc-server</code></td><td>llama.cpp</td><td>השרת שהופך מכונה ל־worker: מאזין על פורט, מקבל טנזורים וגרפים של חישוב מ־requester מרוחק ומריץ אותם על ה־GPU המקומי.</td><td>03 (ודרכו 08 worker)</td></tr>
+<tr><td><code>cmake</code>, <code>git</code></td><td>כלי פיתוח</td><td>הורדת קוד המקור ובנייתו לקבצים ברי הרצה.</td><td>00</td></tr>
+<tr><td><code>ping</code>, <code>iperf3</code>, <code>tailscale</code>, <code>nc</code>, <code>route</code></td><td>כלי רשת</td><td>זמן הלוך־חזור, רוחב פס, מצב הרשת הפרטית, האם פורט פתוח, דרך איזה ממשק יוצאים.</td><td>06, 07, 08</td></tr>
+<tr><td><code>sysctl</code>, <code>system_profiler</code>, <code>sw_vers</code>, <code>otool</code>, <code>vm_stat</code>, <code>nvidia-smi</code>, <code>readelf</code>, <code>/usr/bin/time</code></td><td>כלי מערכת</td><td>שאלות על החומרה, הזיכרון, גרסת מערכת ההפעלה, ומבנה הקבצים הבינאריים.</td><td>01, 07, 10</td></tr>
+<tr><td><code>python3</code></td><td>מערכת</td><td>שלושה סקריפטים כתובים בפייתון (09, 11, 12) וכמה סקריפטי bash מריצים קטע פייתון קטן לפענוח JSON.</td><td>08, 09, 11, 12, 14</td></tr>
+<tr><td><code>pandoc</code></td><td>כלי חיצוני</td><td>ממיר Markdown ל־HTML.</td><td>14</td></tr>
+</table>
+
+<h2 id="s-common"><code>common.sh</code>: ההגדרות המשותפות <span class="tag any">כל מכונה</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>זה לא סקריפט שמריצים. זה קובץ שכל שאר הסקריפטים טוענים בשורה הראשונה שלהם (<code>. "$(dirname "$0")/common.sh"</code>). הוא עונה על שלוש שאלות שכל סקריפט צריך: איפה הריפו, איפה הבינארים של llama.cpp על המכונה הזו, ואיזה מודל. בנוסף הוא מגדיר פונקציות עזר קטנות (הדפסה צבעונית, זיהוי מערכת הפעלה, בדיקות קיום). בלעדיו כל סקריפט היה צריך לחזור על 80 השורות האלה.</p>
+<table class="facts">
+<tr><td>קלט</td><td>קובץ <code>.env</code> בשורש הריפו (משותף), קובץ <code>~/.nocturne.env</code> במכונה (פרטי), ומשתני סביבה שכבר קיימים ב־shell.</td></tr>
+<tr><td>פלט</td><td>המשתנים <code>REPO_ROOT</code>, <code>LLAMA_DIR</code>, <code>BIN</code>, <code>MODEL</code>, <code>RPC_PORT</code> והפונקציות <code>log warn die detect_platform detect_backend rpc_server_bin require_bin require_model host_label now_iso</code>.</td></tr>
+<tr><td>למה זה בנוי כך</td><td>הריפו מסונכרן ב־iCloud בין שני המקים, אבל ל־llama.cpp יש מיקום שונה בכל מכונה (באייר בתוך הריפו, ב־M5 ב־<code>~/dev/llama.cpp</code>). לכן יש שתי שכבות קונפיגורציה: מה שזהה לכולם ב־<code>.env</code>, ומה ששונה לכל מכונה בקובץ שמחוץ לריפו.</td></tr>
+</table>
+</div>
+
+<h3>הזרימה</h3>
+<ol>
+<li>הפעל את שלוש ההגנות (<code>set -euo pipefail</code>).</li>
+<li>מצא את שורש הריפו לפי המיקום של הקובץ עצמו.</li>
+<li>שמור בצד ערכים שהמשתמש כבר הגדיר ב־shell, טען את שני קובצי הקונפיגורציה, ואז השב את ערכי ה־shell כדי שהם ינצחו.</li>
+<li>אם עדיין לא ידוע איפה llama.cpp, נחש: קודם <code>~/dev/llama.cpp</code>, אחרת <code>third_party/llama.cpp</code> בריפו.</li>
+<li>הגדר את הפונקציות.</li>
+</ol>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">set -euo pipefail</td><td class="e">ההגנות. מכיוון שהקובץ נטען לתוך כל סקריפט, ההגנות חלות על כולם.</td></tr>
+<tr><td class="c">REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." &amp;&amp; pwd)"</td><td class="e"><code>BASH_SOURCE[0]</code> הוא הנתיב של הקובץ הזה עצמו (לא של הסקריפט שטען אותו). <code>dirname</code> נותן את התיקייה שלו (<code>scripts/</code>), <code>/..</code> עולה רמה אחת, <code>cd ... &amp;&amp; pwd</code> הופך את זה לנתיב מלא ומוחלט. התוצאה: שורש הריפו, לא משנה מאיפה הרצת.</td></tr>
+<tr><td class="c">_pre_LLAMA_DIR="${LLAMA_DIR:-}"; _pre_MODEL="${MODEL:-}"; _pre_BIND="${BIND:-}"; _pre_BACKEND="${BACKEND:-}"</td><td class="e">צילום מצב: אם המשתמש כתב <code>MODEL=... scripts/x.sh</code>, הערך נשמר בצד לפני שקובצי הקונפיגורציה ידרסו אותו.</td></tr>
+<tr><td class="c">if [ -f "$REPO_ROOT/.env" ]; then
+  . "$REPO_ROOT/.env"
+fi</td><td class="e">אם קיים קובץ <code>.env</code> בשורש הריפו, טען אותו. זהו קובץ של שורות <code>NAME=value</code>, בעיקר <code>MODEL=</code>. הוא ב־gitignore אבל מסתנכרן ב־iCloud.</td></tr>
+<tr><td class="c">if [ -f "$HOME/.nocturne.env" ]; then
+  . "$HOME/.nocturne.env"
+fi</td><td class="e">אותו דבר לקובץ הפרטי של המכונה בתיקיית הבית. כאן יושבים <code>LLAMA_DIR</code>, <code>BIND</code>, <code>BACKEND</code>. נטען אחרי <code>.env</code> ולכן גובר עליו.</td></tr>
+<tr><td class="c">[ -n "$_pre_LLAMA_DIR" ] &amp;&amp; LLAMA_DIR="$_pre_LLAMA_DIR"
+[ -n "$_pre_MODEL" ]     &amp;&amp; MODEL="$_pre_MODEL"
+[ -n "$_pre_BIND" ]      &amp;&amp; BIND="$_pre_BIND"
+[ -n "$_pre_BACKEND" ]   &amp;&amp; BACKEND="$_pre_BACKEND"</td><td class="e">השבת ערכי ה־shell. לכל אחד מארבעת המשתנים: אם היה לו ערך לפני הטעינה, החזר אותו. כך סדר העדיפויות הסופי הוא: shell גובר על <code>~/.nocturne.env</code> שגובר על <code>.env</code>.</td></tr>
+<tr><td class="c">if [ -z "${LLAMA_DIR:-}" ]; then
+  if [ -x "$HOME/dev/llama.cpp/build/bin/llama-cli" ]; then
+    LLAMA_DIR="$HOME/dev/llama.cpp"
+  else
+    LLAMA_DIR="$REPO_ROOT/third_party/llama.cpp"
+  fi
+fi</td><td class="e">אם אף אחד לא אמר איפה llama.cpp: בדוק אם יש בנייה מוכנה (<code>llama-cli</code> בר הרצה) ב־<code>~/dev/llama.cpp</code>. אם כן, זו הבחירה (זה המצב ב־M5). אחרת, הנח שהיא בתוך הריפו ב־<code>third_party/</code> (המצב באייר). הסיבה להעדפה: בנייה בתוך iCloud גרמה לבעיות טעינה וסנכרון של ג׳יגה־בייטים.</td></tr>
+<tr><td class="c">LLAMA_BUILD="${LLAMA_BUILD:-$LLAMA_DIR/build}"
+BIN="$LLAMA_BUILD/bin"</td><td class="e">תיקיית הבנייה היא <code>build/</code> בתוך llama.cpp, והבינארים ב־<code>build/bin/</code>. מעכשיו <code>$BIN/llama-cli</code> הוא הנתיב המלא לתוכנית.</td></tr>
+<tr><td class="c">MODEL="${MODEL:-}"
+RESULTS="${RESULTS:-$REPO_ROOT/experiments/RESULTS.md}"
+RPC_PORT="${RPC_PORT:-50052}"</td><td class="e">ברירות מחדל: מודל ריק (כל סקריפט שצריך מודל יבדוק ויתלונן), קובץ התוצאות, והפורט שעליו ה־worker מאזין. 50052 נבחר כי זו ברירת המחדל של llama.cpp.</td></tr>
+<tr><td class="c">log()  { printf '\033[1;34m[nocturne]\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33m[nocturne]\033[0m %s\n' "$*" &gt;&amp;2; }
+die()  { printf '\033[1;31m[nocturne]\033[0m %s\n' "$*" &gt;&amp;2; exit 1; }</td><td class="e">שלוש פונקציות הדפסה. הרצפים <code>\033[1;34m</code> הם קודי צבע לטרמינל (כחול, צהוב, אדום) והקידומת <code>[nocturne]</code> מבדילה את ההודעות שלנו מהפלט של llama.cpp. <code>warn</code> ו־<code>die</code> כותבות לערוץ השגיאות (<code>&gt;&amp;2</code>) כדי לא לזהם קבצי פלט. <code>die</code> גם עוצרת את הסקריפט עם קוד כישלון.</td></tr>
+<tr><td class="c">detect_platform() {
+  case "$(uname -s)" in
+    Darwin) echo "macos" ;;
+    Linux)  echo "linux" ;;
+    MINGW*|MSYS*|CYGWIN*) echo "windows" ;;
+    *) echo "unknown" ;;
+  esac
+}</td><td class="e"><code>uname -s</code> מדפיס את שם מערכת ההפעלה. macOS מזדהה כ־Darwin. הפונקציה מתרגמת לשמות הקצרים שהסקריפטים משתמשים בהם. חשוב כי פקודות מערכת (כתובת IP, זיכרון, זמן) שונות בין מק ללינוקס.</td></tr>
+<tr><td class="c">detect_backend() {
+  if [ -n "${BACKEND:-}" ]; then echo "$BACKEND"; return; fi
+  case "$(detect_platform)" in
+    macos) echo "metal" ;;
+    linux)
+      if command -v nvidia-smi &gt;/dev/null 2&gt;&amp;1; then echo "cuda"; else echo "cpu"; fi ;;
+    *) echo "cpu" ;;
+  esac
+}</td><td class="e">איזה מאיץ. אם המשתמש קבע <code>BACKEND</code>, כבד אותו. אחרת: מק = Metal; לינוקס = CUDA אם הכלי <code>nvidia-smi</code> מותקן (סימן לדרייבר של NVIDIA), אחרת CPU. משמש לבחירת דגלי הבנייה ולתיוג התוצאות.</td></tr>
+<tr><td class="c">rpc_server_bin() {
+  if   [ -x "$BIN/ggml-rpc-server" ]; then echo "$BIN/ggml-rpc-server"
+  elif [ -x "$BIN/rpc-server" ];      then echo "$BIN/rpc-server"
+  else die "RPC server binary not found in $BIN. Run scripts/00_build_llamacpp.sh"; fi
+}</td><td class="e">שם השרת השתנה בגרסאות llama.cpp מ־<code>rpc-server</code> ל־<code>ggml-rpc-server</code>. הפונקציה מחזירה את מה שקיים, ועוצרת עם הסבר אם אף אחד לא קיים.</td></tr>
+<tr><td class="c">require_bin() {
+  [ -x "$BIN/$1" ] || die "$1 not found in $BIN. Run scripts/00_build_llamacpp.sh"
+}</td><td class="e">"ודא שהתוכנית הזו קיימת וברת הרצה, אחרת עצור". כל סקריפט קורא לה בתחילתו עם השם שהוא צריך (<code>require_bin llama-cli</code>).</td></tr>
+<tr><td class="c">require_model() {
+  [ -n "$MODEL" ] || die "MODEL is not set. Put MODEL=/path/to/model.gguf in .env"
+  [ -f "$MODEL" ]  || die "MODEL file not found: $MODEL"
+}</td><td class="e">שתי בדיקות: שהמשתנה <code>MODEL</code> לא ריק, ושהקובץ שהוא מצביע עליו קיים. ההודעות אומרות בדיוק מה לתקן.</td></tr>
+<tr><td class="c">host_label() { hostname -s 2&gt;/dev/null || hostname; }
+now_iso()    { date -u +%Y-%m-%dT%H:%M:%SZ; }</td><td class="e">שם המחשב הקצר (למשל <code>Mac</code> או <code>MMF4FWRG4R</code>) וחותמת זמן ב־UTC בפורמט תקני (<code>2026-10-24T09:15:00Z</code>). שניהם נכנסים לכל שם run ולכל manifest.</td></tr>
+</table>
+
+<h2 id="s-00"><code>00_build_llamacpp.sh</code>: בנייה <span class="tag any">כל מכונה, פעם אחת</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>llama.cpp מגיע כקוד מקור ב־C++ ואינו מגיע מוכן למכונה שלנו. הסקריפט מוריד את הקוד מ־GitHub ומקמפל אותו לארבע תוכניות (<code>llama-cli</code>, <code>llama-server</code>, <code>llama-bench</code>, <code>ggml-rpc-server</code>) עם שתי תכונות שחייבות להיות מופעלות בזמן הבנייה: תמיכה ב־GPU של המכונה (Metal במק, CUDA ב־NVIDIA) ותמיכה ב־RPC (היכולת לדבר עם worker מרוחק). בלי <code>-DGGML_RPC=ON</code> אין פיצול בין מכונות בכלל.</p>
+<table class="facts">
+<tr><td>מתי</td><td>פעם אחת בכל מכונה חדשה. ובכל פעם שמחליפים גרסת llama.cpp (ואז בכל המכונות יחד, כדי שהמספרים יישארו ברי השוואה).</td></tr>
+<tr><td>דורש</td><td><code>cmake</code> ו־<code>git</code> מותקנים. במק: Xcode Command Line Tools. בלינוקס עם NVIDIA: CUDA toolkit.</td></tr>
+<tr><td>משאיר</td><td>תיקיית <code>build/bin/</code> בתוך <code>LLAMA_DIR</code> עם הבינארים.</td></tr>
+<tr><td>מצב בפועל</td><td>הבנייה ב־M5 נעשתה ידנית ולא דרך הסקריפט (כדי להוסיף <code>-DCMAKE_BUILD_RPATH='@executable_path'</code>, ראה 07). הסקריפט לא עודכן בהתאם.</td></tr>
+</table>
+</div>
+
+<div class="warn"><strong>שים לב:</strong> אם llama.cpp כבר מותקן, הסקריפט עושה <code>git pull</code> ומושך את הגרסה האחרונה. זה סותר את ההחלטה לנעול את הגרסה ל־SHA <code>1e7bcf3</code>. הרצה חוזרת תזיז את הגרסה, והטבלאות הישנות יפסיקו להיות ברות השוואה לחדשות. עד שזה יתוקן: לא להריץ אותו שוב על מכונה שכבר נבנתה.</div>
+
+<h3>איך מפעילים</h3>
+<pre><code>bash scripts/00_build_llamacpp.sh                 # auto-detect: metal on mac, cuda on linux with nvidia
+BACKEND=cuda bash scripts/00_build_llamacpp.sh    # force cuda
+BACKEND=cpu  bash scripts/00_build_llamacpp.sh    # force cpu only</code></pre>
+
+<h3>הזרימה</h3>
+<ol>
+<li>טען הגדרות, קבע backend, הדפס מה הולך לקרות.</li>
+<li>ודא ש־cmake ו־git קיימים.</li>
+<li>אם אין checkout: שכפל. אם יש: משוך עדכונים.</li>
+<li>הרכב את דגלי cmake לפי ה־backend.</li>
+<li>הרץ cmake בשני שלבים: configure ואז build, עם כל ליבות המעבד.</li>
+<li>הדפס את הבינארים שנוצרו ושורת provenance לרישום.</li>
+</ol>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">. "$(dirname "$0")/common.sh"</td><td class="e">טען את ההגדרות המשותפות. <code>$0</code> הוא הנתיב של הסקריפט הזה, <code>dirname</code> התיקייה שלו, ושם יושב <code>common.sh</code>. שורה זו פותחת כל סקריפט ולא תוסבר שוב.</td></tr>
+<tr><td class="c">BACKEND="$(detect_backend)"
+log "platform=$(detect_platform) backend=$BACKEND"
+log "llama.cpp dir: $LLAMA_DIR"</td><td class="e">קבע את ה־backend (או קח את מה שהמשתמש נתן) והדפס אותו ואת המיקום, כדי שאם משהו ייבנה במקום הלא נכון תראה את זה מיד.</td></tr>
+<tr><td class="c">command -v cmake &gt;/dev/null 2&gt;&amp;1 || die "cmake not found. ..."
+command -v git   &gt;/dev/null 2&gt;&amp;1 || die "git not found"</td><td class="e">אם אחד משני הכלים חסר, עצור עם הוראת התקנה.</td></tr>
+<tr><td class="c">mkdir -p "$(dirname "$LLAMA_DIR")"</td><td class="e">ודא שתיקיית האב של היעד קיימת (למשל <code>~/dev/</code>), כי <code>git clone</code> לא יוצר אותה.</td></tr>
+<tr><td class="c">if [ ! -d "$LLAMA_DIR/.git" ]; then
+  log "cloning llama.cpp"
+  git clone --depth 1 https://github.com/ggml-org/llama.cpp "$LLAMA_DIR"
+else
+  log "llama.cpp already cloned; pulling"
+  git -C "$LLAMA_DIR" pull --ff-only || warn "pull failed, building existing checkout"
+fi</td><td class="e">תיקיית <code>.git</code> היא הסימן שיש כבר checkout. אם אין: שכפל מ־GitHub עם <code>--depth 1</code> (רק הגרסה האחרונה, בלי כל ההיסטוריה; חוסך מאות MB). אם יש: משוך עדכונים ב־<code>--ff-only</code> (רק אם אין קונפליקט), ואם המשיכה נכשלת (אין רשת, למשל) הזהר והמשך לבנות את מה שיש. זו השורה שסותרת את נעילת הגרסה.</td></tr>
+<tr><td class="c">CMAKE_FLAGS="-DGGML_RPC=ON -DCMAKE_BUILD_TYPE=Release"</td><td class="e">הדגלים שתמיד נכונים: הפעל RPC, ובנה בגרסת Release (מהירה, בלי מידע דיבוג).</td></tr>
+<tr><td class="c">case "$BACKEND" in
+  metal) CMAKE_FLAGS="$CMAKE_FLAGS -DGGML_METAL=ON" ;;
+  cuda)
+    command -v nvcc &gt;/dev/null 2&gt;&amp;1 || warn "nvcc not on PATH; ..."
+    CMAKE_FLAGS="$CMAKE_FLAGS -DGGML_CUDA=ON" ;;
+  vulkan) CMAKE_FLAGS="$CMAKE_FLAGS -DGGML_VULKAN=ON" ;;
+  cpu)   CMAKE_FLAGS="$CMAKE_FLAGS -DGGML_METAL=OFF -DGGML_CUDA=OFF" ;;
+  *) die "unknown BACKEND=$BACKEND (metal|cuda|vulkan|cpu)" ;;
+esac</td><td class="e">הוסף את דגל המאיץ. ל־CUDA יש אזהרה אם הקומפיילר של NVIDIA (<code>nvcc</code>) לא נמצא בנתיב, כי cmake לפעמים מוצא אותו בעצמו ולפעמים לא. ערך לא מוכר עוצר את הסקריפט.</td></tr>
+<tr><td class="c">log "cmake $CMAKE_FLAGS"
+cmake -S "$LLAMA_DIR" -B "$LLAMA_BUILD" $CMAKE_FLAGS</td><td class="e">שלב ה־configure: cmake קורא את תיאור הפרויקט ב־<code>-S</code> (source) ומכין תיקיית בנייה ב־<code>-B</code>. כאן הוא בודק שהקומפיילר, Metal או CUDA זמינים. <code>$CMAKE_FLAGS</code> בלי גרשיים בכוונה, כדי שהמחרוזת תתפרק לדגלים נפרדים.</td></tr>
+<tr><td class="c">JOBS="$( (command -v nproc &gt;/dev/null &amp;&amp; nproc) || sysctl -n hw.ncpu 2&gt;/dev/null || echo 4)"</td><td class="e">כמה ליבות יש, כדי לקמפל במקביל. בלינוקס <code>nproc</code>, במק <code>sysctl -n hw.ncpu</code>, ואם שניהם נכשלו: 4.</td></tr>
+<tr><td class="c">cmake --build "$LLAMA_BUILD" --config Release -j "$JOBS" \
+  --target llama-cli llama-server llama-bench ggml-rpc-server 2&gt;/dev/null \
+  || cmake --build "$LLAMA_BUILD" --config Release -j "$JOBS"</td><td class="e">שלב הבנייה בפועל (לוקח דקות). ניסיון ראשון: רק ארבעת ה־targets שאנחנו צריכים. אם זה נכשל (בגרסאות ישנות השמות שונים), ניסיון שני: בנה הכול. ה־<code>\</code> בסוף שורה פירושו "הפקודה ממשיכה בשורה הבאה".</td></tr>
+<tr><td class="c">log "built. binaries:"
+ls -1 "$BIN" | grep -E '^(llama-cli|llama-server|llama-bench|ggml-rpc-server|rpc-server)$' || true</td><td class="e">הצג את רשימת הקבצים בתיקיית הבינארים, מסוננת לחמשת השמות שמעניינים אותנו. <code>|| true</code> כדי שאם grep לא מצא כלום הסקריפט לא ייעצר (וזה כבר מידע בפני עצמו).</td></tr>
+<tr><td class="c">log "record the build in experiments/RESULTS.md:"
+echo "  host=$(host_label) backend=$BACKEND commit=$(git -C "$LLAMA_DIR" rev-parse --short HEAD) date=$(now_iso)"</td><td class="e">הדפס שורה מוכנה להדבקה בתיעוד: מכונה, backend, ה־commit הקצר של llama.cpp שנבנה (<code>rev-parse --short HEAD</code>), ותאריך. זו ההתחייבות שכל מספר יגיע עם הגרסה שהפיקה אותו.</td></tr>
+</table>
+
+<h2 id="s-01"><code>01_list_devices.sh</code>: אילו מכשירים יש <span class="tag any">כל מכונה</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>llama.cpp נותן לכל מכשיר חישוב שם: <code>MTL0</code> ל־GPU של אפל, <code>CUDA0</code>, <code>CUDA1</code> לכרטיסי NVIDIA. את השם הזה מעבירים אחר כך לדגל <code>--device</code> כדי לכפות ריצה על מכשיר מסוים, גם ב־worker. הסקריפט פשוט שואל את llama.cpp מה הוא רואה. חשוב מאוד ל־worker: אם מפעילים אותו בלי <code>--device</code> הוא חושף שלושה "מכשירים" (GPU, CPU, ועוד אחד), וזה בלבל את הפיצול. לכן הכלל: תמיד <code>MTL0</code> במפורש.</p>
+<table class="facts">
+<tr><td>מתי</td><td>אחרי הבנייה, ובכל פעם ששוכחים את שם המכשיר.</td></tr>
+<tr><td>דורש</td><td><code>llama-cli</code> בנוי.</td></tr>
+<tr><td>משאיר</td><td>כלום. רק מדפיס.</td></tr>
+</table>
+</div>
+
+<h3>איך מפעילים</h3>
+<pre><code>bash scripts/01_list_devices.sh</code></pre>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">. "$(dirname "$0")/common.sh"
+require_bin llama-cli</td><td class="e">טען הגדרות וודא ש־<code>llama-cli</code> קיים.</td></tr>
+<tr><td class="c">log "host=$(host_label) backend=$(detect_backend)"
+"$BIN/llama-cli" --list-devices</td><td class="e">הדפס מי אני, ואז הפעל את llama-cli במצב "רק תרשום את המכשירים וצא". הפלט הוא הרשימה, למשל <code>MTL0: Apple M5 (18432 MiB, 18432 MiB free)</code>.</td></tr>
+<tr><td class="c">case "$(detect_backend)" in
+  cuda)
+    echo
+    log "nvidia-smi view ..."
+    nvidia-smi --query-gpu=index,name,memory.total,memory.free --format=csv 2&gt;/dev/null || true ;;</td><td class="e">במכונת NVIDIA הוסף גם את נקודת המבט של הדרייבר: אינדקס, שם, זיכרון כולל ופנוי לכל כרטיס. ההערה בקוד מזכירה ש־<code>CUDA_VISIBLE_DEVICES</code> יכול להסתיר כרטיסים מהרשימה של llama.cpp.</td></tr>
+<tr><td class="c">  metal)
+    echo
+    log "Apple Silicon shares memory between CPU and GPU. ..."
+    log "Force CPU-only with:  --device none   (or -ngl 0)"
+    sysctl -n hw.memsize 2&gt;/dev/null | awk '{printf "  unified memory: %.0f GB\n", $1/1024/1024/1024}' ;;
+esac</td><td class="e">במק אין זיכרון GPU נפרד; <code>sysctl -n hw.memsize</code> נותן את סך הזיכרון בבתים ו־awk מחלק ל־GB. ההודעה מזכירה איך לכפות CPU בלבד.</td></tr>
+</table>
+
+<h2 id="s-02"><code>02_run_local.sh</code>: בדיקת עשן מקומית <span class="tag any">כל מכונה</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>השאלה הראשונה אחרי בנייה היא "האם המודל בכלל נטען ומייצר טקסט על המכונה הזו, על המכשיר שבחרתי?". הסקריפט מריץ prompt אחד קצר ושומר את כל הפלט ללוג. הוא לא מודד כלום: המספרים המחייבים באים מ־<code>llama-bench</code> (08). הוא רק מוכיח שהצנרת עובדת. זהו O1 בצורתו הגולמית.</p>
+<table class="facts">
+<tr><td>מתי</td><td>אחרי 00 ו־01, ובכל פעם שמחליפים מודל או גרסה.</td></tr>
+<tr><td>דורש</td><td><code>llama-cli</code>, <code>MODEL</code> ב־<code>.env</code>, ושם מכשיר מ־01.</td></tr>
+<tr><td>משאיר</td><td><code>experiments/logs/&lt;ts&gt;_&lt;host&gt;_smoke_&lt;device&gt;.log</code> עם כל מה ש־llama-cli הדפיס, כולל שורות הטעינה ושורות הזמנים.</td></tr>
+</table>
+</div>
+
+<h3>איך מפעילים</h3>
+<pre><code>bash scripts/02_run_local.sh MTL0            # mac gpu
+bash scripts/02_run_local.sh CUDA0           # nvidia gpu
+bash scripts/02_run_local.sh none            # cpu only
+PROMPT="Hello" N_PREDICT=128 bash scripts/02_run_local.sh MTL0</code></pre>
+
+<h3>הזרימה</h3>
+<ol>
+<li>קרא את שם המכשיר מהארגומנט הראשון (ברירת מחדל: אוטומטי).</li>
+<li>בנה את שורת הפקודה של <code>llama-cli</code> במערך, והוסף את דגלי המכשיר לפי הבחירה.</li>
+<li>הרץ, כשהפלט הולך גם למסך וגם לקובץ.</li>
+<li>לפי קוד היציאה: הדפס הצלחה והנחיה להמשך, או הדפס אבחון של התקלות הנפוצות.</li>
+</ol>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">. "$(dirname "$0")/common.sh"
+require_bin llama-cli
+require_model</td><td class="e">הגדרות, בדיקה שיש תוכנית, בדיקה שיש מודל.</td></tr>
+<tr><td class="c">DEVICE="${1:-auto}"
+PROMPT="${PROMPT:-Explain in three sentences how BitTorrent distributes a file.}"
+N_PREDICT="${N_PREDICT:-64}"
+CTX="${CTX:-2048}"</td><td class="e">ארבעה פרמטרים עם ברירות מחדל: המכשיר (מהארגומנט), הטקסט שמבקשים מהמודל, כמה טוקנים לייצר (64 מספיק להוכחה), וגודל חלון ההקשר (2048 טוקנים; קובע כמה זיכרון יוקצה ל־KV cache).</td></tr>
+<tr><td class="c">ARGS=(-m "$MODEL" -p "$PROMPT" -n "$N_PREDICT" -c "$CTX" --temp 0 -st --simple-io ${CLI_EXTRA:-})</td><td class="e">תחילת שורת הפקודה: <code>-m</code> איזה מודל, <code>-p</code> ה־prompt, <code>-n</code> כמה טוקנים, <code>-c</code> הקשר. <code>--temp 0</code> = בחר תמיד את הטוקן הסביר ביותר, כלומר פלט דטרמיניסטי שאפשר להשוות בין מכונות. <code>-st</code> = סיבוב אחד ואז צא (אחרת llama-cli נכנס לצ׳אט אינטראקטיבי ומחכה לך). <code>--simple-io</code> = בלי צבעים ועיצוב, נוח ללוג. <code>CLI_EXTRA</code> הוא פתח חירום לדגלים נוספים אם גרסה חדשה של llama.cpp תשנה משהו.</td></tr>
+<tr><td class="c">case "$DEVICE" in
+  auto)     ARGS+=(-ngl 99) ;;
+  none|cpu) ARGS+=(--device none -ngl 0); DEVICE="CPU" ;;
+  *)        ARGS+=(--device "$DEVICE" -ngl 99) ;;
+esac</td><td class="e"><code>-ngl</code> הוא "מספר שכבות להעביר ל־GPU"; 99 פירושו "כולן" (למודלים שלנו יש 28 עד 64 שכבות). <code>auto</code>: כל השכבות ל־GPU, איזה שיימצא. <code>none</code> או <code>cpu</code>: אין מכשיר ואפס שכבות, כלומר CPU בלבד; השם משתנה ל־CPU לצורך שם הלוג. כל ערך אחר נחשב שם מכשיר מפורש.</td></tr>
+<tr><td class="c">log "host=$(host_label) device=$DEVICE model=$(basename "$MODEL") n_predict=$N_PREDICT"
+LOGF="$REPO_ROOT/experiments/logs/$(date +%Y%m%d-%H%M%S)_$(host_label)_smoke_${DEVICE}.log"
+mkdir -p "$(dirname "$LOGF")"</td><td class="e">הדפס סיכום, הרכב שם קובץ לוג ייחודי (זמן, מכונה, סוג, מכשיר) וודא שהתיקייה קיימת.</td></tr>
+<tr><td class="c">set +e
+"$BIN/llama-cli" "${ARGS[@]}" 2&gt;&amp;1 | tee "$LOGF"
+RC=${PIPESTATUS[0]}
+set -e</td><td class="e">כבה זמנית את "עצור בכישלון" (<code>set +e</code>), כי אנחנו רוצים לטפל בכישלון בעצמנו. הרץ את llama-cli עם כל הארגומנטים, אחד את ערוץ השגיאות לפלט (<code>2&gt;&amp;1</code>) כדי שלוג הטעינה ייכנס לקובץ, והעבר דרך <code>tee</code> למסך ולקובץ. שמור את קוד היציאה של llama-cli (לא של tee) ב־<code>RC</code>. הדלק חזרה את ההגנה.</td></tr>
+<tr><td class="c">if [ "$RC" -eq 0 ]; then
+  log "OK on $DEVICE. Full log: ..."
+  log "Confirm the device was actually used: look for 'load_tensors' / 'offloaded N/N layers' lines above."
+  log "Now run:  bash scripts/05_bench.sh   for measured numbers."</td><td class="e">הצלחה. ההודעה השנייה חשובה: קוד יציאה 0 לא מוכיח שה־GPU שימש. ההוכחה היא בשורות <code>offloaded 28/28 layers</code> בלוג. ההפניה ל־05 היא שריד; היום המדידה היא ב־08.</td></tr>
+<tr><td class="c">else
+  warn "llama-cli exited with code $RC. Log: $LOGF"
+  warn "For 'invalid device', run 'bash scripts/01_list_devices.sh' ..."
+  warn "If it complains about an unknown flag, run '$BIN/llama-cli --help' and set CLI_EXTRA in .env ..."
+  exit "$RC"
+fi</td><td class="e">כישלון: שתי הסיבות הנפוצות (שם מכשיר שגוי, דגל שהשתנה בגרסה חדשה) ומה לעשות בכל אחת. הסקריפט יוצא עם אותו קוד כישלון כדי שסקריפט עוטף ידע.</td></tr>
+</table>
+
+<h2 id="s-03"><code>03_start_worker.sh</code>: הפעלת worker <span class="tag w">worker</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>זה הסקריפט שהופך מחשב לתורם. הוא מפעיל את <code>ggml-rpc-server</code>: תוכנית שמאזינה על כתובת ופורט, ומחכה ש־requester יתחבר, ישלח לה משקולות של שכבות ובקשות חישוב, ויקבל חזרה תוצאות. השרת חושף <strong>מכשיר אחד</strong> (למשל <code>MTL0</code>) ומדווח כמה זיכרון יש לו. בלעדיו אין "מכונה שנייה". במטאפורת BitTorrent זה ה־peer, ועם ה־cache המקומי הוא גם seeder: בפעם השנייה שאותו מודל מגיע, המשקולות כבר אצלו.</p>
+<table class="facts">
+<tr><td>מתי</td><td>לפני כל ריצה מפוצלת, על מכונת ה־worker. נשאר רץ עד Ctrl-C. בניסוי R0 מריצים אותו דרך <code>08_r0.sh worker</code> כדי לשמור לוג.</td></tr>
+<tr><td>דורש</td><td><code>ggml-rpc-server</code> בנוי, שם מכשיר, וכתובת IP שה־requester יכול להגיע אליה.</td></tr>
+<tr><td>משאיר</td><td>תהליך רץ. cache של טנזורים ב־<code>~/.cache/llama.cpp/rpc/</code>. אין קובץ לוג (זו הסיבה ש־08 עוטף אותו).</td></tr>
+<tr><td>אבטחה</td><td>llama.cpp מזהיר במפורש שאין אימות ואין הצפנה בפרוטוקול. לכן הסקריפט לעולם לא מאזין על <code>0.0.0.0</code> (כל הממשקים) כברירת מחדל, אלא על כתובת LAN או Tailscale ספציפית.</td></tr>
+</table>
+</div>
+
+<h3>איך מפעילים</h3>
+<pre><code>bash scripts/03_start_worker.sh MTL0                              # lan ip auto-detected, port 50052
+BIND=192.168.1.242 bash scripts/03_start_worker.sh MTL0           # explicit address
+BIND=100.101.102.103 bash scripts/03_start_worker.sh MTL0         # tailscale address
+MEM_MB=12000 bash scripts/03_start_worker.sh MTL0                 # advertise only 12 GB
+GGML_RPC_DEBUG=1 bash scripts/03_start_worker.sh MTL0             # one log line per rpc command (for 12_rpc_trace.py)</code></pre>
+
+<h3>הזרימה</h3>
+<ol>
+<li>מצא את השרת (בשם החדש או הישן).</li>
+<li>אם לא ניתנה כתובת, נחש את כתובת ה־LAN של המכונה.</li>
+<li>הרכב את הארגומנטים: כתובת, פורט, cache, ואופציונלית מכשיר, תקרת זיכרון, threads.</li>
+<li>טפל במשתנה הדיבוג כך ש־"0" באמת יכבה אותו.</li>
+<li>החלף את הסקריפט בשרת (<code>exec</code>).</li>
+</ol>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">. "$(dirname "$0")/common.sh"
+RPC="$(rpc_server_bin)"</td><td class="e">הגדרות, ונתיב מלא לשרת (<code>ggml-rpc-server</code> או <code>rpc-server</code>, מה שקיים).</td></tr>
+<tr><td class="c">DEVICE="${1:-}"
+BIND="${BIND:-}"
+CACHE_DIR="${LLAMA_CACHE:-$HOME/.cache/llama.cpp/rpc}"</td><td class="e">המכשיר מהארגומנט (ריק = כל המכשירים, וזה מה שאנחנו נמנעים ממנו), הכתובת מהסביבה (ריק = ננחש), ותיקיית ה־cache.</td></tr>
+<tr><td class="c">if [ -z "$BIND" ]; then
+  case "$(detect_platform)" in
+    macos) BIND="$(ipconfig getifaddr en0 2&gt;/dev/null || ipconfig getifaddr en1 2&gt;/dev/null || echo 127.0.0.1)" ;;
+    linux) BIND="$(hostname -I 2&gt;/dev/null | awk '{print $1}')"; BIND="${BIND:-127.0.0.1}" ;;
+    *)     BIND="127.0.0.1" ;;
+  esac
+fi</td><td class="e">ניחוש כתובת. במק: הכתובת של הממשק <code>en0</code> (בדרך כלל Wi-Fi), ואם אין, <code>en1</code>, ואם אין, <code>127.0.0.1</code> (רק המכונה עצמה, כלומר "לא נגיש מבחוץ", בטוח ככשל). בלינוקס: הכתובת הראשונה ש־<code>hostname -I</code> מדפיס. בכל מקרה אחר: localhost. חשוב: אם המכונה מחוברת גם בכבל וגם ב־Wi-Fi, הניחוש עלול לבחור את הלא נכון, ולכן ברצינות נותנים <code>BIND</code> במפורש.</td></tr>
+<tr><td class="c">ARGS=(-H "$BIND" -p "$RPC_PORT" -c)</td><td class="e">ארגומנטי החובה לשרת: <code>-H</code> על איזו כתובת להאזין, <code>-p</code> איזה פורט (50052), <code>-c</code> הפעל cache מקומי של טנזורים. ה־cache הוא מה שהופך את ה־worker ל־seeder: המשקולות שנשלחו אליו נשמרות בדיסק לפי hash, ובפעם הבאה ה־requester שולח רק את ה־hash והשרת טוען מקומית.</td></tr>
+<tr><td class="c">[ -n "$DEVICE" ]         &amp;&amp; ARGS+=(--device "$DEVICE")
+[ -n "${MEM_MB:-}" ]     &amp;&amp; ARGS+=(--mem "$MEM_MB")
+[ -n "${THREADS:-}" ]    &amp;&amp; ARGS+=(-t "$THREADS")</td><td class="e">שלושה ארגומנטים אופציונליים, כל אחד נוסף רק אם הוגדר: איזה מכשיר לחשוף, כמה זיכרון להצהיר (ב־MB; משמש לדמות מכונה חלשה יותר), וכמה threads ל־CPU.</td></tr>
+<tr><td class="c">mkdir -p "$CACHE_DIR"
+log "worker host=$(host_label) device=${DEVICE:-all} endpoint=$BIND:$RPC_PORT cache=$CACHE_DIR"
+log "on the requester use:  --rpc $BIND:$RPC_PORT"
+log "Ctrl-C to stop"</td><td class="e">צור את תיקיית ה־cache והדפס סיכום, כולל בדיוק מה להקליד בצד ה־requester.</td></tr>
+<tr><td class="c">if [ "${GGML_RPC_DEBUG:-0}" = "0" ]; then
+  unset GGML_RPC_DEBUG
+else
+  export GGML_RPC_DEBUG
+fi</td><td class="e">מלכודת שנפלנו בה: ggml בודק רק אם משתנה הסביבה <em>קיים</em>, לא מה ערכו. אז <code>GGML_RPC_DEBUG=0</code> היה מדליק דיבוג. הסקריפט מתקן: אם הערך הוא 0 או לא הוגדר, מחק את המשתנה לגמרי; אחרת ייצא אותו לתוכנית־הבת. עם דיבוג, השרת מדפיס שורה לכל פקודת RPC, וזה הקלט של 12.</td></tr>
+<tr><td class="c">exec env LLAMA_CACHE="$CACHE_DIR" "$RPC" "${ARGS[@]}"</td><td class="e">הפעלה. <code>env LLAMA_CACHE=...</code> אומר לשרת איפה ה־cache. <code>exec</code> מחליף את הסקריפט בשרת: מהרגע הזה Ctrl-C הורג את השרת ישירות, ואין שכבת ביניים.</td></tr>
+</table>
+
+<h2 id="s-04"><code>04_run_two_machines.sh</code>: בדיקת עשן של פיצול <span class="tag r">requester</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>זה הצד השני של 03. על מכונת ה־requester מריצים את אותו <code>llama-cli</code> כמו ב־02, עם שני דגלים נוספים: <code>--rpc</code> (לאיזה worker להתחבר) ו־<code>--tensor-split</code> (איזה חלק מהשכבות לשים אצל מי). אלה בדיוק שני הדגלים שהמתכנן האוטומטי (O5.5) אמור לייצר בעתיד; כאן אתה מקליד אותם ביד, ולכן הוא נקרא בקוד "placement v0". זה O2 בצורתו הגולמית.</p>
+<table class="facts">
+<tr><td>מתי</td><td>אחרי ש־03 רץ על ה־worker. לבדיקה שהחיבור עובד ושהשכבות באמת הגיעו לצד השני.</td></tr>
+<tr><td>דורש</td><td><code>llama-cli</code>, <code>MODEL</code>, worker פעיל, ו<strong>אותו קובץ מודל בדיוק</strong> בשתי המכונות (ה־requester שולח משקולות; אם ה־hash שונה, הטעינה נכשלת או שה־cache לא עוזר).</td></tr>
+<tr><td>משאיר</td><td><code>experiments/logs/&lt;ts&gt;_&lt;host&gt;_rpc_&lt;split&gt;.log</code>.</td></tr>
+</table>
+</div>
+
+<div class="note"><strong>סדר ה־split, פעם אחת ולתמיד:</strong> llama.cpp מכניס את מכשירי ה־RPC לתחילת רשימת המכשירים. לכן המספר הראשון ב־<code>--tensor-split</code> שייך ל־worker המרוחק והשני למכשיר המקומי. <code>1,0</code> = הכול על ה־worker. <code>0,1</code> = הכול מקומי. <code>1,1</code> = חצי חצי. הפרופורציות מנורמלות (<code>1,1</code> זהה ל־<code>50,50</code>). זה אומת מלוגים ב־2026-10-10 אחרי שהתבלבלנו בכיוון, וזו הסיבה שההערה בראש הקובץ כל כך ארוכה.</div>
+
+<h3>איך מפעילים</h3>
+<pre><code>bash scripts/04_run_two_machines.sh 192.168.1.242 1,0            # all layers on the worker
+bash scripts/04_run_two_machines.sh 192.168.1.242 1,1            # half remote, half local
+bash scripts/04_run_two_machines.sh 192.168.1.242 0,1            # all local, worker connected but unused
+bash scripts/04_run_two_machines.sh 192.168.1.242                # no split given: llama.cpp splits by free memory
+bash scripts/04_run_two_machines.sh 192.168.1.242,192.168.1.250 1,1,0   # two workers</code></pre>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">. "$(dirname "$0")/common.sh"
+require_bin llama-cli
+require_model</td><td class="e">כרגיל.</td></tr>
+<tr><td class="c">WORKERS="${1:-}"; [ -n "$WORKERS" ] || die "usage: $0 &lt;worker_ip[:port]&gt;[,...] [tensor-split]"
+SPLIT="${2:-}"
+PROMPT="${PROMPT:-Explain in three sentences how BitTorrent distributes a file.}"
+N_PREDICT="${N_PREDICT:-64}"
+CTX="${CTX:-2048}"</td><td class="e">הארגומנט הראשון (רשימת workers) חובה, אחרת הסבר שימוש ועצור. השני (split) רשות. שאר הפרמטרים כמו ב־02.</td></tr>
+<tr><td class="c">RPC_LIST=""
+OLDIFS="$IFS"; IFS=','
+for w in $WORKERS; do
+  case "$w" in *:*) ep="$w" ;; *) ep="$w:$RPC_PORT" ;; esac
+  RPC_LIST="${RPC_LIST:+$RPC_LIST,}$ep"
+done
+IFS="$OLDIFS"</td><td class="e">השלמת פורטים. שמור את מפריד המילים הרגיל, שנה אותו לפסיק, ועבור על כל worker ברשימה: אם כבר יש בו נקודתיים (כלומר פורט), השאר; אחרת הוסף <code>:50052</code>. בנה מחדש רשימה מופרדת בפסיקים (ה־<code>${RPC_LIST:+$RPC_LIST,}</code> מוסיף פסיק רק אם כבר יש משהו). שחזר את המפריד. כך <code>192.168.1.242</code> הופך ל־<code>192.168.1.242:50052</code>.</td></tr>
+<tr><td class="c">ARGS=(-m "$MODEL" -p "$PROMPT" -n "$N_PREDICT" -c "$CTX" --temp 0 -st --simple-io -ngl 99 --rpc "$RPC_LIST" ${CLI_EXTRA:-})
+[ -n "$SPLIT" ] &amp;&amp; ARGS+=(--tensor-split "$SPLIT")</td><td class="e">אותה שורת פקודה כמו ב־02, ועוד: <code>-ngl 99</code> (כל השכבות למאיצים, מקומי ומרוחק כאחד) ו־<code>--rpc</code> עם רשימת ה־workers. אם ניתן split, הוסף <code>--tensor-split</code>; אם לא, llama.cpp יחלק לבד לפי הזיכרון הפנוי של כל מכשיר.</td></tr>
+<tr><td class="c">log "requester host=$(host_label) workers=$RPC_LIST split=${SPLIT:-auto(memory-proportional)}"
+LOGF="$REPO_ROOT/experiments/logs/$(date +%Y%m%d-%H%M%S)_$(host_label)_rpc_${SPLIT:-auto}.log"
+mkdir -p "$(dirname "$LOGF")"</td><td class="e">סיכום ושם לוג, שכולל את ה־split.</td></tr>
+<tr><td class="c">set +e
+T0="$(date +%s)"
+"$BIN/llama-cli" "${ARGS[@]}" 2&gt;&amp;1 | tee "$LOGF"
+RC=${PIPESTATUS[0]}
+T1="$(date +%s)"
+set -e</td><td class="e">כמו ב־02, בתוספת מדידת זמן קיר גסה: <code>date +%s</code> הוא מספר השניות מאז 1970, לפני ואחרי.</td></tr>
+<tr><td class="c">if [ "$RC" -eq 0 ]; then
+  log "OK. wall=$((T1-T0))s  log: ..."
+  log "Check above that layers were offloaded to the RPC device(s) (lines mentioning RPC[...])."
+  log "Now run:  bash scripts/05_bench.sh rpc $RPC_LIST   for measured numbers."</td><td class="e">הצלחה: זמן כולל בשניות (כולל טעינה ושליחת משקולות, ולכן לא מדד ביצועים), והנחיה לחפש בלוג שורות עם <code>RPC0[...]</code>, שהן ההוכחה שמשהו באמת הוקצה על ה־worker.</td></tr>
+<tr><td class="c">else
+  warn "llama-cli exited with code $RC. Log: $LOGF"
+  warn "Common causes: worker not running, firewall on port $RPC_PORT, wrong IP, model file differs between machines."
+  exit "$RC"
+fi</td><td class="e">כישלון: ארבע הסיבות שראינו בפועל, לפי שכיחות.</td></tr>
+</table>
+
+<h2 id="s-05"><code>05_bench.sh</code>: מדידה, הדור הקודם <span class="tag any">כל מכונה</span> <span class="tag">מיושן</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>זה היה מכשיר המדידה הראשון: עטיפה ל־<code>llama-bench</code> שמוסיפה לכל שורת תוצאה את המטא־דאטה שלנו (מי, מתי, איזו גרסה) ומצרפת ל־CSV אחד. הוא הוחלף ב־<code>08_r0.sh</code> משתי סיבות שמוסברות למטה, ולא מייצרים איתו שורות חדשות. הוא מוסבר כאן כי שורות ב־<code>experiments/bench.csv</code> ובהיסטוריה של RESULTS.md נולדו ממנו, וצריך להבין מה הן אומרות ומה לא.</p>
+<table class="facts">
+<tr><td>מה <code>llama-bench</code> מודד</td><td>שני מספרים: <strong>pp</strong> (prompt processing, קריאת PP טוקנים של קלט, מהירות ה־prefill) ו־<strong>tg</strong> (text generation, יצירת TG טוקנים, מהירות ה־decode). כל אחד חוזר REPS פעמים ומדווח ממוצע וסטיית תקן בטוקנים לשנייה.</td></tr>
+<tr><td>משאיר</td><td><code>experiments/bench.csv</code> (מצטבר) וטבלת Markdown על המסך.</td></tr>
+</table>
+</div>
+
+<div class="warn"><strong>למה הוחלף.</strong> (1) כל מדידה רצה פעמיים: פעם עם פלט Markdown למסך ופעם עם פלט CSV לקובץ. המספר שראית על המסך והמספר שנשמר הם משתי ריצות שונות. (2) ל־<code>llama-bench</code> תחביר שונה מ־<code>llama-cli</code> לדגל <code>-ts</code>: פסיק מפריד בין <em>קונפיגורציות</em> (הרץ פעם עם 0, פעם עם 1), ו־slash מפריד בין <em>מכשירים</em>. הסקריפט העביר <code>-ts 0,1</code> עם פסיק, ולכן בפועל מדד שתי ריצות שלא היו פיצול כלל. השורות האלה מסומנות INVALID בדוח של 09.</div>
+
+<h3>איך הופעל</h3>
+<pre><code>bash scripts/05_bench.sh                     # gpu all layers, then cpu only
+bash scripts/05_bench.sh MTL0                # one device
+bash scripts/05_bench.sh rpc 192.168.1.242   # three splits through a worker (broken -ts syntax)
+PP=512 TG=128 REPS=5 bash scripts/05_bench.sh</code></pre>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">. "$(dirname "$0")/common.sh"
+require_bin llama-bench
+require_model</td><td class="e">כרגיל, הפעם צריך <code>llama-bench</code>.</td></tr>
+<tr><td class="c">PP="${PP:-256}"; TG="${TG:-64}"; REPS="${REPS:-3}"
+MODE="${1:-local}"
+CSV="$REPO_ROOT/experiments/bench.csv"
+COMMIT="$(git -C "$LLAMA_DIR" rev-parse --short HEAD 2&gt;/dev/null || echo unknown)"
+STAMP="$(now_iso)"; HOST="$(host_label)"; BE="$(detect_backend)"
+mkdir -p "$(dirname "$CSV")"</td><td class="e">גדלי המדידה (256 טוקני קלט, 64 טוקני פלט, 3 חזרות), המצב, קובץ היעד, ה־commit של llama.cpp, חותמת זמן, מכונה, backend.</td></tr>
+<tr><td class="c">run_bench() {
+  local label="$1"; shift
+  log "--- $label ---"
+  "$BIN/llama-bench" -m "$MODEL" -p "$PP" -n "$TG" -r "$REPS" -o md "$@"</td><td class="e">פונקציה: הארגומנט הראשון הוא תווית, <code>shift</code> מזיז אותו החוצה כך ש־<code>"$@"</code> הם שאר הארגומנטים (דגלי llama-bench). ריצה ראשונה עם <code>-o md</code>: טבלה למסך.</td></tr>
+<tr><td class="c">  local tmp; tmp="$(mktemp)"
+  "$BIN/llama-bench" -m "$MODEL" -p "$PP" -n "$TG" -r "$REPS" -o csv "$@" &gt; "$tmp" 2&gt;/dev/null || true</td><td class="e">ריצה <em>שנייה</em> של אותה מדידה, הפעם עם פלט CSV לקובץ זמני (<code>mktemp</code> יוצר שם ייחודי). זו הבעיה הראשונה.</td></tr>
+<tr><td class="c">  if [ ! -s "$CSV" ]; then
+    printf 'timestamp,host,backend,label,llama_commit,%s\n' "$(head -1 "$tmp")" &gt; "$CSV"
+  fi</td><td class="e">אם קובץ ה־CSV המצטבר עדיין ריק, כתוב שורת כותרת: חמש העמודות שלנו ואז הכותרת של llama-bench.</td></tr>
+<tr><td class="c">  tail -n +2 "$tmp" | while IFS= read -r line; do
+    printf '%s,%s,%s,%s,%s,%s\n' "$STAMP" "$HOST" "$BE" "$label" "$COMMIT" "$line" &gt;&gt; "$CSV"
+  done
+  rm -f "$tmp"
+}</td><td class="e">לכל שורת נתונים (דלג על הכותרת), הוסף את המטא־דאטה שלנו בהתחלה וצרף לקובץ. מחק את הזמני.</td></tr>
+<tr><td class="c">case "$MODE" in
+  local)
+    run_bench "gpu_all_layers" -ngl 99
+    run_bench "cpu_only"       -ngl 0 ;;</td><td class="e">מצב מקומי: שתי מדידות, GPU מלא ו־CPU בלבד.</td></tr>
+<tr><td class="c">  rpc)
+    W="${2:-}"; [ -n "$W" ] || die "usage: ..."
+    RPC_LIST=""; OLDIFS="$IFS"; IFS=','
+    for w in $W; do case "$w" in *:*) ep="$w" ;; *) ep="$w:$RPC_PORT" ;; esac; RPC_LIST="${RPC_LIST:+$RPC_LIST,}$ep"; done
+    IFS="$OLDIFS"</td><td class="e">מצב RPC: אותה השלמת פורטים כמו ב־04, דחוסה לשורה.</td></tr>
+<tr><td class="c">    if [ -n "${3:-}" ]; then
+      run_bench "rpc_${RPC_LIST}_split_$3" -ngl 99 --rpc "$RPC_LIST" -ts "$3"
+    else
+      run_bench "rpc_${RPC_LIST}_split_0,1" -ngl 99 --rpc "$RPC_LIST" -ts 0,1
+      run_bench "rpc_${RPC_LIST}_split_1,1" -ngl 99 --rpc "$RPC_LIST" -ts 1,1
+      run_bench "rpc_${RPC_LIST}_split_1,0" -ngl 99 --rpc "$RPC_LIST" -ts 1,0
+    fi ;;</td><td class="e">split אחד שניתן, או שלושת ה־splits הסטנדרטיים. כאן הבעיה השנייה: <code>-ts 0,1</code> עם פסיק. ב־llama-bench זה אומר "הרץ קונפיגורציה עם split=0 ואז קונפיגורציה עם split=1", לא "אפס מרוחק, אחד מקומי". הצורה הנכונה היא <code>-ts 0/1</code>, וזה מה ש־08 עושה.</td></tr>
+<tr><td class="c">  *)
+    run_bench "device_${MODE}" -ngl 99 --device "$MODE" ;;
+esac</td><td class="e">כל ערך אחר נחשב שם מכשיר.</td></tr>
+<tr><td class="c">log "appended to experiments/bench.csv. Paste the markdown table(s) above into experiments/RESULTS.md"
+log "with a line: host=$HOST backend=$BE commit=$COMMIT date=$STAMP"</td><td class="e">הנחיה להעתקה ידנית לתיעוד. גם זה שונה ב־08: שם הדוח נבנה אוטומטית מהקבצים ואין העתקה ידנית.</td></tr>
+</table>
+
+<h2 id="s-06"><code>06_net_baseline.sh</code>: רשת, הדור הקודם <span class="tag r">requester</span> <span class="tag">מיושן</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>לפני שמודדים פיצול בין מכונות צריך לדעת מה הרשת ביניהן נותנת: זמן הלוך־חזור (RTT, ב־ping) ורוחב פס (ב־iperf3). זו טבלה C. הסקריפט הזה מריץ את שני הכלים ומדפיס שורת טבלה להעתקה. הוחלף ב־<code>net_row</code> בתוך 08, ששומר את הפלט הגולמי לקובץ ומודד גם בכיוון ההפוך.</p>
+<table class="facts">
+<tr><td>דורש</td><td>על המכונה השנייה: <code>iperf3 -s</code> רץ. כאן: <code>iperf3</code> מותקן (<code>brew install iperf3</code>).</td></tr>
+<tr><td>משאיר</td><td>כלום בדיסק. רק מדפיס.</td></tr>
+</table>
+</div>
+
+<h3>איך הופעל</h3>
+<pre><code># on the peer first:
+iperf3 -s
+# then here:
+bash scripts/06_net_baseline.sh 192.168.1.242</code></pre>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">. "$(dirname "$0")/common.sh"
+PEER="${1:-}"; [ -n "$PEER" ] || die "usage: $0 &lt;peer_ip&gt;"
+COUNT="${COUNT:-20}"</td><td class="e">כתובת היעד חובה. 20 פינגים כברירת מחדל.</td></tr>
+<tr><td class="c">log "ping $PEER x$COUNT"
+if [ "$(detect_platform)" = "macos" ]; then PING_OUT="$(ping -c "$COUNT" -i 0.2 "$PEER" 2&gt;&amp;1)"; else PING_OUT="$(ping -c "$COUNT" -i 0.2 "$PEER" 2&gt;&amp;1)"; fi
+echo "$PING_OUT" | tail -2</td><td class="e">שלח <code>COUNT</code> פינגים במרווח 0.2 שניות ושמור את כל הפלט במשתנה. (שני ענפי ה־if זהים; כנראה הוכנו להבדל בין מק ללינוקס שבסוף לא נדרש.) הדפס את שתי השורות האחרונות: סיכום אובדן חבילות ושורת ה־RTT.</td></tr>
+<tr><td class="c">RTT_LINE="$(echo "$PING_OUT" | grep -E 'round-trip|rtt' | head -1)"
+RTT_AVG="$(echo "$RTT_LINE" | sed -E 's#.*= *[0-9.]+/([0-9.]+)/.*#\1#')"</td><td class="e">שורת הסיכום של ping נראית כך: <code>round-trip min/avg/max/stddev = 9.8/14.2/31.0/5.1 ms</code> (במק) או מתחילה ב־<code>rtt</code> (בלינוקס). ה־sed תופס את המספר השני אחרי ה־<code>=</code> (הממוצע) ומחזיר רק אותו.</td></tr>
+<tr><td class="c">BW="n/a"
+if command -v iperf3 &gt;/dev/null 2&gt;&amp;1; then
+  log "iperf3 -c $PEER (10 s)"
+  IPERF_OUT="$(iperf3 -c "$PEER" -t 10 2&gt;&amp;1)" || warn "iperf3 failed — is 'iperf3 -s' running on $PEER?"
+  echo "$IPERF_OUT" | grep -E 'receiver|sender' | tail -2
+  BW="$(echo "$IPERF_OUT" | grep receiver | awk '{print $(NF-2), $(NF-1)}' | head -1)"
+else
+  warn "iperf3 not installed; RTT only"
+fi</td><td class="e">אם iperf3 מותקן: התחבר ל־peer כלקוח (<code>-c</code>) ושלח נתונים 10 שניות. הדפס את שורות הסיכום. שורת ה־receiver מסתיימת ב־<code>... 112 Mbits/sec  receiver</code>, ולכן העמודה הלפני־לפני־אחרונה והלפני־אחרונה הן המספר והיחידה. אם iperf3 חסר, רק RTT.</td></tr>
+<tr><td class="c">log "RESULTS.md row (table C):"
+echo "| $(now_iso) | $(host_label) | $PEER | ${RTT_AVG:-?} | ${BW:-?} | &lt;eth/wifi/tailscale&gt; |  |"</td><td class="e">שורת טבלה להעתקה, עם מקום ריק לסוג הקו שצריך למלא ביד. ב־08 סוג הקו הוא פרמטר חובה ונרשם אוטומטית, בדיוק כדי שהעמודה הזו לא תישאר ריקה.</td></tr>
+</table>
+
+<h2 id="s-07"><code>07_preflight.sh</code>: אינוונטר ובדיקת טעינה <span class="tag any">כל מכונה</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>לפני שמריצים ניסוי אמיתי על מכונה, צריך לדעת ארבעה דברים בלי לטעון מודל: (1) האם הבינארים בכלל נפתחים (הייתה לנו תקלה שבה <code>llama-cli</code> שהועתק מתוך iCloud נכשל עוד לפני שהתחיל, כי הוא חיפש ספריות בנתיב המוחלט של המכונה שבה נבנה); (2) איזו גרסה ואילו דגלי בנייה בדיוק רצים כאן; (3) מה החומרה, מערכת ההפעלה, פייתון ו־torch; (4) דרך איזה נתיב רשת מגיעים ל־peer. הכול נכתב לקובץ Markdown עם תאריך, כך שלכל מכונה יש "תעודת זהות" שמצורפת לתוצאות. הסקריפט לעולם לא משנה את הבנייה, רק קורא.</p>
+<table class="facts">
+<tr><td>מתי</td><td>על כל מכונה לפני R0, ואחרי כל שינוי בבנייה או במערכת ההפעלה.</td></tr>
+<tr><td>דורש</td><td>כלום מיוחד. כל כלי שחסר מדולג עם הערה.</td></tr>
+<tr><td>משאיר</td><td><code>experiments/inventory/&lt;host&gt;_&lt;date&gt;.md</code>. כל מה שמודפס נכתב גם לשם.</td></tr>
+</table>
+</div>
+
+<h3>איך מפעילים</h3>
+<pre><code>bash scripts/07_preflight.sh                    # inventory + binary check
+bash scripts/07_preflight.sh 192.168.1.242      # also probe the network path to this peer
+PREFLIGHT_GIT_STATUS=1 bash scripts/07_preflight.sh   # also check whether llama.cpp has local edits (slow in icloud)</code></pre>
+
+<h3>הזרימה</h3>
+<ol>
+<li>פתח קובץ פלט והגדר פונקציות שכותבות גם למסך וגם אליו.</li>
+<li>חלק 1: לכל בינארי, בדוק שהוא קיים, הרץ אותו עם <code>--version</code> או <code>--help</code>, ואבחן את ה־rpath שלו. אם משהו נכשל, הדפס הוראות תיקון.</li>
+<li>חלק 2: SHA של llama.cpp, דגלי בנייה מ־CMakeCache, רשימת מכשירים.</li>
+<li>חלק 3: חומרה, מערכת הפעלה, מודל ו־hash שלו, פייתון.</li>
+<li>חלק 4: Tailscale, ואם ניתן peer: route, סיווג כתובת, ping.</li>
+<li>חלק 5: פסק דין.</li>
+</ol>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">PEER="${1:-}"
+HOST="$(host_label)"; STAMP="$(now_iso)"; PLAT="$(detect_platform)"
+OUT_DIR="$REPO_ROOT/experiments/inventory"; mkdir -p "$OUT_DIR"
+OUT="$OUT_DIR/${HOST}_$(date -u +%Y%m%d-%H%M%S).md"</td><td class="e">peer אופציונלי, זהות המכונה, ותיקיית וקובץ הפלט.</td></tr>
+<tr><td class="c">section() { printf '\n## %s\n\n' "$1" | tee -a "$OUT"; }
+kv()      { printf -- '- **%s:** %s\n' "$1" "$2" | tee -a "$OUT"; }
+code()    { printf '```\n%s\n```\n' "$1" | tee -a "$OUT"; }
+have()    { command -v "$1" &gt;/dev/null 2&gt;&amp;1; }</td><td class="e">ארבע פונקציות קטנות. <code>section</code> כותבת כותרת Markdown, <code>kv</code> שורת "מפתח: ערך", <code>code</code> בלוק קוד. כולן דרך <code>tee -a</code>: למסך ולקובץ (הוספה בסוף). <code>have</code> היא קיצור ל"האם הכלי מותקן".</td></tr>
+<tr><td class="c">printf '# Preflight — %s — %s\n' "$HOST" "$STAMP" | tee "$OUT"
+kv "repo" "$REPO_ROOT"
+kv "LLAMA_DIR" "$LLAMA_DIR"
+kv "BIN" "$BIN"
+kv "cwd" "$(pwd)"</td><td class="e">כותרת הקובץ (כאן <code>tee</code> בלי <code>-a</code>, כלומר דריסה: זו השורה הראשונה) וארבעת הנתיבים הבסיסיים.</td></tr>
+<tr><td class="c">section "1. Binary load check (E13)"
+PREFLIGHT_OK=1
+for b in llama-cli llama-bench llama-server; do
+  if [ ! -x "$BIN/$b" ]; then
+    PREFLIGHT_OK=0
+    kv "$b" "MISSING or not executable"
+  fi
+done
+if [ ! -x "$BIN/ggml-rpc-server" ] &amp;&amp; [ ! -x "$BIN/rpc-server" ]; then
+  PREFLIGHT_OK=0
+  kv "RPC server" "MISSING or not executable"
+fi</td><td class="e">דגל הצלחה מתחיל ב־1. לכל אחד משלושת הבינארים: אם חסר, אפס את הדגל ורשום. השרת נבדק בנפרד כי יש לו שני שמות אפשריים. E13 הוא מספר התקלה בתיעוד המשותף.</td></tr>
+<tr><td class="c">for b in llama-cli llama-bench llama-server ggml-rpc-server rpc-server; do
+  [ -x "$BIN/$b" ] || continue
+  case "$b" in
+    llama-bench|ggml-rpc-server|rpc-server) CHECK_ARG=--help ;;
+    *) CHECK_ARG=--version ;;
+  esac</td><td class="e">לכל בינארי שקיים (<code>continue</code> מדלג על חסרים): בחר איך לבדוק שהוא נטען. <code>--version</code> היה הטבעי, אבל בגרסה הנעולה llama-bench והשרת לא מכירים אותו, ולכן בשבילם <code>--help</code>.</td></tr>
+<tr><td class="c">  if out="$("$BIN/$b" "$CHECK_ARG" 2&gt;&amp;1)"; then
+    kv "$b $CHECK_ARG" "OK — $(printf '%s' "$out" | grep -m1 -E 'version|build' || printf '%s' "$out" | head -1)"
+  else
+    rc=$?
+    PREFLIGHT_OK=0
+    kv "$b $CHECK_ARG" "FAILED (rc=$rc)"
+    code "$(printf '%s' "$out" | head -8)"
+  fi
+done</td><td class="e">הרץ ושמור את הפלט. הצלחה: רשום OK ואת השורה הראשונה שמזכירה גרסה או build. כישלון: רשום את קוד השגיאה ואת שמונה השורות הראשונות של הפלט (שם תופיע הודעת ה־dyld אם זו בעיית ספריות). זו הבדיקה שתופסת את תקלת iCloud.</td></tr>
+<tr><td class="c">if [ -e "$BIN/llama-cli" ]; then
+  if [ "$PLAT" = macos ] &amp;&amp; have otool; then
+    rpaths="$(otool -l "$BIN/llama-cli" 2&gt;/dev/null | awk '/LC_RPATH/{f=1} f&amp;&amp;/^[[:space:]]*path /{sub(/^[[:space:]]*path /, ""); sub(/ \(offset [0-9]+\)$/, ""); print; f=0}')"
+    kv "LC_RPATH (llama-cli)" "$(printf '%s' "$rpaths" | tr '\n' ' ')"</td><td class="e">אבחון ה־rpath במק. כל תוכנית נושאת בתוכה רשימת תיקיות שבהן לחפש ספריות משותפות (<code>LC_RPATH</code>). <code>otool -l</code> מדפיס את כל הפקודות שבתוך הבינארי, ו־awk שולף רק את שורות ה־path שאחרי כל <code>LC_RPATH</code> ומנקה אותן.</td></tr>
+<tr><td class="c">    case "$rpaths" in
+      *@executable_path*|*@loader_path*) kv "rpath kind" "relative — survives moving the folder" ;;
+      *) kv "rpath kind" "ABSOLUTE — breaks if the build dir moves or is not visible (sandbox, other user, moved repo)";
+         while IFS= read -r p; do
+           [ -n "$p" ] || continue
+           [ -d "$p" ] &amp;&amp; kv "rpath exists here" "$p" || kv "rpath MISSING here" "$p"
+         done &lt;&lt;EOF
+$rpaths
+EOF
+         ;;
+    esac</td><td class="e">אם ה־rpath יחסי (<code>@executable_path</code> = "ליד הבינארי"), הכול טוב. אם הוא מוחלט (למשל <code>/Users/ohad/.../build/bin</code>), הבינארי יעבוד רק במכונה ובנתיב שבהם נבנה; הסקריפט עובר על כל נתיב ובודק אם הוא קיים כאן. ה־heredoc מזין את רשימת הנתיבים ללולאה שורה שורה.</td></tr>
+<tr><td class="c">  elif [ "$PLAT" = linux ] &amp;&amp; have readelf; then
+    kv "RUNPATH (llama-cli)" "$(readelf -d "$BIN/llama-cli" 2&gt;/dev/null | grep -E 'RUNPATH|RPATH' | sed 's/.*\[\(.*\)\]/\1/' | tr '\n' ' ')"
+    have ldd &amp;&amp; { missing="$(ldd "$BIN/llama-cli" 2&gt;/dev/null | grep 'not found' || true)"; [ -n "$missing" ] &amp;&amp; code "$missing"; }
+  fi
+fi</td><td class="e">המקבילה בלינוקס: <code>readelf -d</code> מראה את RUNPATH, ו־<code>ldd</code> מראה אילו ספריות הבינארי צריך ואילו מהן לא נמצאו.</td></tr>
+<tr><td class="c">if [ "$PREFLIGHT_OK" = 0 ]; then
+  section "How to fix a loader failure"
+  cat &lt;&lt;'EOF' | tee -a "$OUT"
+The libraries are normally right next to the binary (build/bin). ...
+  a) Rebuild outside iCloud with a relative rpath (recommended; ...):
+       export LLAMA_DIR=$HOME/dev/llama.cpp
+       git clone https://github.com/ggml-org/llama.cpp "$LLAMA_DIR" &amp;&amp; cd "$LLAMA_DIR" &amp;&amp; git checkout &lt;SHA&gt;
+       cmake -B build -DGGML_RPC=ON -DGGML_METAL=ON -DCMAKE_BUILD_RPATH='@executable_path' -DCMAKE_INSTALL_RPATH='@executable_path'
+       ...
+  b) Patch the existing binaries in place (macOS), no rebuild:
+       for b in llama-cli llama-bench llama-server ggml-rpc-server; do
+         install_name_tool -add_rpath @executable_path "$BIN/$b"; done
+  c) Run from the exact path the build was made in ...
+EOF
+fi</td><td class="e">אם משהו נכשל: הדפס מדריך תיקון מילולי (ה־<code>'EOF'</code> עם גרשיים אומר "אל תחליף משתנים בטקסט"). שלוש אפשרויות: לבנות מחדש מחוץ ל־iCloud עם rpath יחסי (זה מה שנעשה ב־M5), לתקן את הבינארים הקיימים עם <code>install_name_tool</code>, או להריץ מהנתיב המקורי. המשפט האחרון בטקסט חשוב מתודולוגית: כישלון טעינה הוא בעיית פריסה, לא ממצא על RPC או TP.</td></tr>
+<tr><td class="c">section "2. llama.cpp revision and build flags"
+kv "git SHA" "$(git -C "$LLAMA_DIR" rev-parse HEAD 2&gt;/dev/null || echo unknown)"
+kv "git describe" "$(git -C "$LLAMA_DIR" describe --tags --always 2&gt;/dev/null || echo unknown)"</td><td class="e">ה־SHA המלא של llama.cpp (זה שאמור להיות <code>1e7bcf3da4b2...</code> בכל המכונות) ותיאור קריא (תג גרסה קרוב).</td></tr>
+<tr><td class="c">if [ "${PREFLIGHT_GIT_STATUS:-0}" = 1 ]; then
+  if dirty="$(git -C "$LLAMA_DIR" status --porcelain --untracked-files=no 2&gt;/dev/null)"; then
+    kv "git dirty (tracked files only)" "$( [ -n "$dirty" ] &amp;&amp; echo yes || echo no )"
+  else
+    kv "git dirty" "unknown — git status failed"
+  fi
+else
+  kv "git dirty" "unknown — skipped to avoid a full iCloud tree scan; PREFLIGHT_GIT_STATUS=1 checks tracked files"
+fi</td><td class="e">"האם מישהו ערך קבצים ב־llama.cpp מקומית?" (<code>git status</code>). הבדיקה מדולגת כברירת מחדל כי על עץ בתוך iCloud היא איטית מאוד; מפעילים אותה במפורש.</td></tr>
+<tr><td class="c">CACHE="$LLAMA_BUILD/CMakeCache.txt"
+if [ -f "$CACHE" ]; then
+  kv "build dir recorded in CMakeCache" "$(grep -m1 '^CMAKE_HOME_DIRECTORY' "$CACHE" | cut -d= -f2)"
+  kv "build flags" "$(grep -E '^(GGML_(METAL|CUDA|VULKAN|RPC|BLAS|HIP)|CMAKE_BUILD_TYPE|LLAMA_CURL):' "$CACHE" | sed 's/:[A-Z]*=/=/' | tr '\n' ' ')"
+else
+  kv "CMakeCache" "not found at $CACHE"
+fi</td><td class="e"><code>CMakeCache.txt</code> הוא הזיכרון של cmake: באיזה נתיב נבנה ואילו דגלים היו דלוקים. מכאן יודעים בוודאות אם <code>GGML_RPC=ON</code> ו־<code>GGML_METAL=ON</code>, בלי להסתמך על זיכרון אנושי.</td></tr>
+<tr><td class="c">grep -q '"tensor"' "$LLAMA_DIR/common/arg.cpp" 2&gt;/dev/null &amp;&amp; kv "--split-mode tensor in source" "yes (presence only; RPC support unverified)" || kv "--split-mode tensor in source" "no"</td><td class="e">חיפוש במקור: האם הקוד שמפענח ארגומנטים מכיר את המילה <code>tensor</code> עבור <code>--split-mode</code>. זו רק נוכחות של הדגל, לא הוכחה ש־TP עובד דרך RPC (שאלת Q7).</td></tr>
+<tr><td class="c">if [ "$PREFLIGHT_OK" = 1 ] &amp;&amp; [ -e "$BIN/llama-cli" ]; then
+  kv "--list-devices" ""
+  code "$("$BIN/llama-cli" --list-devices 2&gt;&amp;1 | sed -n '1,20p')"
+fi</td><td class="e">אם הבינארים תקינים, צרף את רשימת המכשירים (עד 20 שורות) לקובץ.</td></tr>
+<tr><td class="c">section "3. Machine inventory"
+kv "platform" "$PLAT — $(uname -srm)"
+case "$PLAT" in
+  macos)
+    kv "macOS" "$(sw_vers -productVersion 2&gt;/dev/null) ($(sw_vers -buildVersion 2&gt;/dev/null))"
+    kv "chip" "$(sysctl -n machdep.cpu.brand_string 2&gt;/dev/null)"
+    kv "cores (perf/eff)" "$(sysctl -n hw.perflevel0.physicalcpu 2&gt;/dev/null)/$(sysctl -n hw.perflevel1.physicalcpu 2&gt;/dev/null)"
+    kv "unified memory GB" "$(( $(sysctl -n hw.memsize) / 1073741824 ))"
+    kv "GPU cores" "$(system_profiler SPDisplaysDataType 2&gt;/dev/null | awk -F': ' '/Total Number of Cores/{print $2; exit}')"
+    kv "Metal" "$(system_profiler SPDisplaysDataType 2&gt;/dev/null | awk -F': ' '/Metal/{print $2; exit}')"
+    kv "Xcode CLT" "$(xcode-select -p 2&gt;/dev/null)" ;;</td><td class="e">אינוונטר מק: גרסת מערכת, שם השבב (M3/M5), ליבות ביצועים וחיסכון, זיכרון ב־GB (חלוקה ב־2 בחזקת 30), מספר ליבות GPU ותמיכת Metal מתוך דוח המערכת, ומיקום כלי הפיתוח.</td></tr>
+<tr><td class="c">  linux)
+    kv "distro" "$( . /etc/os-release 2&gt;/dev/null &amp;&amp; echo "$PRETTY_NAME" )"
+    kv "WSL" "$( grep -qi microsoft /proc/version 2&gt;/dev/null &amp;&amp; echo yes || echo no )"
+    kv "CPU" "$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | sed 's/^ //')"
+    kv "RAM GB" "$(awk '/MemTotal/{printf "%.0f", $2/1048576}' /proc/meminfo)"
+    if have nvidia-smi; then
+      kv "nvidia-smi" ""
+      code "$(nvidia-smi --query-gpu=name,memory.total,driver_version,compute_cap --format=csv 2&gt;&amp;1)"
+      kv "CUDA toolkit" "$(nvcc --version 2&gt;/dev/null | grep -m1 release || echo 'nvcc not in PATH')"
+    else
+      kv "NVIDIA" "nvidia-smi not found"
+    fi ;;
+esac</td><td class="e">אינוונטר לינוקס (המכונה של ליאור): הפצה, האם זה WSL (המילה microsoft בגרסת הקרנל), מעבד, RAM, ואם יש NVIDIA: שם הכרטיס, זיכרון, דרייבר, compute capability, וגרסת CUDA toolkit.</td></tr>
+<tr><td class="c">kv "disk free (repo)" "$(df -h "$REPO_ROOT" 2&gt;/dev/null | awk 'NR==2{print $4}')"
+if [ -n "$MODEL" ]; then
+  kv "MODEL" "$MODEL"
+  if [ -f "$MODEL" ]; then
+    kv "model size" "$(du -h "$MODEL" | cut -f1)"
+    if have shasum; then kv "model sha256" "$(shasum -a 256 "$MODEL" | cut -d' ' -f1)"; elif have sha256sum; then kv "model sha256" "$(sha256sum "$MODEL" | cut -d' ' -f1)"; fi
+  else
+    kv "model" "FILE NOT FOUND"
+  fi
+else
+  kv "MODEL" "not set in .env"
+fi</td><td class="e">מקום פנוי בדיסק, ואם מוגדר מודל: גודלו וה־sha256 שלו (לוקח דקה על 20 GB). ה־hash הוא איך מוכיחים ששתי מכונות באמת מריצות את אותו קובץ.</td></tr>
+<tr><td class="c">section "3b. Python / PyTorch (for R1–R2)"
+PY="$(command -v python3 || true)"
+if [ -n "$PY" ]; then
+  kv "python3" "$("$PY" --version 2&gt;&amp;1) — $PY"
+  "$PY" - &lt;&lt;'EOF' 2&gt;/dev/null | tee -a "$OUT" || kv "torch" "not importable"
+try:
+    import torch
+    print(f"- **torch:** {torch.__version__}")
+    print(f"- **cuda available:** {torch.cuda.is_available()}" + ...)
+    mps = getattr(torch.backends, "mps", None)
+    print(f"- **mps available:** {bool(mps and mps.is_available())}")
+    import torch.distributed as dist
+    print(f"- **dist.is_available:** ...")
+except Exception as e:
+    print(f"- **torch:** not importable ({e.__class__.__name__})")
+try:
+    import transformers; print(f"- **transformers:** {transformers.__version__}")
+except Exception:
+    print("- **transformers:** not installed")
+EOF
+else
+  kv "python3" "not found"
+fi</td><td class="e">קטע פייתון שמוזן ל־<code>python3 -</code> (מקף = "קרא את התוכנית מהקלט"). הוא מנסה לייבא torch ולדווח גרסה, האם CUDA או MPS (ה־GPU של אפל) זמינים, והאם torch.distributed קיים; ואז transformers. זה הוכן לניסויי R1/R2 שהיו אמורים לרוץ בפייתון, ונשאר כמידע.</td></tr>
+<tr><td class="c">section "4. Network path"
+have tailscale &amp;&amp; { kv "tailscale" "$(tailscale version 2&gt;/dev/null | head -1)"; kv "tailscale ip" "$(tailscale ip -4 2&gt;/dev/null | head -1)"; } || kv "tailscale" "not installed"</td><td class="e">אם Tailscale מותקן: גרסה וכתובת ה־100.x של המכונה.</td></tr>
+<tr><td class="c">if [ -n "$PEER" ]; then
+  kv "peer" "$PEER"
+  case "$PLAT" in
+    macos) kv "route" "$(route -n get "$PEER" 2&gt;/dev/null | awk '/interface|gateway/{printf "%s ", $0}')" ;;
+    linux) kv "route" "$(ip route get "$PEER" 2&gt;/dev/null | head -1)" ;;
+  esac</td><td class="e">אם ניתן peer: דרך איזה ממשק רשת (en0 = Wi-Fi, en5 = כבל, utun = Tailscale) ואיזה gateway החבילות אליו יוצאות. זה ההבדל בין "נמדד ב־Wi-Fi" ל"נמדד בכבל".</td></tr>
+<tr><td class="c">  case "$PEER" in
+    100.6[4-9].*|100.[7-9][0-9].*|100.1[01][0-9].*|100.12[0-7].*) kv "address range" "100.64.0.0/10 (CGNAT — consistent with Tailscale, not proof of overlay or LAN/WAN location)" ;;
+    10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[01].*) kv "address range" "RFC1918 private address — does not establish LAN/WAN location" ;;
+    *) kv "address range" "public / other" ;;
+  esac</td><td class="e">סיווג הכתובת לפי התבנית: טווח 100.64 עד 100.127 אופייני ל־Tailscale; 10.x, 192.168.x, 172.16 עד 172.31 הן כתובות פרטיות. ההערות בקוד מדגישות שהכתובת לבדה לא מוכיחה אם המכונות באותו בית או לא.</td></tr>
+<tr><td class="c">  have tailscale &amp;&amp; kv "tailscale status (peer line)" "$(tailscale status 2&gt;/dev/null | grep -F "$PEER" || echo 'peer not in tailnet / not matched')"
+  kv "ping (10 probes)" "$(ping -c 10 -i 0.2 "$PEER" 2&gt;/dev/null | tail -1)"
+  if have iperf3; then kv "iperf3" "run: iperf3 -c $PEER -t 5 (peer must run iperf3 -s)"; else kv "iperf3" "not installed"; fi
+else
+  kv "peer" "none given — re-run with the peer IP to record the path"
+fi</td><td class="e">שורת ה־peer מתוך <code>tailscale status</code> (שם יהיה כתוב direct או relay), סיכום של 10 פינגים, ותזכורת ל־iperf3 (לא מורץ כאן, רק ב־08).</td></tr>
+<tr><td class="c">section "5. Verdict"
+if [ "$PREFLIGHT_OK" = 1 ]; then
+  kv "binaries" "load checks passed — still verify model/hash, devices, flags and peer before R0 / Track A"
+else
+  kv "binaries" "NOT ready — fix the loader issue above first (this is deployment, not a result about TP/RPC)"
+fi
+kv "inventory written to" "$OUT"</td><td class="e">פסק דין בינארי לפי הדגל, ואיפה הקובץ.</td></tr>
+</table>
+
+<h2 id="s-08"><code>08_r0.sh</code>: מקליט הניסוי R0 <span class="tag w">worker</span> <span class="tag r">requester</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>זהו הסקריפט המרכזי של המדידות, והוא מחליף את 03+05+06 יחד. R0 הוא ניסוי הבסיס: שלוש טבלאות. <strong>טבלה A</strong>: כל מכונה לבד, GPU ו־CPU. <strong>טבלה B</strong>: requester ועוד worker, בשלושה פיצולים (הכול מרוחק, חצי חצי, הכול מקומי). <strong>טבלה C</strong>: מה הרשת ביניהם נתנה באותו זמן. העיקרון שלו, שנולד מתקלות אמיתיות (I007 בתיעוד המשותף): ריצה אחת לכל שורה, שום CSV כתוב ביד, והפלט הגולמי נשמר תמיד. כל הפענוח נעשה אחר כך ב־09.</p>
+<table class="facts">
+<tr><td>ארבעה מצבים</td><td><code>worker</code> (על ה־worker: מפעיל את 03 עם לוג), <code>local</code> (כל מכונה: טבלה A), <code>rpc</code> (על ה־requester: טבלה C, בדיקות placement, טבלה B), <code>placement</code> (בדיקת הצבה אחת בלבד, לאבחון).</td></tr>
+<tr><td>מה כל ריצה משאירה</td><td>תיקייה <code>experiments/r0/runs/&lt;ts&gt;_&lt;host&gt;_&lt;kind&gt;_&lt;label&gt;/</code> ובה: <code>cmd.txt</code> הפקודה המדויקת; <code>manifest.json</code> המטא־דאטה; <code>stderr.log</code> כל מה שהתוכנית כתבה לערוץ השגיאות; ולפי הסוג גם <code>bench.json</code> (תוצאת llama-bench), <code>placement.log</code> (שורות ההצבה המסוננות), <code>net.txt</code> (פלט כלי הרשת).</td></tr>
+<tr><td>דרישה ייחודית</td><td>מצב <code>rpc</code> מסרב לרוץ בלי שלושה תיוגים: <code>LINK</code> (הקו הפיזי: ethernet, wifi, thunderbolt, internet), <code>OVERLAY</code> (איך מגיעים: plain, portforward, tailscale, relay, tunnel), <code>LOCATION</code> (lan או wan). כך אף מספר לא נכנס לטבלה בלי לדעת על איזו רשת נמדד.</td></tr>
+<tr><td>סדר ה־split</td><td>remote קודם, כמו ב־04. ועוד מלכודת: <code>llama-cli</code> רוצה <code>1,0</code> עם פסיק, <code>llama-bench</code> רוצה <code>1/0</code> עם slash. הסקריפט ממיר.</td></tr>
+</table>
+</div>
+
+<h3>איך מפעילים</h3>
+<pre><code># on the worker (stays running):
+BIND=192.168.1.242 bash scripts/08_r0.sh worker MTL0
+
+# on each machine, table A:
+bash scripts/08_r0.sh local
+
+# on the requester, tables C and B (three splits), labels are mandatory:
+LINK=wifi OVERLAY=plain LOCATION=lan bash scripts/08_r0.sh rpc 192.168.1.242
+LINK=thunderbolt OVERLAY=plain LOCATION=lan bash scripts/08_r0.sh rpc 192.168.1.242
+LINK=internet OVERLAY=relay LOCATION=wan bash scripts/08_r0.sh rpc 1.2.3.4:7000
+
+# options:
+PP=256 TG=64 REPS=5 ...                       # defaults; keep identical for every row
+SPLITS="1,0 0,1" ...                          # fewer splits
+bash scripts/08_r0.sh placement 192.168.1.242 1,1    # one placement check only
+
+# afterwards, build the report:
+python3 scripts/09_r0_report.py</code></pre>
+
+<h3>הזרימה במצב rpc (המורכב ביותר)</h3>
+<ol>
+<li>ודא בינארים, מודל ושלושת התיוגים.</li>
+<li>שורת רשת (טבלה C): route, tailscale, ping, iperf3 לשני הכיוונים, הכול לקובץ.</li>
+<li>בדוק שהפורט של ה־worker פתוח (<code>nc</code>). אם לא, עצור עם הפקודה שצריך להריץ בצד השני.</li>
+<li>לכל split: ריצת <code>llama-cli</code> קצרה עם <code>--verbose</code>, רק כדי לתעד איזו שכבה הלכה לאן, ובדיקה אוטומטית שזה תואם ל־split.</li>
+<li>לכל split: ריצת <code>llama-bench</code> אחת, JSON נשמר, ושורות ההצבה מסוננות מה־stderr של אותה ריצה.</li>
+</ol>
+
+<h3>שורה אחרי שורה: הגדרות ופונקציות</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">MODE="${1:-}"; [ -n "$MODE" ] || die "usage: $0 worker|local|rpc|placement ..."
+PP="${PP:-256}"; TG="${TG:-64}"; REPS="${REPS:-5}"; CTX="${CTX:-2048}"
+R0="$REPO_ROOT/experiments/r0"; RUNS="$R0/runs"; mkdir -p "$RUNS" "$R0/worker_logs"
+HOST="$(host_label)"; PLAT="$(detect_platform)"; BE="$(detect_backend)"
+SHA="$(git -C "$LLAMA_DIR" rev-parse HEAD 2&gt;/dev/null || echo unknown)"</td><td class="e">המצב חובה. גדלי המדידה (שים לב: 5 חזרות כאן, לעומת 3 ב־05). תיקיות היעד. זהות המכונה וה־SHA המלא של llama.cpp.</td></tr>
+<tr><td class="c">model_hash() {
+  [ -f "$MODEL" ] || { echo "missing"; return; }
+  local cache="$R0/.model_hash_$(basename "$MODEL").txt"
+  if [ -f "$cache" ] &amp;&amp; [ "$cache" -nt "$MODEL" ]; then cat "$cache"; return; fi
+  local h
+  if command -v shasum &gt;/dev/null 2&gt;&amp;1; then h="$(shasum -a 256 "$MODEL" | cut -d' ' -f1)"
+  elif command -v sha256sum &gt;/dev/null 2&gt;&amp;1; then h="$(sha256sum "$MODEL" | cut -d' ' -f1)"
+  else h="unavailable"; fi
+  printf '%s' "$h" &gt; "$cache"; echo "$h"
+}</td><td class="e">hash של קובץ המודל, עם זיכרון: חישוב sha256 על 20 GB לוקח דקה, ולא רוצים לשלם אותה בכל שורה. התוצאה נשמרת בקובץ מוסתר, ואם הקובץ הזה חדש יותר מקובץ המודל (<code>-nt</code> = newer than), משתמשים בו. אחרת מחשבים (במק <code>shasum</code>, בלינוקס <code>sha256sum</code>) ושומרים.</td></tr>
+<tr><td class="c">json_escape() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g' | tr -d '\n'; }</td><td class="e">הכנת מחרוזת לכתיבה בתוך JSON: הכפל כל לוכסן הפוך, שים לוכסן לפני כל גרש כפול, מחק שורות חדשות. בלי זה, תווית עם גרש הייתה שוברת את ה־manifest.</td></tr>
+<tr><td class="c">new_run() {
+  RUN_ID="$(date -u +%Y%m%d-%H%M%S)_${HOST}_$1_$(printf '%s' "$2" | tr ',/: ' '____')"
+  RUN_DIR="$RUNS/$RUN_ID"; mkdir -p "$RUN_DIR"
+  log "run $RUN_ID"
+}</td><td class="e">פתיחת ריצה חדשה. השם: זמן, מכונה, סוג (<code>bench</code>/<code>placement</code>/<code>net</code>), ותווית שבה פסיקים, slash, נקודתיים ורווחים הוחלפו בקו תחתון (כדי שיהיה שם תיקייה חוקי). למשל <code>20261010-183012_Mac_bench_rpc_split_1_0</code>.</td></tr>
+<tr><td class="c">write_manifest() {
+  cat &gt; "$RUN_DIR/manifest.json" &lt;&lt;EOF
+{
+  "run_id": "$RUN_ID",
+  "kind": "$1",
+  "label": "$(json_escape "$2")",
+  "host": "$HOST",
+  "platform": "$PLAT",
+  "backend": "$BE",
+  "role": "$(json_escape "${ROLE:-}")",
+  "peer": "$(json_escape "${PEER:-}")",
+  "link": "$(json_escape "${LINK:-}")",
+  "overlay": "$(json_escape "${OVERLAY:-}")",
+  "location": "$(json_escape "${LOCATION:-}")",
+  "path": "$(json_escape "${NETPATH:-}")",
+  "split": "$(json_escape "${SPLIT:-}")",
+  "device": "$(json_escape "${DEVICE:-}")",
+  "llama_sha": "$SHA",
+  "model": "$(json_escape "$(basename "${MODEL:-}")")",
+  "model_sha256": "$(model_hash)",
+  "pp": $PP, "tg": $TG, "reps": $REPS, "ctx": $CTX,
+  "started_utc": "$STARTED",
+  "finished_utc": "$(now_iso)",
+  "exit_code": ${EXIT_CODE:-0}
+  ${3:-}
+}
+EOF
+}</td><td class="e">כתיבת ה־manifest. heredoc בלי גרשיים, ולכן כל <code>$X</code> מוחלף בערכו. השדות: מזהה, סוג, תווית, מכונה, פלטפורמה, backend, תפקיד (local/requester), peer, שלושת תיוגי הרשת, נתיב (direct/relay), split, מכשיר, SHA, שם מודל ו־hash, גדלי המדידה, זמן התחלה וסיום, קוד יציאה. זהו הקובץ ש־09 קורא. כל שדה כאן הוא עמודה אפשרית בטבלה.</td></tr>
+<tr><td class="c">run_logged() {
+  local stem="$1"; shift
+  printf '%q ' "$@" &gt; "$RUN_DIR/cmd.txt"; echo &gt;&gt; "$RUN_DIR/cmd.txt"
+  set +e
+  "$@" &gt; "$RUN_DIR/$stem" 2&gt; "$RUN_DIR/stderr.log"
+  EXIT_CODE=$?
+  set -e
+  [ "$EXIT_CODE" = 0 ] || warn "exit code $EXIT_CODE — see $RUN_DIR/stderr.log"
+}</td><td class="e">הרצה מתועדת. הארגומנט הראשון הוא שם קובץ הפלט, השאר הם הפקודה. קודם כתוב את הפקודה המדויקת ל־<code>cmd.txt</code> (עם <code>%q</code>, כך שאפשר להדביק אותה חזרה). ואז הרץ: הפלט הרגיל לקובץ הפלט, ערוץ השגיאות ל־<code>stderr.log</code> בנפרד. שמור את קוד היציאה. אם לא אפס, הזהר אבל אל תעצור (הריצה נשמרת עם קוד הכישלון ב־manifest).</td></tr>
+<tr><td class="c">bench_row() {
+  local label="$1"; shift
+  new_run bench "$label"; STARTED="$(now_iso)"
+  run_logged bench.json "$BIN/llama-bench" -m "$MODEL" -p "$PP" -n "$TG" -r "$REPS" -o json -v "$@"</td><td class="e">שורת מדידה אחת. פתח ריצה, רשום זמן התחלה, והרץ llama-bench <em>פעם אחת</em> עם פלט JSON (הפורמט הנוח ביותר לפענוח) ו־<code>-v</code> (verbose: מדפיס ל־stderr את לוג הטעינה, שממנו נשלפות שורות ההצבה).</td></tr>
+<tr><td class="c">  grep -E 'load_tensors|offloaded|RPC[0-9]*\[|model buffer size|assigned to device' "$RUN_DIR/stderr.log" &gt; "$RUN_DIR/placement.log" 2&gt;/dev/null || true
+  write_manifest bench "$label"</td><td class="e">סנן מה־stderr רק את שורות ההצבה: הקצאות באפרים לכל מכשיר, כמה שכבות הועברו, ואיזו שכבה הוקצתה לאיזה מכשיר. כך ראיית ההצבה באה <em>מהריצה שנמדדה</em>, לא מריצה נפרדת. כתוב manifest.</td></tr>
+<tr><td class="c">  if command -v python3 &gt;/dev/null 2&gt;&amp;1 &amp;&amp; [ -s "$RUN_DIR/bench.json" ]; then
+    python3 - "$RUN_DIR/bench.json" &lt;&lt;'EOF' || true
+import json,sys
+try:
+    rows=json.load(open(sys.argv[1]))
+    for r in rows:
+        name = r.get("test") or (f"pp{r.get('n_prompt')}" if int(r.get("n_prompt") or 0) &gt; 0 else f"tg{r.get('n_gen')}")
+        print(f"    {name:&gt;8}: {float(r.get('avg_ts',0)):8.2f} ± {float(r.get('stddev_ts',0)):.2f} t/s")
+except Exception as e:
+    print("    (could not parse bench.json:", e, ")")
+EOF
+  fi
+}</td><td class="e">הצגה אנושית של התוצאה, מתוך אותו JSON (לא ריצה נוספת). קטע פייתון קטן: טען את הקובץ, ולכל שורה (יש שתיים: pp ו־tg) הדפס שם, ממוצע וסטיית תקן. אם ה־JSON שבור, הדפס הודעה ואל תפיל את הסקריפט.</td></tr>
+<tr><td class="c">placement_row() {
+  local ep="$1"; SPLIT="$2"
+  new_run placement "rpc_${SPLIT}"; STARTED="$(now_iso)"
+  run_logged placement.out "$BIN/llama-cli" -m "$MODEL" -ngl 99 --rpc "$ep" -ts "$SPLIT" -c "$CTX" -n 8 -p "ping" --temp 0 -st --simple-io --verbose ${CLI_EXTRA:-}</td><td class="e">בדיקת הצבה. ריצת llama-cli מינימלית (8 טוקנים, prompt של מילה אחת) עם <code>--verbose</code>, שמדפיס לכל שכבה לאיזה מכשיר הוקצתה. המטרה היא רק הלוג.</td></tr>
+<tr><td class="c">  grep -E 'load_tensors|offloaded|RPC[0-9]*\[|model buffer size|llama_model_load|print_info: n_layer|assigned to device' "$RUN_DIR/stderr.log" &gt; "$RUN_DIR/placement.log" || true
+  write_manifest placement "rpc_${SPLIT}"</td><td class="e">סינון שורות ההצבה (כאן גם מספר השכבות הכולל) ו־manifest.</td></tr>
+<tr><td class="c">  local rw="${SPLIT%%,*}" lw="${SPLIT#*,}" has_rpc=0 has_loc=0
+  grep -qE 'RPC[0-9]*\[[^]]+\] model buffer size = *[1-9]' "$RUN_DIR/placement.log" &amp;&amp; has_rpc=1
+  grep -qE '(MTL|Metal|CUDA|Vulkan)[A-Za-z0-9_]* model buffer size = *[1-9]' "$RUN_DIR/placement.log" &amp;&amp; has_loc=1</td><td class="e">האימות האוטומטי. פרק את ה־split: <code>rw</code> המשקל המרוחק (לפני הפסיק), <code>lw</code> המקומי (אחרי). בדוק אם יש בלוג באפר מודל <em>גדול מאפס</em> על מכשיר RPC, ואם יש כזה על מכשיר מקומי. התנאי "ספרה 1 עד 9 אחרי הסימן שווה" מסנן שורות <code>0.00 MiB</code> שמופיעות בריצת יבש של llama.cpp ושהטעו אותנו פעם.</td></tr>
+<tr><td class="c">  if [ "$rw" = 0 ] &amp;&amp; [ "$has_rpc" = 1 ]; then
+    warn "placement: split $SPLIT asked for nothing remote, but an RPC buffer was allocated — check ..."
+  elif { [ "$rw" = 0 ] || [ "$has_rpc" = 1 ]; } &amp;&amp; { [ "$lw" = 0 ] || [ "$has_loc" = 1 ]; } &amp;&amp; grep -q offloaded "$RUN_DIR/placement.log"; then
+    log "placement: buffers match split $SPLIT (local=$has_loc rpc=$has_rpc)"
+  else
+    warn "placement: buffers do NOT match split $SPLIT (local=$has_loc rpc=$has_rpc) — check ..."
+  fi
+  sed 's/^/    /' "$RUN_DIR/placement.log" | head -12
+}</td><td class="e">ההיגיון: אם ביקשת אפס מרוחק אבל משהו הוקצה מרוחק, זו אזהרה (סדר ה־split הפוך או באג). אחרת: "לכל צד, או שלא ביקשת ממנו כלום או שיש בו באפר", ובנוסף יש שורת <code>offloaded</code>. אם מתקיים, ההצבה תואמת. הדפס את 12 השורות הראשונות של הלוג עם הזחה.</td></tr>
+<tr><td class="c">net_row() {
+  local ip="$1"
+  new_run net "$ip"; STARTED="$(now_iso)"
+  printf 'ping -c 20 -i 0.2 %q ; iperf3 -c %q -t 10 ; iperf3 -c %q -t 10 -R ; tailscale status/ping\n' "$ip" "$ip" "$ip" &gt; "$RUN_DIR/cmd.txt"
+  set +e
+  {
+    echo "== date: $(now_iso)  from: $HOST  to: $ip"
+    echo "== route"
+    case "$PLAT" in macos) route -n get "$ip" 2&gt;&amp;1 | grep -E 'interface|gateway' ;; linux) ip route get "$ip" 2&gt;&amp;1 | head -1 ;; esac
+    if command -v tailscale &gt;/dev/null 2&gt;&amp;1; then
+      echo "== tailscale status (peer line)"; tailscale status 2&gt;&amp;1 | grep -F "$ip" || echo "(peer not in tailscale status)"
+      echo "== tailscale ping"; tailscale ping -c 3 "$ip" 2&gt;&amp;1 || true
+    fi
+    echo "== ping -c 20 -i 0.2"; ping -c 20 -i 0.2 "$ip" 2&gt;&amp;1
+    if command -v iperf3 &gt;/dev/null 2&gt;&amp;1; then
+      echo "== iperf3 -c $ip -t 10"; iperf3 -c "$ip" -t 10 2&gt;&amp;1 || echo "(iperf3 failed — is 'iperf3 -s' running on $ip?)"
+      echo "== iperf3 -c $ip -t 10 -R (reverse)"; iperf3 -c "$ip" -t 10 -R 2&gt;&amp;1 || true
+    else
+      echo "== iperf3 not installed"
+    fi
+  } &gt; "$RUN_DIR/net.txt" 2&gt;&amp;1
+  set -e</td><td class="e">שורת רשת. כל הבלוק בסוגריים מסולסלים מופנה לקובץ <code>net.txt</code>, עם כותרות <code>==</code> בין החלקים כדי ש־09 יוכל לפרק אותו. הסדר: דרך איזה ממשק יוצאים; מצב Tailscale ו־<code>tailscale ping</code> (שאומר direct או via DERP = relay); 20 פינגים; iperf3 קדימה ואז אחורה (<code>-R</code>, כי Wi-Fi לרוב אסימטרי). <code>set +e</code> כי כל אחד מהם רשאי להיכשל (אין iperf3 בצד השני, אין Tailscale) ורוצים לרשום ולהמשיך.</td></tr>
+<tr><td class="c">  EXIT_CODE=0
+  grep -qE 'packets transmitted, [1-9]' "$RUN_DIR/net.txt" || warn "ping got no replies from $ip — check the address/link before benchmarking"
+  if grep -qE 'via DERP|relay' "$RUN_DIR/net.txt"; then NETPATH="relay"; elif grep -qE 'pong from|direct' "$RUN_DIR/net.txt"; then NETPATH="direct"; else NETPATH="${NETPATH:-unknown}"; fi
+  write_manifest net "$ip"
+  grep -E 'rtt|round-trip|receiver' "$RUN_DIR/net.txt" | sed 's/^/    /' || true
+  printf '%s\n' "$RUN_DIR/net.txt" | sed 's/^/    saved: /'
+}</td><td class="e">אם אף פינג לא חזר, הזהר. סווג את הנתיב מתוך פלט Tailscale: relay או direct או לא ידוע. כתוב manifest (השדה <code>path</code> מקבל את הסיווג). הדפס את שורות הסיכום.</td></tr>
+<tr><td class="c">require_net_labels() {
+  LINK="${LINK:-}"; OVERLAY="${OVERLAY:-}"; LOCATION="${LOCATION:-}"
+  case "$LINK" in ethernet|wifi|thunderbolt|internet) ;; *) die "set LINK=ethernet|wifi|thunderbolt|internet (the physical link of THIS run)";; esac
+  case "$OVERLAY" in plain|portforward|tailscale|relay|tunnel) ;; *) die "set OVERLAY=plain|portforward|tailscale|relay|tunnel";; esac
+  case "$LOCATION" in lan|wan) ;; *) die "set LOCATION=lan or LOCATION=wan";; esac
+}</td><td class="e">שלושת התיוגים, כל אחד מרשימה סגורה. ערך חסר או שגוי עוצר את הריצה לפני שנמדד משהו. LINK = הקו הפיזי האיטי ביותר בדרך. OVERLAY = איך החבילות מגיעות ל־worker. LOCATION = אותו בית או לא.</td></tr>
+</table>
+
+<h3>שורה אחרי שורה: ארבעת המצבים</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">case "$MODE" in
+  worker)
+    DEVICE="${2:-}"
+    WLOG="$R0/worker_logs/$(date -u +%Y%m%d-%H%M%S)_${HOST}_worker_${DEVICE:-all}.log"
+    log "worker log -&gt; $WLOG"
+    { echo "# host=$HOST sha=$SHA device=${DEVICE:-all} bind=${BIND:-auto} port=$RPC_PORT started=$(now_iso)"; } &gt; "$WLOG"</td><td class="e">מצב worker: קבע שם לוג וכתוב בו שורת כותרת עם ההקשר.</td></tr>
+<tr><td class="c">    if command -v script &gt;/dev/null 2&gt;&amp;1; then
+      case "$PLAT" in
+        macos) exec script -q -a -F "$WLOG" bash "$REPO_ROOT/scripts/03_start_worker.sh" ${DEVICE:+"$DEVICE"} ;;
+        *)     exec script -q -a -f -c "bash '$REPO_ROOT/scripts/03_start_worker.sh' ${DEVICE:+'$DEVICE'}" "$WLOG" ;;
+      esac
+    else
+      exec bash "$REPO_ROOT/scripts/03_start_worker.sh" ${DEVICE:+"$DEVICE"} 2&gt;&amp;1 | tee -a "$WLOG"
+    fi ;;</td><td class="e">הפעל את 03 בתוך <code>script</code> (טרמינל מדומה), כי השרת מדפיס עם buffering וב־<code>tee</code> רגיל לא היה נראה כלום עד הסיום. לתוכנית <code>script</code> יש תחביר שונה במק (<code>-F file cmd</code>) ובלינוקס (<code>-c cmd file</code>). אם <code>script</code> לא קיים, נפילה ל־tee. בכל מקרה <code>exec</code>, כך ש־Ctrl-C מגיע לשרת. ה־<code>${DEVICE:+"$DEVICE"}</code> מעביר את המכשיר רק אם ניתן.</td></tr>
+<tr><td class="c">  local)
+    require_bin llama-bench; require_model; ROLE="local"
+    log "host=$HOST backend=$BE sha=${SHA:0:7} model=$(basename "$MODEL") pp=$PP tg=$TG reps=$REPS"
+    bench_row "gpu_all_layers" -ngl 99
+    bench_row "cpu_only"       -ngl 0
+    log "done. Table A rows saved under $RUNS (kind=bench, role=local)" ;;</td><td class="e">מצב local: שתי שורות מדידה, GPU מלא ו־CPU בלבד, עם <code>ROLE=local</code> ב־manifest כדי ש־09 ישייך אותן לטבלה A. <code>${SHA:0:7}</code> = שבעת התווים הראשונים.</td></tr>
+<tr><td class="c">  placement)
+    require_bin llama-cli; require_model; ROLE="requester"
+    W="${2:-}"; S="${3:-1,1}"; [ -n "$W" ] || die "usage: $0 placement &lt;worker-ip[:port]&gt; [split]"
+    case "$W" in *:*) EP="$W";; *) EP="$W:$RPC_PORT";; esac; PEER="$EP"
+    placement_row "$EP" "$S" ;;</td><td class="e">מצב placement: בדיקת הצבה בודדת, ברירת מחדל <code>1,1</code>. השלמת פורט כרגיל.</td></tr>
+<tr><td class="c">  rpc)
+    require_bin llama-bench; require_bin llama-cli; require_model; require_net_labels; ROLE="requester"
+    W="${2:-}"; [ -n "$W" ] || die "usage: LINK=.. OVERLAY=.. LOCATION=.. $0 rpc &lt;worker-ip[:port]&gt;"
+    case "$W" in *:*) EP="$W";; *) EP="$W:$RPC_PORT";; esac; PEER="$EP"; IP="${EP%%:*}"
+    SPLITS="${SPLITS:-1,0 1,1 0,1}"
+    log "requester=$HOST worker=$EP link=$LINK overlay=$OVERLAY location=$LOCATION splits=[$SPLITS] pp=$PP tg=$TG reps=$REPS"</td><td class="e">מצב rpc: כל הבדיקות המקדימות כולל התיוגים. <code>IP</code> הוא הכתובת בלי הפורט (לפינג). רשימת ה־splits ברירת מחדל: הכול מרוחק, חצי, הכול מקומי.</td></tr>
+<tr><td class="c">    log "--- Table C: network path"
+    net_row "$IP"
+    if command -v nc &gt;/dev/null 2&gt;&amp;1; then
+      if nc -z -w 3 "$IP" "${EP##*:}" 2&gt;/dev/null; then
+        log "worker port ${EP##*:} on $IP is open"
+      else
+        die "cannot connect to $EP. On the worker run:  BIND=$IP scripts/08_r0.sh worker &lt;DEVICE&gt;   (and check firewall). Net probe kept in $RUN_DIR/net.txt"
+      fi
+    fi</td><td class="e">קודם שורת הרשת. ואז בדיקה שהפורט של ה־worker באמת פתוח: <code>nc -z</code> מנסה לפתוח חיבור TCP בלי לשלוח כלום, עם timeout של 3 שניות. ההערה בקוד מסבירה למה זה נדרש בנוסף לפינג: macOS במצב stealth חוסם ICMP, אבל מה שחשוב הוא ה־TCP. אם סגור, עצור עם הפקודה המדויקת לצד השני.</td></tr>
+<tr><td class="c">    for s in $SPLITS; do
+      log "--- placement check, split $s"
+      placement_row "$EP" "$s"
+    done</td><td class="e">סבב ראשון: בדיקת הצבה לכל split (ריצות קצרות).</td></tr>
+<tr><td class="c">    for s in $SPLITS; do
+      SPLIT="$s"
+      log "--- Table B: bench, split $s"
+      bench_row "rpc_split_${s}" -ngl 99 --rpc "$EP" -ts "${s//,//}"
+    done
+    log "done. Now run:  python3 scripts/09_r0_report.py" ;;</td><td class="e">סבב שני: המדידה עצמה לכל split. <code>${s//,//}</code> הופך <code>1,0</code> ל־<code>1/0</code>, התחביר הנכון ל־llama-bench. זה התיקון לבעיה של 05. <code>SPLIT</code> מוגדר כדי שייכנס ל־manifest.</td></tr>
+<tr><td class="c">  *) die "unknown mode: $MODE (worker|local|rpc|placement)" ;;
+esac</td><td class="e">מצב לא מוכר.</td></tr>
+</table>
+
+<h2 id="s-09"><code>09_r0_report.py</code>: בניית הטבלאות <span class="tag any">כל מכונה</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>זה הצד השני של 08. הוא פייתון, לא shell, כי פענוח JSON וביטויים רגולריים נוחים שם בהרבה. הוא עובר על כל תיקיות ה־runs, קורא את ה־manifest, ה־bench.json, ה־placement.log וה־net.txt של כל אחת, ובונה מהם את REPORT.md: בדיקת עקביות, טבלאות A, C, B, ובדיקות קבלה. הוא <strong>לעולם לא מריץ כלום</strong>. אפשר להריץ אותו שוב ושוב, גם על המכונה של ליאור, והתוצאה תהיה זהה כי היא נגזרת מהקבצים בלבד. הריפו מסונכרן, ולכן הדוח כולל את הריצות של שתי המכונות.</p>
+<table class="facts">
+<tr><td>קלט</td><td><code>experiments/r0/runs/*/</code>.</td></tr>
+<tr><td>פלט</td><td><code>experiments/r0/REPORT.md</code> (גם מודפס למסך) ו־<code>experiments/r0/bench_r0.csv</code> (שורה לכל מדידה, עם ציטוט תקני).</td></tr>
+<tr><td>מילון פייתון קצר</td><td><code>def f():</code> הגדרת פונקציה. <code>for x in y:</code> לולאה. <code>re.search(pattern, text)</code> חיפוש ביטוי רגולרי, <code>re.findall</code> כל ההתאמות. <code>json.loads</code> טקסט JSON למבנה נתונים. <code>Path</code> נתיב בקבצים. <code>[x for x in list if cond]</code> רשימה מסוננת. <code>d.get("k", default)</code> ערך ממילון או ברירת מחדל. <code>f"..{x}.."</code> מחרוזת עם ערכים משובצים.</td></tr>
+</table>
+</div>
+
+<h3>איך מפעילים</h3>
+<pre><code>python3 scripts/09_r0_report.py        # from anywhere; finds the repo by its own location</code></pre>
+
+<h3>הזרימה</h3>
+<ol>
+<li>טען את כל ה־manifests.</li>
+<li>חלק לשלוש קבוצות: bench, placement, net.</li>
+<li>עקביות: כמה SHA שונים, כמה hash של מודל, כמה צירופי PP/TG/REPS. יותר מאחד = הטבלה לא ברת השוואה.</li>
+<li>טבלה A מהריצות עם <code>role=local</code>.</li>
+<li>טבלה C מריצות ה־net.</li>
+<li>טבלה B מריצות bench עם <code>role=requester</code>, כל אחת עם ראיית ההצבה שלה.</li>
+<li>בדיקות קבלה לפי הפרוטוקול.</li>
+<li>כתוב Markdown ו־CSV.</li>
+</ol>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">import csv, json, re, sys
+from pathlib import Path
+from collections import defaultdict
+
+ROOT = Path(__file__).resolve().parent.parent
+R0 = ROOT / "experiments" / "r0"
+RUNS = R0 / "runs"</td><td class="e">ייבוא ספריות סטנדרטיות (אין תלויות חיצוניות). <code>__file__</code> הוא הקובץ הזה; שתי רמות למעלה זה שורש הריפו. מכאן הנתיבים.</td></tr>
+<tr><td class="c">def load_runs():
+    runs = []
+    for d in sorted(RUNS.glob("*/")):
+        m = d / "manifest.json"
+        if not m.exists():
+            continue
+        try:
+            man = json.loads(m.read_text())
+        except Exception as e:
+            print(f"!! {d.name}: bad manifest ({e})", file=sys.stderr)
+            continue
+        man["_dir"] = d
+        runs.append(man)
+    return runs</td><td class="e">עבור על כל תיקייה ב־runs (ממוינות לפי שם, כלומר לפי זמן). דלג על תיקיות בלי manifest. נסה לפענח את ה־JSON; אם שבור, הדפס אזהרה ודלג. שמור בתוך המילון גם את הנתיב לתיקייה (<code>_dir</code>) כדי לקרוא ממנה קבצים אחר כך.</td></tr>
+<tr><td class="c">def bench_results(run):
+    f = run["_dir"] / "bench.json"
+    if not f.exists() or f.stat().st_size == 0:
+        return {}
+    try:
+        rows = json.loads(f.read_text())
+    except Exception:
+        return {}
+    out = {}
+    configs = {str(r.get("tensor_split", "")) for r in rows}
+    multi = len(configs) &gt; 1 or (len(rows) &gt; 2)</td><td class="e">קריאת תוצאת llama-bench. אם אין קובץ או שהוא ריק או שבור, מילון ריק. אחרת: ריצה תקינה מכילה בדיוק שתי שורות (pp ו־tg) עם אותו <code>tensor_split</code>. אם יש יותר מערך split אחד או יותר משתי שורות, זו ריצה עם התחביר הישן של 05 (פסיק במקום slash), והדגל <code>multi</code> מסמן אותה.</td></tr>
+<tr><td class="c">    for r in rows:
+        try:
+            name = r.get("test")
+            if not name:
+                n_p, n_g = int(r.get("n_prompt") or 0), int(r.get("n_gen") or 0)
+                name = f"pp{n_p}" if n_p &gt; 0 else f"tg{n_g}"
+            if multi:
+                name = f"{name}@ts={r.get('tensor_split')}"
+            out[name] = (float(r["avg_ts"]), float(r.get("stddev_ts", 0)))
+        except (KeyError, ValueError, TypeError):
+            pass
+    return out</td><td class="e">לכל שורה: קבע שם (<code>pp256</code> או <code>tg64</code>; גרסאות שונות של llama-bench שמות את זה בשדות שונים, ולכן שני ניסיונות). בריצה לא תקינה הוסף לשם את ה־split כדי שלא יתמזגו. שמור זוג (ממוצע, סטיית תקן) בטוקנים לשנייה.</td></tr>
+<tr><td class="c">def fmt(v):
+    if not v:
+        return "—"
+    a, s = v
+    pct = (100 * s / a) if a else 0
+    flag = "" if pct &lt; 5 else " ⚠"
+    return f"{a:.2f} ± {s:.2f}{flag}"</td><td class="e">עיצוב תא בטבלה: "ממוצע ± סטייה", ואם סטיית התקן היא 5 אחוזים או יותר מהממוצע, סימן אזהרה. זה סף הקבלה מהפרוטוקול.</td></tr>
+<tr><td class="c">def expected_sides(split):
+    try:
+        parts = [float(x) for x in str(split).split(",")]
+        return any(p &gt; 0 for p in parts[1:]), parts[0] &gt; 0
+    except Exception:
+        return True, True</td><td class="e">מה אמור להיות לפי ה־split: המספר הראשון הוא remote, השאר local. מחזיר (האם צפוי משהו מקומי, האם צפוי משהו מרוחק). אם ה־split לא ניתן לפענוח, הנח ששניהם.</td></tr>
+<tr><td class="c">def placement_summary(run):
+    f = run["_dir"] / "placement.log"
+    if not f.exists():
+        return "no log", False
+    txt = f.read_text(errors="replace")
+    rpc = [(n, sz) for n, sz in re.findall(r"load_tensors:\s+(RPC\d*\[[^\]]+\])\s+model buffer size\s*=\s*([\d.]+ \w+)", txt) if float(sz.split()[0]) &gt; 0]
+    loc = [(n, sz) for n, sz in re.findall(r"load_tensors:\s+((?:MTL|Metal|CUDA|Vulkan)[\w_]*)\s+model buffer size\s*=\s*([\d.]+ \w+)", txt) if float(sz.split()[0]) &gt; 0]
+    cpu = re.findall(r"load_tensors:\s+(CPU[\w_]*)\s+model buffer size\s*=\s*([\d.]+ \w+)", txt)
+    off = re.search(r"offloaded (\d+)/(\d+) layers", txt)</td><td class="e">פענוח לוג ההצבה. שלושה ביטויים רגולריים תופסים שורות כמו <code>load_tensors: RPC0[192.168.1.242:50052] model buffer size = 2048.00 MiB</code>: אחד למכשירי RPC, אחד למאיצים מקומיים, אחד ל־CPU. גודל אפס מסונן (ריצת היבש). ועוד ביטוי ל־<code>offloaded 28/28 layers</code>.</td></tr>
+<tr><td class="c">    parts = []
+    assigned = re.findall(r"layer\s+(\d+) assigned to device (\w+)", txt)
+    if assigned:
+        n = max(int(i) for i, _ in assigned) + 1
+        last = assigned[-n:]
+        counts = {}
+        for _, dev in last:
+            counts[dev] = counts.get(dev, 0) + 1
+        parts.append("layers: " + ", ".join(f"{d}={c}" for d, c in counts.items()))
+    parts += [f"{n} {sz}" for n, sz in rpc + loc + cpu]
+    if off:
+        parts.append(f"offloaded {off.group(1)}/{off.group(2)}")</td><td class="e">הראיה הישירה ביותר: שורות <code>layer 17 assigned to device RPC0</code>. הלוג עלול להכיל שני מעברים זהים (יבש ואמיתי), ולכן לוקחים רק את ה־n האחרונים, כאשר n הוא מספר השכבות. סופרים כמה שכבות לכל מכשיר (למשל <code>RPC0=14, MTL0=14</code>). מוסיפים את גדלי הבאפרים ואת שורת ה־offload.</td></tr>
+<tr><td class="c">    want_local, want_remote = expected_sides(run.get("split"))
+    ok = (bool(loc) or not want_local) and (bool(rpc) or not want_remote) and bool(off)
+    if want_local and not want_remote and rpc:
+        ok = False
+    return ("; ".join(parts) if parts else "no load_tensors lines"), ok</td><td class="e">אותה בדיקה כמו ב־08 אבל בפייתון: כל צד שציפו לו קיבל באפר, ויש שורת offload. מקרה מיוחד: ביקשו הכול מקומי (<code>0,1</code>) אבל יש באפר RPC, זה כישלון. מחזיר טקסט סיכום ודגל.</td></tr>
+<tr><td class="c">def net_summary(run):
+    f = run["_dir"] / "net.txt"
+    if not f.exists():
+        return {}
+    txt = f.read_text(errors="replace")
+    d = {}
+    m = re.search(r"(?:rtt|round-trip)[^=]*=\s*([\d.]+)/([\d.]+)/([\d.]+)", txt)
+    if m:
+        d["rtt_min"], d["rtt_avg"], d["rtt_max"] = m.groups()
+    m = re.search(r"packets transmitted, (\d+) (?:packets )?received", txt)
+    if m:
+        d["recv"] = m.group(1)
+    bws = re.findall(r"([\d.]+ [KMG]bits/sec)\s+(?:\d+\s+)?receiver", txt)
+    if bws:
+        d["iperf_fwd"] = bws[0]
+        if len(bws) &gt; 1:
+            d["iperf_rev"] = bws[1]
+    m = re.search(r"==\s*route\s*\n(.*)", txt)
+    if m:
+        d["route"] = m.group(1).strip()[:60]
+    ts = re.search(r"pong from \S+ \(([^)]*)\) via (\S+)", txt)
+    if ts:
+        d["ts_path"] = f"{ts.group(2)}"
+    return d</td><td class="e">פענוח קובץ הרשת: RTT מינימום/ממוצע/מקסימום משורת הסיכום של ping (שני הפורמטים, מק ולינוקס); כמה חבילות חזרו; רוחב פס מהשורות שמסתיימות ב־receiver (הראשונה קדימה, השנייה אחורה); שורת ה־route (עד 60 תווים); והנתיב מ־<code>tailscale ping</code> (<code>pong from m5 (100.x) via 192.168.1.242:41641</code> = ישיר, <code>via DERP</code> = relay).</td></tr>
+<tr><td class="c">def main():
+    runs = load_runs()
+    if not runs:
+        print(f"no runs under {RUNS}. Run scripts/08_r0.sh first.")
+        return 1
+    bench = [r for r in runs if r["kind"] == "bench"]
+    place = [r for r in runs if r["kind"] == "placement"]
+    net = [r for r in runs if r["kind"] == "net"]
+
+    out = []
+    w = out.append
+    w("# R0 report — generated by scripts/09_r0_report.py\n")
+    w(f"Runs: {len(bench)} bench, {len(place)} placement, {len(net)} net. Source: `experiments/r0/runs/`.\n")</td><td class="e">הפונקציה הראשית. טען, חלק לשלוש קבוצות לפי <code>kind</code>, והתחל לבנות את הדוח כרשימת שורות (<code>w</code> הוא קיצור ל"הוסף שורה").</td></tr>
+<tr><td class="c">    shas = {r["llama_sha"] for r in runs if r.get("llama_sha")}
+    hashes = {r["model_sha256"] for r in runs if r.get("model_sha256") not in (None, "", "missing", "unavailable")}
+    pptg = {(r.get("pp"), r.get("tg"), r.get("reps")) for r in bench}
+    w("## Consistency\n")
+    w(f"- llama.cpp SHA(s): {', '.join(s[:10] for s in shas) or '—'}  {'✅' if len(shas) == 1 else '❌ more than one SHA — rows are not comparable'}")
+    w(f"- model sha256(s): ...  {'✅' if len(hashes) == 1 else '❌ more than one model hash'}")
+    w(f"- PP/TG/REPS set(s): {sorted(pptg)}  {'✅' if len(pptg) == 1 else '❌ mixed benchmark sizes'}\n")</td><td class="e">עקביות. סוגריים מסולסלים יוצרים קבוצה (set), כלומר ערכים ייחודיים. אם יש יותר מ־SHA אחד, יותר מ־hash אחד, או יותר מצירוף גדלים אחד, הדוח מסמן שהשורות לא ברות השוואה. זו הבדיקה שתופסת "מישהו הריץ 00 שוב".</td></tr>
+<tr><td class="c">    w("## Table A — single machine (role=local)\n")
+    w("| host | backend | label | pp t/s | tg t/s | run_id |")
+    w("|---|---|---|---|---|---|")
+    a_rows = [r for r in bench if r.get("role") == "local"]
+    for r in a_rows:
+        res = bench_results(r)
+        pp = next((v for k, v in res.items() if k.startswith("pp")), None)
+        tg = next((v for k, v in res.items() if k.startswith("tg")), None)
+        w(f"| {r['host']} | {r['backend']} | {r['label']} | {fmt(pp)} | {fmt(tg)} | `{r['run_id']}` |")
+    if not a_rows:
+        w("| — | | | | | |")
+    w("")</td><td class="e">טבלה A: לכל ריצת bench מקומית, שלוף את pp ו־tg ועצב שורה. העמודה האחרונה היא מזהה הריצה, כלומר שם התיקייה שממנה המספר הגיע. זו העקיבות.</td></tr>
+<tr><td class="c">    w("## Table C — network path (one row per net run)\n")
+    w("| date (UTC) | from | to | location | link | overlay | path | RTT min/avg/max ms | recv | iperf3 fwd | iperf3 rev | route |")
+    w("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    for r in net:
+        d = net_summary(r)
+        rtt = "/".join(d.get(k, "?") for k in ("rtt_min", "rtt_avg", "rtt_max")) if "rtt_avg" in d else "—"
+        path = r.get("path") or d.get("ts_path", "")
+        w(f"| {r['started_utc']} | {r['host']} | {r['peer']} | {r.get('location','')} | {r.get('link','')} | {r.get('overlay','')} | {path} | {rtt} | {d.get('recv','?')}/20 | {d.get('iperf_fwd','—')} | {d.get('iperf_rev','—')} | {d.get('route','')} |")</td><td class="e">טבלה C: שורה לכל ריצת רשת, עם התיוגים מה־manifest והמספרים מהפענוח. כאן רואים למשל ש־Wi-Fi נתן 46 Mbit בריצה אחת ו־285 באחרת, וזו הסיבה שלא מצמידים מספר רשת אחד לכל הניסויים.</td></tr>
+<tr><td class="c">    w("## Table B — requester + remote worker (role=requester)\n")
+    ...
+    b_rows_all = [r for r in bench if r.get("role") == "requester"]
+    invalid = [r for r in b_rows_all if any("@ts=" in k for k in bench_results(r))]
+    b_rows = [r for r in b_rows_all if r not in invalid]
+    for r in invalid:
+        w(f"| ... | **INVALID: bench.json holds several tensor-split configs (old `-ts a,b` syntax); move to runs_superseded_ts_syntax/** | ❌ | `{r['run_id']}` |")</td><td class="e">טבלה B: קודם הפרד את הריצות הלא תקינות (אלה שבהן שם המדידה מכיל <code>@ts=</code>, כלומר כמה קונפיגורציות בקובץ אחד) והדפס אותן כשורות INVALID עם הוראה להעביר לתיקיית ארכיון. הן לא נמחקות, רק מסומנות.</td></tr>
+<tr><td class="c">    for r in b_rows:
+        res = bench_results(r)
+        pp = ...; tg = ...
+        own = r["_dir"] / "placement.log"
+        if own.exists() and own.stat().st_size &gt; 0:
+            psum, pok = placement_summary(r)
+            psum = "bench run: " + psum
+        else:
+            cands = [p for p in place if p["host"] == r["host"] and p["peer"] == r["peer"] and p.get("split") == r.get("split") and p["started_utc"] &lt;= r["started_utc"]]
+            if cands:
+                psum, pok = placement_summary(cands[-1]); psum = "separate cli run: " + psum
+            else:
+                psum, pok = "no placement evidence", False
+        w(f"| {r['host']} | {r['peer']} | ... | {fmt(pp)} | {fmt(tg)} | {psum} | {'✅' if pok else '❌'} | `{r['run_id']}` |")</td><td class="e">לכל שורה תקינה: ראיית ההצבה. עדיפות ראשונה: ה־placement.log של ריצת ה־bench עצמה (יש כזה מאז ש־08 מסנן את ה־stderr של llama-bench). אם אין: ריצת ה־placement הנפרדת האחרונה שקדמה לה, עם אותה מכונה, אותו peer ואותו split. אם גם אין: "אין ראיה" וסימון כישלון. העמודה "verified" היא מה שמבדיל בין "המספר קיים" ל"המספר נמדד על הפיצול שטענו".</td></tr>
+<tr><td class="c">    w("## Acceptance (R0_PROTOCOL §6)\n")
+    hosts_local = defaultdict(set)
+    for r in a_rows:
+        hosts_local[r["host"]].add(r["label"])
+    ok_a = sum(1 for h, labs in hosts_local.items() if {"gpu_all_layers", "cpu_only"} &lt;= labs)
+    w(f"- A: {ok_a} host(s) with both gpu_all_layers and cpu_only rows  {'✅' if ok_a &gt;= 2 else '⏳ need 2'}")</td><td class="e">קבלה A: כמה מכונות יש להן גם שורת GPU וגם שורת CPU. צריך שתיים. (<code>{...} &lt;= labs</code> = "הקבוצה הזו מוכלת ב־labs".)</td></tr>
+<tr><td class="c">    combos = defaultdict(set)
+    for r in b_rows:
+        combos[(r["host"], r["peer"], r.get("link"))].add(r.get("split"))
+    full = [k for k, s in combos.items() if {"0,1", "1,1", "1,0"} &lt;= s]
+    w(f"- B: {len(full)} (requester, worker, link) combination(s) with all three splits  {'✅' if len(full) &gt;= 4 else '⏳ need 4 = 2 directions × 2 links'}")</td><td class="e">קבלה B: כמה צירופים של (requester, worker, קו) יש להם את כל שלושת ה־splits. היעד: ארבעה = שני כיוונים כפול שני קווים.</td></tr>
+<tr><td class="c">    noisy = []
+    for r in bench:
+        for k, (a, s) in bench_results(r).items():
+            if a and 100 * s / a &gt;= 5:
+                noisy.append(f"{r['run_id']}:{k}")
+    w(f"- variance &lt; 5 %: {'✅' if not noisy else '⚠ ' + ', '.join(noisy[:6])}")</td><td class="e">קבלה: אף מדידה עם סטיית תקן של 5 אחוזים ומעלה. אם יש, רשום עד שש מהן.</td></tr>
+<tr><td class="c">    unverified = [r["run_id"] for r in b_rows if not next((placement_summary(p)[1] for p in reversed(place) if ...), False)]
+    if not b_rows:
+        w("- placement verified for every B row: n/a (no B rows yet)")
+    else:
+        w(f"- placement verified for every B row: {'✅' if not unverified else '❌ ' + ', '.join(unverified[:6])}")
+    failed = [r["run_id"] for r in runs if r.get("exit_code", 0) not in (0, "0")]
+    if failed:
+        w(f"- non-zero exit codes: {', '.join(failed)} — read their stderr.log before using the rows")
+    w("")</td><td class="e">קבלה: לכל שורת B יש ריצת placement נפרדת מאומתת (בדיקה זו עדיין מחפשת ריצה נפרדת, לא את הלוג הפנימי; זה פער קטן לעומת הטבלה עצמה). ולבסוף רשימת ריצות שיצאו עם קוד שגיאה.</td></tr>
+<tr><td class="c">    report = "\n".join(out)
+    (R0 / "REPORT.md").write_text(report)
+    print(report)
+
+    with (R0 / "bench_r0.csv").open("w", newline="") as f:
+        cw = csv.writer(f, quoting=csv.QUOTE_ALL)
+        cw.writerow(["run_id", "started_utc", "host", "role", "peer", "location", "link", "overlay", "split", "label", "test", "avg_ts", "stddev_ts", "llama_sha", "model_sha256", "pp", "tg", "reps"])
+        for r in bench:
+            for test, (a, s) in bench_results(r).items():
+                cw.writerow([r["run_id"], r["started_utc"], r["host"], r.get("role"), r.get("peer"), r.get("location"), r.get("link"), r.get("overlay"), r.get("split"), r["label"], test, a, s, r["llama_sha"], r["model_sha256"], r["pp"], r["tg"], r["reps"]])
+    print(f"\nwritten: {R0/'REPORT.md'}  {R0/'bench_r0.csv'}")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())</td><td class="e">כתיבת הדוח לקובץ והדפסתו. ואז CSV: שורה לכל מדידה (pp ו־tg בנפרד) עם כל המטא־דאטה, בציטוט מלא (<code>QUOTE_ALL</code>) כדי שפסיקים בתוך ערכים לא ישברו את הקובץ. השורתיים האחרונות: "אם הקובץ הורץ ישירות, הרץ main והחזר את קוד היציאה שלו".</td></tr>
+</table>
+
+<h2 id="s-10"><code>10_capacity.sh</code>: האם המודל נכנס <span class="tag any">כל מכונה</span> <span class="tag r">requester</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>זה הסקריפט של הטענה המרכזית בעבודה (T2, O2, O4.1): "מודל שלא נכנס במכונה אחת רץ על שתיים". כדי שהטענה תהיה מדויקת צריך להגדיר מה זה "נכנס", ולכן יש שתי מדיניות זיכרון מוצהרות. <strong>P1</strong>: כל השכבות על מאיצים, בלי שמנוע ההסקה יתאים את עצמו (<code>-ngl 99 -fit off</code>); נכנס רק אם כל השכבות הועברו. <strong>P2</strong>: רץ בכלל, גם אם llama.cpp השאיר שכבות ב־CPU (<code>-fit on</code>); רושמים כמה שכבות הגיעו ל־GPU. כל ניסיון, מקומי או מפוצל, נרשם באותו פורמט עם פסק דין אוטומטי. הסקריפט גם כולל את הדרך לחזור על שאלת ה־TP של חן (<code>SPLIT_MODE=tensor</code>) עם לוג.</p>
+<table class="facts">
+<tr><td>מתי</td><td>לכל מודל שרוצים לטעון: קודם <code>local</code> על כל מכונה (להוכיח שלא נכנס), ואז <code>split</code> מול worker (להוכיח שנכנס).</td></tr>
+<tr><td>דורש</td><td><code>llama-cli</code>; נתיב למודל כארגומנט (לא מ־.env, כי בודקים כמה מודלים); במצב split גם worker פעיל.</td></tr>
+<tr><td>משאיר</td><td><code>experiments/r3/capacity/&lt;run_id&gt;/</code> עם <code>cmd.txt</code>, <code>stdout.txt</code>, <code>stderr.log</code>, <code>placement.log</code>, <code>mem.txt</code> (צילומי זיכרון לפני ואחרי), <code>manifest.json</code> עם פסק הדין.</td></tr>
+<tr><td>הגנה</td><td>watchdog שהורג את הריצה אחרי <code>TIMEOUT_S</code> (ברירת מחדל 900 שניות). נכתב אחרי שריצה שנכנסה ל־swap המשיכה 17 דקות למרות ניסיון לעצור אותה.</td></tr>
+</table>
+</div>
+
+<h3>איך מפעילים</h3>
+<pre><code>bash scripts/10_capacity.sh local ~/models/Qwen2.5-32B-Instruct-Q4_K_M.gguf P1
+bash scripts/10_capacity.sh local ~/models/Qwen2.5-32B-Instruct-Q4_K_M.gguf P2
+bash scripts/10_capacity.sh split ~/models/Qwen2.5-32B-Instruct-Q4_K_M.gguf 192.168.1.242 1,1 P1
+SPLIT_MODE=tensor bash scripts/10_capacity.sh split ~/models/Qwen2.5-32B-Instruct-Q4_K_M.gguf 192.168.1.242 1,1 P1
+N_PREDICT=32 CTX=2048 TIMEOUT_S=900 bash scripts/10_capacity.sh ...</code></pre>
+
+<h3>הזרימה</h3>
+<ol>
+<li>פענח מצב, מודל, peer, split, מדיניות, ו־split-mode.</li>
+<li>פתח תיקיית ריצה וצלם זיכרון "לפני".</li>
+<li>בנה את פקודת llama-cli, שמור אותה, והרץ אותה ברקע תחת <code>/usr/bin/time</code> עם watchdog במקביל.</li>
+<li>חכה לסיום (או להריגה), ודא שלא נשאר תהליך, צלם זיכרון "אחרי".</li>
+<li>גזור פסק דין מהלוג: כמה שכבות הועברו, האם היו כישלונות הקצאה, האם נוצר טקסט.</li>
+<li>כתוב manifest והדפס.</li>
+</ol>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">MODE="${1:-}"; MDL="${2:-}"
+[ -n "$MODE" ] &amp;&amp; [ -n "$MDL" ] || die "usage: ..."
+[ -f "$MDL" ] || die "model not found: $MDL"
+N_PREDICT="${N_PREDICT:-32}"; CTX="${CTX:-2048}"; TIMEOUT_S="${TIMEOUT_S:-900}"
+HOST="$(host_label)"; PLAT="$(detect_platform)"; SHA="$(git -C "$LLAMA_DIR" rev-parse HEAD 2&gt;/dev/null || echo unknown)"
+OUT="$REPO_ROOT/experiments/r3/capacity"; mkdir -p "$OUT"</td><td class="e">מצב ומודל חובה, והמודל חייב להתקיים. 32 טוקנים מספיקים להוכיח יצירה. timeout של 15 דקות.</td></tr>
+<tr><td class="c">case "$MODE" in
+  local) POLICY="${3:-P1}"; PEER=""; TS="" ;;
+  split) PEER="${3:-}"; [ -n "$PEER" ] || die "split needs &lt;worker-ip[:port]&gt;"; case "$PEER" in *:*) ;; *) PEER="$PEER:$RPC_PORT";; esac
+         TS="${4:-}"; POLICY="${5:-P1}" ;;
+  *) die "mode must be local or split" ;;
+esac</td><td class="e">מיקום הארגומנטים שונה בין המצבים: ב־local השלישי הוא המדיניות; ב־split השלישי הוא ה־worker, הרביעי split (רשות; ריק = llama.cpp מחלק לפי זיכרון), החמישי מדיניות.</td></tr>
+<tr><td class="c">case "$POLICY" in P1) PFLAGS=(-ngl 99 -fit off) ;; P2) PFLAGS=(-fit on) ;; *) die "policy must be P1 or P2" ;; esac
+SPLIT_MODE="${SPLIT_MODE:-layer}"; SM_TAG=""
+case "$SPLIT_MODE" in
+  layer) ;;
+  tensor) PFLAGS+=(--split-mode tensor); SM_TAG="_tp" ;;
+  row)    PFLAGS+=(--split-mode row);    SM_TAG="_row" ;;
+  *) die "SPLIT_MODE must be layer, tensor or row" ;;
+esac</td><td class="e">תרגום המדיניות לדגלים. <code>-fit</code> הוא דגל של llama.cpp שמאפשר לו להקטין הקצאות כדי להיכנס לזיכרון; ב־P1 הוא כבוי בכוונה. ואז אופן הפיצול: <code>layer</code> (ברירת מחדל, pipeline: שכבות שלמות לכל מכשיר), <code>tensor</code> (TP: כל שכבה מחולקת בין המכשירים), <code>row</code>. התג נכנס לשם הריצה כדי שיהיה ברור בתיקיות.</td></tr>
+<tr><td class="c">RUN_ID="$(date -u +%Y%m%d-%H%M%S)_${HOST}_cap_${MODE}_$(basename "$MDL" .gguf | tr ' ' '_')_${POLICY}${SM_TAG}${TS:+_ts_$(printf '%s' "$TS" | tr ',' '_')}"
+D="$OUT/$RUN_ID"; mkdir -p "$D"
+log "run $RUN_ID"</td><td class="e">שם ריצה מלא: זמן, מכונה, cap, מצב, שם המודל בלי סיומת, מדיניות, תג TP אם יש, ו־split אם יש. למשל <code>20261017-190000_Mac_cap_split_Qwen2.5-32B-Instruct-Q4_K_M_P1_tp_ts_1_1</code>.</td></tr>
+<tr><td class="c">mem_snapshot() {
+  set +e
+  { echo "== $1 $(now_iso)"
+    case "$PLAT" in
+      macos) sysctl vm.swapusage 2&gt;/dev/null; vm_stat 2&gt;/dev/null | grep -E "free|wired|compressor|Pageins|Pageouts" ;;
+      linux) free -m 2&gt;/dev/null; if command -v nvidia-smi &gt;/dev/null 2&gt;&amp;1; then nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader 2&gt;/dev/null; fi ;;
+    esac; } &gt;&gt; "$D/mem.txt" 2&gt;/dev/null
+  set -e
+}
+mem_snapshot before</td><td class="e">צילום זיכרון: במק שימוש ב־swap וסטטיסטיקות דפים (<code>vm_stat</code>: כמה פנוי, כמה נעול, כמה דחוס, כמה הוחלף לדיסק); בלינוקס <code>free</code> ו־nvidia-smi. מצורף ל־<code>mem.txt</code> עם תווית. "לפני" עכשיו, "אחרי" בסוף. ההפרש ב־Pageouts הוא הראיה ל־thrashing.</td></tr>
+<tr><td class="c">ARGS=("$BIN/llama-cli" -m "$MDL" -c "$CTX" -n "$N_PREDICT" -p "Explain in two sentences what a transformer is." --temp 0 -st --simple-io --verbose "${PFLAGS[@]}" ${CLI_EXTRA:-})
+[ -n "$PEER" ] &amp;&amp; ARGS+=(--rpc "$PEER")
+[ -n "$TS" ]   &amp;&amp; ARGS+=(-ts "$TS")
+printf '%q ' "${ARGS[@]}" &gt; "$D/cmd.txt"; echo &gt;&gt; "$D/cmd.txt"</td><td class="e">הפקודה: הפעם המערך כולל גם את שם התוכנית. <code>--verbose</code> בשביל שורות ההצבה. דגלי המדיניות, ואז worker ו־split אם יש. שמור ל־<code>cmd.txt</code>.</td></tr>
+<tr><td class="c">TIMEFMT=""; TIMEBIN=""
+if [ -x /usr/bin/time ]; then case "$PLAT" in macos) TIMEBIN=(/usr/bin/time -l) ;; linux) TIMEBIN=(/usr/bin/time -v) ;; esac; fi
+STARTED="$(now_iso)"; T0=$(date +%s)</td><td class="e"><code>/usr/bin/time</code> (התוכנית, לא הפקודה המובנית של bash) מריץ תוכנית ומדווח בסופה על משאבים, כולל <strong>peak RSS</strong>: שיא הזיכרון שהתהליך תפס. במק הדגל <code>-l</code>, בלינוקס <code>-v</code>. זה המספר שעונה על "כמה זיכרון באמת נדרש".</td></tr>
+<tr><td class="c">set +e
+"${TIMEBIN[@]}" "${ARGS[@]}" &gt; "$D/stdout.txt" 2&gt; "$D/stderr.log" &amp; PID=$!
+(
+  sleep "$TIMEOUT_S"
+  pkill -TERM -P "$PID" 2&gt;/dev/null; kill -TERM "$PID" 2&gt;/dev/null; sleep 10
+  pkill -KILL -P "$PID" 2&gt;/dev/null; kill -KILL "$PID" 2&gt;/dev/null
+  pkill -KILL -f "llama-cli .*$(basename "$MDL")" 2&gt;/dev/null
+) &amp; WD=$!
+wait "$PID"; RC=$?
+kill "$WD" 2&gt;/dev/null; wait "$WD" 2&gt;/dev/null</td><td class="e">הלב. הרץ את הפקודה ברקע (<code>&amp;</code>), פלט לקבצים, ושמור את מספר התהליך. במקביל הפעל watchdog: תת־shell שישן <code>TIMEOUT_S</code> שניות ואז הורג בעדינות (TERM) את כל הילדים של התהליך (<code>pkill -P</code>, כלומר את llama-cli שמתחת ל־time) ואת התהליך עצמו, מחכה 10 שניות, והורג בכוח (KILL). ולבסוף, ליתר ביטחון, כל <code>llama-cli</code> שרץ על המודל הזה. ההערה בקוד מסבירה למה זה מורכב: <code>timeout</code> רגיל הרג רק את העטיפה ו־llama-cli המשיך לרוץ. אחרי שהריצה הסתיימה, הרוג את ה־watchdog (אם הוא עדיין ישן).</td></tr>
+<tr><td class="c">pgrep -f "llama-cli .*$(basename "$MDL")" &gt;/dev/null 2&gt;&amp;1 &amp;&amp; { warn "inference still alive after timeout — killing"; pkill -KILL -f "llama-cli .*$(basename "$MDL")"; sleep 2; }
+set -e
+WALL=$(( $(date +%s) - T0 ))
+mem_snapshot after</td><td class="e">בדיקה אחרונה שלא נשאר תהליך יתום. זמן קיר כולל. צילום זיכרון "אחרי".</td></tr>
+<tr><td class="c">grep -E 'load_tensors|offloaded|RPC[0-9]*\[|model buffer size|assigned to device|failed to allocate|out of memory|OOM|ggml_metal.*alloc|llama_model_load: error|Meta device|tensor parallelism|SPLIT_MODE_TENSOR|not implemented|unsupported|GGML_ASSERT|flash_attn' "$D/stderr.log" &gt; "$D/placement.log" 2&gt;/dev/null || true</td><td class="e">סינון שורות הראיה ל־placement.log. הרשימה ארוכה יותר מב־08 כי כאן מחפשים גם כישלונות: הקצאה שנכשלה, זיכרון שנגמר, שגיאות Metal, ובמיוחד הודעות שקשורות ל־TP (<code>tensor parallelism</code>, <code>not implemented</code>, <code>GGML_ASSERT</code>). אלה בדיוק השורות שיסבירו למה TP נכשל על 32B.</td></tr>
+<tr><td class="c">OFF="$(grep -oE 'offloaded [0-9]+/[0-9]+ layers' "$D/stderr.log" 2&gt;/dev/null | tail -1 || true)"
+ALLOC_FAIL="$(grep -ciE 'failed to allocate|out of memory|insufficient memory' "$D/stderr.log" || true)"
+TOK_LINE="$(grep -hE 'eval time|Generation:' "$D/stderr.log" "$D/stdout.txt" 2&gt;/dev/null | tail -1 || true)"
+PEAK="$(grep -E 'maximum resident set size|Maximum resident set size' "$D/stderr.log" 2&gt;/dev/null | tail -1 | grep -oE '[0-9]+' | tail -1 || true)"
+[ "$PLAT" = linux ] &amp;&amp; [ -n "$PEAK" ] &amp;&amp; PEAK=$(( PEAK * 1024 ))</td><td class="e">ארבע ראיות: שורת ה־offload האחרונה (<code>offloaded 64/64 layers</code>); מספר השורות שמעידות על כישלון הקצאה; שורת הזמנים (קיימת רק אם באמת נוצר טקסט); ושיא הזיכרון מתוך הדוח של <code>time</code> (במק בבתים, בלינוקס ב־KB, ולכן ההמרה).</td></tr>
+<tr><td class="c">GEN_OK=0; [ "$RC" = 0 ] &amp;&amp; [ -n "$TOK_LINE" ] &amp;&amp; GEN_OK=1
+FITS="no"
+if [ "$GEN_OK" = 1 ] &amp;&amp; [ "$ALLOC_FAIL" = 0 ]; then
+  case "$POLICY" in
+    P1) case "$OFF" in offloaded\ *) n="${OFF#offloaded }"; a="${n%%/*}"; b="${n#*/}"; b="${b%% *}"; [ "$a" = "$b" ] &amp;&amp; FITS="yes" || FITS="no (only $OFF)";; *) FITS="unknown (no offload line)";; esac ;;
+    P2) FITS="yes ($OFF)" ;;
+  esac
+fi
+if [ "$RC" = 124 ] || [ "$RC" = 143 ] || [ "$RC" = 137 ]; then FITS="timeout (${TIMEOUT_S}s) — not evidence of memory failure"; fi</td><td class="e">פסק הדין. "נוצר טקסט" = יצא בקוד 0 ויש שורת זמנים. אם נוצר טקסט ואין כישלונות הקצאה: ב־P1 פרק את <code>offloaded a/b</code> ובדוק ש־a שווה ל־b (כל השכבות); אם לא, "לא (רק a/b)". ב־P2 מספיק שרץ, ורושמים כמה שכבות. אם קוד היציאה הוא של הריגה (124, 143, 137), פסק הדין הוא timeout, ובמפורש לא ראיה לכישלון זיכרון: ריצה איטית בגלל swap היא ממצא אחר.</td></tr>
+<tr><td class="c">cat &gt; "$D/manifest.json" &lt;&lt;EOF
+{ "run_id": "$RUN_ID", "kind": "capacity", "mode": "$MODE", "policy": "$POLICY",
+  "host": "$HOST", "platform": "$PLAT", "peer": "$PEER", "tensor_split": "$TS", "split_mode": "$SPLIT_MODE",
+  "model": "$(basename "$MDL")", "model_bytes": $(stat -f%z "$MDL" 2&gt;/dev/null || stat -c%s "$MDL"),
+  "llama_sha": "$SHA", "ctx": $CTX, "n_predict": $N_PREDICT,
+  "started_utc": "$STARTED", "wall_s": $WALL, "exit_code": $RC,
+  "offloaded": "$OFF", "alloc_failures": ${ALLOC_FAIL:-0}, "generated": $GEN_OK,
+  "peak_rss_bytes": ${PEAK:-null}, "fits_under_policy": "$FITS",
+  "timing_line": "$(printf '%s' "$TOK_LINE" | sed 's/"/\\"/g' | tr -d '\n')" }
+EOF</td><td class="e">manifest עם כל הראיות והפסק. גודל קובץ המודל בבתים (<code>stat</code> עם תחביר מק ואז לינוקס). שורת הזמנים נכנסת כמחרוזת.</td></tr>
+<tr><td class="c">log "verdict: fits_under_policy=$FITS  rc=$RC  wall=${WALL}s  $OFF  peak_rss=$(( ${PEAK:-0} / 1048576 )) MiB"
+sed 's/^/    /' "$D/placement.log" | grep -E 'buffer size|offloaded|assigned' | tail -8
+log "saved: $D"</td><td class="e">שורת סיכום אחת (פסק, קוד, זמן, שכבות, שיא זיכרון ב־MiB), שמונה שורות הראיה האחרונות, ואיפה נשמר.</td></tr>
+</table>
+
+<h2 id="s-11"><code>11_load.py</code>: עומס מקבילי <span class="tag any">כל מכונה (הלקוח)</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>O4.2 שואל "איפה כל תצורה מפסיקה לגדול". כדי לענות צריך לשלוח הרבה בקשות במקביל לשרת ולמדוד כמה טוקנים לשנייה יוצאים <em>בסך הכול</em>, לא לבקשה בודדת. הסקריפט הזה הוא מחולל העומס. הוא מדבר עם <code>llama-server</code> (שמרימים ב־13) דרך HTTP. הרעיון החשוב: אותו כלי מודד גם <strong>שרת מפוצל אחד</strong> (requester + worker, כתובת אחת) וגם <strong>שני שרתים עצמאיים</strong> (אחד בכל מכונה, שתי כתובות, הבקשות מתחלקות ביניהם). כך משווים "פיצול" מול "replicas" בתנאים זהים, וזו היפותזה H2.</p>
+<table class="facts">
+<tr><td>למה פייתון stdlib בלבד</td><td>כדי לרוץ על <code>/usr/bin/python3</code> של macOS (גרסה 3.9) בלי להתקין כלום. אין requests, אין asyncio; threads ו־urllib.</td></tr>
+<tr><td>המדד</td><td><strong>Q</strong> = סך טוקני הפלט של בקשות שהושלמו, חלקי חלון הזמן מהבקשה הראשונה עד האחרונה. בנוסף: בקשות לשנייה, שיעור השלמה, אחוזונים של זמן בקשה (p50, p95).</td></tr>
+<tr><td>משאיר</td><td><code>experiments/r3/load/&lt;run_id&gt;/</code> עם <code>requests.jsonl</code> (שורה לכל בקשה), <code>summary.json</code>, <code>summary.md</code> (שורת טבלה).</td></tr>
+</table>
+</div>
+
+<h3>איך מפעילים</h3>
+<pre><code># one split server:
+python3 scripts/11_load.py --url http://192.168.1.219:8080 --concurrency 4 --requests 32 \
+    --prompt-tokens 128 --max-tokens 64 --label split_1,1_wifi
+
+# two independent replicas, round robin:
+python3 scripts/11_load.py --url http://192.168.1.219:8080 --url http://192.168.1.242:8080 \
+    --concurrency 8 --duration 120 --label independent</code></pre>
+
+<h3>הזרימה</h3>
+<ol>
+<li>קרא ארגומנטים. אם לא ניתנו מספר בקשות ולא משך, ברירת מחדל 8 בקשות לכל thread.</li>
+<li>בנה prompt קבוע באורך מבוקש.</li>
+<li>חימום: כמה בקשות לכל שרת שלא נספרות.</li>
+<li>הפעל C threads. כל אחד מושך מספר בקשה מתור משותף, שולח לשרת לפי round-robin, ושומר את התוצאה. עוצרים כשנגמרו הבקשות או הזמן.</li>
+<li>חשב סיכום וכתוב קבצים.</li>
+</ol>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">import argparse, json, os, sys, threading, time, urllib.request, urllib.error, statistics, datetime, socket
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "experiments" / "r3" / "load"
+
+WORDS = ("the quick brown fox jumps over the lazy dog while seven silent owls watch from a tall oak "
+         "near the river where small boats drift slowly under a pale evening sky ").split()</td><td class="e">ספריות סטנדרטיות בלבד. תיקיית הפלט. רשימת מילים קצרות באנגלית לבניית prompt.</td></tr>
+<tr><td class="c">def make_prompt(n_tokens):
+    return " ".join(WORDS[i % len(WORDS)] for i in range(n_tokens))</td><td class="e">prompt באורך נתון: חזור על רשימת המילים עד שיש n מילים. מילה קצרה באנגלית היא בערך טוקן אחד ב־Qwen, אז 128 מילים הן בערך 128 טוקנים. העיקר שה־prompt זהה בכל וריאנט שמשווים.</td></tr>
+<tr><td class="c">def one_request(url, prompt, max_tokens, timeout):
+    body = json.dumps({"prompt": prompt, "n_predict": max_tokens, "temperature": 0, "cache_prompt": False, "stream": False}).encode()
+    req = urllib.request.Request(url.rstrip("/") + "/completion", data=body, headers={"Content-Type": "application/json"})
+    t0 = time.perf_counter()</td><td class="e">בקשה אחת. גוף JSON ל־API של llama-server: ה־prompt, כמה טוקנים לייצר, טמפרטורה 0, <code>cache_prompt: False</code> (אל תשתמש בחישוב קודם של אותו prompt, אחרת הבקשה השנייה תהיה זולה מהראשונה), בלי streaming. כתובת היעד היא <code>/completion</code>. שעון מדויק לפני השליחה.</td></tr>
+<tr><td class="c">    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = json.loads(r.read().decode())
+        t1 = time.perf_counter()
+        tim = data.get("timings", {}) or {}
+        return {"ok": True, "url": url, "t_start": t0, "t_end": t1, "latency_s": t1 - t0,
+                "tokens_predicted": int(data.get("tokens_predicted", tim.get("predicted_n", 0)) or 0),
+                "prompt_n": int(tim.get("prompt_n", 0) or 0),
+                "prompt_ms": float(tim.get("prompt_ms", 0) or 0), "predicted_ms": float(tim.get("predicted_ms", 0) or 0),
+                "stop": data.get("stop_type") or data.get("stopped_limit")}
+    except (urllib.error.URLError, urllib.error.HTTPError, socket.timeout, ValueError) as e:
+        t1 = time.perf_counter()
+        return {"ok": False, "url": url, "t_start": t0, "t_end": t1, "latency_s": t1 - t0, "tokens_predicted": 0, "error": str(e)[:200]}</td><td class="e">שלח וחכה לתשובה. הצלחה: רשום זמני התחלה וסיום, משך, כמה טוקנים באמת נוצרו (השרת מדווח), כמה טוקני prompt היו, וזמני השרת הפנימיים (prompt_ms = prefill, predicted_ms = decode). כישלון (שרת לא עונה, timeout, JSON שבור): רשום ככישלון עם הודעת השגיאה. בשני המקרים מוחזר מילון, כך שהלולאה לא נשברת.</td></tr>
+<tr><td class="c">def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--url", action="append", required=True, help="llama-server base URL; repeat for independent replicas")
+    ap.add_argument("--concurrency", type=int, default=1)
+    ap.add_argument("--requests", type=int, default=0, help="total requests (0 = use --duration)")
+    ap.add_argument("--duration", type=float, default=0, help="seconds to keep issuing requests")
+    ap.add_argument("--prompt-tokens", type=int, default=128)
+    ap.add_argument("--max-tokens", type=int, default=64)
+    ap.add_argument("--timeout", type=float, default=600)
+    ap.add_argument("--warmup", type=int, default=2, help="requests per URL to discard before the window")
+    ap.add_argument("--label", default="run")
+    a = ap.parse_args()
+    if not a.requests and not a.duration:
+        a.requests = 8 * a.concurrency</td><td class="e">הארגומנטים. <code>--url</code> עם <code>append</code>: אפשר לתת אותו כמה פעמים ומתקבלת רשימה. <code>--concurrency</code> = C, מספר הלקוחות במקביל. עוצרים לפי מספר בקשות או לפי זמן; אם לא ניתן אף אחד, 8 בקשות לכל לקוח.</td></tr>
+<tr><td class="c">    prompt = make_prompt(a.prompt_tokens)
+    host = socket.gethostname().split(".")[0]
+    run_id = f"{datetime.datetime.utcnow():%Y%m%d-%H%M%S}_{host}_load_{a.label}_c{a.concurrency}"
+    d = OUT / run_id; d.mkdir(parents=True, exist_ok=True)
+
+    for u in a.url:
+        for _ in range(a.warmup):
+            one_request(u, prompt, a.max_tokens, a.timeout)</td><td class="e">prompt, מזהה ריצה (כולל התווית ו־C), תיקייה. חימום: שתי בקשות לכל שרת שהתוצאה שלהן נזרקת, כדי שהטעינה הראשונית של דפי המודל לזיכרון לא תיכנס למדידה.</td></tr>
+<tr><td class="c">    results, lock = [], threading.Lock()
+    counter = {"issued": 0}
+    t_begin = time.perf_counter()
+
+    def worker(idx):
+        while True:
+            with lock:
+                if a.requests and counter["issued"] &gt;= a.requests:
+                    return
+                if a.duration and time.perf_counter() - t_begin &gt;= a.duration:
+                    return
+                i = counter["issued"]; counter["issued"] += 1
+            url = a.url[i % len(a.url)]
+            r = one_request(url, prompt, a.max_tokens, a.timeout)
+            r["idx"] = i; r["worker"] = idx
+            with lock:
+                results.append(r)</td><td class="e">הלקוחות. <code>lock</code> הוא מנעול שמבטיח ששני threads לא ייקחו את אותו מספר בקשה. כל לקוח בלולאה: נעל, בדוק אם נגמר (בקשות או זמן), קח מספר בקשה, שחרר. שלח לשרת מספר <code>i mod מספר_השרתים</code> (זה ה־round-robin: 0 לראשון, 1 לשני, 2 לראשון...). שמור את התוצאה עם המספר ומי שלח.</td></tr>
+<tr><td class="c">    threads = [threading.Thread(target=worker, args=(i,), daemon=True) for i in range(a.concurrency)]
+    for t in threads: t.start()
+    for t in threads: t.join()
+    t_finish = time.perf_counter()</td><td class="e">צור C threads, הפעל את כולם, וחכה שכולם יסיימו.</td></tr>
+<tr><td class="c">    ok = [r for r in results if r["ok"]]
+    window = (max(r["t_end"] for r in results) - min(r["t_start"] for r in results)) if results else 0.0
+    toks = sum(r["tokens_predicted"] for r in ok)
+    lat = sorted(r["latency_s"] for r in ok)
+    pct = lambda p: lat[min(len(lat) - 1, int(round(p * (len(lat) - 1))))] if lat else None
+    per_url = {u: sum(1 for r in ok if r["url"] == u) for u in a.url}</td><td class="e">החישוב. הבקשות שהצליחו; חלון הזמן (מהתחלת הראשונה עד סוף האחרונה, כולל כישלונות); סך הטוקנים; רשימת זמני בקשה ממוינת; פונקציית אחוזון (p=0.5 חציון, p=0.95); וכמה בקשות כל שרת השלים (כדי לוודא שה־round-robin היה מאוזן).</td></tr>
+<tr><td class="c">    summary = {
+        "run_id": run_id, "label": a.label, "urls": a.url, "concurrency": a.concurrency,
+        "prompt_tokens_requested": a.prompt_tokens, "max_tokens": a.max_tokens,
+        "requests_issued": len(results), "requests_completed": len(ok), "completion_rate": (len(ok) / len(results)) if results else 0,
+        "window_s": window, "output_tokens": toks, "Q_tok_per_s": (toks / window) if window else 0,
+        "req_per_s": (len(ok) / window) if window else 0,
+        "latency_p50_s": pct(0.5), "latency_p95_s": pct(0.95), "latency_max_s": lat[-1] if lat else None,
+        "mean_prompt_n": statistics.mean([r["prompt_n"] for r in ok]) if ok else None,
+        "mean_tokens_predicted": statistics.mean([r["tokens_predicted"] for r in ok]) if ok else None,
+        "completed_per_url": per_url, "errors": [r.get("error") for r in results if not r["ok"]][:5],
+        "started_utc": ...,
+    }</td><td class="e">הסיכום. השורה החשובה: <code>Q_tok_per_s = toks / window</code>. גם ממוצע טוקני ה־prompt בפועל (לוודא שהמילים אכן היו כ־128 טוקנים) וחמש השגיאות הראשונות אם היו.</td></tr>
+<tr><td class="c">    with (d / "requests.jsonl").open("w") as f:
+        for r in results: f.write(json.dumps(r) + "\n")
+    (d / "summary.json").write_text(json.dumps(summary, indent=2))
+    md = (f"| {a.label} | {a.concurrency} | {len(a.url)} | {len(ok)}/{len(results)} | {summary['Q_tok_per_s']:.2f} | "
+          f"{summary['req_per_s']:.3f} | {summary['latency_p50_s'] or 0:.2f} | {summary['latency_p95_s'] or 0:.2f} | {window:.1f} | `{run_id}` |")
+    (d / "summary.md").write_text("| label | C | servers | completed | Q tok/s | req/s | p50 s | p95 s | window s | run_id |\n|---|---|---|---|---|---|---|---|---|---|\n" + md + "\n")
+    print(json.dumps({k: summary[k] for k in (...)}, indent=2))
+    print(md)
+    print(f"saved: {d}")
+    return 0 if ok else 1</td><td class="e">שלושה קבצים: כל בקשה בשורה (JSON Lines, נוח לניתוח מאוחר), הסיכום המלא, ושורת טבלה מוכנה. הדפסה למסך. קוד יציאה 1 אם אף בקשה לא הצליחה.</td></tr>
+</table>
+
+<h2 id="s-12"><code>12_rpc_trace.py</code>: ניתוח תעבורת RPC <span class="tag any">כל מכונה</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>היפותזה H1 אומרת שברשת איטית, העלות לטוקן נקבעת ממה שחוצה את הגבול בין המכונות. כדי לדעת מה חוצה, צריך לספור: כמה פקודות RPC נשלחות ל־worker בכל צעד של יצירת טוקן, וכמה בתים נכנסים ויוצאים. התיעוד המשותף (I010 §4) דורש שהמספר הזה יבוא מ־trace, לא מהערכה. כשמפעילים worker עם <code>GGML_RPC_DEBUG=1</code>, השרת כותב שורה לכל פקודה. הסקריפט הזה קורא את הלוג, מחלק אותו ל"צעדים" (כל <code>graph_compute</code> הוא תחילת צעד חדש), ומסכם את הזנב (steady state של decode) בנפרד מהטעינה וה־prefill. מכאן הגיעו 608 KB של לוגיטים לטוקן כששכבת הפלט מרוחקת לעומת 14 KB של hidden state.</p>
+<table class="facts">
+<tr><td>קלט</td><td>לוג worker מ־<code>experiments/r0/worker_logs/</code> שנוצר עם דיבוג דלוק.</td></tr>
+<tr><td>משאיר</td><td><code>experiments/r3/trace/&lt;run_id&gt;/</code> עם <code>summary.json</code> ו־<code>summary.md</code>.</td></tr>
+<tr><td>אזהרה מובנית</td><td>הספירה היא של פקודות בצד השרת. <code>set_tensor</code> ו־<code>graph_compute</code> נשלחים בלי לחכות לתשובה; רק <code>get_tensor</code> מחכה. לכן זה לא מספר ה־round trips, ולא מכפילים את זה ב־RTT בלי trace מצד ה־requester.</td></tr>
+</table>
+</div>
+
+<h3>איך מפעילים</h3>
+<pre><code># on the worker, with debug:
+GGML_RPC_DEBUG=1 BIND=192.168.1.242 bash scripts/08_r0.sh worker MTL0
+# run something from the requester (04, 08 rpc, 10 split), then on the machine that has the log:
+python3 scripts/12_rpc_trace.py experiments/r0/worker_logs/20261010-190000_MMF4FWRG4R_worker_MTL0.log --tail 32 --label wifi_1,0</code></pre>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">LINE = re.compile(r"\[(\w+)\]\s*(.*)")
+SIZE = re.compile(r"size:\s*(\d+)")
+NODES = re.compile(r"n_nodes:\s*(\d+)")</td><td class="e">שלושה ביטויים רגולריים מוכנים מראש. שורת לוג נראית כך: <code>[set_tensor] buffer: 0x..., offset: 0, size: 14336</code>. הראשון תופס את שם הפקודה בסוגריים המרובעים ואת השאר; השני את הגודל בבתים; השלישי את מספר הצמתים בגרף.</td></tr>
+<tr><td class="c">def split_sessions(path):
+    sessions, cur = [], []
+    for raw in Path(path).read_text(errors="replace").splitlines():
+        if "[hello]" in raw and cur:
+            sessions.append(cur); cur = []
+        cur.append(raw)
+    if cur:
+        sessions.append(cur)
+    return [b for b in sessions if any("[graph_" in l for l in b)]</td><td class="e">לוג worker אחד מכיל הרבה חיבורים (כל ריצת requester היא session שמתחיל ב־<code>[hello]</code>). חלק את הלוג ל־sessions, והשאר רק את אלה שבאמת חישבו משהו (יש בהם <code>graph_</code>). חיבורים של <code>--list-devices</code> או preflight נזרקים.</td></tr>
+<tr><td class="c">def parse(lines):
+    steps, cur = [], None
+    for raw in lines:
+        m = LINE.search(raw)
+        if not m:
+            continue
+        cmd, rest = m.group(1), m.group(2)
+        if cmd in ("graph_compute", "graph_recompute"):
+            if cur is not None:
+                steps.append(cur)
+            n = NODES.search(rest)
+            cur = {"kind": cmd, "n_nodes": int(n.group(1)) if n else None, "cmds": {}, "bytes_in": 0, "bytes_out": 0}
+            continue</td><td class="e">חלוקה לצעדים. לכל שורה: אם היא פקודת חישוב (<code>graph_compute</code> = גרף מלא נשלח, <code>graph_recompute</code> = "הרץ שוב את הגרף הקודם", חיסכון של llama.cpp), סגור את הצעד הקודם ופתח חדש עם מספר הצמתים.</td></tr>
+<tr><td class="c">        if cur is None:
+            cur = {"kind": "pre", "n_nodes": None, "cmds": {}, "bytes_in": 0, "bytes_out": 0}
+        cur["cmds"][cmd] = cur["cmds"].get(cmd, 0) + 1
+        s = SIZE.search(rest)
+        if s:
+            if cmd == "set_tensor":
+                cur["bytes_in"] += int(s.group(1))
+            elif cmd == "get_tensor":
+                cur["bytes_out"] += int(s.group(1))
+    if cur is not None:
+        steps.append(cur)
+    return steps</td><td class="e">כל פקודה אחרת נספרת בצעד הנוכחי (או בצעד "pre" = שלב הטעינה, לפני החישוב הראשון). <code>set_tensor</code> = נתונים שנכנסים ל־worker (בשלב הטעינה אלה המשקולות, אחר כך ה־hidden state של כל טוקן); <code>get_tensor</code> = נתונים שיוצאים ממנו חזרה ל־requester (התוצאה). סוכמים בתים לכל כיוון.</td></tr>
+<tr><td class="c">def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("log")
+    ap.add_argument("--tail", type=int, default=32, help="steady-state steps to summarize (from the end)")
+    ap.add_argument("--label", default="trace")
+    a = ap.parse_args()
+    sessions = split_sessions(a.log)
+    if not sessions:
+        print("no [graph_compute] lines found — was the worker started with GGML_RPC_DEBUG=1, and did a requester run?"); return 1
+    if len(sessions) &gt; 1:
+        print(f"note: {len(sessions)} compute sessions in this log; reporting each (use one worker per split to avoid guessing)")
+    rc = 0
+    for si, lines in enumerate(sessions, 1):
+        rc |= report(parse(lines), a, f"{a.label}_s{si}" if len(sessions) &gt; 1 else a.label)
+    return rc</td><td class="e">ארגומנטים: הלוג, כמה צעדים אחרונים להגדיר כ־steady state (32), ותווית. אם אין sessions עם חישוב, הסבר למה (דיבוג לא היה דלוק, או שאף requester לא רץ). אם יש כמה, דווח על כל אחד בנפרד עם סיומת, והמלצה: worker חדש לכל split כדי שלא יהיה צורך לנחש איזה session שייך למה.</td></tr>
+<tr><td class="c">def report(steps, a, label):
+    compute_steps = [s for s in steps if s["kind"] in ("graph_compute", "graph_recompute")]
+    tail = compute_steps[-a.tail:] if len(compute_steps) &gt; a.tail else compute_steps
+    head = compute_steps[:max(0, len(compute_steps) - len(tail))]</td><td class="e">הפרדה: הצעדים האחרונים הם decode יציב (טוקן אחד בכל צעד); כל מה שלפניהם הוא טעינה ו־prefill, שבו הצעדים גדולים ושונים.</td></tr>
+<tr><td class="c">    def agg(group):
+        if not group:
+            return {}
+        types = sorted({c for s in group for c in s["cmds"]})
+        per_type = {t: statistics.median([s["cmds"].get(t, 0) for s in group]) for t in types}
+        return {"steps": len(group),
+                "recompute_share": sum(1 for s in group if s["kind"] == "graph_recompute") / len(group),
+                "median_cmds_per_step_by_type": per_type,
+                "median_total_cmds_per_step": statistics.median([sum(s["cmds"].values()) for s in group]),
+                "median_bytes_in_per_step": statistics.median([s["bytes_in"] for s in group]),
+                "median_bytes_out_per_step": statistics.median([s["bytes_out"] for s in group]),
+                "max_bytes_out_per_step": max(s["bytes_out"] for s in group),
+                "n_nodes_full_graph": ...}</td><td class="e">סיכום של קבוצת צעדים: כמה צעדים, איזה חלק מהם היה recompute (זול) לעומת compute מלא, חציון פקודות לצעד לפי סוג ובסך הכול, חציון בתים נכנסים ויוצאים לצעד, המקסימום של בתים יוצאים, ומספר הצמתים בגרף המלא האחרון. חציון ולא ממוצע כי צעד חריג בודד לא צריך להטות.</td></tr>
+<tr><td class="c">    pre = steps[0] if steps and steps[0]["kind"] == "pre" else None
+    summary = {
+        "run_id": f"{datetime.datetime.utcnow():%Y%m%d-%H%M%S}_{socket.gethostname().split('.')[0]}_trace_{label}",
+        "log": str(a.log), "total_compute_steps": len(compute_steps),
+        "load_phase": {"cmds": pre["cmds"], "bytes_in": pre["bytes_in"]} if pre else None,
+        "early_steps(load+prefill)": agg(head), "steady_state_tail": agg(tail),
+        "note": "counts are server-side commands per compute step; set_tensor/graph_compute are async on the client, get_tensor waits. Not RTTs.",
+    }</td><td class="e">הסיכום הכולל: שלב הטעינה (כמה בתים של משקולות נכנסו), הצעדים המוקדמים, הזנב היציב, וההערה המתודולוגית שמוטבעת בתוך הקובץ עצמו כדי שאף אחד לא יפרש את המספרים כ־round trips.</td></tr>
+<tr><td class="c">    d = OUT / summary["run_id"]; d.mkdir(parents=True, exist_ok=True)
+    (d / "summary.json").write_text(json.dumps(summary, indent=2, default=str))
+    t = summary["steady_state_tail"] or {}
+    md = (f"| {label} | {len(compute_steps)} | {t.get('steps')} | {t.get('recompute_share', 0):.2f} | "
+          f"{t.get('median_total_cmds_per_step')} | {json.dumps(t.get('median_cmds_per_step_by_type'))} | "
+          f"{t.get('median_bytes_in_per_step')} | {t.get('median_bytes_out_per_step')} | {t.get('n_nodes_full_graph')} |")
+    (d / "summary.md").write_text("| label | compute steps | tail steps | recompute share | cmds/step | by type | bytes in/step | bytes out/step | n_nodes |\n|---|---|---|---|---|---|---|---|---|\n" + md + "\n")
+    print(json.dumps(summary, indent=2, default=str)); print(md); print(f"saved: {d}")
+    return 0</td><td class="e">כתיבת JSON ושורת טבלה, הדפסה.</td></tr>
+</table>
+
+<h2 id="s-13"><code>13_serve.sh</code>: שרת לניסוי העומס <span class="tag r">requester</span> <span class="tag any">או כל מכונה ב־solo</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>הצד השרתי של 11. מרים <code>llama-server</code> בדגלים <strong>זהים</strong> בכל וריאנט, כי השוואה הוגנת של פיצול מול replicas דורשת אותו הקשר, אותו מספר slots מקבילים, אותו הכול, חוץ מהדבר היחיד שמשווים. <code>solo</code> = שרת עצמאי על המכונה הזו. <code>split</code> = שרת על המכונה הזו שמשתמש גם ב־worker מרוחק. הלוג נשמר דרך <code>script</code> כמו ב־08.</p>
+<table class="facts">
+<tr><td>דורש</td><td><code>llama-server</code>, <code>MODEL</code>, ובמצב split worker פעיל.</td></tr>
+<tr><td>משאיר</td><td>שרת רץ על פורט 8080, ולוג ב־<code>experiments/r3/load/server_logs/</code>. בדיקת חיים: <code>curl -s http://&lt;ip&gt;:8080/health</code>.</td></tr>
+</table>
+</div>
+
+<div class="warn">השרת מאזין על <code>--host 0.0.0.0</code>, כלומר על כל הממשקים. ל־HTTP ברשת ביתית לכמה דקות זה מקובל, ובלי זה הלקוח מהמכונה השנייה לא היה מגיע. אבל זה חריג לכלל 7 ב־CLAUDE.md (workers נקשרים רק ל־LAN או Tailscale), ואם אי פעם ירוץ על מכונה עם כתובת ציבורית, צריך להחליף לכתובת ספציפית.</div>
+
+<h3>איך מפעילים</h3>
+<pre><code>bash scripts/13_serve.sh solo                               # this machine only
+bash scripts/13_serve.sh split 192.168.1.242 1,1            # this machine + worker, half/half
+CTX=4096 NP=8 PORT=8080 bash scripts/13_serve.sh solo       # defaults shown</code></pre>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">. "$(dirname "$0")/common.sh"
+require_bin llama-server; require_model
+
+MODE="${1:-}"; [ -n "$MODE" ] || die "usage: $0 solo | split &lt;worker-ip[:port]&gt; [ts]"
+CTX="${CTX:-4096}"; NP="${NP:-8}"; PORT="${PORT:-8080}"
+HOST="$(host_label)"; LOGD="$REPO_ROOT/experiments/r3/load/server_logs"; mkdir -p "$LOGD"</td><td class="e">הקשר של 4096 (גדול יותר מב־02, כי 8 בקשות חולקות אותו), <code>NP=8</code> = 8 slots מקבילים, פורט 8080.</td></tr>
+<tr><td class="c">ARGS=("$BIN/llama-server" -m "$MODEL" -ngl 99 -c "$CTX" -np "$NP" --host 0.0.0.0 --port "$PORT" --metrics)</td><td class="e">פקודת השרת: מודל, כל השכבות למאיץ, הקשר, מספר slots (<code>-np</code> = parallel), כתובת ופורט, ו־<code>--metrics</code> שפותח נקודת קצה עם סטטיסטיקות פנימיות.</td></tr>
+<tr><td class="c">case "$MODE" in
+  solo) VARIANT="solo" ;;
+  split)
+    W="${2:-}"; [ -n "$W" ] || die "split needs &lt;worker-ip[:port]&gt;"; case "$W" in *:*) EP="$W";; *) EP="$W:$RPC_PORT";; esac
+    TS="${3:-1,1}"; ARGS+=(--rpc "$EP" -ts "$TS"); VARIANT="split_${TS//,/_}_$(printf '%s' "$EP" | tr '.:' '__')" ;;
+  *) die "mode must be solo or split" ;;
+esac</td><td class="e">ב־split מוסיפים את אותם שני דגלים (<code>--rpc</code>, <code>-ts</code>, ברירת מחדל חצי חצי). שם הווריאנט כולל את ה־split וכתובת ה־worker עם נקודות ונקודתיים שהוחלפו בקו תחתון.</td></tr>
+<tr><td class="c">LOG="$LOGD/$(date -u +%Y%m%d-%H%M%S)_${HOST}_${VARIANT}.log"
+{ echo "# host=$HOST variant=$VARIANT sha=$(git -C "$LLAMA_DIR" rev-parse --short HEAD 2&gt;/dev/null) model=$(basename "$MODEL") ctx=$CTX np=$NP port=$PORT started=$(now_iso)"
+  printf '# cmd: '; printf '%q ' "${ARGS[@]}"; echo; } &gt; "$LOG"</td><td class="e">קובץ לוג עם שתי שורות כותרת: ההקשר והפקודה המדויקת.</td></tr>
+<tr><td class="c">log "variant=$VARIANT model=$(basename "$MODEL") ctx=$CTX np=$NP -&gt; http://$(case "$(detect_platform)" in macos) ipconfig getifaddr en0 2&gt;/dev/null || echo 0.0.0.0;; *) hostname -I 2&gt;/dev/null | awk '{print $1}';; esac):$PORT"
+log "log -&gt; $LOG   (Ctrl-C to stop)"</td><td class="e">הדפס את הכתובת שאליה הלקוח צריך לפנות (כתובת ה־LAN של המכונה).</td></tr>
+<tr><td class="c">if command -v script &gt;/dev/null 2&gt;&amp;1; then
+  case "$(detect_platform)" in
+    macos) exec script -q -a -F "$LOG" "${ARGS[@]}" ;;
+    *)     exec script -q -a -f -c "$(printf '%q ' "${ARGS[@]}")" "$LOG" ;;
+  esac
+else
+  exec "${ARGS[@]}" 2&gt;&amp;1 | tee -a "$LOG"
+fi</td><td class="e">הפעלה דרך <code>script</code> (טרמינל מדומה, לוג חי), עם ההבדל בתחביר בין מק ללינוקס, ונפילה ל־tee. <code>exec</code> כך ש־Ctrl-C עוצר את השרת.</td></tr>
+</table>
+
+<h2 id="s-14"><code>14_build_he_html.sh</code>: מסמכים בעברית <span class="tag any">כל מכונה</span></h2>
+
+<div class="big">
+<h4>התמונה הגדולה</h4>
+<p>לא קשור לניסויים. המסמכים לצוות ולמנחה כתובים ב־Markdown בעברית ב־<code>docs/he/</code>, אבל ל־Markdown אין כיוון כתיבה, וכל תוכנת תצוגה מנחשת, בדרך כלל לא נכון. הסקריפט הופך כל קובץ לעמוד HTML עצמאי עם <code>dir="rtl"</code>, יישור לימין, פונטים עבריים, טבלאות מימין לשמאל, וקוד ונתיבים שנשארים משמאל לימין ומבודדים כדי שלא יהפכו את השורה. בדיוק הדף שאתה קורא עכשיו בנוי לפי אותם כללים (אבל נכתב ידנית, לא דרך הסקריפט).</p>
+<table class="facts">
+<tr><td>דורש</td><td><code>pandoc</code> (<code>brew install pandoc</code>) ו־python3.</td></tr>
+<tr><td>משאיר</td><td><code>docs/he/html/*.html</code>, <code>he.css</code> משותף, ו־<code>index.html</code> עם קישורים לכולם.</td></tr>
+</table>
+</div>
+
+<h3>איך מפעילים</h3>
+<pre><code>bash scripts/14_build_he_html.sh                            # all docs in docs/he/
+bash scripts/14_build_he_html.sh ONE_PAGER_2026-10-11.md    # one doc</code></pre>
+
+<h3>שורה אחרי שורה</h3>
+<table class="lines">
+<tr><th class="c">קוד</th><th>הסבר</th></tr>
+<tr><td class="c">set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." &amp;&amp; pwd)"
+SRC="$ROOT/docs/he"; OUT="$SRC/html"; mkdir -p "$OUT"
+command -v pandoc &gt;/dev/null 2&gt;&amp;1 || { echo "pandoc not found (brew install pandoc)"; exit 1; }</td><td class="e">הסקריפט היחיד שלא טוען את <code>common.sh</code> (לא צריך llama.cpp). שורש הריפו, תיקיות מקור ויעד, בדיקת pandoc.</td></tr>
+<tr><td class="c">CSS="$OUT/he.css"
+cat &gt; "$CSS" &lt;&lt;'EOF'
+:root { --fg:#1b1b1b; ... }
+html { direction: rtl; }
+body { font-family: -apple-system, "Segoe UI", ..., "Noto Sans Hebrew", sans-serif; ... direction: rtl; text-align: right; }
+...
+table { ... direction: rtl; ... }
+th, td { ... text-align: right; ... }
+code, pre, kbd { font-family: ui-monospace, Menlo, Consolas, monospace; direction: ltr; unicode-bidi: isolate; }
+pre { ... text-align: left; ... }
+@media print { ... @page { size: A4; margin: 18mm 16mm; } }
+EOF</td><td class="e">כתיבת גיליון העיצוב (heredoc מילולי). השורות החשובות: <code>direction: rtl</code> על כל המסמך; <code>text-align: right</code>; וב־<code>code</code> ו־<code>pre</code>: <code>direction: ltr</code> עם <code>unicode-bidi: isolate</code>, שאומר לדפדפן "הקטע הזה הוא יחידה עצמאית משמאל לימין, אל תיתן לו להשפיע על כיוון השורה סביבו". זה מה שמונע מפקודה באנגלית בתוך משפט בעברית להתהפך. בסוף הגדרות הדפסה ל־A4.</td></tr>
+<tr><td class="c">build() {
+  local md="$1"; local name; name="$(basename "$md" .md)"
+  local title; title="$(grep -m1 '^# ' "$md" | sed 's/^# //')"
+  pandoc "$md" -f gfm -t html5 --standalone --css he.css \
+    --metadata title="$title" --metadata lang=he --metadata dir=rtl \
+    -o "$OUT/$name.html"</td><td class="e">פונקציית בנייה לקובץ אחד. הכותרת נלקחת מהשורה הראשונה שמתחילה ב־<code># </code>. pandoc: מ־GitHub Markdown (<code>gfm</code>) ל־HTML5, מסמך שלם (<code>--standalone</code>), עם הפניה ל־CSS, שפה עברית וכיוון RTL.</td></tr>
+<tr><td class="c">  python3 - "$OUT/$name.html" &lt;&lt;'PY'
+import re,sys
+p=sys.argv[1]; s=open(p,encoding='utf-8').read()
+s=re.sub(r'&lt;header id="title-block-header"&gt;.*?&lt;/header&gt;\s*', '', s, flags=re.S)
+s=s.replace('&lt;html xmlns="http://www.w3.org/1999/xhtml" lang="he" xml:lang="he" dir="rtl"&gt;','&lt;html lang="he" dir="rtl"&gt;')
+open(p,'w',encoding='utf-8').write(s)
+PY
+  echo "  $name.html"
+}</td><td class="e">תיקון קטן אחרי pandoc: הוא מוסיף בלוק כותרת משלו, וכבר יש לנו כותרת H1 במסמך, אז הכותרת הייתה מופיעה פעמיים. הפייתון מוחק את הבלוק הכפול ומפשט את תג ה־html.</td></tr>
+<tr><td class="c">echo "building RTL HTML into docs/he/html/"
+if [ $# -gt 0 ]; then for f in "$@"; do build "$SRC/$(basename "$f")"; done
+else for f in "$SRC"/*.md; do build "$f"; done; fi</td><td class="e">אם ניתנו שמות קבצים (<code>$#</code> = מספר הארגומנטים), בנה רק אותם; אחרת את כל ה־Markdown בתיקייה.</td></tr>
+<tr><td class="c">{
+  echo '&lt;!doctype html&gt;&lt;html lang="he" dir="rtl"&gt;&lt;head&gt;&lt;meta charset="utf-8"&gt;&lt;title&gt;Nocturne — מסמכים בעברית&lt;/title&gt;&lt;link rel="stylesheet" href="he.css"&gt;&lt;/head&gt;&lt;body&gt;'
+  echo '&lt;h1&gt;Nocturne — מסמכים בעברית&lt;/h1&gt;&lt;ul&gt;'
+  for f in "$OUT"/*.html; do n="$(basename "$f" .html)"; [ "$n" = index ] &amp;&amp; continue
+    t="$(grep -m1 -o '&lt;h1[^&gt;]*&gt;[^&lt;]*' "$f" | sed 's/&lt;h1[^&gt;]*&gt;//')"; echo "&lt;li&gt;&lt;a href=\"$n.html\"&gt;${t:-$n}&lt;/a&gt; &lt;span class=\"muted\"&gt;($n.md)&lt;/span&gt;&lt;/li&gt;"; done
+  echo '&lt;/ul&gt;&lt;p class="muted"&gt;...&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'
+} &gt; "$OUT/index.html"
+echo "  index.html"
+echo "open: $OUT/index.html"</td><td class="e">עמוד אינדקס: לכל HTML בתיקייה (חוץ מהאינדקס עצמו), שלוף את הכותרת מתוך תג ה־H1 וצור קישור. זו הסיבה שגם הדף הזה יופיע באינדקס בפעם הבאה שהסקריפט ירוץ.</td></tr>
+</table>
+
+<h2 id="closing">הערות סיום: מה מיושן, מה כדאי לתקן</h2>
+
+<table>
+<tr><th>נושא</th><th>מה המצב</th><th>מה מוצע</th></tr>
+<tr><td><code>05_bench.sh</code>, <code>06_net_baseline.sh</code></td><td>הוחלפו ב־<code>08_r0.sh</code>. מדידות מ־05 עם <code>-ts</code> בפסיק אינן פיצול אמיתי ומסומנות INVALID בדוח.</td><td>להוסיף בראש כל אחד הודעת deprecated שמפנה ל־08, או להעביר ל־<code>scripts/archive/</code>.</td></tr>
+<tr><td><code>00_build_llamacpp.sh</code></td><td>עושה <code>git pull</code> על checkout קיים ולכן יכול להזיז את ה־SHA הנעול. לא משקף את הבנייה הידנית ב־M5 (rpath יחסי).</td><td>להחליף את ה־pull ב־<code>git checkout 1e7bcf3</code> קבוע, ולהוסיף את דגלי ה־rpath שב־07.</td></tr>
+<tr><td>הפניות ל־05 בתוך 02 ו־04</td><td>ההודעות "Now run: 05_bench.sh" מיושנות.</td><td>לעדכן ל־<code>08_r0.sh local</code> / <code>08_r0.sh rpc</code>.</td></tr>
+<tr><td><code>13_serve.sh</code> עם <code>--host 0.0.0.0</code></td><td>מקובל ל־LAN, חריג לכלל האבטחה של הריפו.</td><td>להשתמש באותו ניחוש כתובת כמו ב־03 (<code>BIND</code>), עם <code>0.0.0.0</code> רק אם נדרש במפורש.</td></tr>
+<tr><td>בדיקת הקבלה "placement verified" ב־09</td><td>מחפשת ריצת placement נפרדת, בעוד שטבלה B כבר מעדיפה את הלוג הפנימי של ריצת ה־bench.</td><td>ליישר את הבדיקה לאותו היגיון של הטבלה.</td></tr>
+<tr><td>כל הסקריפטים</td><td>עומדים בכלל "bash 3.2": אין מערכים אסוציאטיביים, אין <code>mapfile</code>. <code>bash -n scripts/*.sh</code> בודק תחביר.</td><td>להשאיר כך. המכונה של ליאור ב־WSL2 מריצה bash 5, המקים bash 3.2.</td></tr>
+</table>
+
+<p class="muted">סוף המסמך. מקור: <code>nocturne/scripts/</code> נכון ל־2026-10-24. נבנה ידנית ולא דרך <code>14_build_he_html.sh</code>; הוא יופיע ב־<code>index.html</code> בבנייה הבאה.</p>
+
+</body>
+</html>

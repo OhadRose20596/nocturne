@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>מדריך המשך: מהמצב הנוכחי עד סיום R3</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="he.css" />
+</head>
+<body>
+<h1 id="מדריך-המשך-מהמצב-הנוכחי-עד-סיום-r3">מדריך המשך: מהמצב הנוכחי עד סיום R3</h1>
+<p><strong>מצב (25.10.2026):</strong> הכלים והפקודות בתוקף. השלבים R0 עד R3 הם שמות פנימיים ומקבילים ל-O2 ול-O4 ב-GOAL_AND_OBJECTIVES.md v4. R1 ו-R2 (מסלול PyTorch) מוקפאים עד הכרעת ADR-007. ניסוי ה-TP מתבצע עכשיו עם <code>SPLIT_MODE=tensor scripts/10_capacity.sh</code> ולא בפקודה הידנית שבסעיף R3d. המשך העבודה: NEXT_STEPS_2026-10-17.md.</p>
+<p><strong>גרסה:</strong> 2026-10-10 (אחרי T1, I010–I011). משלים את <code>RUNBOOK_R0.md</code> (שמכסה את R0 צעד-צעד) ומוביל עד שיש לכם את שלוש הטבלאות של R3. כל שלב: מה השאלה, על איזה מחשב, איזו פקודה, מה נשמר, מה "גמור", ומה כותבים במסמך המשותף.</p>
+<p><strong>נקודת המוצא (T1):</strong> אנחנו מודדים היתכנות ויעילות של חלוקת מודל על מחשבים נוספים, כשהרשת היא צוואר הבקבוק הנתון. השהיה נרשמת כתנאי, לא כיעד. שלושת הצירים (I010): <strong>קיבולת</strong> תחת מדיניות זיכרון מוצהרת · <strong>בקשה יחידה</strong> · <strong>תפוקה תחת עומס מול עותקים עצמאיים</strong>.</p>
+<h2 id="איפה-אנחנו">איפה אנחנו</h2>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th>מצב</th>
+<th>ראיה</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>סביבה</td>
+<td>Air M3 (16GB, <code>192.168.1.219</code>, user <code>ohadrosentswaig</code>) + M5 (24GB, <code>192.168.1.242</code>, user <code>orosentswaig</code>), Wi-Fi ביתי ~12ms RTT, 250+ Mbit/s. אותו llama.cpp <code>1e7bcf3</code>, אותו hash מודל</td>
+<td><code>experiments/inventory/</code>, <code>experiments/r0/REPORT.md</code></td>
+</tr>
+<tr class="even">
+<td>טבלה A</td>
+<td>✅ מלאה (M3: 208/20.0; M5: 683/26.3; CPU בשניהם)</td>
+<td>REPORT.md</td>
+</tr>
+<tr class="odd">
+<td>טבלה C</td>
+<td>✅ 6 שורות Wi-Fi</td>
+<td>REPORT.md</td>
+</tr>
+<tr class="even">
+<td>טבלה B</td>
+<td>⏳ באיסוף מחדש אחרי תיקון שני באגים (סדר מרוחק-קודם; תחביר <code>-ts</code> של llama-bench). 18 ריצות ישנות שמורות ב-<code>runs_superseded_ts_syntax/</code></td>
+<td>I008, I010 §5</td>
+</tr>
+<tr class="odd">
+<td>כלים</td>
+<td><code>07_preflight</code>, <code>08_r0</code>, <code>09_r0_report</code> מתוקנים; חדשים: <code>10_capacity.sh</code>, <code>11_load.py</code>, <code>12_rpc_trace.py</code> (נבדקו מול כלים מזויפים, לא על החומרה)</td>
+<td><code>scripts/</code></td>
+</tr>
+<tr class="even">
+<td>החלטות</td>
+<td>T1 בלבד. מנוע (ADR-007) פתוח, מוכרע לפי כלל סימטרי אחרי מדידות</td>
+<td><code>SHARED_RESEARCH_AND_DECISIONS.md</code> §9.2</td>
+</tr>
+</tbody>
+</table>
+<h2 id="מפת-הדרך">מפת הדרך</h2>
+<pre><code>R0  ──► R3a קיבולת ──► R3b עומס ──► R3c trace ──► R3d Ethernet (נקודה) ──► R3e TP (פעם אחת) ──► סיכום R3
+טבלה B                                                                                              │
+                                                   R1/R2 (PyTorch) ◄── רק אם R3c/R3e מראים פער ◄────┘
+</code></pre>
+<p>כל חץ הוא שער: לא עוברים הלאה בלי התוצר של השלב הקודם ב-<code>experiments/</code>. זמן כולל משוער: 5–7 ערבי עבודה לשני המק-ים, בלי R1/R2.</p>
+<hr />
+<h2 id="שלב-1--סגירת-r0-טבלה-b-מתוקנת-ערב-אחד">שלב 1 — סגירת R0: טבלה B מתוקנת (ערב אחד)</h2>
+<p><strong>שאלה:</strong> מה קורה ל-pp/tg כשמחלקים 7B בין שני המק-ים, בשלושת ה-splits, בשני הכיוונים, על ה-Wi-Fi הקיים — עם הוכחת מיקום מתוך הריצה הנמדדת.</p>
+<p>לפי <code>RUNBOOK_R0.md</code> שלבים 2–3, בסדר הזה ובלי לרוץ משני הצדדים בו-זמנית:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="co"># M5 (worker):  טרמינל 1: iperf3 -s      טרמינל 2: BIND=192.168.1.242 scripts/08_r0.sh worker MTL0</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="co"># Air (requester):</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a><span class="va">LINK=</span>wifi <span class="va">OVERLAY=</span>plain <span class="va">LOCATION=</span>lan <span class="ex">scripts/08_r0.sh</span> rpc 192.168.1.242</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a><span class="co"># ואז הפוך: Air worker (BIND=192.168.1.219 ... MTL0), M5 requester:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a><span class="va">LINK=</span>wifi <span class="va">OVERLAY=</span>plain <span class="va">LOCATION=</span>lan <span class="ex">scripts/08_r0.sh</span> rpc 192.168.1.219</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a><span class="ex">python3</span> scripts/09_r0_report.py</span></code></pre></div>
+<p>ה-splits רצים <code>1,0 → 1,1 → 0,1</code> (<strong>מרוחק קודם</strong>): <code>1,0</code> = הכל על ה-worker כולל שכבת הפלט (608KB logits חוזרים לכל טוקן); <code>1,1</code> = 15 שכבות מרוחקות, 14 + פלט מקומי; <code>0,1</code> = הכל מקומי דרך נתיב ה-RPC (בקרת רישום backend).</p>
+<p><strong>נשמר:</strong> <code>experiments/r0/runs/&lt;run_id&gt;/</code> עם <code>bench.json</code>, <code>placement.log</code> <strong>מהריצה הנמדדת</strong> (<code>-v</code>), <code>stderr.log</code>, <code>manifest.json</code>. <strong>גמור כש:</strong> <code>REPORT.md</code> → Acceptance: B = 2 צירופים (2 כיוונים × Wi-Fi) ✅, "placement verified" ✅ לכל שורה (הדוח מדפיס <code>layers: RPC0=15, MTL0=14</code> וכד'), ⚠ שונות מסומן אם יש. <strong>למסמך המשותף:</strong> <code>REPORT.md</code> + משפט אחד: היחס <code>1,1</code>/<code>1,0</code> (output מקומי מול מרוחק) — זו הבדיקה הראשונה של כלל "שלב הפלט על ה-requester".</p>
+<p><strong>קורא נכון את המספרים:</strong> ms/טוקן = <code>avg_ns/64</code> מתוך bench.json, לא היפוך הממוצע. אין להסיק מההפרש "עלות רשת" — זה הפרש <em>תצורה</em>; ההפרדה באה ב-R3c.</p>
+<hr />
+<h2 id="שלב-2--r3a-קיבולת-ערב-אחד--זמן-הורדה">שלב 2 — R3a: קיבולת (ערב אחד + זמן הורדה)</h2>
+<p><strong>שאלה:</strong> האם צירוף שני המחשבים מריץ מודל שאף אחד מהם לא מריץ לבד — <strong>תחת מדיניות זיכרון מוצהרת</strong>?</p>
+<h3 id="21-מודלים-אותו-קובץ-בשני-המחשבים-ה-preflight-מאמת-hash">2.1 מודלים (אותו קובץ בשני המחשבים; ה-preflight מאמת hash)</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="ex">brew</span> install hf   # אם אין</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="ex">hf</span> download bartowski/Qwen2.5-14B-Instruct-GGUF Qwen2.5-14B-Instruct-Q4_K_M.gguf --local-dir ~/models   # ~9.0GB — מדרגת כיול</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="ex">hf</span> download bartowski/Qwen2.5-32B-Instruct-GGUF Qwen2.5-32B-Instruct-Q4_K_M.gguf --local-dir ~/models   # ~19.9GB — המועמד</span></code></pre></div>
+<p>להוריד <strong>פעם אחת</strong> ולהעביר ל-M5 ב-scp/AirDrop (סעיף 0 ב-RUNBOOK), כדי שה-hash יהיה זהה בוודאות. אחרי ההעתקה, בכל מחשב: <code>shasum -a 256 ~/models/Qwen2.5-32B-Instruct-Q4_K_M.gguf</code>.</p>
+<h3 id="22-מדיניות--לקבוע-לפני-הריצה">2.2 מדיניות — לקבוע לפני הריצה</h3>
+<ul>
+<li><strong>P1</strong> "כולו על המאיצים בתקציב": <code>-ngl 99 -fit off</code>. "נכנס" = כל השכבות offloaded + generation של 32 טוקנים הסתיימה + בלי <code>failed to allocate</code>. זו הטענה המדידה והצנועה, ואיתה מתחילים.</li>
+<li><strong>P2</strong> "רץ בכלל": <code>-fit on</code>, llama.cpp רשאי להשאיר שכבות על CPU; נרשם כמה הגיעו ל-GPU.</li>
+</ul>
+<p>12.1/18.2GB של Metal הם המלצות <strong>רכות</strong>; יכול להיות ש-32B רץ על ה-M5 תחת P2 ואפילו P1 — וזו תוצאה תקפה, לא כישלון של הניסוי. timeout = "לא הסתיים בזמן", לא הוכחת חוסר זיכרון.</p>
+<h3 id="23-הריצות">2.3 הריצות</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="co"># על כל מחשב בנפרד (מקומי, בלי worker):</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="ex">scripts/10_capacity.sh</span> local ~/models/Qwen2.5-14B-Instruct-Q4_K_M.gguf P1</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="ex">scripts/10_capacity.sh</span> local ~/models/Qwen2.5-32B-Instruct-Q4_K_M.gguf P1</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a><span class="ex">scripts/10_capacity.sh</span> local ~/models/Qwen2.5-32B-Instruct-Q4_K_M.gguf P2</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a><span class="co"># בשניים (worker על ה-M5 כמו בשלב 1; requester על ה-Air):</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a><span class="ex">scripts/10_capacity.sh</span> split ~/models/Qwen2.5-32B-Instruct-Q4_K_M.gguf 192.168.1.242          # ts אוטומטי = פרופורציונלי לזיכרון</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a><span class="ex">scripts/10_capacity.sh</span> split ~/models/Qwen2.5-32B-Instruct-Q4_K_M.gguf 192.168.1.242 3,2      # ~60% על ה-M5, 40% + פלט על ה-Air</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a><span class="co"># ואז גם בכיוון ההפוך (worker Air, requester M5) — פעם אחת, לתעד שההיתכנות לא תלויה בכיוון</span></span></code></pre></div>
+<p>כל ריצה מדפיסה <code>verdict: fits_under_policy=yes|no|timeout</code> ושומרת <code>experiments/r3/capacity/&lt;run_id&gt;/</code> (פקודה, stderr מלא, שורות <code>load_tensors</code>, זיכרון שיא של ה-requester, swap לפני/אחרי). ב-32B מקומי על ה-Air צפו ל-<code>failed to allocate</code> או לדשדוש ב-swap — התיקייה תראה את זה.</p>
+<p><strong>גמור כש:</strong> יש manifest לכל שורה בטבלה: {14B, 32B} × {Air, M5, split} × {P1, P2 היכן שרלוונטי}, ועבור כל ריצת split — <code>placement.log</code> עם שכבות בשני הצדדים ו-tok/s. <strong>תנאי הצלחה לטענת קיבולת (I010):</strong> אותו מודל נכשל בכל מחשב יחיד <em>לפי המדיניות</em>, ומסיים חלוקה תקינה בשניים, עם זיכרון ותפוקה מדווחים. בלי reference ל-32B — <code>smoke-test</code>, לא "נכונות עברה". <strong>למסמך המשותף:</strong> טבלת קיבולת + המשפט "המודל הגדול ביותר שרץ על מחשב יחיד תחת P1 היה X; על שניים — Y".</p>
+<hr />
+<h2 id="שלב-3--r3b-תפוקה-תחת-עומס-חלוקה-מול-עותקים-עצמאיים-ערב-אחד">שלב 3 — R3b: תפוקה תחת עומס, חלוקה מול עותקים עצמאיים (ערב אחד)</h2>
+<p><strong>שאלה:</strong> למודל שנכנס בכל מחשב (7B), מתי כדאי לפצל ומתי עדיף שהמחשב השני ישרת משתמש נוסף? זו ההשוואה ש-I010 הגדיר כחיונית, והיא עונה ישירות על "יעילות השימוש במחשבים נוספים".</p>
+<h3 id="31-שתי-תצורות-אותם-דגלים-אותו-מודל-7b">3.1 שתי תצורות, אותם דגלים, אותו מודל 7B</h3>
+<p><strong>A — חלוקה:</strong> worker על ה-M5 (<code>BIND=192.168.1.242 scripts/08_r0.sh worker MTL0</code>, כמו תמיד), ועל ה-Air:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="ex">scripts/13_serve.sh</span> split 192.168.1.242          # ts ברירת מחדל 1,1 (מרוחק קודם); <span class="ex">MODEL</span> מ-.env</span></code></pre></div>
+<p><strong>B — עותקים עצמאיים:</strong> על <strong>שני</strong> המחשבים, בלי worker:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="ex">scripts/13_serve.sh</span> solo                          # פורט 8080 בכל מחשב</span></code></pre></div>
+<p><code>13_serve.sh</code> מוצא את הבינארי דרך <code>common.sh</code> (ב-Air: <code>third_party/</code>, ב-M5: <code>~/dev/llama.cpp</code>) ומריץ בכל תצורה בדיוק את אותם דגלים: <code>-ngl 99 -c 4096 -np 8 --metrics</code>. <code>-np 8</code> = עד 8 slots במקביל; <code>-c 4096</code> מתחלק ביניהם (512 לכל slot — מספיק ל-128+64). הלוג נשמר ב-<code>experiments/r3/load/server_logs/</code>. בדיקת חיים: <code>curl -s http://&lt;ip&gt;:8080/health</code>.</p>
+<h3 id="32-העומס-מ-air-או-ממחשב-שלישי-אם-יש--ה-requester-עמוס-גם-ככה">3.2 העומס (מ-Air, או ממחשב שלישי אם יש — ה-requester עמוס גם ככה)</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="kw">for</span> <span class="ex">C</span> in 1 4 8<span class="kw">;</span> <span class="kw">do</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>  <span class="ex">python3</span> scripts/11_load.py --url http://192.168.1.219:8080 --concurrency <span class="va">$C</span> --requests <span class="va">$((</span>8*C<span class="va">))</span> <span class="kw">\</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>      <span class="ex">--prompt-tokens</span> 128 --max-tokens 64 --label split_1,1_wifi</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a><span class="kw">done</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a><span class="co"># תצורה B — שני URL-ים, הסקריפט מנתב round-robin:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a><span class="kw">for</span> <span class="ex">C</span> in 1 4 8<span class="kw">;</span> <span class="kw">do</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a>  <span class="ex">python3</span> scripts/11_load.py --url http://192.168.1.219:8080 --url http://192.168.1.242:8080 --concurrency <span class="va">$C</span> --requests <span class="va">$((</span>8*C<span class="va">))</span> <span class="kw">\</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a>      <span class="ex">--prompt-tokens</span> 128 --max-tokens 64 --label independent_wifi</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a><span class="kw">done</span></span></code></pre></div>
+<p>כל ריצה שומרת <code>experiments/r3/load/&lt;run_id&gt;/{requests.jsonl,summary.json,summary.md}</code> ומדפיסה שורת טבלה: <code>Q</code> (טוקני פלט של בקשות שהושלמו / חלון משותף), req/s, שיעור השלמה, p50/p95.</p>
+<p><strong>גמור כש:</strong> 6 שורות (2 תצורות × 3 רמות עומס), כולן עם completion rate 100%, ואפשר לחשב <code>Q_split / Q_independent</code> לכל C. <strong>איך לקרוא:</strong> אם היחס &lt; 1 בכל C — למודל שנכנס בכל מחשב, עדיף עותקים; החלוקה מוצדקת רק לקיבולת (שלב 2). אם היחס עולה עם C — ה-pipeline מתחיל למלא bubbles; זו תוצאה מעניינת, אבל רק trace (לא <code>--parallel</code> כשלעצמו) מוכיח חפיפת שלבים. <strong>אופציונלי אם הזמן מאפשר:</strong> אותו דבר ל-14B, שנכנס רק ב-M5 — אז "עותקים עצמאיים" = עותק אחד בלבד, והחלוקה מתחרה במחשב יחיד.</p>
+<hr />
+<h2 id="שלב-4--r3c-trace-של-פקודות-rpc-לטוקן-שעה">שלב 4 — R3c: trace של פקודות RPC לטוקן (שעה)</h2>
+<p><strong>שאלה:</strong> כמה אינטראקציות ובתים התשתית מוציאה לכל טוקן — ה-<code>k</code> ב-<code>k × עלות</code>, מתוך מדידה ולא מספירת שמות פקודות (I010 §4).</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="co"># worker (M5) עם debug — אותו סקריפט, משתנה סביבה אחד:</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="va">GGML_RPC_DEBUG=</span>1 <span class="va">BIND=</span>192.168.1.242 <span class="ex">scripts/08_r0.sh</span> worker MTL0</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a><span class="co"># requester (Air): ריצה אחת של 64 טוקנים לכל split, בלי bench:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a><span class="kw">for</span> <span class="ex">s</span> in 1,0 1,1<span class="kw">;</span> <span class="kw">do</span> <span class="ex">scripts/08_r0.sh</span> placement 192.168.1.242 <span class="va">$s</span><span class="kw">;</span> <span class="kw">done</span>     # <span class="ex">8</span> טוקנים כל אחת — מספיק לדפוס</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a><span class="co"># אחרי Ctrl-C ל-worker, על אותו מחשב:</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a><span class="ex">python3</span> scripts/12_rpc_trace.py experiments/r0/worker_logs/<span class="op">&lt;</span>הלוג-החדש<span class="op">&gt;</span>.log --tail 8 --label wifi_1,0_then_1,1</span></code></pre></div>
+<p>הפלט: פקודות לצעד-חישוב לפי סוג, בתים נכנסים (<code>set_tensor</code>) ויוצאים (<code>get_tensor</code>) לצעד, ושיעור <code>graph_recompute</code> מול <code>graph_compute</code> מלא. בתצורת <code>1,0</code> צפו ל-<code>get_tensor</code> של ~608KB לצעד (logits); ב-<code>1,1</code> ל-~7KB (hidden state). זה ה-"בתים לגבול" של H1, שחור על גבי לבן.</p>
+<p><strong>מה זה לא:</strong> לא RTT. <code>set_tensor</code>/<code>graph_compute</code> נשלחים בלי המתנה; רק <code>get_tensor</code> מחכה. המתנות בצד ה-requester דורשות trace נפרד (R1, אם יגיע). <strong>גמור כש:</strong> <code>experiments/r3/trace/&lt;run_id&gt;/summary.md</code> לשני ה-splits. <strong>למסמך המשותף:</strong> שורת הטבלה + משפט: "לכל טוקן ב-<code>1,0</code>: X פקודות, Y KB החוצה, Z% recompute".</p>
+<hr />
+<h2 id="שלב-5--r3d-נקודת-רגישות-אחת--ethernet-ערב-אם-יש-כבל">שלב 5 — R3d: נקודת רגישות אחת — Ethernet (ערב, אם יש כבל)</h2>
+<p><strong>שאלה:</strong> כמה מהפער מקומי↔︎מרוחק נעלם כשהקישור מתנהג יפה? נקודה אחת, לא סריקה. <strong>לא</strong> מפרידה "רשת" מ"פרוטוקול" (RTT, jitter ו-BW משתנים יחד) — אבל נותנת את הגבול התחתון של עלות ההופ על חומרה צרכנית.</p>
+<p>כבל USB-C↔︎Ethernet לשניהם דרך הראוטר, או Thunderbolt ישיר בין המק-ים. Wi-Fi כבוי בשניהם. ואז <strong>בדיוק שלב 1</strong> עם <code>LINK=ethernet</code> (שני הכיוונים), ואם הזמן מאפשר — חזרה על שלב 3 בתצורת A בלבד.</p>
+<p><strong>גמור כש:</strong> 2 צירופים נוספים בטבלה B (Acceptance: 4/4 ✅), ושורת Table C עם RTT &lt; 1ms.</p>
+<hr />
+<h2 id="שלב-6--r3e-אפיון-tp-פעם-אחת-ערב">שלב 6 — R3e: אפיון TP, פעם אחת (ערב)</h2>
+<p><strong>שאלה:</strong> האם llama.cpp מסוגל להריץ <code>--split-mode tensor</code> מעל RPC בצירוף שלנו, ומה היעילות שלו תחת הרשת האיטית. תוצאה פתוחה; זה גם מסלול A של ADR-007.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="co"># worker כרגיל. requester (Air), אותו 7B:</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a><span class="st">&quot;</span><span class="va">$BIN</span><span class="st">/llama-cli&quot;</span> <span class="ex">-m</span> ~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf -ngl 99 --rpc 192.168.1.242:50052 <span class="kw">\</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>    <span class="ex">--split-mode</span> tensor -ts 1,1 -fit off -c 2048 -n 32 -p <span class="st">&quot;Explain in two sentences what a transformer is.&quot;</span> --temp 0 -st --simple-io --verbose <span class="kw">\</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>    <span class="op">2&gt;</span> <span class="ex">experiments/r3/tp_attempt_</span><span class="va">$(</span><span class="fu">date</span> -u +%Y%m%d-%H%M%S<span class="va">)</span><span class="ex">.log</span></span></code></pre></div>
+<p>שלוש תוצאות אפשריות, כולן תקפות: (א) נופל בטעינה/ב-assert (כמו issue #22307 במקרה אחר) → "לא נתמך בצירוף הזה", עם הלוג; (ב) רץ אבל הטקסט זבל → נכונות נכשלת; (ג) רץ ונכון → למדוד עם <code>llama-bench ... --split-mode tensor -ts 1/1</code> (5 חזרות) ולהשוות ל-<code>1,1</code> של PP. אם (ג): לוודא ב-<code>load_tensors</code> שהמשקולות באמת מפוצלות (buffer בשני הצדדים).</p>
+<p><strong>גמור כש:</strong> יש לוג + verdict אחד לכל קישור שבדקתם (Wi-Fi, ו-Ethernet אם היה). לא יותר מערב אחד — "אפיון אחד" הוא לא פרויקט.</p>
+<hr />
+<h2 id="שלב-7--r1r2-pytorch-רק-אם-יש-סיבה-נמדדת">שלב 7 — R1/R2 (PyTorch): רק אם יש סיבה נמדדת</h2>
+<p>R1 (תעבורה משלנו: TCP מול Gloo-על-CPU) ו-R2 (בלוק TP אחד ב-PyTorch על Mac+NVIDIA) מתוארים ב-<code>RESEARCH_PLAN.md</code> §6. <strong>תנאי הכניסה</strong>, לפי כלל ההכרעה הסימטרי ב-ADR-007:</p>
+<ul>
+<li>R3c מראה ש-llama.cpp RPC מבזבז על כל טוקן הרבה יותר מגבול אחד (בתים או פקודות) <strong>וגם</strong> אין דרך לתקן זאת במיקום (למשל שלב פלט מקומי) — פער יעילות של התשתית.</li>
+<li>או R3e מראה ש-TP מעל RPC לא רץ כלל, והצוות מאשר ש"יכולת TP חוקי" היא דרישה.</li>
+<li>או שלב 2 מראה שחלוקה מעל 2 מחשבים נדרשת ו-llama.cpp לא נותן שליטה מספקת בהקצאה.</li>
+</ul>
+<p>אם אף אחד מהתנאים לא מתקיים — ADR-007 נסגר על llama.cpp כמנוע ל-PoC-2, ו-R1/R2 נשארים מתועדים כאפשרות. אם מתקיים — R1 לפי התיאור בתכנית, עם ה-mandatory requirements לשני המנועים.</p>
+<hr />
+<h2 id="שלב-8--סיכום-r3-שעתיים">שלב 8 — סיכום R3 (שעתיים)</h2>
+<p>לרכז ל-<code>experiments/r3/R3_SUMMARY.md</code> שלוש טבלאות + שורת trace + verdict של TP:</p>
+<table>
+<thead>
+<tr class="header">
+<th>ציר</th>
+<th>מקור</th>
+<th>מה בטבלה</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>קיבולת</td>
+<td><code>experiments/r3/capacity/*/manifest.json</code></td>
+<td>מודל × מחשב/ים × מדיניות → נכנס/לא/timeout, שכבות ל-GPU, זיכרון שיא, tok/s</td>
+</tr>
+<tr class="even">
+<td>בקשה יחידה</td>
+<td><code>experiments/r0/REPORT.md</code> טבלאות A+B</td>
+<td>tok/s ו-<code>T_best_single/T_plan</code> לכל split; <code>1,1</code> מול <code>1,0</code></td>
+</tr>
+<tr class="odd">
+<td>עומס</td>
+<td><code>experiments/r3/load/*/summary.md</code></td>
+<td><code>Q</code>, req/s, p50/p95 ב-1/4/8; <code>Q_split/Q_independent</code></td>
+</tr>
+<tr class="even">
+<td>trace</td>
+<td><code>experiments/r3/trace/*/summary.md</code></td>
+<td>פקודות ובתים לטוקן לכל split</td>
+</tr>
+<tr class="odd">
+<td>TP</td>
+<td><code>experiments/r3/tp_attempt_*.log</code></td>
+<td>verdict</td>
+</tr>
+</tbody>
+</table>
+<p>ואז במסמך המשותף: input עם הטבלאות, <strong>ההכרעה ב-ADR-007</strong> לפי הכלל הסימטרי (או "ראיות חסרות — הבדיקה החסרה היא …"), ושלוש שורות של "מה הופתענו ממנו". זה החומר לפגישה הבאה עם המנחה — כולל התשובה לנקודה 3 שלו: המערכת יודעת לחתוך לאורך, נבדק לרוחב, ויש מספרים למה לאורך.</p>
+<hr />
+<h2 id="איפה-המחשב-השלישי-nvidia-נכנס">איפה המחשב השלישי (NVIDIA) נכנס</h2>
+<p>אחרי שלב 3, בכל נקודה: אותו zip (<code>nocturne_2026-10-10.zip</code>), <code>SETUP_GUIDE</code> §1b/1c, build ב-<code>~/dev/llama.cpp</code> עם <code>-DGGML_CUDA=ON -DCMAKE_BUILD_RPATH='$ORIGIN'</code>, אותו SHA, אותם קבצי מודל, <code>07_preflight.sh</code>. ואז: שלב 1 כלפיו (זוג הטרוגני — העמודות בטבלה מבדילות לבד לפי host/backend), שלב 2 עם N=3 (<code>-ts a,b,c</code> — שני ה-RPC קודם, המקומי אחרון), ושלב 3 עם שלושה עותקים. אם זה WSL2 — portproxy ל-50052 ול-8080/5201 (RUNBOOK §0.4).</p>
+<h2 id="תקלות-צפויות">תקלות צפויות</h2>
+<table>
+<thead>
+<tr class="header">
+<th>תסמין</th>
+<th>מה לעשות</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>cannot connect</code> מיד ב-<code>08_r0.sh rpc</code></td>
+<td>ה-worker לא רץ / BIND שגוי / שני הצדדים requester בו-זמנית. מחשב אחד בכל פעם</td>
+</tr>
+<tr class="even">
+<td><code>recv failed ... Remote RPC server crashed</code></td>
+<td>להרים את ה-worker מחדש עם מכשיר מפורש (<code>MTL0</code>), לא <code>all</code>; לבדוק <code>--list-devices --rpc</code> מה-requester</td>
+</tr>
+<tr class="odd">
+<td>32B מקומי "נתקע" דקות</td>
+<td>זה swap. <code>10_capacity.sh</code> יהרוג אחרי <code>TIMEOUT_S</code> (900s) וירשום timeout — לא "לא נכנס"</td>
+</tr>
+<tr class="even">
+<td><code>11_load.py</code> מדווח 0 completed</td>
+<td>ה-server לא על 0.0.0.0, או <code>-np</code> קטן מ-C, או timeout. לבדוק <code>curl http://&lt;ip&gt;:8080/health</code></td>
+</tr>
+<tr class="odd">
+<td><code>12_rpc_trace.py</code>: "no [command] lines"</td>
+<td>ה-worker רץ בלי <code>GGML_RPC_DEBUG=1</code>, או שהלוג הוא stdout בלבד (הסקריפט החדש שומר דרך <code>script</code>, אז אמור להיות שם)</td>
+</tr>
+<tr class="even">
+<td>TP נופל ב-<code>GGML_ASSERT</code></td>
+<td>תוצאה (א) בשלב 6 — לתעד את הלוג ולהמשיך; לא לנסות לתקן את llama.cpp</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

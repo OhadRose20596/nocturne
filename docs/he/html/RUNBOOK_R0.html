@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Runbook R0 — מה להריץ, על איזה מחשב, ומה נשמר איפה</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="he.css" />
+</head>
+<body>
+<h1 id="runbook-r0--מה-להריץ-על-איזה-מחשב-ומה-נשמר-איפה">Runbook R0 — מה להריץ, על איזה מחשב, ומה נשמר איפה</h1>
+<p><strong>מצב (25.10.2026):</strong> בתוקף. זהו המדריך הצעד-אחר-צעד לסקריפטים <code>08_r0.sh</code> ו-<code>09_r0_report.py</code>. השמות R0 וטבלאות A/B/C הם פנימיים. היעדים הרשמיים הם O1 עד O5 ב-GOAL_AND_OBJECTIVES.md v4. תוויות הרשת החדשות (<code>thunderbolt</code>, <code>internet</code>, <code>portforward</code>, <code>relay</code>) מתוארות ב-CONNECTIVITY.md.</p>
+<p><strong>גרסה:</strong> 2026-10-10 · מבוסס על <code>experiments/R0_PROTOCOL.md</code> (I005–I007). כל פקודה כאן שומרת את התוצאה שלה לקובץ בעצמה; אתה לא צריך להעתיק פלט ידנית.</p>
+<blockquote>
+<p><strong>מסגור (החלטת צוות T1, 10.10):</strong> המספרים של R0 נקראים כ<strong>יעילות החלוקה</strong>, לא כהשהיה שצריך להוריד. הרשת האיטית היא נקודת המוצא. ההפרש בין מקומי למרוחק = חלק הרשת בזמן הטוקן; <code>0,1</code> = התקורה של הפרוטוקול עצמו; שניהם נכנסים ל-<code>E(N)</code>. אחרי טבלה B: <strong>ניסוי היתכנות</strong> — מודל שלא נכנס באף Mac לבד (Qwen2.5-32B Q4_K_M, ~19.9GB) על שניהם יחד.</p>
+</blockquote>
+<h2 id="שני-המחשבים">שני המחשבים</h2>
+<table>
+<thead>
+<tr class="header">
+<th>סימון</th>
+<th>מחשב</th>
+<th>תפקיד ב-R0</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>M</strong></td>
+<td>ה-Mac (Apple M3, 24GB, Metal)</td>
+<td>requester בסבב 1, worker בסבב 2</td>
+</tr>
+<tr class="even">
+<td><strong>N</strong></td>
+<td>מכונת ה-NVIDIA (Linux או Windows+WSL2)</td>
+<td>worker בסבב 1, requester בסבב 2</td>
+</tr>
+</tbody>
+</table>
+<p>כל פקודה מתחילה <strong>מתוך תיקיית הריפו</strong> (<code>nocturne/</code>). ב-Mac:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/Library/Mobile Documents/com~apple~CloudDocs/Documents/אוניברסיטה/פרוייקט גמר/nocturne&quot;</span></span></code></pre></div>
+<p>(כדאי alias: <code>alias noct='cd "...nocturne"'</code> ב-<code>~/.zshrc</code>.) ב-N — לאן ששכפלת את הריפו.</p>
+<h2 id="מה-נשמר-ואיפה">מה נשמר, ואיפה</h2>
+<table>
+<thead>
+<tr class="header">
+<th>מה</th>
+<th>נשמר ב</th>
+<th>על ידי</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Inventory של כל מחשב (חומרה, SHA, דגלי build, rpath, רשת)</td>
+<td><code>experiments/inventory/&lt;host&gt;_&lt;date&gt;.md</code></td>
+<td><code>07_preflight.sh</code></td>
+</tr>
+<tr class="even">
+<td>כל ריצת מדידה: הפקודה המדויקת, פלט JSON גולמי של llama-bench, stderr מלא, manifest</td>
+<td><code>experiments/r0/runs/&lt;run_id&gt;/</code></td>
+<td><code>08_r0.sh local</code> / <code>rpc</code></td>
+</tr>
+<tr class="odd">
+<td>לוג מיקום השכבות (אימות שהחלוקה באמת קרתה)</td>
+<td><code>experiments/r0/runs/&lt;run_id&gt;/placement.log</code></td>
+<td><code>08_r0.sh rpc</code> / <code>placement</code></td>
+</tr>
+<tr class="even">
+<td>מדידת רשת (ping, iperf3, tailscale) לכל סבב</td>
+<td><code>experiments/r0/runs/&lt;run_id&gt;/net.txt</code></td>
+<td><code>08_r0.sh rpc</code></td>
+</tr>
+<tr class="odd">
+<td>לוג ה-worker</td>
+<td><code>experiments/r0/worker_logs/</code></td>
+<td><code>08_r0.sh worker</code></td>
+</tr>
+<tr class="even">
+<td>טבלאות A/B/C + בדיקות קבלה + CSV</td>
+<td><code>experiments/r0/REPORT.md</code>, <code>bench_r0.csv</code></td>
+<td><code>09_r0_report.py</code></td>
+</tr>
+</tbody>
+</table>
+<p>כל <code>run_id</code> נראה כך: <code>20261012-183000_ohads-MacBook-Air-2_bench_rpc_split_1_1</code>. ה-manifest שבתוכו רושם host, peer, split, link/overlay/location, SHA של llama.cpp, sha256 של המודל, PP/TG/REPS וקוד יציאה.</p>
+<p><strong>שים לב:</strong> אם הריפו ב-iCloud, הקבצים יסתנכרנו בין המחשבים לבד (ב-N צריך גישה לאותה תיקייה או <code>git pull</code>/העתקה ידנית של <code>experiments/r0/runs/</code> בסוף — ראה שלב 6).</p>
+<hr />
+<h2 id="שלב-0--פעם-אחת-לפני-הכל-m-וגם-n">שלב 0 — פעם אחת, לפני הכל (M וגם N)</h2>
+<h3 id="01-אותו-llamacpp-אותו-מודל">0.1 אותו llama.cpp, אותו מודל</h3>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="fu">git</span> -C third_party/llama.cpp rev-parse --short HEAD      # חייב להיות זהה בשני המחשבים (כרגע 1e7bcf3)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="fu">grep</span> MODEL .env                                          # אותו קובץ GGUF<span class="kw">;</span> ה<span class="ex">-preflight</span> ידפיס sha256</span></code></pre></div>
+<h3 id="02-preflight--מאמת-שהבינארים-נטענים-ושומר-inventory">0.2 Preflight — מאמת שהבינארים נטענים ושומר inventory</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="co"># M (כתובת N כפרמטר):</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="ex">scripts/07_preflight.sh</span> <span class="op">&lt;</span>IP-של-N<span class="op">&gt;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a><span class="co"># N (כתובת M כפרמטר):</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a><span class="ex">scripts/07_preflight.sh</span> <span class="op">&lt;</span>IP-של-M<span class="op">&gt;</span></span></code></pre></div>
+<p>מה לבדוק בפלט:</p>
+<ul>
+<li><strong>סעיף 1</strong> — כל שורת <code>--version</code> חייבת להיות <code>OK</code>. אם <code>llama-cli --version: FAILED</code> עם <code>Library not loaded: @rpath/...</code> — זה E13 (rpath מוחלט). הסקריפט מדפיס שלוש דרכי תיקון; המהירה ב-Mac:
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="va">B=</span>third_party/llama.cpp/build/bin</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="kw">for</span> <span class="ex">b</span> in llama-cli llama-bench llama-server ggml-rpc-server<span class="kw">;</span> <span class="kw">do</span> <span class="ex">install_name_tool</span> -add_rpath @executable_path <span class="st">&quot;</span><span class="va">$B</span><span class="st">/</span><span class="va">$b</span><span class="st">&quot;</span><span class="kw">;</span> <span class="kw">done</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="ex">scripts/07_preflight.sh</span> <span class="op">&lt;</span>IP<span class="op">&gt;</span>     # להריץ שוב</span></code></pre></div>
+אם זה לא עוזר (או במחשב שני בכלל) — לבנות מחדש <strong>מחוץ ל-iCloud</strong>:
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="fu">git</span> clone https://github.com/ggml-org/llama.cpp ~/dev/llama.cpp <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> ~/dev/llama.cpp <span class="kw">&amp;&amp;</span> <span class="fu">git</span> checkout 1e7bcf3</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a><span class="fu">cmake</span> -B build -DGGML_RPC=ON -DGGML_METAL=ON -DCMAKE_BUILD_RPATH=<span class="st">&#39;@executable_path&#39;</span>   # ב-N עם NVIDIA: -DGGML_CUDA=ON -DCMAKE_BUILD_RPATH=<span class="st">&#39;$ORIGIN&#39;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="fu">cmake</span> --build build --config Release -j</span></code></pre></div>
+<code>common.sh</code> מזהה <code>~/dev/llama.cpp</code> לבד. <strong>לא</strong> לכתוב <code>LLAMA_DIR</code> ב-<code>.env</code> — הוא משותף דרך iCloud לשני המק-ים; הגדרות פר-מחשב הולכות ל-<code>~/.nocturne.env</code> (מחוץ לריפו).</li>
+<li><strong>סעיף 2</strong> — <code>--list-devices</code> מראה <code>MTL0</code> ב-M ו-<code>CUDA0</code> ב-N. את השמות האלה מעבירים ל-worker.</li>
+<li><strong>סעיף 4</strong> — ping לעמית עובד. אם לא — אין טעם להמשיך לפני שהרשת מסודרת.</li>
+<li><strong>סעיף 5</strong> — <code>ready for R0</code>.</li>
+</ul>
+<p>שני קובצי ה-inventory (<code>experiments/inventory/</code>) הם התוצר הראשון. בלעדיהם אין טבלה.</p>
+<h3 id="03-iperf3-מותקן-בשני-המחשבים">0.3 iperf3 מותקן בשני המחשבים</h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="ex">brew</span> install iperf3          # M</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a><span class="fu">sudo</span> apt install -y iperf3   # N (Ubuntu / WSL)</span></code></pre></div>
+<h3 id="04-אם-n-הוא-windows--wsl2">0.4 אם N הוא Windows + WSL2</h3>
+<p>ה-worker ב-WSL2 יושב מאחורי NAT. ב-PowerShell כמנהל, פעם אחת:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode powershell"><code class="sourceCode powershell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a>netsh interface portproxy add v4tov4 listenport=50052 listenaddress=0.<span class="fu">0</span>.<span class="fu">0</span>.<span class="fu">0</span> connectport=50052 connectaddress=$(wsl hostname -I)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>netsh interface portproxy add v4tov4 listenport=5201  listenaddress=0.<span class="fu">0</span>.<span class="fu">0</span>.<span class="fu">0</span> connectport=5201  connectaddress=$(wsl hostname -I)</span></code></pre></div>
+<p>ולאפשר 50052 ו-5201 ב-Windows Firewall. מ-M משתמשים אז ב-<strong>IP של ה-Windows</strong>, לא של ה-WSL. (פירוט: <code>docs/SETUP_GUIDE.md</code> §7.)</p>
+<h3 id="05-להחליט-על-הפרמטרים-ולא-לגעת-בהם-יותר">0.5 להחליט על הפרמטרים ולא לגעת בהם יותר</h3>
+<p>ברירת המחדל של הסקריפטים: <code>PP=256 TG=64 REPS=5 CTX=2048</code>. אם משנים — משנים <strong>לכל</strong> השורות, בשני המחשבים, דרך משתני סביבה (<code>PP=512 scripts/08_r0.sh ...</code>).</p>
+<p>לפני כל סבב מדידה: לסגור דפדפנים, Ollama, LM Studio; לחבר לחשמל.</p>
+<hr />
+<h2 id="שלב-1--טבלה-a-כל-מחשב-לבד-m-וגם-n-בלי-קשר-ביניהם">שלב 1 — טבלה A: כל מחשב לבד (M וגם N, בלי קשר ביניהם)</h2>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="ex">scripts/08_r0.sh</span> local</span></code></pre></div>
+<p>מריץ <code>llama-bench</code> פעמיים — <code>gpu_all_layers</code> (-ngl 99) ו-<code>cpu_only</code> (-ngl 0) — פעם אחת כל אחד, ושומר שתי תיקיות <code>runs/</code>. על המסך תראה:</p>
+<pre><code>    pp256:   208.30 ± 1.20 t/s
+     tg64:    20.00 ± 0.30 t/s
+</code></pre>
+<p>✅ מצליח כאשר: שתי תיקיות חדשות ב-<code>experiments/r0/runs/</code> עם <code>bench.json</code> לא ריק, ו-std קטן מ-5% מהממוצע. אם ה-std גדול — להריץ שוב אחרי שהמחשב התקרר.</p>
+<hr />
+<h2 id="שלב-2--סבב-1-n-הוא-worker-m-הוא-requester--על-ethernet">שלב 2 — סבב 1: N הוא worker, M הוא requester — על <strong>Ethernet</strong></h2>
+<p>חבר את שני המחשבים בכבל (או שניהם לאותו switch/router בכבל). ודא ש-Wi-Fi כבוי בשניהם, כדי שהתעבורה לא תתגנב דרכו.</p>
+<h3 id="21-על-n--להרים-worker">2.1 על N — להרים worker</h3>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="co"># טרמינל 1 ב-N:</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a><span class="ex">iperf3</span> -s</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a><span class="co"># טרמינל 2 ב-N:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true"></a><span class="va">BIND=</span><span class="op">&lt;</span><span class="ex">IP-</span>של-N-בכבל<span class="op">&gt;</span> scripts/08_r0.sh worker CUDA0</span></code></pre></div>
+<p>הפלט מסתיים ב-<code>on the requester use: --rpc &lt;IP&gt;:50052</code> ואז השרת ממתין. <strong>להשאיר פתוח.</strong> הלוג נשמר ב-<code>experiments/r0/worker_logs/</code>.</p>
+<blockquote>
+<p><code>BIND</code> חייב להיות כתובת LAN (או Tailscale), לעולם לא <code>0.0.0.0</code> על ממשק ציבורי.</p>
+</blockquote>
+<h3 id="22-על-m--להריץ-את-הסבב-המלא">2.2 על M — להריץ את הסבב המלא</h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a><span class="va">LINK=</span>ethernet <span class="va">OVERLAY=</span>plain <span class="va">LOCATION=</span>lan <span class="ex">scripts/08_r0.sh</span> rpc <span class="op">&lt;</span>IP-של-N<span class="op">&gt;</span></span></code></pre></div>
+<p>הסקריפט מסרב לרוץ בלי שלושת התיוגים — זה מכוון: הם נכנסים ל-manifest של כל שורה. הוא עושה, בסדר הזה:</p>
+<ol>
+<li><strong>טבלה C</strong> — ping ×20, iperf3 בשני הכיוונים, <code>tailscale status</code> אם קיים → <code>net.txt</code>.</li>
+<li><strong>אימות מיקום</strong> לכל split (<code>1,0</code>, <code>1,1</code>, <code>0,1</code>) — ריצת <code>llama-cli --verbose</code> קצרה (8 טוקנים) ששומרת את שורות <code>load_tensors</code> → <code>placement.log</code>. על המסך: <code>placement: buffers match split 1,1 (local=1 rpc=1)</code>. אם כתוב <code>do NOT match</code> — לעצור ולהסתכל בלוג לפני שמודדים.</li>
+<li><strong>טבלה B</strong> — <code>llama-bench</code> לכל split, פעם אחת → <code>bench.json</code>.</li>
+</ol>
+<p>משמעות ה-splits — <strong>הסדר הוא מרוחק קודם</strong> (llama.cpp מעביר את מכשירי ה-RPC לראש הרשימה; אומת בלוגים ב-10.10): <code>1,0</code> = כל השכבות על ה-worker; <code>1,1</code> = חצי-חצי (שכבות 0–14 מרוחקות, 15–28 מקומיות); <code>0,1</code> = הכל מקומי <strong>אבל דרך נתיב ה-RPC</strong> — השורה הזו מבודדת את תקורת ה-RPC מהעברה ברשת, והיא צריכה להיות קרובה לטבלה A. (ב-llama-bench המפריד הוא <code>/</code> ולא <code>,</code> — הסקריפט מטפל בזה.)</p>
+<p>⏱ עם REPS=5 ו-7B: בערך 10–20 דקות.</p>
+<h3 id="23-בדיקה-מהירה-שהכל-נשמר">2.3 בדיקה מהירה שהכל נשמר</h3>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="fu">ls</span> experiments/r0/runs <span class="kw">|</span> <span class="fu">tail</span> -7      # net + 3 placement + 3 bench</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a><span class="ex">python3</span> scripts/09_r0_report.py        # טבלה B צריכה להראות 3 שורות עם ✅ בעמודת verified</span></code></pre></div>
+<hr />
+<h2 id="שלב-3--סבב-2-m-הוא-worker-n-הוא-requester--עדיין-על-ethernet">שלב 3 — סבב 2: M הוא worker, N הוא requester — עדיין על Ethernet</h2>
+<h3 id="31-על-m">3.1 על M</h3>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a><span class="co"># טרמינל 1:</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true"></a><span class="ex">iperf3</span> -s</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true"></a><span class="co"># טרמינל 2:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true"></a><span class="va">BIND=</span><span class="op">&lt;</span><span class="ex">IP-</span>של-M-בכבל<span class="op">&gt;</span> scripts/08_r0.sh worker MTL0</span></code></pre></div>
+<h3 id="32-על-n">3.2 על N</h3>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true"></a><span class="va">LINK=</span>ethernet <span class="va">OVERLAY=</span>plain <span class="va">LOCATION=</span>lan <span class="ex">scripts/08_r0.sh</span> rpc <span class="op">&lt;</span>IP-של-M<span class="op">&gt;</span></span></code></pre></div>
+<p>אותו דבר כמו 2.2, בכיוון ההפוך. זה הסבב שבו CUDA הוא ה-requester ו-Metal הוא ה-worker — ההטרוגניות בשני הכיוונים.</p>
+<hr />
+<h2 id="שלב-4--סבבים-3-ו-4-אותו-דבר-על-wi-fi">שלב 4 — סבבים 3 ו-4: אותו דבר על <strong>Wi-Fi</strong></h2>
+<p>לנתק את הכבל, לחבר את שניהם לאותה רשת Wi-Fi, ולחזור על שלבים 2 ו-3 עם <code>LINK=wifi</code>:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true"></a><span class="co"># M כ-requester (N worker עם BIND=&lt;IP-Wi-Fi של N&gt;):</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true"></a><span class="va">LINK=</span>wifi <span class="va">OVERLAY=</span>plain <span class="va">LOCATION=</span>lan <span class="ex">scripts/08_r0.sh</span> rpc <span class="op">&lt;</span>IP-Wi-Fi-של-N<span class="op">&gt;</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true"></a><span class="co"># N כ-requester (M worker עם BIND=&lt;IP-Wi-Fi של M&gt;):</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true"></a><span class="va">LINK=</span>wifi <span class="va">OVERLAY=</span>plain <span class="va">LOCATION=</span>lan <span class="ex">scripts/08_r0.sh</span> rpc <span class="op">&lt;</span>IP-Wi-Fi-של-M<span class="op">&gt;</span></span></code></pre></div>
+<p><strong>אופציונלי, סבב 5 — Tailscale:</strong> אם שניהם ב-tailnet, אפשר להריץ עם <code>OVERLAY=tailscale</code> וכתובת ה-<code>100.x</code>. הסקריפט ישמור <code>tailscale status</code> ו-<code>tailscale ping</code> ב-<code>net.txt</code>, ומהם נדע אם החיבור היה direct או relay. זו תצורה שלישית בטבלה, לא תחליף לשתי הקודמות.</p>
+<hr />
+<h2 id="שלב-5--דוח">שלב 5 — דוח</h2>
+<p>על המחשב שבו נמצאות כל תיקיות ה-<code>runs/</code> (ראה שלב 6 אם הן מפוצלות):</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true"></a><span class="ex">python3</span> scripts/09_r0_report.py</span></code></pre></div>
+<p>כותב <code>experiments/r0/REPORT.md</code> עם:</p>
+<ul>
+<li><strong>Consistency</strong> — SHA אחד, hash מודל אחד, סט PP/TG/REPS אחד. אם יש ❌ כאן, השורות לא ברות השוואה.</li>
+<li><strong>טבלה A</strong> — שורות local לכל host.</li>
+<li><strong>טבלה C</strong> — שורה לכל מדידת רשת, בצירים נפרדים (location / link / overlay / path / RTT / iperf3 בשני הכיוונים).</li>
+<li><strong>טבלה B</strong> — שורות rpc עם split, התוצאות, סיכום לוג המיקום ו-✅/❌.</li>
+<li><strong>Acceptance</strong> — הבדיקות מ-<code>R0_PROTOCOL.md</code> §6: 2 מחשבים בטבלה A, 4 צירופים (2 כיוונים × 2 קישורים) עם שלושת ה-splits, שונות &lt; 5%, מיקום מאומת לכל שורה.</li>
+</ul>
+<p>כש-Acceptance כולו ✅ — R0 גמור. את <code>REPORT.md</code> מדביקים ל-<code>experiments/RESULTS.md</code> (או מקשרים אליו), ואת השורה "R0 הושלם + קישור" מוסיפים כ-input במסמך המשותף.</p>
+<hr />
+<h2 id="שלב-6--איסוף-התוצאות-משני-המחשבים">שלב 6 — איסוף התוצאות משני המחשבים</h2>
+<p>הדוח צריך לראות את כל ה-<code>runs/</code> ביחד. שלוש אפשרויות:</p>
+<ul>
+<li><strong>iCloud / תיקייה משותפת</strong> — אם N רואה את אותה תיקיית <code>nocturne/</code>, אין מה לעשות.</li>
+<li><strong>git</strong> — בשני המחשבים: <code>git add experiments/r0 experiments/inventory &amp;&amp; git commit -m "R0 &lt;host&gt;" &amp;&amp; git push</code>, ואז <code>git pull</code> במחשב שמריץ את הדוח. התיקיות קטנות (JSON וטקסט).</li>
+<li><strong>העתקה ידנית</strong> — מ-N ל-M: <code>scp -r &lt;user&gt;@&lt;N&gt;:&lt;path&gt;/nocturne/experiments/r0/runs/* experiments/r0/runs/</code> (וכנ"ל <code>inventory/</code>). שמות התיקיות כוללים hostname, אז אין התנגשויות.</li>
+</ul>
+<hr />
+<h2 id="אם-משהו-נשבר">אם משהו נשבר</h2>
+<table>
+<thead>
+<tr class="header">
+<th>תסמין</th>
+<th>מה לעשות</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>08_r0.sh rpc</code> נעצר מיד עם <code>set LINK=...</code></td>
+<td>זה מכוון. להוסיף <code>LINK= OVERLAY= LOCATION=</code> לפני הפקודה</td>
+</tr>
+<tr class="even">
+<td><code>Failed to connect to &lt;ip&gt;:50052</code> ב-stderr.log</td>
+<td>ה-worker לא רץ / BIND לא נכון / פיירוול / WSL2 בלי portproxy. לבדוק <code>nc -vz &lt;ip&gt; 50052</code> מה-requester</td>
+</tr>
+<tr class="odd">
+<td><code>placement: buffers do NOT match split</code></td>
+<td>לפתוח את <code>placement.log</code>. אם אין בכלל <code>RPC[</code> — ה-requester לא הגיע ל-worker; אם ב-<code>1,0</code> יש <code>RPC[</code> — llama.cpp הקצה בכל זאת buffer מרוחק, לתעד ולהמשיך</td>
+</tr>
+<tr class="even">
+<td>std גדול מ-5%</td>
+<td>מחשב חם או משהו רץ ברקע. להמתין, לסגור, להריץ שוב את אותה שורה (תיקייה חדשה תיווצר; הדוח מציג את כולן, מוחקים ידנית את הישנה אם רוצים)</td>
+</tr>
+<tr class="odd">
+<td><code>exit code N</code> באדום</td>
+<td>לקרוא <code>experiments/r0/runs/&lt;run_id&gt;/stderr.log</code>. ה-manifest שומר את קוד היציאה, והדוח מסמן את השורה</td>
+</tr>
+<tr class="even">
+<td><code>--version</code> נכשל אחרי <code>install_name_tool</code></td>
+<td>לבנות מחדש מחוץ ל-iCloud (<code>07_preflight.sh</code> מדפיס את הפקודות)</td>
+</tr>
+<tr class="odd">
+<td>ping עובד אבל iperf3 נכשל</td>
+<td><code>iperf3 -s</code> לא רץ בצד השני, או פורט 5201 חסום. בלי iperf3 הטבלה עדיין נבנית, רק עמודת ה-BW ריקה</td>
+</tr>
+</tbody>
+</table>
+<h2 id="מה-לשלוח-בסוף-למסמך-המשותף">מה לשלוח בסוף למסמך המשותף</h2>
+<ol>
+<li>שני קובצי <code>experiments/inventory/*.md</code>.</li>
+<li><code>experiments/r0/REPORT.md</code> (ו-<code>bench_r0.csv</code>).</li>
+<li>שורה אחת: מה הפתיע. למשל אם <code>1,0</code> רחוק מטבלה A — זו תקורת RPC, לא רשת; אם <code>0,1</code> על Ethernet קרוב ל-<code>1,0</code> — ההופ זול; אם Wi-Fi הרבה יותר גרוע מ-Ethernet — זה הכיוון של H1.</li>
+</ol>
+</body>
+</html>

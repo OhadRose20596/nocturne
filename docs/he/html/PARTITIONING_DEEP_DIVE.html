@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>איך מחלקים מודל שפה בין מחשבים — מדריך להבנה ולתכנון</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="he.css" />
+</head>
+<body>
+<h1 id="איך-מחלקים-מודל-שפה-בין-מחשבים--מדריך-להבנה-ולתכנון">איך מחלקים מודל שפה בין מחשבים — מדריך להבנה ולתכנון</h1>
+<p><strong>מצב (25.10.2026):</strong> מדריך הסבר מפורט. הגרסה הקצרה והפורמלית, לפי בקשת המנחה, היא docs/BACKGROUND_AND_DESIGN.md. הטבלאות המספריות כאן מחושבות ולא נמדדו, אלא אם נכתב אחרת.</p>
+<p><strong>עודכן:</strong> 11.10.2026 · <strong>גרסה:</strong> 2, לאחר בקרת Codex על הטיוטה של Claude.</p>
+<p><strong>מטרת המסמך:</strong> להבין מה מחלקים, מי מחשב מה, מה עובר ברשת ואיך בוחרים תכנית. זהו מסמך הסבר ומועמדים לתכנון; הוא אינו מכריע את ADR-007 או מחליף מדידות.</p>
+<p><strong>מסלול קריאה:</strong> להבנה ראשונה — סעיפים 1–3 ו־8. לחישובי זיכרון ותעבורה — 4–6. למימוש ב־PyTorch — 7. תוצאות הניסויים המלאות נמצאות ב־<a href="STATUS_2026-10-11.md">סיכום המצב</a>; ביקורת הנתונים ב־I014–I015 שב<a href="SHARED_RESEARCH_AND_DECISIONS.md">מסמך המשותף</a>.</p>
+<p>לאורך המסמך: <strong>נמדד</strong> = נתון מהניסויים שלנו; <strong>מחושב</strong> = נוסחה והנחות מפורשות; <strong>מועמד</strong> = רעיון שהמתכנן צריך לבדוק. מספר מחושב אינו תוצאת ניסוי.</p>
+<h2 id="1-התמונה-בחמש-דקות">1. התמונה בחמש דקות</h2>
+<p>מודל הוא סדרת חישובים. אפשר לחלק את <strong>השלבים</strong>, לחלק את <strong>החישוב בתוך שלב</strong>, או להשאיר עותקים מלאים ולחלק ביניהם <strong>בקשות</strong>.</p>
+<table>
+<thead>
+<tr class="header">
+<th>דרך</th>
+<th>מה עושה כל מחשב?</th>
+<th>מה היא עשויה לתת?</th>
+<th>המחיר המרכזי</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>מחשב יחיד</strong></td>
+<td>מריץ את כל המודל</td>
+<td>בסיס פשוט לבקשה אחת</td>
+<td>מוגבל בזיכרון ובתפוקה שלו</td>
+</tr>
+<tr class="even">
+<td><strong>Replicas — עותקים עצמאיים</strong></td>
+<td>מריץ מודל מלא עבור בקשות אחרות</td>
+<td>יותר בקשות במקביל</td>
+<td>משקולות מלאות בכל עותק; אינו מגדיל קיבולת לבקשה יחידה</td>
+</tr>
+<tr class="odd">
+<td><strong>PP — חלוקת שכבות</strong></td>
+<td>מריץ רצף בלוקים, ומעביר תוצאת ביניים לשלב הבא</td>
+<td>צירוף זיכרון; לעיתים שיפור תפוקה עם כמה בקשות</td>
+<td>תלות סדרתית והעברת תוצאות בין שלבים</td>
+</tr>
+<tr class="even">
+<td><strong>TP — חלוקה בתוך שכבה</strong></td>
+<td>מחשב חלק מהפעולות באותו בלוק ובאותו טוקן</td>
+<td>צירוף זיכרון ואפשרות להאצת חישוב טוקן</td>
+<td>פעולות תקשורת משותפות חוזרות בתוך כל בלוק</td>
+</tr>
+<tr class="odd">
+<td><strong>CP — חלוקת הקשר</strong></td>
+<td>מחזיק/מעבד חלק מהטוקנים וה־KV שלהם</td>
+<td>טיפול בהקשרים ארוכים וב־KV גדול</td>
+<td>תקשורת לצורך attention על ההקשר המבוזר</td>
+</tr>
+</tbody>
+</table>
+<p>אפשר לשלב PP ו־TP, ואפשר להחזיק כמה עותקים של <strong>מודל שכבר מחולק</strong>. SP אינו שם נרדף מדויק ל־CP — ההבדל מוסבר בסעיף 3.4. חלוקה לפי מומחים ב־MoE היא ציר נוסף, מחוץ להיקף הנוכחי.</p>
+<p><strong>מה זה אומר אצלנו:</strong> ב־pilot של 7B, עותקים עצמאיים ניצחו בתפוקה; ב־32B, חלוקת שכבות אפשרה offload מלא שלא הצליח בריצות המקומיות. אלה שתי תועלות שונות — שירות לעוד בקשות לעומת הרצת מודל גדול יותר. אין עדיין מדידת TP מוצלחת שמכריעה את התאמתו לחומרה שלנו.</p>
+<h2 id="2-מה-נמצא-בתוך-המודל-ואיפה-רואים-את-החלוקה">2. מה נמצא בתוך המודל, ואיפה רואים את החלוקה?</h2>
+<pre class="text"><code>token IDs → Embedding → Block 0 → Block 1 → … → Block L−1 → Norm → LM head → logits → sampling
+</code></pre>
+<ul>
+<li><strong>Embedding:</strong> הופך מזהה טוקן לווקטור מספרים.</li>
+<li><strong>בלוק Transformer:</strong> משלב attention ו־MLP, עם normalization וחיבורי residual. ב־Qwen שנבדק המבנה חוזר, אבל המשקולות שונות בכל בלוק. במשפחות אחרות גם מבנה הבלוקים יכול להשתנות.</li>
+<li><strong>Hidden state:</strong> תוצאת הביניים שעוברת בין הבלוקים.</li>
+<li><strong>LM head ו־logits:</strong> חישוב ציון לכל טוקן באוצר המילים; sampling בוחר את הטוקן הבא.</li>
+<li><strong>KV cache:</strong> מפתחות וערכים שחושבו לטוקנים הקודמים. ב־PP בסיסי כל שלב שומר את ה־KV של הבלוקים שלו. ב־TP/CP או ב־offload אפשר לחלק או למקם אותו אחרת.</li>
+<li><strong>Prefill:</strong> עיבוד טוקני הקלט ובניית KV. <strong>Decode:</strong> יצירת טוקנים נוספים בזה אחר זה תוך שימוש בו.</li>
+</ul>
+<h3 id="דוגמה-אמיתית-32b-על-הair-והm5">דוגמה אמיתית: 32B על ה־Air וה־M5</h3>
+<p>בריצה שבה ה־Air היה requester וה־M5 היה worker, עם <code>-ts 3,2</code>:</p>
+<pre class="mermaid"><code>flowchart LR
+    A[&quot;Air: tokens + embedding&quot;] --&gt;|&quot;hidden states&quot;| B[&quot;M5: blocks 0–38 + their KV&quot;]
+    B --&gt;|&quot;hidden states&quot;| C[&quot;Air: blocks 39–63 + their KV&quot;]
+    C --&gt; D[&quot;Air: norm + LM head + sampling&quot;]
+    D --&gt;|&quot;next token&quot;| A
+</code></pre>
+<p><strong>נמדד:</strong> ה־M5 קיבל 39 בלוקים; ה־Air קיבל 25 בלוקים ושכבת פלט המסומנת 64. הריצה השלימה generation בכ־4.44 tok/s. מקור: <a href="../../experiments/r3/capacity/20261010-164047_Mac_cap_split_Qwen2.5-32B-Instruct-Q4_K_M_P1_ts_3_2/stderr.log">לוג הריצה</a>.</p>
+<pre class="text"><code>layer  0 assigned to device RPC0
+...
+layer 38 assigned to device RPC0
+layer 39 assigned to device MTL0
+...
+layer 64 assigned to device MTL0
+</code></pre>
+<p><code>RPC0</code> הוא המכשיר המרוחק; <code>MTL0</code> הוא המאיץ המקומי של ה־requester. <strong>השם MTL0 אינו אומר תמיד M3</strong> — בכיוון ההפוך הוא ה־M5. <code>65/65</code> בלוג פירושו 64 בלוקים ועוד שכבת פלט, לא 65 בלוקי Transformer.</p>
+<table>
+<thead>
+<tr class="header">
+<th>מה רוצים לדעת?</th>
+<th>הראיה הדרושה</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>מי קיבל איזה בלוק?</td>
+<td><code>assigned to device</code> מהריצה שנמדדת</td>
+</tr>
+<tr class="even">
+<td>כמה משקולות הוקצו לכל מכשיר?</td>
+<td><code>model buffer size</code> מהטעינה הסופית; לא שורות dry-run של 0 MiB</td>
+</tr>
+<tr class="odd">
+<td>האם generation הסתיים?</td>
+<td>פלט, ספירת טוקנים, שגיאות וסיום התהליך; exit code לבדו אינו מספיק</td>
+</tr>
+<tr class="even">
+<td>כמה זמן כל מחשב חישב וכמה המתין?</td>
+<td>trace מתוזמן של חישוב/סנכרון/העתקה/תקשורת; לוג ההקצאה אינו מודד זאת</td>
+</tr>
+</tbody>
+</table>
+<p>ב־llama.cpp שלנו <strong><code>--tensor-split</code> הוא יחס הקצאה, ולא שם שיטת המקביליות</strong>. בריצות אלה <code>split-mode=layer</code>. <code>tensor-split</code> לא הופך אותן ל־TP. גם התחביר תלוי בכלי: CLI/server מקבלים <code>3,2</code>; ב־llama-bench המוצמד משתמשים ב־<code>3/2</code>, כי פסיק מפריד בין תצורות ניסוי.</p>
+<h2 id="3-איך-כל-שיטה-עובדת">3. איך כל שיטה עובדת</h2>
+<h3 id="31-pp--מחשבים-שונים-מריצים-בלוקים-שלמים">3.1 PP — מחשבים שונים מריצים בלוקים שלמים</h3>
+<p>לכל שלב יש טווח בלוקים. אחרי שהשלב סיים, תוצאת הביניים נשלחת לשלב הבא. embedding, הפלט וה־sampling הם החלטות מיקום נוספות; הם אינם חייבים לשבת אצל מתאם הבקשה.</p>
+<p>ב־decode רגיל של <strong>בקשה יחידה</strong>, השלבים של אותו טוקן תלויים זה בזה, והטוקן הבא תלוי בבחירת הקודם. פיצול לשני מחשבים אינו מחלק אוטומטית את זמן החישוב בשניים. עם זאת, ״PP לעולם לא מאיץ בקשה יחידה״ היא טענה חזקה מדי: העברת חלק מהמודל למאיץ מהיר יותר או הימנעות מ־CPU offload/paging עשויות לשפר זמן ביחס לבסיס המקומי. גם prefill מחולק למקטעים הוא מקרה נפרד.</p>
+<p>עם כמה בקשות אפשר לתזמן את שלב 1 של בקשה ב׳ לצד שלב 2 של בקשה א׳. זהו הרעיון של מילוי ה־pipeline. הוא דורש תזמון שמאפשר חפיפה; batching לבדו עשוי לשפר ניצול חישוב גם בלי חפיפה בין מחשבים. <strong>העלייה שנמדדה אצלנו בתפוקה עם מקביליות אינה הוכחה שמילאנו pipeline bubbles.</strong></p>
+<p>ל־PP יש פחות נקודות תקשורת מאשר ל־TP הקנוני, אך ״מעט״ אינו אומר ״זול״. מספר מעברי הרשת תלוי <strong>במסלול בפועל</strong>: בתרשים למעלה יש יציאה מה־Air וחזרה אליו, אף שיש רק שני מחשבים. במסלול מתווך דרך requester, מעבר לוגי worker→worker יכול להפוך לשתי העברות רשת.</p>
+<h3 id="32-tp--מחשבים-שונים-משתתפים-באותו-בלוק">3.2 TP — מחשבים שונים משתתפים באותו בלוק</h3>
+<p>למשל, ב־MLP כל מחשב מחשב חלק מהנוירונים הפנימיים. אחרי ההקרנה חזרה לממד הנסתר מתקבלים וקטורי פלט חלקיים, שיש <strong>לסכום איבר־איבר</strong>. all-reduce הוא פעולה שבה המשתתפים משלבים את התוצאות וכולם מקבלים את הסכום. אין זו רק הודעת ״אני מוכן״.</p>
+<p>בחלוקת Megatron קנונית, ב־forward יש לרוב שילוב תוצאות אחרי attention ואחרי MLP — <strong>שתי פעולות all-reduce לבלוק</strong>. חלק מהטנזורים קטנים ומשוכפלים; לא כל טנזור במודל מתחלק. וריאציות כמו sequence parallelism משנות את מערך ה־collectives. מקור: <a href="https://arxiv.org/abs/1909.08053">Megatron-LM</a>.</p>
+<p><strong>שורות ועמודות — מוקש במימוש:</strong> PyTorch שומר משקל <code>Linear</code> בצורת <code>[out_features, in_features]</code>, ומחשב <code>x @ W.T</code>. לכן השמות המתמטיים אינם בהכרח מספר הממד שחותכים בקוד:</p>
+<table>
+<thead>
+<tr class="header">
+<th>פעולה קנונית</th>
+<th>מה מחלקים מתמטית?</th>
+<th>החיתוך במשקל PyTorch</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>q/k/v</code>, וגם <code>gate/up</code> — column-parallel</td>
+<td>תכונות הפלט / ראשים / נוירונים</td>
+<td>שורות, <code>W[out_slice, :]</code></td>
+</tr>
+<tr class="even">
+<td><code>o/down</code> — row-parallel</td>
+<td>תכונות הקלט לכל פלט</td>
+<td>עמודות, <code>W[:, in_slice]</code>; סוכמים תוצאות חלקיות</td>
+</tr>
+</tbody>
+</table>
+<p>צריך לתאם גם biases, residual, reshape לראשים ופלט כל collective. ב־row-parallel bias שאינו מחולק מתווסף פעם אחת, ולא פעם בכל rank לפני סכימה. טבלת חיתוכים לבדה אינה adapter עובד. <a href="https://docs.pytorch.org/docs/2.14/distributed.tensor.parallel.html">PyTorch TP</a></p>
+<p><strong>GQA:</strong> ב־7B יש 28 ראשי Q ו־4 ראשי KV. בחלוקה שווה של ראשים שלמים <strong>ללא שכפול KV</strong>, <code>k</code> חייב לחלק את שניהם, ולכן 2 ו־4 הם מועמדים פשוטים. זו אינה הוכחה ש־4 הוא גבול אוניברסלי: מימושים מסוימים משכפלים KV heads כאשר דרגת TP גדולה ממספרם. עדיין יש אילוצי Q, ממדי המטריצות וה־adapter. אין להבטיח <code>KV/k</code> כשיש שכפול. מקור: <a href="https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/linear.py">מימוש QKVParallelLinear ב־vLLM</a>.</p>
+<p><strong>זמן תקשורת אינו <code>2L × ping RTT</code>.</strong> העלות תלויה באלגוריתם collective, גודל הקבוצה וההודעה, topology, העתקים וסנכרון מאיצים. עבור התבנית הקנונית מתחילים ב־<code>2L × זמן all-reduce שנמדד בגודל המתאים</code>, ומוסיפים חישוב ועלויות אחרות. 56 collectives ב־7B או 128 ב־32B אינם 56/128 הודעות TCP או בהכרח אותו מספר RTT.</p>
+<p>לדוגמה <strong>מחושבת בלבד</strong>: אם all-reduce היה לוקח 12ms, אז 56 כאלה היו עולים 672ms. מדידת ping של 12ms אינה מאמתת את ההנחה הזאת. לכן אין במסמך תחזית מאומתת של ״670ms ב־Wi-Fi שלנו״ או סף קשיח של ״TP רק מתחת ל־1ms״.</p>
+<h3 id="33-replicas--כל-מודל-מטפל-בבקשות-אחרות">3.3 Replicas — כל מודל מטפל בבקשות אחרות</h3>
+<p>לכל עותק משקולות מלאות ו־KV עבור הבקשות שלו. אין העברת activations או collectives בין העותקים בזמן החישוב הרגיל; עדיין יש תעבורת בקשות/תשובות, טעינת משקולות וניהול.</p>
+<p>בהינתן מספיק בקשות ועומס מאוזן, התפוקה עשויה להתקרב לסכום תפוקות העותקים. היא אינה מובטחת ליניארית: ניתוב, הבדלי חומרה, אורכי בקשות ומגבלות שירות משפיעים. בקשה שנמצאת על מחשב שנפל אינה נודדת מעצמה; נדרש retry/replay או שחזור מצב. האחרים יכולים להמשיך לשרת את הבקשות שלהם.</p>
+<p>המתכנן צריך להשוות למחשב יחיד ולעותקים עצמאיים כשהמודל נכנס. זו נקודת מוצא חזקה בעקבות R3b, <strong>לא איסור כללי לחלק מודל שנכנס</strong>: ייתכן יעד אחר, מגבלת KV/מקביליות או חומרה אחרת.</p>
+<h3 id="34-sp-וcp--לא-אותו-דבר-ולא-רק-prefill">3.4 SP ו־CP — לא אותו דבר, ולא רק prefill</h3>
+<p><strong>Sequence Parallelism בנוסח Megatron</strong> מחלק activations לאורך ממד הרצף בחלק מהפעולות, ומשתלב עם TP. <strong>Context Parallelism</strong> מחלק את ההקשר והטיפול ב־attention, למשל באמצעות החלפת K/V בין צמתים. המונחים משתנים בספרות, ולכן תמיד מציינים את המימוש. <a href="https://docs.nvidia.com/megatron-core/developer-guide/latest/user-guide/features/context_parallel.html">Megatron Core CP</a></p>
+<p>ב־decode יש מעט טוקני Q חדשים, אבל הם מתייחסים ל־KV של <strong>כל ההיסטוריה</strong>. אפשר לחלק את ה־KV הזה ולעבד חלקים מה־attention במקביל. לכן CP עשוי לעזור גם בזמן decode בהקשר ארוך. <a href="https://docs.vllm.ai/en/latest/serving/context_parallel_deployment/">vLLM Decode Context Parallel</a></p>
+<p>אצלנו CP/SP נשארים מחוץ למימוש הראשוני משיקולי היקף וצורך שנמדד, ולא משום שאין מה לחלק ב־decode. אין סף אוניברסלי של אורך prompt שממנו הם משתלמים.</p>
+<h2 id="4-מספרים-שאפשר-לחשב--ומה-נמדד-בפועל">4. מספרים שאפשר לחשב — ומה נמדד בפועל</h2>
+<h3 id="41-הנחות-ויחידות">4.1 הנחות ויחידות</h3>
+<p><code>L</code> = מספר בלוקים; <code>h</code> = ממד hidden; <code>V</code> = גודל vocabulary; <code>C</code> = בקשות פעילות; <code>S</code> = אורך הקשר שמור; <code>d</code> = ממד ראש; <code>b</code> = בתים למספר. <strong>GB/MB עשרוניים; GiB/MiB/KiB בחזקות 1024.</strong> קוונטיזציה של משקולות אינה קובעת את dtype של activations או של KV.</p>
+<table>
+<thead>
+<tr class="header">
+<th>פרמטר</th>
+<th>Qwen2.5-7B-Instruct</th>
+<th>Qwen2.5-32B-Instruct</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>L</code>, <code>h</code></td>
+<td>28, 3584</td>
+<td>64, 5120</td>
+</tr>
+<tr class="even">
+<td>ראשי Q / KV, <code>d</code></td>
+<td>28 / 4, 128</td>
+<td>40 / 8, 128</td>
+</tr>
+<tr class="odd">
+<td><code>V</code></td>
+<td>152064</td>
+<td>152064</td>
+</tr>
+<tr class="even">
+<td>embedding ו־LM head קשורים במשקולות?</td>
+<td>לא</td>
+<td>לא</td>
+</tr>
+</tbody>
+</table>
+<p>מקורות: <a href="https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/blob/a09a35458c702b33eeacc393d103063234e8bc28/config.json">config של 7B</a>, <a href="https://huggingface.co/Qwen/Qwen2.5-32B-Instruct/blob/main/config.json">config של 32B</a>. נבדקו ב־11.10.2026; בריצה מצמידים revision ולא מסתמכים על <code>main</code>.</p>
+<h3 id="42-גודל-הודעה-בגבול-pp">4.2 גודל הודעה בגבול PP</h3>
+<p>ל־decode עם טוקן אחד מכל בקשה: <code>C × h × b</code>. ל־prefill של מקטע בן <code>T_chunk</code> טוקנים: <code>C × T_chunk × h × b</code>. אלה <strong>בתים שימושיים של טנזור אחד בגבול אחד</strong>, לפני metadata, הודעות נוספות, headers והעתקים.</p>
+<table>
+<thead>
+<tr class="header">
+<th>טנזור, בקשה אחת</th>
+<th>7B</th>
+<th>32B</th>
+<th>מעמד</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>hidden של טוקן ב־bf16/fp16</td>
+<td>7,168 B = 7 KiB</td>
+<td>10,240 B = 10 KiB</td>
+<td>מחושב</td>
+</tr>
+<tr class="even">
+<td>hidden של טוקן ב־fp32</td>
+<td>14,336 B = 14 KiB</td>
+<td>20,480 B = 20 KiB</td>
+<td>מחושב; 14,336 B נצפה ב־trace של 7B</td>
+</tr>
+<tr class="odd">
+<td>hidden של 4096 טוקנים ב־bf16</td>
+<td>28 MiB</td>
+<td>40 MiB</td>
+<td>מחושב; אם נשלח כולו באותו גבול</td>
+</tr>
+<tr class="even">
+<td>logits מלאים לטוקן ב־fp32</td>
+<td>608,256 B = 594 KiB</td>
+<td>608,256 B = 594 KiB</td>
+<td>מחושב; נצפה ב־7B עם פלט מרוחק</td>
+</tr>
+</tbody>
+</table>
+<p><strong>תיקון חשוב:</strong> ב־trace שלנו הנתון הוא <strong>14 KiB</strong>, לא 7 KiB. יש גם כ־14.9KB נכנסים לצעד וסוגי פקודות נוספים; ה־14 KiB הם תשובת <code>get_tensor</code>, לא סך התעבורה לטוקן. השוו <a href="../../experiments/r3/trace/20261011-024027_MMF4FWRG4R_trace_wifi_s2/summary.json">trace של פלט מקומי</a> ל<a href="../../experiments/r3/trace/20261011-024027_MMF4FWRG4R_trace_wifi_s1/summary.json">פלט מרוחק</a>.</p>
+<p><strong>האם חייבים להחזיר את כל ה־logits?</strong> זה מה שנצפה בתצורת RPC שנבדקה. ב־runtime אחר אפשר לבצע sampling ליד ה־LM head ולהחזיר token ID, אם סמנטיקת הדגימה וה־API מאפשרות זאת. בקשת logprobs, top-k או אילוצי generation עשויה לדרוש מידע נוסף. לכן ״פלט אצל ה־requester״ הוא מועמד תכנון, לא חוק: לפעמים head מרוחק עם sampling מרוחק יהיה מתאים יותר. הדבר לא מומש או נמדד אצלנו.</p>
+<h3 id="43-זיכרון--למה-חצי-מהמשקולות-אינו-כל-החישוב">4.3 זיכרון — למה ״חצי מהמשקולות״ אינו כל החישוב</h3>
+<p>ל־PP בסיסי, עם KV צפוף, שני cache-ים K/V וללא שכפול:</p>
+<pre class="text"><code>KV_bytes(stage) = 2 × L_stage × C × S × H_KV × d × bytes_per_KV_element
+memory_peak(stage) ≈ weights + KV + activations + temporary/communication buffers + runtime + margin
+</code></pre>
+<p><strong>מחושב:</strong> בקשה אחת עם <code>S=2048</code> ו־KV ב־16 ביט צורכת עבור כל המודל כ־112 MiB ב־7B וכ־512 MiB ב־32B. שמונה בקשות באותו אורך ידרשו כ־896 MiB ו־4 GiB, בהתאמה, <strong>ל־KV בלבד</strong>. גדלים בפועל מושפעים מסוג cache, הקצאה מראש, quantization ו־sliding window. ב־Mac RAM ו״זיכרון GPU״ חולקים מאגר; אין לחבר אותם כשני תקציבים נפרדים.</p>
+<p><strong>Embedding + LM head ב־7B:</strong> כל אחת משתי המטריצות הלא־קשורות מכילה <code>V×h</code> מספרים. ב־bf16 כל אחת שוקלת 1,089,994,752 B, ושתיהן יחד <strong>2.18GB ≈ 2.03GiB</strong>, לא 1.1GB. זה אינו כולל buffers או KV, ואינו משקלן בפורמט GGUF Q4. החזקת שתיהן אצל requester היא בחירת ארכיטקטורה, לא תנאי של PP.</p>
+<h2 id="5-האם-כל-מחשב-צריך-להוריד-את-כל-המודל">5. האם כל מחשב צריך להוריד את כל המודל?</h2>
+<p><strong>לצורך חישוב PP — לא. לצורך הורדת checkpoint — תלוי בפורמט וב־loader.</strong> ארבע שאלות שונות חייבות להישאר נפרדות:</p>
+<table>
+<thead>
+<tr class="header">
+<th>שאלה</th>
+<th>מה סופרים?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>מה צריך להיות בדיסק?</td>
+<td>קבצים שה־loader דורש, כולל cache וקבצים המכילים גם טנזורים של אחרים</td>
+</tr>
+<tr class="even">
+<td>מה נטען ל־RAM/מאיץ?</td>
+<td>הטנזורים הדרושים ושלבי ההעתקה/המרה, כולל שיא זמני</td>
+</tr>
+<tr class="odd">
+<td>כמה עבר בין requester ל־workers?</td>
+<td>תעבורה בקישורים האלה בלבד</td>
+</tr>
+<tr class="even">
+<td>כמה הורד בסך הכול?</td>
+<td>גם מקור חיצוני→workers, הורדות חוזרות וטנזורים משוכפלים</td>
+</tr>
+</tbody>
+</table>
+<p>במסלול llama.cpp RPC שנבדק, ה־requester קורא GGUF מלא ומשדר טנזורים ל־workers. Worker אינו צריך עותק GGUF מלא כדי לקבל את הטנזורים; cache יכול לחסוך העברה חוזרת של משקולות. <code>mmap</code> של כל הקובץ אינו אומר שכולו resident ב־RAM. כמות bytes שהוקצתה ב־buffer אינה מדידת bytes שעברו ברשת; לכן אין להסיק מ־placement לבדו ש״12GB הועברו״. מקור המימוש: <a href="../../third_party/llama.cpp/ggml/src/ggml-rpc/ggml-rpc.cpp">RPC המקומי</a>.</p>
+<p><strong>Safetensors:</strong> <code>weight_map</code> ממפה שם טנזור לקובץ. <code>safe_open</code> מאפשר לקרוא טנזורים או slices מתוך <strong>קובץ מקומי</strong>. <code>hf_hub_download</code> של קובץ shard מוריד את הקובץ, לא רק את הטנזורים שבחרנו אחר כך. HTTP Range יכול לאפשר loader אחר שקורא טווחים, אבל הקוד הרגיל הזה אינו מממש אותו. מקורות: <a href="https://huggingface.co/docs/safetensors/index">Safetensors</a>, <a href="https://huggingface.co/docs/huggingface_hub/guides/download">Hub downloads</a>.</p>
+<h3 id="דוגמה-בדוקה-הורדת-שני-חצאי-qwen7b">דוגמה בדוקה: הורדת שני חצאי Qwen7B</h3>
+<p><strong>נבדק metadata בלבד, בלי הורדת משקולות</strong>, ב־revision <code>a09a35458c702b33eeacc393d103063234e8bc28</code> של Qwen2.5-7B-Instruct:</p>
+<table>
+<thead>
+<tr class="header">
+<th>מה צריך הצומת?</th>
+<th>קובצי checkpoint שנדרשים</th>
+<th>נפח קבצים להורדה ללא cache</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>בלוקים 0–13; embedding אם הוא כאן</td>
+<td>shards 1, 2 מתוך 4</td>
+<td>כ־7.81GB</td>
+</tr>
+<tr class="even">
+<td>בלוקים 14–27; norm/head אם הם כאן</td>
+<td>shards 2, 3, 4</td>
+<td>כ־11.29GB</td>
+</tr>
+<tr class="odd">
+<td>סך שתי ההורדות</td>
+<td>shard 2 מורד פעמיים</td>
+<td><strong>כ־19.10GB</strong></td>
+</tr>
+<tr class="even">
+<td>כל ארבעת הקבצים פעם אחת</td>
+<td>shards 1–4</td>
+<td>כ־15.23GB</td>
+</tr>
+</tbody>
+</table>
+<p>מקור: <a href="https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/blob/a09a35458c702b33eeacc393d103063234e8bc28/model.safetensors.index.json">אינדקס המשקולות המוצמד</a> וגדלי הקבצים ב־<a href="https://huggingface.co/api/models/Qwen/Qwen2.5-7B-Instruct/revision/a09a35458c702b33eeacc393d103063234e8bc28?blobs=true">Hub metadata</a>. זה checkpoint ב־bf16, לא קובץ ה־GGUF Q4 מהניסוי.</p>
+<p>מכאן: ״סך הרשת לכל היותר מודל אחד״ נכון רק תחת הנחות מתאימות, למשל shards ייעודיים ללא כפילויות, replica יחיד וטעינה אחת מוצלחת. הורדה ישירה מהמקור יכולה להוריד לאפס את תעבורת <strong>המשקולות דרך requester</strong>, אך לא את כלל תעבורת ההורדה. גם אם המשקולות כבר בדיסק בכל צומת, עדיין יש תקשורת inference.</p>
+<p>ב־TP הפרוסה יכולה להיות שורות/עמודות מכל טנזור, וקריאת slice אינה מבטיחה download של slice בלבד. Norms או KV heads משוכפלים, עותקים נוספים, retries ו־layout של קבצים משפיעים על נפח הטעינה. תכנון הפצת המשקולות הוא רכיב בפני עצמו.</p>
+<h2 id="6-כשמחשב-עוזב--מה-צריך-לשחזר">6. כשמחשב עוזב — מה צריך לשחזר?</h2>
+<p>ב־PP, אם תהליך השלב והזיכרון שלו אבדו, אובדים גם המשקולות resident וה־KV שלו. ניתוק רשת לבדו אינו מוכיח שמצב הזיכרון נמחק. ב־TP משתתף חסר עוצר את הפעולות המשותפות עד טיפול בכשל; גם replicas אינם משמרים מעצמם את הבקשות שהיו על העותק שנפל.</p>
+<p><strong>full-prefix replay הוא baseline פשוט שהוצע אצלנו, לא בהכרח השחזור הזול ביותר:</strong> לזהות כשל, לבחור תכנית חלופית עם מספיק קיבולת, לטעון משקולות חסרות, להקים תקשורת מחדש ולהריץ את מזהי הטוקנים המאושרים כדי לבנות KV. מוסיפים זמן גילוי, תכנון וטעינה לעלות ה־prefill; לא מסכמים זאת כ״prefill אחד וזה הכול״. יש לשמור positions, מצב sampling וגבול טוקנים שנמסרו, כדי שלא לשנות או לשכפל תשובה. אם אין תכנית שנכנסת לזיכרון, מחזירים כשל מוגדר.</p>
+<h2 id="7-מה-pytorch-נותנת--ומה-עדיין-צריך-לבנות">7. מה PyTorch נותנת — ומה עדיין צריך לבנות?</h2>
+<p>PyTorch נותנת טנזורים, kernels, התקנים ואבני בניין למודלים ולתקשורת. <code>transformers</code> מספקת מימושי משפחות וטעינת checkpoint. אף אחת מהן אינה נותנת אוטומטית runtime למתנדבים, planner, טיפול בעזיבה או adapter נכון לכל משפחה. ההשוואה ל־ggml חייבת להפריד מנוע, dtype/קוונטיזציה ונתיב תקשורת.</p>
+<h3 id="71-טעינה-חלקית--דוגמה-מוגבלת-שאפשר-להבין-ולבדוק">7.1 טעינה חלקית — דוגמה מוגבלת שאפשר להבין ולבדוק</h3>
+<p>הפונקציה הבאה <strong>רק מתכננת אילו טנזורים וקבצים נדרשים</strong>, לפי אינדקס מקומי של Qwen2.5 בעל שמות המפתחות האלה. היא אינה מורידה משקולות, אינה בונה מודל ואינה מקצה GPU. <code>a</code> כלול ו־<code>b</code> אינו כלול. בשתי משפחות ה־Qwen המתוארות אין קשירת embedding/head; במשפחה עם tied weights צריך חוזה אחר.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="im">import</span> json</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a><span class="im">from</span> collections <span class="im">import</span> defaultdict</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a><span class="kw">def</span> plan_qwen_stage(index_path, a, b, <span class="op">*</span>, num_layers,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a>                    owns_embedding<span class="op">=</span><span class="va">False</span>, owns_head<span class="op">=</span><span class="va">False</span>):</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>    <span class="cf">if</span> <span class="kw">not</span> <span class="dv">0</span> <span class="op">&lt;=</span> a <span class="op">&lt;=</span> b <span class="op">&lt;=</span> num_layers:</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">&quot;invalid layer range&quot;</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>    weight_map <span class="op">=</span> json.loads(Path(index_path).read_text())[<span class="st">&quot;weight_map&quot;</span>]</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a>    prefixes <span class="op">=</span> <span class="bu">tuple</span>(<span class="ss">f&quot;model.layers.</span><span class="sc">{i}</span><span class="ss">.&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(a, b))</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a>    extras <span class="op">=</span> <span class="bu">set</span>()</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a>    <span class="cf">if</span> owns_embedding:</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>        extras.add(<span class="st">&quot;model.embed_tokens.weight&quot;</span>)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a>    <span class="cf">if</span> owns_head:</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a>        extras.update((<span class="st">&quot;model.norm.weight&quot;</span>, <span class="st">&quot;lm_head.weight&quot;</span>))</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>    missing <span class="op">=</span> extras <span class="op">-</span> weight_map.keys()</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a>    <span class="cf">if</span> missing:</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="ss">f&quot;missing required tensors: </span><span class="sc">{</span><span class="bu">sorted</span>(missing)<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(a, b):</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a>        <span class="cf">if</span> <span class="kw">not</span> <span class="bu">any</span>(n.startswith(<span class="ss">f&quot;model.layers.</span><span class="sc">{i}</span><span class="ss">.&quot;</span>) <span class="cf">for</span> n <span class="kw">in</span> weight_map):</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a>            <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="ss">f&quot;missing layer </span><span class="sc">{i}</span><span class="ss">&quot;</span>)</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a>    files <span class="op">=</span> defaultdict(<span class="bu">list</span>)</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a>    <span class="cf">for</span> name, shard <span class="kw">in</span> weight_map.items():</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a>        <span class="cf">if</span> name.startswith(prefixes) <span class="kw">or</span> name <span class="kw">in</span> extras:</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a>            files[shard].append(name)</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true"></a>    <span class="cf">return</span> {f: <span class="bu">sorted</span>(names) <span class="cf">for</span> f, names <span class="kw">in</span> <span class="bu">sorted</span>(files.items())}</span></code></pre></div>
+<p>אחרי שקובצי ה־shard הדרושים נמצאים מקומית, אפשר לקרוא רק את הטנזורים שנבחרו:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="im">from</span> safetensors <span class="im">import</span> safe_open</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a><span class="kw">def</span> iter_local_tensors(checkpoint_dir, plan):</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>    <span class="cf">for</span> filename, names <span class="kw">in</span> plan.items():</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>        path <span class="op">=</span> Path(checkpoint_dir) <span class="op">/</span> filename</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>        <span class="cf">with</span> safe_open(<span class="bu">str</span>(path), framework<span class="op">=</span><span class="st">&quot;pt&quot;</span>, device<span class="op">=</span><span class="st">&quot;cpu&quot;</span>) <span class="im">as</span> shard:</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>            <span class="cf">for</span> name <span class="kw">in</span> names:</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>                <span class="cf">yield</span> name, shard.get_tensor(name)</span></code></pre></div>
+<p>זו דוגמת קריאה, לא הבטחה לשיא זיכרון: הצרכן צריך להתקין/להמיר/לשחרר טנזורים בהדרגה. לא קוראים <code>list(...)</code> אם רוצים להימנע מהחזקת הכול. חלקי TP דורשים slices חוקיים ומטא־נתונים נוספים. לבניית שלד בלי הקצאת משקולות משתמשים למשל ב־<code>init_empty_weights</code>; עדיין קיימים אובייקטי Python, metadata ולעיתים buffers. זה אינו ״אפס זיכרון ואפס הורדה״ לכל התהליך. <a href="https://huggingface.co/docs/accelerate/concept_guides/big_model_inference">Accelerate Big Model Inference</a></p>
+<h3 id="72-forward-של-שלב-אינו-רק-layersab">7.2 Forward של שלב אינו רק <code>layers[a:b]</code></h3>
+<p>הדוגמה המקורית השמיטה מסכה סיבתית וטיפול מלא ב־cache. קריאה ישירה לבלוק עשויה לעקוף הכנות שה־forward של המודל השלם עושה. להלן <strong>חוזה רעיוני</strong>, ולא חתימת API מוכנה של Transformers:</p>
+<pre class="text"><code>forward_stage(
+    request_id, hidden_states, token_positions,
+    causal_and_padding_mask, cache_state, phase
+) → hidden_states, updated_cache_state
+</code></pre>
+<p>ה־adapter אחראי ל־RoPE, positions ו־cache position לפי הגרסה, מסכה המתאימה ל־prefill/decode, מיפוי מזהי שכבות ל־cache גם בשלב שמתחיל משכבה שאינה 0, והפרדת KV בין בקשות. הוא גם מטפל בפורמט הפלט: אין להניח שכל גרסה מחזירה tuple שאפשר לקחת ממנו <code>[0]</code>. במודל שהוחל על meta צריך לוודא שכל פרמטר ו־buffer שבמסלול אכן מומשו. לפני שליחה: <code>eval()</code>, מצב inference, dtype נתמך ונכונות מול reference מקומי. <a href="https://huggingface.co/docs/transformers/cache_explanation">הסבר KV cache של Transformers</a></p>
+<p><strong>מה צריך להיות בהודעת השלב:</strong> מזהה בקשה ושלב, גרסת פרוטוקול, שלב prefill/decode, צורה ו־dtype, positions/אורך תקף, אורך payload והנתונים. TCP הוא זרם: קריאת <code>recv</code> אחת אינה מבטיחה הודעה מלאה; צריך framing, קריאה מלאה, timeout וטיפול בניתוק. <code>sendall</code> אחד אינו מבטיח packet אחד או RTT אחד. שידור דרך CPU כולל MPS/CUDA→CPU→רשת→CPU→מאיץ. היפוך bytes ל־bf16 ללא בדיקת dtype/shape הוא אינו פרוטוקול כללי.</p>
+<h3 id="73-אבני-הבניין-הקיימות--תפקיד-ומגבלות">7.3 אבני הבניין הקיימות — תפקיד ומגבלות</h3>
+<table>
+<thead>
+<tr class="header">
+<th>כלי</th>
+<th>מה הוא נותן?</th>
+<th>מה אינו נפתר אוטומטית?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>מודולי PyTorch + adapter ידני</td>
+<td>שליטה בטעינה, שלבים, פלט ו־KV</td>
+<td>scheduler, פרוטוקול, generation וכשלים</td>
+</tr>
+<tr class="even">
+<td><code>torch.distributed.pipelining</code></td>
+<td>חלוקת מודול לשלבים, תקשורת ולוחות micro-batches</td>
+<td>KV של inference ו־generation שלם, חברות דינמית ונתיב MPS↔︎CPU</td>
+</tr>
+<tr class="odd">
+<td><code>DTensor</code> / <code>parallelize_module</code></td>
+<td>פריסות טנזורים ו־Colwise/RowwiseParallel</td>
+<td>התאמת attention/GQA/reshape, collective נתמך לכל device/backend</td>
+</tr>
+<tr class="even">
+<td><code>transformers</code> עם <code>tp_plan="auto"</code></td>
+<td>תכנית TP למשפחות ולסביבות נתמכות</td>
+<td>תמיכה מובטחת בכל משפחה או בזוג MPS+CUDA</td>
+</tr>
+<tr class="odd">
+<td><code>accelerate.infer_auto_device_map</code></td>
+<td>הערכת גודל פרמטרים וחלוקה לפי תקציב התקנים</td>
+<td>זיכרון הריצה המלא, KV, activation peaks, עלות רשת ותכנון רב־מכונתי</td>
+</tr>
+</tbody>
+</table>
+<p>מקורות API: <a href="https://docs.pytorch.org/docs/2.14/distributed.pipelining.html">PipelineStage וה־schedules</a>, <a href="https://docs.pytorch.org/docs/2.14/distributed.tensor.parallel.html">TP</a>, <a href="https://huggingface.co/docs/transformers/perf_infer_gpu_multi">Transformers TP</a>, <a href="https://huggingface.co/docs/accelerate/concept_guides/big_model_inference">Accelerate</a>. GPipe/1F1B הגיעו מעולם האימון; אין להעתיק scheduler ולראות בכך מימוש autoregressive serving עם KV.</p>
+<p><strong>דיוק על backends:</strong> <code>parallelize_module</code> אינו שם אחר ל־NCCL ואינו עיקרון המוגבל ל־CUDA. התאימות תלויה ב־DeviceMesh, ב־backend ובפעולות הנדרשות; CPU/Gloo הוא מסלול נפרד ממאיץ MPS. NCCL מיועד למאיצי NVIDIA, ויכול להשתמש גם ב־TCP sockets — אין דרישה עקרונית ל־NVLink/InfiniBand ואין איסור עקרוני על Wi-Fi. התאמה טכנית אינה הבטחת ביצועים. <a href="https://docs.pytorch.org/docs/2.14/distributed.html">PyTorch Distributed</a>, <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/env.html#nccl-net">NCCL Socket transport</a></p>
+<p>ב־Mac אין במסלול הרשמי המתואר תמיכת Gloo/NCCL ישירה בטנזורי MPS. staging לטנזורי CPU הוא מועמד שדורש שילוב מפורש, לא יכולת שהוספת <code>PipelineStage</code> מפעילה מעצמה. Process group רגיל אינו מאפשר למתנדב לעזוב וה־collectives פשוט ממשיכים; צריך מסלול recovery/re-init. <a href="https://huggingface.co/docs/accelerate/main/en/usage_guides/mps">Accelerate MPS</a></p>
+<p><strong>סטטוס הקוד במסמך:</strong> פונקציית בחירת הטנזורים נבדקה מול אינדקס Qwen המוצמד; שני קטעי Python נבדקו תחבירית. לא הורדו משקולות ולא נבדקה הרצת PyTorch/MPS/CUDA. כדי להפוך זאת למימוש: להצמיד גרסאות, לממש adapter למשפחה אחת, לבדוק prefill ומספר צעדי decode מול reference ואז לבדוק חלוקה. אין כאן מערכת מבוזרת ב־30 שורות.</p>
+<h2 id="8-איך-המתכנן-שלנו-צריך-לבחור">8. איך המתכנן שלנו צריך לבחור?</h2>
+<p>המתכנן מקבל <strong>מטרה ועומס</strong>, ולא רק מספר מחשבים: הרצת checkpoint נתון תחת מדיניות זיכרון, תפוקה תחת מקביליות או זמן השלמה כולל כשלים. אותו hardware יכול לקבל תכנית אחרת לכל מטרה.</p>
+<ol>
+<li><strong>מסננים תכניות בלתי אפשריות:</strong> משקולות + KV באורך/מקביליות המבוקשים + buffers ומרווח; חוקיות חלוקת הראשים; backend ו־dtype נתמכים.</li>
+<li><strong>מייצרים מועמדים:</strong> כל מחשב יחיד אפשרי; עותקים עצמאיים; PP במספר שלבים ובחלוקות שונות; TP והיברידי רק כשיש מימוש חוקי שאפשר למדוד. מספר השלבים המזערי הוא מועמד, לא בהכרח המנצח.</li>
+<li><strong>ממקמים embedding, head ו־sampling במפורש.</strong> ״המחשב החזק״ אינו מספר יחיד: מהירויות prefill/decode, זיכרון פנוי, קישור וזמינות יכולים להוביל לבחירות שונות.</li>
+<li><strong>מדרגים באמצעות עלויות שנמדדו:</strong> חישוב לכל שלב בעומס המתאים, הודעות ובתים במסלול בפועל, טעינה cold/warm ושחזור לאחר כשל. TP בתוך ״אי״ מהיר הוא heuristic לחיפוש, לא כלל שכבל רשת מוכיח.</li>
+<li><strong>בודקים מול ניסוי:</strong> תחזית מול מדידה, והשוואה גם לתכנית פשוטה ולמקרים שהמתכנן טעה בהם. אין להסיק על כלל חומרות או מודלים מ־pilot אחד.</li>
+</ol>
+<p>לבקשה יחידה ב־PP רגיל, מודל עלות התחלתי הוא:</p>
+<pre class="text"><code>T_step ≈ sum(stage_compute_times) + communication_on_critical_path + host/copy/scheduling_cost
+</code></pre>
+<p>במקביליות יש חפיפות ותורים, ולכן לא משתמשים באותה סכימה לבדה לחיזוי Q. גם מספר הפקודות, מספר ההמתנות, זמן החישוב וזמן הרשת הם גדלים שונים.</p>
+<h3 id="נקודות-הפתיחה-שלנו-לפי-הראיות-הקיימות">נקודות הפתיחה שלנו, לפי הראיות הקיימות</h3>
+<table>
+<thead>
+<tr class="header">
+<th>מצב</th>
+<th>מה נצפה?</th>
+<th>מה לנסות תחילה?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>7B נכנס בכל Mac</td>
+<td>ב־R3b עותקים עצמאיים ניצחו בכל שלוש נקודות העומס</td>
+<td>מחשב יחיד לבקשה אחת; replicas לעומס, מול תכניות חלוקה מועמדות</td>
+</tr>
+<tr class="even">
+<td>32B עם offload מלא</td>
+<td>נכשל מקומית בשני Mac-ים והצליח במשותף בתנאים שנבדקו</td>
+<td>PP שנכנס לזיכרון, ואז בדיקת איזון/תפוקה/זמינות</td>
+</tr>
+<tr class="odd">
+<td>TP על הזוג שלנו</td>
+<td>אין תוצאת נכונות וביצועים מספקת</td>
+<td>ניסוי מוגבל של יכולת ונכונות; לא פסילה לפי סוג הקישור בלבד</td>
+</tr>
+<tr class="even">
+<td>KV/הקשר נעשים מגבלת קיבולת</td>
+<td>טרם אופיין כצורך בפרויקט</td>
+<td>למדוד; לשקול CP או פתרון KV כהרחבה, לא כדרישה עכשיו</td>
+</tr>
+</tbody>
+</table>
+<p>R3b, תפוקה כוללת ב־tok/s, pilot ללא חזרות עצמאיות לכל תא:</p>
+<table>
+<thead>
+<tr class="header">
+<th>בקשות במקביל</th>
+<th>חלוקת מודל</th>
+<th>עותקים עצמאיים</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>8.16</td>
+<td>18.40</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>18.47</td>
+<td>36.91</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td>21.11</td>
+<td>28.90</td>
+</tr>
+</tbody>
+</table>
+<p>מקורות והגבלות: <a href="STATUS_2026-10-11.md">סיכום המצב</a>, <a href="../../experiments/r3/load/">ריצות העומס</a>. אין עדיין הכרעה שמחייבת מעבר ל־PyTorch או סוגרת על llama.cpp; ההחלטה נשארת ב־<a href="../DECISIONS.md">ADR-007</a>.</p>
+<h2 id="9-שאלות-נפוצות-ותיקונים-מהטיוטה">9. שאלות נפוצות ותיקונים מהטיוטה</h2>
+<table>
+<thead>
+<tr class="header">
+<th>שאלה</th>
+<th>תשובה</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>״אם הוספנו מחשב, למה בקשה אחת אינה מהירה פי שניים?״</td>
+<td>ב־PP רגיל שלבי הטוקן תלויים זה בזה. צירוף זיכרון אינו שקול להאצת טוקן.</td>
+</tr>
+<tr class="even">
+<td>״האם פיצול שווה אומר עבודה שווה?״</td>
+<td>לא. מספר בלוקים, כמות משקולות וזמן חישוב הם מדדים שונים; head וחומרה שונים משפיעים.</td>
+</tr>
+<tr class="odd">
+<td>״האם ה־requester צריך 15GB או רק 1.1GB?״</td>
+<td>תלוי במיקום וב־loader. ב־7B bf16 שתי מטריצות embedding/head יחד הן 2.18GB; הורדת הקבצים שמכילים אותן עלולה להיות גדולה יותר.</td>
+</tr>
+<tr class="even">
+<td>״אם כל worker מוריד את הפרוסה שלו, אין רשת?״</td>
+<td>חסכנו העברה דרך requester; עדיין הורדנו מהמקור, ויש תקשורת בזמן inference.</td>
+</tr>
+<tr class="odd">
+<td>״ה־trace הראה המתנה אחת — האם כל היתר רשת?״</td>
+<td>לא. השלמת GPU, תורים והעתקות יכולים להיכלל בזמן התשובה. נדרש trace זמנים.</td>
+</tr>
+<tr class="even">
+<td>״האם 4 ראשי KV אוסרים יותר מארבעה מחשבים?״</td>
+<td>לא באופן כללי; זו מגבלה של חלוקה מסוימת בלי replication. ה־adapter קובע את החוקיות.</td>
+</tr>
+<tr class="odd">
+<td>״אפשר להעתיק את קוד הטעינה ולהתחיל generation?״</td>
+<td>לא. הוא בוחר/קורא משקולות; חסרים adapter, מסכה, cache, תזמון, תקשורת ובדיקת נכונות.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>לביקורת הבאה:</strong> לחבר את מודל העלות לפרופילי compute וזיכרון לכל מכשיר, להגדיר contract מדויק ל־Worker ולהוכיח adapter אחד. תוספת קוד או עוד שיטת חלוקה מוצדקות כשיש שאלה ניסויית שהן פותרות.</p>
+<h2 id="10-מקורות-להעמקה">10. מקורות להעמקה</h2>
+<p>המקורות המעשיים מקושרים ליד הטענות. תיעוד <code>main</code>/<code>latest</code> נבדק ב־11.10.2026 אך אינו גרסה מוצמדת להרצה; תיעוד PyTorch כאן מוצמד ל־2.14. מקורות מחקר משלימים:</p>
+<ul>
+<li><a href="https://arxiv.org/abs/1909.08053">Megatron-LM</a> — חלוקת פעולות בתוך Transformer.</li>
+<li><a href="https://arxiv.org/abs/1811.06965">GPipe</a> — חלוקת שלבים ו־micro-batches באימון; לא runtime generation מוכן.</li>
+<li><a href="https://arxiv.org/abs/2311.11514">HexGen</a> — תכנון inference על משאבים הטרוגניים; להשוות היקף והנחות.</li>
+<li><a href="https://arxiv.org/abs/2209.01188">Petals</a> — inference שיתופי במחשבים מבוזרים.</li>
+<li><a href="https://arxiv.org/abs/2310.01889">Ring Attention</a> — חלוקת attention להקשר ארוך; CP/SP דורשים הבחנה במימוש.</li>
+</ul>
+</body>
+</html>
