@@ -1,0 +1,348 @@
+{
+  "schema_version": 3,
+  "id": "B1t_hotspot_qwen2.5-7b-bf16_m5_r1",
+  "cell": {
+    "partition": "TP",
+    "decode": "single",
+    "row": "B",
+    "col": 1,
+    "name": "B1t"
+  },
+  "date": "2026-11-02T12:29:59+02:00",
+  "model": {
+    "name": "qwen2.5-7b-bf16",
+    "quant": "bf16",
+    "sha256": "e062a01f39b65664f4bccd56711cfdc1c2197ad6ceff49ee2f10c6b2ebffc178"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "torch_tp",
+    "commit": "fb5b48e",
+    "flags": [
+      "--model",
+      "~/models/hf/Qwen2.5-7B-Instruct",
+      "--world",
+      "2",
+      "--max-seq-len",
+      "4096"
+    ],
+    "format": "safetensors-bf16",
+    "runtime": "torch unknown ?",
+    "world": 2
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    },
+    {
+      "host": "ohads-MacBook-Air-2",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 16
+    }
+  ],
+  "network": {
+    "type": "hotspot",
+    "rtt_ms_median": 7.5495,
+    "bw_mbps": 363.9052037362116,
+    "measured_at": "2026-11-02T12:29:59+02:00",
+    "rtt_source": "probe",
+    "ping_decode_ms": {
+      "p50": 8.732,
+      "p95": 14.338,
+      "p99": 101.802,
+      "n": 16886,
+      "interval_s": 0.01,
+      "loss": 0.06813676833768112
+    },
+    "awdl": "up",
+    "added_delay_ms": null,
+    "added_delay_measured_ms": null
+  },
+  "prompts": {
+    "set": "eval_long",
+    "version": "1",
+    "subset": null,
+    "ids": [
+      "longopen_01",
+      "longopen_02",
+      "longopen_03",
+      "longopen_04",
+      "longopen_05",
+      "longopen_06",
+      "longopen_07",
+      "longopen_08",
+      "longopen_09",
+      "longopen_10"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    },
+    "fixed_tokens": 256
+  },
+  "success": false,
+  "failure_class": "engine_abort",
+  "quality_pass": null,
+  "setup": {
+    "load_total_s": 22.3379328250885,
+    "transfer_s": null,
+    "cache_state": null,
+    "bytes_sent_gb": null
+  },
+  "timing": {
+    "decode_tps_median": 1.4127501320949523,
+    "prefill_tps_median": 37.74804637222974,
+    "ttft_s_median": 2.0765018463134766,
+    "ttft_server_s_median": 2.0663321018218994,
+    "decode_ms_per_step_pooled": 710.615094502767,
+    "decode_tps_pooled": 1.4072315768914563,
+    "decode_steps_total": 255,
+    "warmup_s": 8.246593713760376
+  },
+  "comm": {
+    "rpc_commands_per_step": null,
+    "tokens_per_step": null,
+    "rpc_commands_per_token": null,
+    "bytes_per_step": null,
+    "bytes_per_token": 810030.46875,
+    "packets_per_token": 563.14453125,
+    "serial_waits_per_token": null,
+    "compute_steps": null,
+    "tokens_generated": null,
+    "capture_iface": "en0",
+    "source": "rpc_commands: engine counters: all-reduce frames sent by rank 0 (one per all-reduce, 2 per layer), per step over prefill plus decode steps, per token over generated tokens; blocking_syncs and messages per step: 2 * layers all-reduces plus the STEP frame; engine_bytes: frame bytes sent plus received by rank 0 over the whole run (prefill frames included) per generated token; bytes: tcpdump on torch_port inside the decode windows, as in row A",
+    "blocking_syncs_per_step": null,
+    "messages_per_step": null,
+    "bytes_per_step_decode": 813207.0588235294,
+    "bytes_per_step_decode_out": 410233.6,
+    "bytes_per_step_decode_in": 402973.4588235294,
+    "graph_meta_bytes_per_step": null,
+    "worker_capture": true,
+    "clock_offset_s": 0.1533735990524292,
+    "clock_offset_unc_s": 0.0005785226821899414,
+    "engine_frames_per_token": null,
+    "engine_bytes_per_token": null
+  },
+  "memory_buffers_gb": {
+    "m5": null,
+    "air": null
+  },
+  "memory_peak_gb": {
+    "m5": 0.359,
+    "air": 0.209
+  },
+  "utilization": {
+    "m5": 0.5821759837962963,
+    "air": 0.2570947306098283
+  },
+  "correctness": {
+    "exact_match_ratio": 0.0,
+    "first_divergence_median": 0.0,
+    "task_accuracy": null,
+    "baseline_task_accuracy": null
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": "BASELINE_local_qwen2.5-7b-bf16_m5_r2",
+    "a1_id": null
+  },
+  "notes": [
+    "fixed tokens 256: every prompt decodes exactly 256 tokens (ignore_eos); task accuracy not graded",
+    "warm-up request (longopen_01, 8 tokens) took 8.2 s; not in the timings",
+    "torch_tp: each rank reads its own slice from local safetensors; no weight transfer, so transfer_s, cache_state and bytes_sent_gb are null. model.sha256 is sha256(config.json + safetensors index or first MiB), not of the weights",
+    "/metrics failed (Server disconnected without sending a response.); engine counters and per rank memory null",
+    "worker clock offset from 14457 echo pairs: 0.1533735990524292 s (half IQR 0.0005785226821899414)",
+    "request errors: ['finish_reason=None', 'finish_reason=None', 'finish_reason=None']",
+    "quality_pass null: no baseline or no graded prompt"
+  ],
+  "outputs": {
+    "longopen_01": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving the router, access points, radio channels, and packets. When you start streaming a video on your laptop, the request is sent to the internet, and the video data is broken down into small packets. These packets travel through the internet to your home network.\n\nYour home router acts as the central hub, connecting your devices to the internet. It receives the video packets and forwards them to the access point, which is often the same device as the router or a separate Wi-Fi extender. The access point then broadcasts the video packets through the air using radio waves on a specific channel. Your laptop, equipped with a Wi-Fi receiver, picks up these radio waves and decodes the packets to reconstruct the video stream.\n\nThe radio channels used by Wi-Fi networks are shared among all devices in the vicinity. When two devices, such as your laptop and another device like a smart speaker, transmit data at the same time on the same channel, a phenomenon called \"collision\" can occur. This happens because the radio waves from both devices overlap, causing interference. To avoid this, Wi-Fi networks use a technique called Carrier Sense Multiple Access with Collision Avoidance (CSMA/CA).",
+    "longopen_02": "In the early morning of a crisp, clear day in 1890, the lighthouse keeper, Thomas, roused himself from his cot in the keeper's quarters. The air",
+    "longopen_03": "",
+    "longopen_04": "",
+    "longopen_05": "",
+    "longopen_06": "",
+    "longopen_07": "",
+    "longopen_08": "",
+    "longopen_09": "",
+    "longopen_10": ""
+  },
+  "per_prompt": {
+    "longopen_01": {
+      "timings": {
+        "prompt_n": 78,
+        "prompt_ms": 2066.3321018218994,
+        "predicted_n": 256,
+        "predicted_ms": 181206.84909820557,
+        "predicted_per_token_ms": 710.615094502767,
+        "predicted_per_second": 1.4072315768914563,
+        "prompt_per_second": 37.74804637222974
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.4127501320949523,
+      "decode_ms_per_step": 710.615094502767,
+      "ttft_client_s": 2.0765018463134766,
+      "score": null,
+      "t_send": 1793615459.160962,
+      "t_done": 1793615642.444798
+    },
+    "longopen_02": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": 2.1209349632263184,
+      "score": null,
+      "t_send": 1793615642.444993,
+      "t_done": 1793616204.800491
+    },
+    "longopen_03": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": null,
+      "t_send": 1793616204.801235,
+      "t_done": 1793616204.8117461
+    },
+    "longopen_04": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": null,
+      "t_send": 1793616204.8117828,
+      "t_done": 1793616204.817607
+    },
+    "longopen_05": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": null,
+      "t_send": 1793616204.817646,
+      "t_done": 1793616204.822193
+    },
+    "longopen_06": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": null,
+      "t_send": 1793616204.8222132,
+      "t_done": 1793616204.826109
+    },
+    "longopen_07": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": null,
+      "t_send": 1793616204.826123,
+      "t_done": 1793616204.829844
+    },
+    "longopen_08": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": null,
+      "t_send": 1793616204.829859,
+      "t_done": 1793616204.833695
+    },
+    "longopen_09": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": null,
+      "t_send": 1793616204.833707,
+      "t_done": 1793616204.8382442
+    },
+    "longopen_10": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": null,
+      "t_send": 1793616204.8382568,
+      "t_done": 1793616204.8416882
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "test -x /Users/orosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "m5",
+      "cmd": "test -f \"$HOME\"/models/hf/Qwen2.5-7B-Instruct/config.json"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@172.20.10.2 test -x /Users/ohadrosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@172.20.10.2 test -f \"$HOME\"/models/hf/Qwen2.5-7B-Instruct/config.json"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@172.20.10.2 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne' rev-parse --short HEAD"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@172.20.10.2 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp worker --bind 172.20.10.2 --port 50053 --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --rank 1 --world 2"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp serve --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --world 2 --max-seq-len 4096 --host 127.0.0.1 --port 8092 --peer 172.20.10.2:50053"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@172.20.10.2 route -n get 172.20.10.3"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@172.20.10.2 pkill -f 'torch_tp worker.*--port 50053'"
+    }
+  ]
+}

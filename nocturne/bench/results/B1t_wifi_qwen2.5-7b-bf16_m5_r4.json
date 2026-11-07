@@ -1,0 +1,802 @@
+{
+  "schema_version": 2,
+  "id": "B1t_wifi_qwen2.5-7b-bf16_m5_r4",
+  "cell": {
+    "partition": "TP",
+    "decode": "single",
+    "row": "B",
+    "col": 1,
+    "name": "B1t"
+  },
+  "date": "2026-10-31T14:43:33+02:00",
+  "model": {
+    "name": "qwen2.5-7b-bf16",
+    "quant": "bf16",
+    "sha256": "e062a01f39b65664f4bccd56711cfdc1c2197ad6ceff49ee2f10c6b2ebffc178"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "torch_tp",
+    "commit": "fb5b48e",
+    "flags": [
+      "--model",
+      "~/models/hf/Qwen2.5-7B-Instruct",
+      "--world",
+      "2",
+      "--max-seq-len",
+      "4096"
+    ],
+    "format": "safetensors-bf16",
+    "runtime": "torch 2.14.1 mps",
+    "world": 2
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    },
+    {
+      "host": "Mac",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 16
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": 8.185,
+    "bw_mbps": 283.140451393729,
+    "measured_at": "2026-10-31T14:43:33+02:00"
+  },
+  "prompts": {
+    "set": "eval_set",
+    "version": "1",
+    "subset": null,
+    "ids": [
+      "arith_01",
+      "arith_02",
+      "arith_03",
+      "arith_04",
+      "arith_05",
+      "arith_06",
+      "extract_01",
+      "extract_02",
+      "extract_03",
+      "extract_04",
+      "extract_05",
+      "extract_06",
+      "json_01",
+      "json_02",
+      "json_03",
+      "json_04",
+      "json_05",
+      "json_06",
+      "code_01",
+      "code_02",
+      "code_03",
+      "code_04",
+      "code_05",
+      "code_06",
+      "fact_01",
+      "fact_02",
+      "fact_03",
+      "fact_04",
+      "fact_05",
+      "fact_06",
+      "long_01",
+      "long_02",
+      "long_03"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    }
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": true,
+  "setup": {
+    "load_total_s": 21.559534072875977,
+    "transfer_s": null,
+    "cache_state": null,
+    "bytes_sent_gb": null
+  },
+  "timing": {
+    "decode_tps_median": 1.4732243063619412,
+    "prefill_tps_median": 27.036745404069922,
+    "ttft_s_median": 2.215268135070801,
+    "ttft_server_s_median": 2.205242156982422
+  },
+  "comm": {
+    "rpc_commands_per_step": 56.0,
+    "tokens_per_step": 1.0,
+    "rpc_commands_per_token": 56.0,
+    "bytes_per_step": null,
+    "bytes_per_token": 781543.4173669468,
+    "packets_per_token": 543.3137254901961,
+    "serial_waits_per_token": null,
+    "compute_steps": 714,
+    "tokens_generated": 714,
+    "capture_iface": "en0",
+    "source": "rpc_commands: engine counters: all-reduce frames sent by rank 0 (one per all-reduce, 2 per layer), per step over prefill plus decode steps, per token over generated tokens; engine_bytes: frame bytes sent plus received by rank 0 over the whole run (prefill frames included) per generated token; bytes: tcpdump on torch_port inside the decode windows, as in row A",
+    "engine_frames_per_token": 57.049019607843135,
+    "engine_bytes_per_token": 2989671.2366946777
+  },
+  "memory_buffers_gb": {
+    "m5": 9.757,
+    "air": 7.535
+  },
+  "memory_peak_gb": {
+    "m5": 0.431,
+    "air": 0.183
+  },
+  "utilization": {
+    "m5": 0.41021865071949165,
+    "air": 0.2376991846795601
+  },
+  "correctness": {
+    "exact_match_ratio": 0.9393939393939394,
+    "first_divergence_median": 2,
+    "task_accuracy": 1.0,
+    "baseline_task_accuracy": 1.0
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": "BASELINE_local_qwen2.5-7b-bf16_m5_r1",
+    "a1_id": null
+  },
+  "notes": [
+    "peer air: peers.yaml host 'ohads-MacBook-Air-2' but hostname -s is 'Mac'; record uses the real one",
+    "torch_tp: each rank reads its own slice from local safetensors; no weight transfer, so transfer_s, cache_state and bytes_sent_gb are null. model.sha256 is sha256(config.json + safetensors index or first MiB), not of the weights"
+  ],
+  "outputs": {
+    "arith_01": "936",
+    "arith_02": "543",
+    "arith_03": "437",
+    "arith_04": "12",
+    "arith_05": "150",
+    "arith_06": "36",
+    "extract_01": "Dana Levi",
+    "extract_02": "Room 311",
+    "extract_03": "2026-11-30",
+    "extract_04": "+44 20 7946 0958",
+    "extract_05": "4.2 kg",
+    "extract_06": "LY315",
+    "json_01": "{\"name\": \"Alice\", \"age\": 30}",
+    "json_02": "{\"colors\": [\"red\", \"green\", \"blue\"]}",
+    "json_03": "{\"city\": \"Paris\", \"country\": \"France\"}",
+    "json_04": "{\"ok\": true, \"count\": 3}",
+    "json_05": "{\"temperature_c\": 21.5, \"unit\": \"celsius\"}",
+    "json_06": "{\"items\":[{\"id\":1,\"qty\":2},{\"id\":2,\"qty\":5}]}",
+    "code_01": "```python\ndef is_even(n):\n    return n % 2 == 0\n```",
+    "code_02": "```python\ndef reverse_words(s):\n    return ' '.join(reversed(s.split()))\n```",
+    "code_03": "```python\ndef fib(n):\n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        a, b = 0, 1\n        for _ in range(2, n + 1):\n            a, b = b, a + b\n        return b\n```",
+    "code_04": "```python\ndef count_vowels(s):\n    vowels = 'aeiouAEIOU'\n    return sum(1 for char in s if char in vowels)\n```",
+    "code_05": "```python\ndef flatten(xs):\n    return [x for sublist in xs for x in sublist]\n```",
+    "code_06": "```python\ndef clamp(x, lo, hi):\n    return max(lo, min(x, hi))\n```",
+    "fact_01": "Tokyo",
+    "fact_02": "Au",
+    "fact_03": "8",
+    "fact_04": "Mars",
+    "fact_05": "1969",
+    "fact_06": "Pacific Ocean",
+    "long_01": "1. Unbox your Wi-Fi router and plug in the power adapter.\n2. Connect the router to your modem with an Ethernet cable.\n3. Turn on your computer and open a web browser.\n4. Type your router's IP address into the address bar, then press Enter.\n5. Log in using the default username and password.\n6. Change the default password for security.\n7. Update the router's firmware to the latest version.\n8. Set up Wi-Fi networks with strong, unique passwords.",
+    "long_02": "| Language | Typing                | Typical Use                      |\n|----------|-----------------------|----------------------------------|\n| Python   | Dynamically Typed     | Web Development, Data Analysis   |\n| C        | Statically Typed      | Systems Programming, Embedded    |\n| Rust     | Statically Typed      | Systems Programming, Safe Code   |\n| Go       | Statically Typed      | Networking, Parallel Systems     |\n| Java     | Statically Typed      | Enterprise Applications, Android |\n| JavaScript | Dynamically Typed | Web Development, Client-Side Logic |",
+    "long_03": "- Always wear safety goggles when entering the chemistry lab.\n- Never taste or smell chemicals directly; use the fume hood for vapors.\n- Keep long hair and loose clothing tied back to avoid accidents.\n- Ensure proper ventilation in the lab at all times.\n- Store chemicals according to their compatibility and follow the lab's storage guidelines.\n- Never leave a reaction unattended; monitor it closely.\n- Wash your hands thoroughly before leaving the lab.\n- Report any spills or leaks immediately to your instructor or lab supervisor.\n- Use equipment only after receiving proper training.\n- Keep the lab clean and organized to prevent accidents."
+  },
+  "per_prompt": {
+    "arith_01": {
+      "timings": {
+        "prompt_n": 46,
+        "prompt_ms": 3014.172077178955,
+        "predicted_n": 4,
+        "predicted_ms": 2467.8139686584473,
+        "predicted_per_second": 1.620867719690589,
+        "prompt_per_second": 15.261238848398012
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.620867719690589,
+      "ttft_client_s": 3.033370018005371,
+      "score": 1.0,
+      "t_send": 1793450663.334964,
+      "t_done": 1793450668.836396
+    },
+    "arith_02": {
+      "timings": {
+        "prompt_n": 47,
+        "prompt_ms": 1729.1738986968994,
+        "predicted_n": 4,
+        "predicted_ms": 2270.5769538879395,
+        "predicted_per_second": 1.7616667839206006,
+        "prompt_per_second": 27.180609211959
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.7616667839206006,
+      "ttft_client_s": 1.7376971244812012,
+      "score": 1.0,
+      "t_send": 1793450668.8365939,
+      "t_done": 1793450672.845105
+    },
+    "arith_03": {
+      "timings": {
+        "prompt_n": 44,
+        "prompt_ms": 1885.2500915527344,
+        "predicted_n": 4,
+        "predicted_ms": 2225.1880168914795,
+        "predicted_per_second": 1.7976009081641018,
+        "prompt_per_second": 23.339078564245348
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.7976009081641018,
+      "ttft_client_s": 1.8942499160766602,
+      "score": 1.0,
+      "t_send": 1793450672.845193,
+      "t_done": 1793450676.9649222
+    },
+    "arith_04": {
+      "timings": {
+        "prompt_n": 45,
+        "prompt_ms": 1811.9292259216309,
+        "predicted_n": 3,
+        "predicted_ms": 1652.7719497680664,
+        "predicted_per_second": 1.8151324509234261,
+        "prompt_per_second": 24.83540712088847
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.8151324509234261,
+      "ttft_client_s": 1.8220469951629639,
+      "score": 1.0,
+      "t_send": 1793450676.9650261,
+      "t_done": 1793450680.440038
+    },
+    "arith_05": {
+      "timings": {
+        "prompt_n": 58,
+        "prompt_ms": 2152.468204498291,
+        "predicted_n": 4,
+        "predicted_ms": 2162.8029346466064,
+        "predicted_per_second": 1.8494519014759818,
+        "prompt_per_second": 26.94581033940009
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.8494519014759818,
+      "ttft_client_s": 2.1603240966796875,
+      "score": 1.0,
+      "t_send": 1793450680.440093,
+      "t_done": 1793450684.763743
+    },
+    "arith_06": {
+      "timings": {
+        "prompt_n": 47,
+        "prompt_ms": 1718.8007831573486,
+        "predicted_n": 3,
+        "predicted_ms": 1768.022060394287,
+        "predicted_per_second": 1.6968114070539193,
+        "prompt_per_second": 27.344646605096035
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.6968114070539193,
+      "ttft_client_s": 1.729227066040039,
+      "score": 1.0,
+      "t_send": 1793450684.763872,
+      "t_done": 1793450688.261217
+    },
+    "extract_01": {
+      "timings": {
+        "prompt_n": 67,
+        "prompt_ms": 2354.573965072632,
+        "predicted_n": 4,
+        "predicted_ms": 2276.4949798583984,
+        "predicted_per_second": 1.7570871165500248,
+        "prompt_per_second": 28.455253898950353
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.7570871165500248,
+      "ttft_client_s": 2.3623838424682617,
+      "score": 1.0,
+      "t_send": 1793450688.261292,
+      "t_done": 1793450692.90031
+    },
+    "extract_02": {
+      "timings": {
+        "prompt_n": 69,
+        "prompt_ms": 2307.0058822631836,
+        "predicted_n": 6,
+        "predicted_ms": 3845.889091491699,
+        "predicted_per_second": 1.5601073918834172,
+        "prompt_per_second": 29.90889643172937
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.5601073918834172,
+      "ttft_client_s": 2.315113067626953,
+      "score": 1.0,
+      "t_send": 1793450692.900366,
+      "t_done": 1793450699.062079
+    },
+    "extract_03": {
+      "timings": {
+        "prompt_n": 86,
+        "prompt_ms": 2804.5849800109863,
+        "predicted_n": 11,
+        "predicted_ms": 13290.164947509766,
+        "predicted_per_second": 0.8276797198112366,
+        "prompt_per_second": 30.664073512817257
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 0.8276797198112366,
+      "ttft_client_s": 2.8148319721221924,
+      "score": 1.0,
+      "t_send": 1793450699.062242,
+      "t_done": 1793450715.167352
+    },
+    "extract_04": {
+      "timings": {
+        "prompt_n": 75,
+        "prompt_ms": 3444.7109699249268,
+        "predicted_n": 17,
+        "predicted_ms": 15226.657152175903,
+        "predicted_per_second": 1.1164630443899293,
+        "prompt_per_second": 21.772508827245534
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.1164630443899293,
+      "ttft_client_s": 3.454030752182007,
+      "score": 1.0,
+      "t_send": 1793450715.167416,
+      "t_done": 1793450733.848381
+    },
+    "extract_05": {
+      "timings": {
+        "prompt_n": 70,
+        "prompt_ms": 2842.2398567199707,
+        "predicted_n": 5,
+        "predicted_ms": 3893.867015838623,
+        "predicted_per_second": 1.2840705601044131,
+        "prompt_per_second": 24.62846329963935
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.2840705601044131,
+      "ttft_client_s": 2.8498518466949463,
+      "score": 1.0,
+      "t_send": 1793450733.848458,
+      "t_done": 1793450740.592742
+    },
+    "extract_06": {
+      "timings": {
+        "prompt_n": 75,
+        "prompt_ms": 3178.1959533691406,
+        "predicted_n": 5,
+        "predicted_ms": 3855.090856552124,
+        "predicted_per_second": 1.2969862932029177,
+        "prompt_per_second": 23.598293214266423
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.2969862932029177,
+      "ttft_client_s": 3.189100980758667,
+      "score": 1.0,
+      "t_send": 1793450740.592941,
+      "t_done": 1793450747.637454
+    },
+    "json_01": {
+      "timings": {
+        "prompt_n": 57,
+        "prompt_ms": 2665.2491092681885,
+        "predicted_n": 14,
+        "predicted_ms": 12595.611810684204,
+        "predicted_per_second": 1.111498211474295,
+        "prompt_per_second": 21.386368651915916
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.111498211474295,
+      "ttft_client_s": 2.6739299297332764,
+      "score": 1.0,
+      "t_send": 1793450747.637567,
+      "t_done": 1793450762.9076202
+    },
+    "json_02": {
+      "timings": {
+        "prompt_n": 53,
+        "prompt_ms": 2411.769151687622,
+        "predicted_n": 13,
+        "predicted_ms": 11217.245817184448,
+        "predicted_per_second": 1.1589297597530075,
+        "prompt_per_second": 21.97556924671399
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.1589297597530075,
+      "ttft_client_s": 2.421855926513672,
+      "score": 1.0,
+      "t_send": 1793450762.9077902,
+      "t_done": 1793450776.547013
+    },
+    "json_03": {
+      "timings": {
+        "prompt_n": 48,
+        "prompt_ms": 1922.302007675171,
+        "predicted_n": 13,
+        "predicted_ms": 8488.829851150513,
+        "predicted_per_second": 1.5314242631731012,
+        "prompt_per_second": 24.970061836459884
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.5314242631731012,
+      "ttft_client_s": 1.932183027267456,
+      "score": 1.0,
+      "t_send": 1793450776.547153,
+      "t_done": 1793450786.968392
+    },
+    "json_04": {
+      "timings": {
+        "prompt_n": 52,
+        "prompt_ms": 1976.3939380645752,
+        "predicted_n": 12,
+        "predicted_ms": 7945.597887039185,
+        "predicted_per_second": 1.510270236500935,
+        "prompt_per_second": 26.3105441675874
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.510270236500935,
+      "ttft_client_s": 1.984161138534546,
+      "score": 1.0,
+      "t_send": 1793450786.9684548,
+      "t_done": 1793450796.8983629
+    },
+    "json_05": {
+      "timings": {
+        "prompt_n": 58,
+        "prompt_ms": 1924.9069690704346,
+        "predicted_n": 18,
+        "predicted_ms": 12260.504722595215,
+        "predicted_per_second": 1.4681287930037101,
+        "prompt_per_second": 30.13132630924446
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.4681287930037101,
+      "ttft_client_s": 1.9332568645477295,
+      "score": 1.0,
+      "t_send": 1793450796.898439,
+      "t_done": 1793450811.092455
+    },
+    "json_06": {
+      "timings": {
+        "prompt_n": 73,
+        "prompt_ms": 2449.3250846862793,
+        "predicted_n": 21,
+        "predicted_ms": 14296.397924423218,
+        "predicted_per_second": 1.4689014751138607,
+        "prompt_per_second": 29.804128678717294
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.4689014751138607,
+      "ttft_client_s": 2.4579122066497803,
+      "score": 1.0,
+      "t_send": 1793450811.0925179,
+      "t_done": 1793450827.8469179
+    },
+    "code_01": {
+      "timings": {
+        "prompt_n": 62,
+        "prompt_ms": 2145.8728313446045,
+        "predicted_n": 20,
+        "predicted_ms": 13575.66523551941,
+        "predicted_per_second": 1.4732243063619412,
+        "prompt_per_second": 28.892672060697457
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.4732243063619412,
+      "ttft_client_s": 2.153088092803955,
+      "score": 1.0,
+      "t_send": 1793450827.8469949,
+      "t_done": 1793450843.5761
+    },
+    "code_02": {
+      "timings": {
+        "prompt_n": 67,
+        "prompt_ms": 2187.6001358032227,
+        "predicted_n": 20,
+        "predicted_ms": 13920.714139938354,
+        "predicted_per_second": 1.4367079015450974,
+        "prompt_per_second": 30.627169428017776
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.4367079015450974,
+      "ttft_client_s": 2.194727897644043,
+      "score": 1.0,
+      "t_send": 1793450843.5761752,
+      "t_done": 1793450859.691751
+    },
+    "code_03": {
+      "timings": {
+        "prompt_n": 74,
+        "prompt_ms": 5904.03413772583,
+        "predicted_n": 75,
+        "predicted_ms": 68745.56493759155,
+        "predicted_per_second": 1.0909794699932474,
+        "prompt_per_second": 12.533802866611472
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.0909794699932474,
+      "ttft_client_s": 5.912146091461182,
+      "score": 1.0,
+      "t_send": 1793450859.69183,
+      "t_done": 1793450934.34983
+    },
+    "code_04": {
+      "timings": {
+        "prompt_n": 74,
+        "prompt_ms": 2436.4936351776123,
+        "predicted_n": 36,
+        "predicted_ms": 25228.86300086975,
+        "predicted_per_second": 1.4269370759498325,
+        "prompt_per_second": 30.371513773564875
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.4269370759498325,
+      "ttft_client_s": 2.4500441551208496,
+      "score": 1.0,
+      "t_send": 1793450934.3500218,
+      "t_done": 1793450962.029557
+    },
+    "code_05": {
+      "timings": {
+        "prompt_n": 64,
+        "prompt_ms": 2209.362030029297,
+        "predicted_n": 22,
+        "predicted_ms": 15022.339820861816,
+        "predicted_per_second": 1.4644855769703846,
+        "prompt_per_second": 28.967638227742757
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.4644855769703846,
+      "ttft_client_s": 2.222079038619995,
+      "score": 1.0,
+      "t_send": 1793450962.0296829,
+      "t_done": 1793450979.274879
+    },
+    "code_06": {
+      "timings": {
+        "prompt_n": 66,
+        "prompt_ms": 2306.4608573913574,
+        "predicted_n": 23,
+        "predicted_ms": 16016.710996627808,
+        "predicted_per_second": 1.43600018785645,
+        "prompt_per_second": 28.615269922528412
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.43600018785645,
+      "ttft_client_s": 2.3192620277404785,
+      "score": 1.0,
+      "t_send": 1793450979.275018,
+      "t_done": 1793450997.611207
+    },
+    "fact_01": {
+      "timings": {
+        "prompt_n": 44,
+        "prompt_ms": 1715.3968811035156,
+        "predicted_n": 3,
+        "predicted_ms": 1539.2429828643799,
+        "predicted_per_second": 1.9490100220676627,
+        "prompt_per_second": 25.6500408067052
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.9490100220676627,
+      "ttft_client_s": 1.7238118648529053,
+      "score": 1.0,
+      "t_send": 1793450997.611321,
+      "t_done": 1793451000.8750541
+    },
+    "fact_02": {
+      "timings": {
+        "prompt_n": 43,
+        "prompt_ms": 1590.428113937378,
+        "predicted_n": 2,
+        "predicted_ms": 654.2549133300781,
+        "predicted_per_second": 3.0569124652350608,
+        "prompt_per_second": 27.036745404069922
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 3.0569124652350608,
+      "ttft_client_s": 1.5993797779083252,
+      "score": 1.0,
+      "t_send": 1793451000.875175,
+      "t_done": 1793451003.129138
+    },
+    "fact_03": {
+      "timings": {
+        "prompt_n": 44,
+        "prompt_ms": 1559.514045715332,
+        "predicted_n": 2,
+        "predicted_ms": 826.2710571289062,
+        "predicted_per_second": 2.420513199324106,
+        "prompt_per_second": 28.213917098654715
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 2.420513199324106,
+      "ttft_client_s": 1.565274953842163,
+      "score": 1.0,
+      "t_send": 1793451003.129193,
+      "t_done": 1793451005.521399
+    },
+    "fact_04": {
+      "timings": {
+        "prompt_n": 44,
+        "prompt_ms": 1680.8347702026367,
+        "predicted_n": 3,
+        "predicted_ms": 1450.862169265747,
+        "predicted_per_second": 2.067736042437609,
+        "prompt_per_second": 26.17746894579976
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 2.067736042437609,
+      "ttft_client_s": 1.691370964050293,
+      "score": 1.0,
+      "t_send": 1793451005.521536,
+      "t_done": 1793451008.664392
+    },
+    "fact_05": {
+      "timings": {
+        "prompt_n": 47,
+        "prompt_ms": 1575.8657455444336,
+        "predicted_n": 5,
+        "predicted_ms": 2802.239418029785,
+        "predicted_per_second": 1.7842872267907177,
+        "prompt_per_second": 29.824875712215153
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.7842872267907177,
+      "ttft_client_s": 1.5851449966430664,
+      "score": 1.0,
+      "t_send": 1793451008.6645179,
+      "t_done": 1793451013.0525062
+    },
+    "fact_06": {
+      "timings": {
+        "prompt_n": 43,
+        "prompt_ms": 1516.1371231079102,
+        "predicted_n": 3,
+        "predicted_ms": 1514.6527290344238,
+        "predicted_per_second": 1.980652028344788,
+        "prompt_per_second": 28.361550775733825
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.980652028344788,
+      "ttft_client_s": 1.525752067565918,
+      "score": 1.0,
+      "t_send": 1793451013.052578,
+      "t_done": 1793451016.0935302
+    },
+    "long_01": {
+      "timings": {
+        "prompt_n": 70,
+        "prompt_ms": 2205.242156982422,
+        "predicted_n": 103,
+        "predicted_ms": 73327.25596427917,
+        "predicted_per_second": 1.4046618633891834,
+        "prompt_per_second": 31.74254572377013
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.4046618633891834,
+      "ttft_client_s": 2.215268135070801,
+      "score": 1.0,
+      "t_send": 1793451016.093659,
+      "t_done": 1793451091.636713
+    },
+    "long_02": {
+      "timings": {
+        "prompt_n": 71,
+        "prompt_ms": 3116.3558959960938,
+        "predicted_n": 112,
+        "predicted_ms": 99331.88605308533,
+        "predicted_per_second": 1.1275332066094519,
+        "prompt_per_second": 22.78302041535791
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.1275332066094519,
+      "ttft_client_s": 3.1288580894470215,
+      "score": 1.0,
+      "t_send": 1793451091.636853,
+      "t_done": 1793451194.0982559
+    },
+    "long_03": {
+      "timings": {
+        "prompt_n": 69,
+        "prompt_ms": 3789.628744125366,
+        "predicted_n": 124,
+        "predicted_ms": 109309.67020988464,
+        "predicted_per_second": 1.1343918590359716,
+        "prompt_per_second": 18.207588304517405
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 1.1343918590359716,
+      "ttft_client_s": 3.80240797996521,
+      "score": 1.0,
+      "t_send": 1793451194.098407,
+      "t_done": 1793451307.210585
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "test -x /Users/orosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "m5",
+      "cmd": "test -f \"$HOME\"/models/hf/Qwen2.5-7B-Instruct/config.json"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -x /Users/ohadrosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -f \"$HOME\"/models/hf/Qwen2.5-7B-Instruct/config.json"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne' rev-parse --short HEAD"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp worker --bind 192.168.1.219 --port 50053 --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --rank 1 --world 2"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp serve --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --world 2 --max-seq-len 4096 --host 127.0.0.1 --port 8092 --peer 192.168.1.219:50053"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f 'torch_tp worker.*--port 50053'"
+    }
+  ]
+}

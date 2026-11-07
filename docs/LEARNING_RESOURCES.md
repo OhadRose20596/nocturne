@@ -74,6 +74,19 @@ Format: `- [tag] Title — why it matters for us. URL`
 - [should] Hugging Face, **GGUF model hub** (`ggml-org` and `bartowski` quantizations). https://huggingface.co/models?library=gguf
 - [must] Hugging Face, **CLI installation and downloads** — install `hf` with Homebrew on macOS or inside a Python virtual environment; download the exact GGUF file. https://huggingface.co/docs/huggingface_hub/en/guides/cli
 
+## 8. Measurement tools (nocturne/bench)
+
+- [must] **iperf3 user manual** — bandwidth between requester and worker before every bench run (`iperf3 -s` on the peer, `-J` for JSON). https://iperf.fr/iperf-doc.php
+- [must] **tcpdump man page** — bytes and packets on the worker port during decode; needs sudo on macOS. We use `-nn -q -tt -l` and a `tcp port` filter. https://www.tcpdump.org/manpages/tcpdump.1.html
+- [should] **Apple, powermetrics (man page)** — GPU active residency on Apple Silicon at 100 ms; needs sudo. https://www.unix.com/man-page/osx/1/powermetrics/
+- [should] **NVIDIA, nvidia-smi documentation** — `--query-gpu=utilization.gpu -lms 100` for the CUDA worker. https://docs.nvidia.com/deploy/nvidia-smi/index.html
+- [should] **uv** — Python environment and dependency manager used for the bench venv (`uv venv --python 3.12`). https://docs.astral.sh/uv/
+- [should] **distributed-llama (README)** — external tensor-parallel engine over TCP for row B of the bench matrix; its own weight format (q40) and tokenizer, measured against its own BASELINE, never a stand-in for TP inside llama.cpp. https://github.com/b4rtaz/distributed-llama
+- [should] **llama-server README, speculative decoding and timings** — `--model-draft`, `--spec-draft-n-max`, and the `timings` object we read per request. https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md
+- [must] **PyTorch, MPS backend** — the Metal device for `torch` on the Macs; which ops exist, and the CPU fallback env var for the ones that do not. Used by the own tensor parallel engine (cell B1t). https://docs.pytorch.org/docs/stable/notes/mps.html
+- [must] **Transformers, Qwen2 model code and GGUF loading** — the reference forward pass our sharded blocks must match, and `gguf_file=` for loading row A's exact Q4_K_M weights. https://huggingface.co/docs/transformers/en/model_doc/qwen2
+- [must] **safetensors, `safe_open` and tensor slicing** — load one shard of a weight without materializing the whole file; each rank reads only its slice. https://huggingface.co/docs/safetensors/en/api/torch
+
 ---
 
 ### Adding an entry

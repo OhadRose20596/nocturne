@@ -1,0 +1,840 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nocturne-bench-record-v3",
+  "title": "Nocturne bench record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "cell",
+    "date",
+    "model",
+    "draft_model",
+    "engine",
+    "peers",
+    "network",
+    "prompts",
+    "success",
+    "failure_class",
+    "quality_pass",
+    "setup",
+    "timing",
+    "comm",
+    "memory_buffers_gb",
+    "memory_peak_gb",
+    "utilization",
+    "correctness",
+    "fault_test",
+    "checks",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 3
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partition",
+        "decode",
+        "row",
+        "col"
+      ],
+      "properties": {
+        "partition": {
+          "type": "string",
+          "enum": [
+            "PP",
+            "TP",
+            "EP",
+            "hybrid",
+            "none"
+          ]
+        },
+        "decode": {
+          "type": "string",
+          "enum": [
+            "single",
+            "speculative",
+            "outline",
+            "independent"
+          ]
+        },
+        "row": {
+          "type": "string",
+          "enum": [
+            "A",
+            "B",
+            "C",
+            "D",
+            "BASELINE"
+          ]
+        },
+        "col": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "name": {
+          "type": "string",
+          "description": "cell name as in cells.yaml, e.g. A2b; v1 records lack it (derived as row+col)"
+        }
+      }
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([+-]\\d{2}:\\d{2}|Z)$"
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "quant",
+        "sha256"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "quant": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "draft_model": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/properties/model"
+        }
+      ]
+    },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "commit",
+        "flags"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "format": {
+          "type": "string",
+          "description": "weight format, e.g. gguf or dllama-q40"
+        },
+        "tokenizer": {
+          "type": "string",
+          "description": "tokenizer source (file or 'gguf embedded')"
+        },
+        "runtime": {
+          "type": "string",
+          "description": "torch_tp: torch version and device, e.g. 'torch 2.14.1 mps'"
+        },
+        "world": {
+          "type": "integer",
+          "description": "torch_tp: number of ranks"
+        }
+      }
+    },
+    "peers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "host",
+          "role",
+          "backend",
+          "os",
+          "mem_gb"
+        ],
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "requester",
+              "worker"
+            ]
+          },
+          "backend": {
+            "type": "string",
+            "enum": [
+              "metal",
+              "cuda",
+              "vulkan",
+              "cpu"
+            ]
+          },
+          "os": {
+            "type": "string"
+          },
+          "mem_gb": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "rtt_ms_median",
+        "bw_mbps",
+        "measured_at"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "wifi",
+            "wired",
+            "tailscale",
+            "hotspot",
+            "local"
+          ]
+        },
+        "rtt_ms_median": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "pre-run probe: ping median over 50 packets before load. Not a covariate for decode; see ping_decode_ms"
+        },
+        "bw_mbps": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "measured_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rtt_source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "probe",
+            null
+          ]
+        },
+        "ping_decode_ms": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "p50",
+            "p95",
+            "p99",
+            "n"
+          ],
+          "properties": {
+            "p50": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "p95": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "p99": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "n": {
+              "type": "integer"
+            },
+            "interval_s": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "loss": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "description": "background ping to the first worker for the whole run (ping.tsv), percentiles of the replies inside the decode windows"
+        },
+        "awdl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "up",
+            "down",
+            "unknown",
+            null
+          ],
+          "description": "awdl0 state on the requester at run start (ifconfig awdl0)"
+        },
+        "added_delay_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "one-way delay added on the requester with scripts/16_delay.sh; null when none"
+        },
+        "added_delay_measured_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "ping median with the delay on minus the median with it off, measured right before the run"
+        }
+      }
+    },
+    "prompts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "set",
+        "version",
+        "subset"
+      ],
+      "properties": {
+        "set": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "subset": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "prompt ids that ran, in order; the baseline accuracy is computed on these ids"
+        },
+        "generation": {
+          "type": "object",
+          "description": "deterministic generation flags pinned per request (temperature, seed, samplers, repeat_penalty); baseline matching compares them",
+          "additionalProperties": true
+        },
+        "fixed_tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "--fixed-tokens N: every prompt decodes exactly N tokens (max_tokens N, ignore_eos); grading skipped, identity to BASELINE kept"
+        }
+      }
+    },
+    "success": {
+      "type": "boolean"
+    },
+    "failure_class": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        null,
+        "load_fail",
+        "oom",
+        "network_abort",
+        "engine_abort",
+        "wrong_output",
+        "tool_unsupported",
+        "unmeasured_memory"
+      ]
+    },
+    "setup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "load_total_s",
+        "transfer_s",
+        "cache_state",
+        "bytes_sent_gb"
+      ],
+      "properties": {
+        "load_total_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "llama-server launch to /health 200"
+        },
+        "transfer_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "first to last set_tensor or set_tensor_hash in the timestamped worker log; null when the log has no timestamps"
+        },
+        "cache_state": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "cold",
+            "warm",
+            null
+          ]
+        },
+        "bytes_sent_gb": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decode_tps_median",
+        "prefill_tps_median",
+        "ttft_s_median",
+        "ttft_server_s_median"
+      ],
+      "properties": {
+        "decode_tps_median": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "per prompt median of predicted_n / predicted_ms. predicted_ms covers predicted_n - 1 steps (the first token comes from prefill), so this overstates speed on short prompts. Kept for reading v1 and v2 records; read decode_ms_per_step_pooled first"
+        },
+        "prefill_tps_median": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ttft_s_median": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "client: request send to first streamed token"
+        },
+        "ttft_server_s_median": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "server: timings.prompt_ms / 1000 (the v1 ttft_s)"
+        },
+        "decode_ms_per_step_pooled": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "sum(predicted_ms) / sum(predicted_n - 1) over prompts with predicted_n >= 2; the number to cite"
+        },
+        "decode_tps_pooled": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "1000 / decode_ms_per_step_pooled, token weighted"
+        },
+        "decode_steps_total": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "sum(predicted_n - 1)"
+        },
+        "warmup_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "wall time of the untimed warm-up request sent before the prompts; null when none"
+        }
+      }
+    },
+    "comm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rpc_commands_per_step",
+        "tokens_per_step",
+        "rpc_commands_per_token",
+        "bytes_per_step",
+        "bytes_per_token",
+        "serial_waits_per_token"
+      ],
+      "properties": {
+        "rpc_commands_per_step": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "median over the last 32 compute steps; set_tensor, get_tensor and the graph message"
+        },
+        "tokens_per_step": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "tokens_generated / compute_steps"
+        },
+        "rpc_commands_per_token": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "derived: rpc_commands_per_step / tokens_per_step"
+        },
+        "bytes_per_step": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "wire bytes on the worker port in the union of decode windows / compute_steps"
+        },
+        "bytes_per_token": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "same bytes / tokens_generated"
+        },
+        "packets_per_token": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "serial_waits_per_token": {
+          "type": "null",
+          "description": "not measured: needs a timed RPC trace on the requester"
+        },
+        "compute_steps": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "tokens_generated": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "capture_iface": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "interface that owns the route to the first worker (route get / ip route get)"
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tool_bytes_sent_per_token": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "engine's own counter (distributed-llama Sent kB per token), when the engine prints one"
+        },
+        "tool_bytes_recv_per_token": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "engine_frames_per_token": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "torch_tp: all-reduce frames sent by rank 0 per generated token, from the engine counters"
+        },
+        "engine_bytes_per_token": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "torch_tp: payload bytes sent plus received by rank 0 per generated token, from the engine counters"
+        },
+        "blocking_syncs_per_step": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "serial waits per decode step: llama.cpp get_tensor count inside the decode windows / decode_steps_total; torch_tp all-reduce frames plus the STEP frame"
+        },
+        "messages_per_step": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "every command or frame per decode step inside the decode windows (llama.cpp: set_tensor, get_tensor, graph_compute, graph_recompute and the rest), mean not median"
+        },
+        "bytes_per_step_decode": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "wire bytes on the worker port inside the decode windows / decode_steps_total"
+        },
+        "bytes_per_step_decode_out": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "same, requester to worker only (direction from the capture); null for captures without direction"
+        },
+        "bytes_per_step_decode_in": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "same, worker to requester only"
+        },
+        "graph_meta_bytes_per_step": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "llama.cpp: sum(n_tensors) * sizeof(rpc_tensor) = 304 B over the graph_compute lines inside the decode windows / decode_steps_total"
+        },
+        "worker_capture": {
+          "type": "boolean",
+          "description": "a second tcpdump ran on the worker (capture_worker.tsv)"
+        },
+        "clock_offset_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "worker clock minus requester clock from matched ICMP echo pairs in both captures"
+        },
+        "clock_offset_unc_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "half the interquartile range of the per pair offsets"
+        }
+      }
+    },
+    "memory_peak_gb": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "description": "per peer name: peak process memory of llama-server / ggml-rpc-server sampled at 500 ms during decode (macOS footprint or ps rss, CUDA nvidia-smi memory.used); null plus a not_measured note when no probe"
+    },
+    "utilization": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
+    "correctness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exact_match_ratio",
+        "first_divergence_median",
+        "task_accuracy",
+        "baseline_task_accuracy"
+      ],
+      "properties": {
+        "exact_match_ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "first_divergence_median": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "task_accuracy": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "baseline_task_accuracy": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "fault_test": {
+      "type": "null"
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "outputs": {
+      "description": "prompt_id -> generated text. Needed to compute correctness of later cells against a BASELINE record.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "per_prompt": {
+      "description": "prompt_id -> raw per request numbers (timings from llama-server, grader score).",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "commands": {
+      "description": "Every launched command, verbatim, in launch order. Rerun by hand from here.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "host",
+          "cmd"
+        ],
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "cmd": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "quality_pass": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "task_accuracy >= baseline_task_accuracy - 0.05 on the same prompt ids; null when no baseline. Not part of success."
+    },
+    "memory_buffers_gb": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "description": "per peer name: sum of model, KV and compute buffers from the load log (the v1 memory_peak_gb)"
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "a2_identity",
+        "memory_measured",
+        "baseline_id"
+      ],
+      "properties": {
+        "a2_identity": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "speculative cells only: greedy output equals the matched A1; null when not run"
+        },
+        "memory_measured": {
+          "type": "boolean",
+          "description": "every peer has a non-null memory_peak_gb"
+        },
+        "baseline_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "a1_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "description": "v3 (2026-11-02, session 4 Part 0): decode_ms_per_step_pooled and decode_tps_pooled next to the old per prompt median; comm gains blocking_syncs_per_step, messages_per_step, direction aware bytes_per_step_decode, graph_meta_bytes_per_step and the worker capture clock offset; network gains the in-decode ping percentiles, the AWDL state and the added delay; prompts.fixed_tokens. v2 is kept in record.schema.v2.json, v1 in record.schema.v1.json; readers accept both through record.upgrade(). v2 (2026-10-26, review I022): comm renamed to per step and per token, memory split into buffers and peak, ttft split into client and server, setup split into load_total and transfer, success and quality_pass separated, checks block."
+}

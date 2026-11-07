@@ -1,0 +1,772 @@
+{
+  "schema_version": 2,
+  "id": "BASELINE_local_qwen2.5-1.5b-bf16_m5_r1",
+  "cell": {
+    "partition": "none",
+    "decode": "single",
+    "row": "BASELINE",
+    "col": 0,
+    "name": "BASELINE"
+  },
+  "date": "2026-10-29T14:47:16+02:00",
+  "model": {
+    "name": "qwen2.5-1.5b-bf16",
+    "quant": "bf16",
+    "sha256": "cb2b237a41d17d0f8660027bf9ece59c8334e568c7cf391f8ebc233762d1a6af"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "torch_tp",
+    "commit": "fb5b48e",
+    "flags": [
+      "--model",
+      "/Users/orosentswaig/models/hf/Qwen2.5-1.5B-Instruct",
+      "--world",
+      "1",
+      "--max-seq-len",
+      "4096"
+    ],
+    "format": "safetensors-bf16",
+    "runtime": "torch 2.14.1 mps",
+    "world": 1
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    }
+  ],
+  "network": {
+    "type": "local",
+    "rtt_ms_median": null,
+    "bw_mbps": null,
+    "measured_at": "2026-10-29T14:47:16+02:00"
+  },
+  "prompts": {
+    "set": "eval_set",
+    "version": "1",
+    "subset": null,
+    "ids": [
+      "arith_01",
+      "arith_02",
+      "arith_03",
+      "arith_04",
+      "arith_05",
+      "arith_06",
+      "extract_01",
+      "extract_02",
+      "extract_03",
+      "extract_04",
+      "extract_05",
+      "extract_06",
+      "json_01",
+      "json_02",
+      "json_03",
+      "json_04",
+      "json_05",
+      "json_06",
+      "code_01",
+      "code_02",
+      "code_03",
+      "code_04",
+      "code_05",
+      "code_06",
+      "fact_01",
+      "fact_02",
+      "fact_03",
+      "fact_04",
+      "fact_05",
+      "fact_06",
+      "long_01",
+      "long_02",
+      "long_03"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    }
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": true,
+  "setup": {
+    "load_total_s": 4.2455339431762695,
+    "transfer_s": null,
+    "cache_state": null,
+    "bytes_sent_gb": null
+  },
+  "timing": {
+    "decode_tps_median": 34.85833660101831,
+    "prefill_tps_median": 1093.8312879609648,
+    "ttft_s_median": 0.05595517158508301,
+    "ttft_server_s_median": 0.05184197425842285
+  },
+  "comm": {
+    "rpc_commands_per_step": null,
+    "tokens_per_step": 1.0,
+    "rpc_commands_per_token": null,
+    "bytes_per_step": null,
+    "bytes_per_token": null,
+    "packets_per_token": null,
+    "serial_waits_per_token": null,
+    "compute_steps": 1072,
+    "tokens_generated": 1072,
+    "capture_iface": null,
+    "source": "rpc_commands: engine counters: all-reduce frames sent by rank 0 (one per all-reduce, 2 per layer), per step over prefill plus decode steps, per token over generated tokens; engine_bytes: frame bytes sent plus received by rank 0; bytes: tcpdump on torch_port as in row A",
+    "engine_frames_per_token": null,
+    "engine_bytes_per_token": null
+  },
+  "memory_buffers_gb": {
+    "m5": 3.281
+  },
+  "memory_peak_gb": {
+    "m5": 0.402
+  },
+  "utilization": {
+    "m5": 0.9344652567975831
+  },
+  "correctness": {
+    "exact_match_ratio": null,
+    "first_divergence_median": null,
+    "task_accuracy": 0.9863636363636363,
+    "baseline_task_accuracy": 0.9863636363636363
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": null,
+    "a1_id": null
+  },
+  "notes": [
+    "no peer: network probe skipped",
+    "torch_tp: each rank reads its own slice from local safetensors; no weight transfer, so transfer_s, cache_state and bytes_sent_gb are null. model.sha256 is sha256(config.json + safetensors index or first MiB), not of the weights"
+  ],
+  "outputs": {
+    "arith_01": "936",
+    "arith_02": "543",
+    "arith_03": "437",
+    "arith_04": "12",
+    "arith_05": "150",
+    "arith_06": "36",
+    "extract_01": "Dana Levi",
+    "extract_02": "Room 311",
+    "extract_03": "2026-11-30",
+    "extract_04": "+44 20 7946 0958",
+    "extract_05": "4.2 kg",
+    "extract_06": "LY315",
+    "json_01": "{\n  \"name\": \"Alice\",\n  \"age\": 30\n}",
+    "json_02": "```json\n{\n  \"colors\": [\"red\", \"green\", \"blue\"]\n}\n```",
+    "json_03": "```json\n{\n  \"city\": \"Paris\",\n  \"country\": \"France\"\n}\n```",
+    "json_04": "```json\n{\n  \"ok\": true,\n  \"count\": 3\n}\n```",
+    "json_05": "```json\n{\n  \"temperature_c\": 21.5,\n  \"unit\": \"celsius\"\n}\n```",
+    "json_06": "```json\n{\n  \"items\": [\n    {\n      \"id\": 1,\n      \"qty\": 2\n    },\n    {\n      \"id\": 2,\n      \"qty\": 5\n    }\n  ]\n}\n```",
+    "code_01": "```python\ndef is_even(n):\n    return n % 2 == 0\n```",
+    "code_02": "```python\ndef reverse_words(s):\n    return ' '.join(reversed(s.split()))\n```",
+    "code_03": "```python\ndef fib(n):\n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        a, b = 0, 1\n        for _ in range(2, n + 1):\n            a, b = b, a + b\n        return b\n```",
+    "code_04": "```python\ndef count_vowels(s):\n    vowels = \"aeiouAEIOU\"\n    return sum(1 for char in s if char in vowels)\n```",
+    "code_05": "```python\ndef flatten(xs):\n    return [item for sublist in xs for item in sublist]\n```",
+    "code_06": "```python\ndef clamp(x, lo, hi):\n    return max(lo, min(x, hi))\n```",
+    "fact_01": "Tokyo",
+    "fact_02": "Au",
+    "fact_03": "8",
+    "fact_04": "Mars",
+    "fact_05": "1969",
+    "fact_06": "The Pacific Ocean",
+    "long_01": "1. Purchase a Wi-Fi router and a power adapter.\n2. Connect the router to your home's power outlet.\n3. Connect the router to your modem using the Ethernet cable.\n4. Open your web browser and enter the router's IP address.\n5. Log in to the router's admin panel using the default username and password.\n6. Change the default username and password to a secure one.\n7. Set up the Wi-Fi network name (SSID) and password.\n8. Save the changes and reboot the router.",
+    "long_02": "| Language | Typing | Typical use |\n|----------|--------|--------------|\n| Python   | Dynamic | Scientific computing, web development, data analysis, artificial intelligence, machine learning, automation, scripting, web frameworks (Django, Flask), libraries (NumPy, Pandas, Matplotlib, TensorFlow, PyTorch) |\n| C        | Static  | System programming, device drivers, embedded systems, real-time systems, operating systems, game development, scientific computing, network programming, multimedia, graphics, cryptography, embedded systems, game development, scientific computing, network programming, multimedia, graphics, cryptography |\n| Rust     | Static  | System programming, concurrency, memory safety, performance, embedded systems, web development, GUI, cryptography, networking, data structures, algorithms, testing, and debugging |\n| Go       | Static  | System programming, concurrency, network programming, web development, cloud computing, distributed systems, microservices, containerization, testing, and deployment |\n| Java     | Static  | Object-oriented programming, enterprise applications, Android development, web development, cloud computing, microservices, distributed systems, testing, and deployment |\n| JavaScript | Dynamic | Web development, client-side scripting, server-side scripting, web frameworks (React, Angular, Vue), web applications, web APIs, web services, web scraping, web development, client-side scripting, server-side scripting, web frameworks (React, Angular, Vue), web applications, web APIs, web services, web scraping, web development, client-side scripting, server-side scripting, web frameworks (React, Angular, Vue), web applications, web APIs, web services, web scraping, web development, client-side scripting, server-side scripting, web frameworks (React, Angular, Vue), web applications, web APIs, web services, web scraping, web development, client-side scripting, server-side scripting, web frameworks (React, Angular, Vue), web applications, web APIs, web services, web scraping, web development, client",
+    "long_03": "- Always wear safety goggles at all times in the lab.\n- Ensure proper ventilation is in place to avoid inhaling harmful fumes.\n- Never taste any chemicals or ingest substances.\n- Keep all flammable materials away from heat sources and ignition sources.\n- Use protective gloves when handling chemicals to prevent skin contact.\n- Never mix chemicals without proper safety precautions.\n- Dispose of chemicals properly in designated waste containers.\n- Always wash hands thoroughly after handling chemicals.\n- Be cautious of electrical hazards; do not touch exposed wires or use electrical equipment without proper training.\n- Follow the lab supervisor's instructions and report any safety concerns immediately."
+  },
+  "per_prompt": {
+    "arith_01": {
+      "timings": {
+        "prompt_n": 46,
+        "prompt_ms": 121.83499336242676,
+        "predicted_n": 4,
+        "predicted_ms": 98.25515747070312,
+        "predicted_per_second": 40.71033117210855,
+        "prompt_per_second": 377.55983507268894
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 40.71033117210855,
+      "ttft_client_s": 0.14417099952697754,
+      "score": 1.0,
+      "t_send": 1793278043.534225,
+      "t_done": 1793278043.776447
+    },
+    "arith_02": {
+      "timings": {
+        "prompt_n": 47,
+        "prompt_ms": 48.33817481994629,
+        "predicted_n": 4,
+        "predicted_ms": 94.10214424133301,
+        "predicted_per_second": 42.50700164431596,
+        "prompt_per_second": 972.3163974450665
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 42.50700164431596,
+      "ttft_client_s": 0.05185890197753906,
+      "score": 1.0,
+      "t_send": 1793278043.776511,
+      "t_done": 1793278043.9224682
+    },
+    "arith_03": {
+      "timings": {
+        "prompt_n": 44,
+        "prompt_ms": 51.5291690826416,
+        "predicted_n": 4,
+        "predicted_ms": 100.16393661499023,
+        "predicted_per_second": 39.93453267891402,
+        "prompt_per_second": 853.8852999828806
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 39.93453267891402,
+      "ttft_client_s": 0.055190086364746094,
+      "score": 1.0,
+      "t_send": 1793278043.922514,
+      "t_done": 1793278044.0779898
+    },
+    "arith_04": {
+      "timings": {
+        "prompt_n": 45,
+        "prompt_ms": 49.85785484313965,
+        "predicted_n": 3,
+        "predicted_ms": 65.10090827941895,
+        "predicted_per_second": 46.08230636543089,
+        "prompt_per_second": 902.5659074498252
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 46.08230636543089,
+      "ttft_client_s": 0.05410909652709961,
+      "score": 1.0,
+      "t_send": 1793278044.078022,
+      "t_done": 1793278044.1972349
+    },
+    "arith_05": {
+      "timings": {
+        "prompt_n": 58,
+        "prompt_ms": 48.76399040222168,
+        "predicted_n": 4,
+        "predicted_ms": 96.58384323120117,
+        "predicted_per_second": 41.414794298719826,
+        "prompt_per_second": 1189.4022519813623
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 41.414794298719826,
+      "ttft_client_s": 0.05264115333557129,
+      "score": 1.0,
+      "t_send": 1793278044.1972659,
+      "t_done": 1793278044.346473
+    },
+    "arith_06": {
+      "timings": {
+        "prompt_n": 47,
+        "prompt_ms": 45.35198211669922,
+        "predicted_n": 3,
+        "predicted_ms": 64.97311592102051,
+        "predicted_per_second": 46.172943339314614,
+        "prompt_per_second": 1036.3383871306908
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 46.172943339314614,
+      "ttft_client_s": 0.048986196517944336,
+      "score": 1.0,
+      "t_send": 1793278044.3465118,
+      "t_done": 1793278044.4604921
+    },
+    "extract_01": {
+      "timings": {
+        "prompt_n": 67,
+        "prompt_ms": 63.868045806884766,
+        "predicted_n": 4,
+        "predicted_ms": 96.84491157531738,
+        "predicted_per_second": 41.30315093415264,
+        "prompt_per_second": 1049.0378898171582
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 41.30315093415264,
+      "ttft_client_s": 0.06783699989318848,
+      "score": 1.0,
+      "t_send": 1793278044.460568,
+      "t_done": 1793278044.625251
+    },
+    "extract_02": {
+      "timings": {
+        "prompt_n": 69,
+        "prompt_ms": 61.96308135986328,
+        "predicted_n": 6,
+        "predicted_ms": 159.54995155334473,
+        "predicted_per_second": 37.605777636315544,
+        "prompt_per_second": 1113.566312160436
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 37.605777636315544,
+      "ttft_client_s": 0.06555533409118652,
+      "score": 1.0,
+      "t_send": 1793278044.6252868,
+      "t_done": 1793278044.850386
+    },
+    "extract_03": {
+      "timings": {
+        "prompt_n": 86,
+        "prompt_ms": 65.40679931640625,
+        "predicted_n": 11,
+        "predicted_ms": 315.5629634857178,
+        "predicted_per_second": 34.85833660101831,
+        "prompt_per_second": 1314.848011197947
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 34.85833660101831,
+      "ttft_client_s": 0.06922173500061035,
+      "score": 1.0,
+      "t_send": 1793278044.850433,
+      "t_done": 1793278045.235339
+    },
+    "extract_04": {
+      "timings": {
+        "prompt_n": 75,
+        "prompt_ms": 64.13793563842773,
+        "predicted_n": 17,
+        "predicted_ms": 506.9870948791504,
+        "predicted_per_second": 33.53142549723531,
+        "prompt_per_second": 1169.354754771127
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 33.53142549723531,
+      "ttft_client_s": 0.06793904304504395,
+      "score": 1.0,
+      "t_send": 1793278045.235382,
+      "t_done": 1793278045.8103611
+    },
+    "extract_05": {
+      "timings": {
+        "prompt_n": 70,
+        "prompt_ms": 62.219858169555664,
+        "predicted_n": 5,
+        "predicted_ms": 129.1790008544922,
+        "predicted_per_second": 38.705981366367915,
+        "prompt_per_second": 1125.0427445405394
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 38.705981366367915,
+      "ttft_client_s": 0.06594300270080566,
+      "score": 1.0,
+      "t_send": 1793278045.810403,
+      "t_done": 1793278046.0055602
+    },
+    "extract_06": {
+      "timings": {
+        "prompt_n": 75,
+        "prompt_ms": 60.39881706237793,
+        "predicted_n": 5,
+        "predicted_ms": 126.59406661987305,
+        "predicted_per_second": 39.49632185380075,
+        "prompt_per_second": 1241.7461739779183
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 39.49632185380075,
+      "ttft_client_s": 0.0639650821685791,
+      "score": 1.0,
+      "t_send": 1793278046.00559,
+      "t_done": 1793278046.196258
+    },
+    "json_01": {
+      "timings": {
+        "prompt_n": 57,
+        "prompt_ms": 48.48790168762207,
+        "predicted_n": 18,
+        "predicted_ms": 536.6809368133545,
+        "predicted_per_second": 33.5394808447612,
+        "prompt_per_second": 1175.5509728430027
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 33.5394808447612,
+      "ttft_client_s": 0.05232810974121094,
+      "score": 1.0,
+      "t_send": 1793278046.196295,
+      "t_done": 1793278046.7853959
+    },
+    "json_02": {
+      "timings": {
+        "prompt_n": 53,
+        "prompt_ms": 48.13504219055176,
+        "predicted_n": 20,
+        "predicted_ms": 603.2111644744873,
+        "predicted_per_second": 33.15588499994664,
+        "prompt_per_second": 1101.0689424596196
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 33.15588499994664,
+      "ttft_client_s": 0.051744937896728516,
+      "score": 1.0,
+      "t_send": 1793278046.785436,
+      "t_done": 1793278047.4405382
+    },
+    "json_03": {
+      "timings": {
+        "prompt_n": 48,
+        "prompt_ms": 48.89512062072754,
+        "predicted_n": 21,
+        "predicted_ms": 638.2739543914795,
+        "predicted_per_second": 32.90123285701212,
+        "prompt_per_second": 981.6930481126969
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 32.90123285701212,
+      "ttft_client_s": 0.05258584022521973,
+      "score": 1.0,
+      "t_send": 1793278047.4405801,
+      "t_done": 1793278048.131478
+    },
+    "json_04": {
+      "timings": {
+        "prompt_n": 52,
+        "prompt_ms": 49.86691474914551,
+        "predicted_n": 20,
+        "predicted_ms": 642.0779228210449,
+        "predicted_per_second": 31.14886727786504,
+        "prompt_per_second": 1042.7755609422586
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 31.14886727786504,
+      "ttft_client_s": 0.0532069206237793,
+      "score": 1.0,
+      "t_send": 1793278048.13152,
+      "t_done": 1793278048.826856
+    },
+    "json_05": {
+      "timings": {
+        "prompt_n": 58,
+        "prompt_ms": 47.7139949798584,
+        "predicted_n": 26,
+        "predicted_ms": 798.2087135314941,
+        "predicted_per_second": 32.572934320610045,
+        "prompt_per_second": 1215.576269069141
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 32.572934320610045,
+      "ttft_client_s": 0.05135607719421387,
+      "score": 1.0,
+      "t_send": 1793278048.826889,
+      "t_done": 1793278049.676609
+    },
+    "json_06": {
+      "timings": {
+        "prompt_n": 73,
+        "prompt_ms": 62.13498115539551,
+        "predicted_n": 50,
+        "predicted_ms": 1644.3159580230713,
+        "predicted_per_second": 30.407781275877184,
+        "prompt_per_second": 1174.8615456634934
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 30.407781275877184,
+      "ttft_client_s": 0.06598091125488281,
+      "score": 1.0,
+      "t_send": 1793278049.676799,
+      "t_done": 1793278051.38718
+    },
+    "code_01": {
+      "timings": {
+        "prompt_n": 62,
+        "prompt_ms": 51.84197425842285,
+        "predicted_n": 20,
+        "predicted_ms": 611.5829944610596,
+        "predicted_per_second": 32.70202111754994,
+        "prompt_per_second": 1195.942108434012
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 32.70202111754994,
+      "ttft_client_s": 0.05595517158508301,
+      "score": 1.0,
+      "t_send": 1793278051.3872159,
+      "t_done": 1793278052.05478
+    },
+    "code_02": {
+      "timings": {
+        "prompt_n": 67,
+        "prompt_ms": 60.93406677246094,
+        "predicted_n": 20,
+        "predicted_ms": 634.8459720611572,
+        "predicted_per_second": 31.50370464676008,
+        "prompt_per_second": 1099.5491282436535
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 31.50370464676008,
+      "ttft_client_s": 0.06450676918029785,
+      "score": 1.0,
+      "t_send": 1793278052.0548182,
+      "t_done": 1793278052.7543721
+    },
+    "code_03": {
+      "timings": {
+        "prompt_n": 74,
+        "prompt_ms": 63.961029052734375,
+        "predicted_n": 75,
+        "predicted_ms": 2488.075017929077,
+        "predicted_per_second": 30.143785641329035,
+        "prompt_per_second": 1156.9544939464424
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 30.143785641329035,
+      "ttft_client_s": 0.06759881973266602,
+      "score": 1.0,
+      "t_send": 1793278052.7544231,
+      "t_done": 1793278055.310153
+    },
+    "code_04": {
+      "timings": {
+        "prompt_n": 74,
+        "prompt_ms": 63.035011291503906,
+        "predicted_n": 36,
+        "predicted_ms": 1195.678949356079,
+        "predicted_per_second": 30.10841666100038,
+        "prompt_per_second": 1173.9507693238725
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 30.10841666100038,
+      "ttft_client_s": 0.06699299812316895,
+      "score": 1.0,
+      "t_send": 1793278055.31019,
+      "t_done": 1793278056.57294
+    },
+    "code_05": {
+      "timings": {
+        "prompt_n": 64,
+        "prompt_ms": 385.2579593658447,
+        "predicted_n": 22,
+        "predicted_ms": 661.9341373443604,
+        "predicted_per_second": 33.235935055808824,
+        "prompt_per_second": 166.12246014423022
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 33.235935055808824,
+      "ttft_client_s": 0.389437198638916,
+      "score": 1.0,
+      "t_send": 1793278056.5729878,
+      "t_done": 1793278057.624365
+    },
+    "code_06": {
+      "timings": {
+        "prompt_n": 66,
+        "prompt_ms": 63.47084045410156,
+        "predicted_n": 23,
+        "predicted_ms": 691.6141510009766,
+        "predicted_per_second": 33.25553701686408,
+        "prompt_per_second": 1039.8475824142802
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 33.25553701686408,
+      "ttft_client_s": 0.06732010841369629,
+      "score": 1.0,
+      "t_send": 1793278057.624405,
+      "t_done": 1793278058.383415
+    },
+    "fact_01": {
+      "timings": {
+        "prompt_n": 44,
+        "prompt_ms": 51.4369010925293,
+        "predicted_n": 3,
+        "predicted_ms": 73.71234893798828,
+        "predicted_per_second": 40.69874374134786,
+        "prompt_per_second": 855.4170073513734
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 40.69874374134786,
+      "ttft_client_s": 0.05513501167297363,
+      "score": 1.0,
+      "t_send": 1793278058.3834538,
+      "t_done": 1793278058.512585
+    },
+    "fact_02": {
+      "timings": {
+        "prompt_n": 43,
+        "prompt_ms": 50.4460334777832,
+        "predicted_n": 2,
+        "predicted_ms": 34.85274314880371,
+        "predicted_per_second": 57.38429229116929,
+        "prompt_per_second": 852.3960564498597
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 57.38429229116929,
+      "ttft_client_s": 0.054292917251586914,
+      "score": 1.0,
+      "t_send": 1793278058.5126321,
+      "t_done": 1793278058.6019251
+    },
+    "fact_03": {
+      "timings": {
+        "prompt_n": 44,
+        "prompt_ms": 48.632144927978516,
+        "predicted_n": 2,
+        "predicted_ms": 33.99014472961426,
+        "predicted_per_second": 58.84058499631747,
+        "prompt_per_second": 904.7513751483003
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 58.84058499631747,
+      "ttft_client_s": 0.052464962005615234,
+      "score": 1.0,
+      "t_send": 1793278058.601963,
+      "t_done": 1793278058.688566
+    },
+    "fact_04": {
+      "timings": {
+        "prompt_n": 44,
+        "prompt_ms": 50.576210021972656,
+        "predicted_n": 3,
+        "predicted_ms": 64.6200180053711,
+        "predicted_per_second": 46.42524240322319,
+        "prompt_per_second": 869.9742424528124
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 46.42524240322319,
+      "ttft_client_s": 0.05473804473876953,
+      "score": 1.0,
+      "t_send": 1793278058.688608,
+      "t_done": 1793278058.8081138
+    },
+    "fact_05": {
+      "timings": {
+        "prompt_n": 47,
+        "prompt_ms": 46.38218879699707,
+        "predicted_n": 5,
+        "predicted_ms": 129.32682037353516,
+        "predicted_per_second": 38.66174073992139,
+        "prompt_per_second": 1013.3200096637727
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 38.66174073992139,
+      "ttft_client_s": 0.050009727478027344,
+      "score": 1.0,
+      "t_send": 1793278058.8081532,
+      "t_done": 1793278058.987694
+    },
+    "fact_06": {
+      "timings": {
+        "prompt_n": 43,
+        "prompt_ms": 45.861244201660156,
+        "predicted_n": 4,
+        "predicted_ms": 95.92270851135254,
+        "predicted_per_second": 41.70024035055887,
+        "prompt_per_second": 937.6108465553453
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 41.70024035055887,
+      "ttft_client_s": 0.04943680763244629,
+      "score": 1.0,
+      "t_send": 1793278058.9877272,
+      "t_done": 1793278059.133107
+    },
+    "long_01": {
+      "timings": {
+        "prompt_n": 70,
+        "prompt_ms": 59.597015380859375,
+        "predicted_n": 107,
+        "predicted_ms": 3403.934955596924,
+        "predicted_per_second": 31.434208172534298,
+        "prompt_per_second": 1174.5554630992767
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 31.434208172534298,
+      "ttft_client_s": 0.06335687637329102,
+      "score": 0.75,
+      "t_send": 1793278059.1331441,
+      "t_done": 1793278062.600496
+    },
+    "long_02": {
+      "timings": {
+        "prompt_n": 71,
+        "prompt_ms": 62.35003471374512,
+        "predicted_n": 400,
+        "predicted_ms": 13554.18086051941,
+        "predicted_per_second": 29.511189507963493,
+        "prompt_per_second": 1138.7323251056346
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 29.511189507963493,
+      "ttft_client_s": 0.06613397598266602,
+      "score": 0.8,
+      "t_send": 1793278062.6005619,
+      "t_done": 1793278076.220913
+    },
+    "long_03": {
+      "timings": {
+        "prompt_n": 69,
+        "prompt_ms": 63.08102607727051,
+        "predicted_n": 125,
+        "predicted_ms": 4044.9352264404297,
+        "predicted_per_second": 30.90284343316935,
+        "prompt_per_second": 1093.8312879609648
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 30.90284343316935,
+      "ttft_client_s": 0.0667572021484375,
+      "score": 1.0,
+      "t_send": 1793278076.22097,
+      "t_done": 1793278080.332709
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "test -x /Users/orosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "m5",
+      "cmd": "test -f /Users/orosentswaig/models/hf/Qwen2.5-1.5B-Instruct/config.json"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne' rev-parse --short HEAD"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp serve --model /Users/orosentswaig/models/hf/Qwen2.5-1.5B-Instruct --world 1 --max-seq-len 4096 --host 127.0.0.1 --port 8092"
+    }
+  ]
+}

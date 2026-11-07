@@ -1,0 +1,410 @@
+{
+  "schema_version": 3,
+  "id": "B1t_wifi_qwen2.5-1.5b-bf16_m5_loopback_r6",
+  "cell": {
+    "partition": "TP",
+    "decode": "single",
+    "row": "B",
+    "col": 1,
+    "name": "B1t"
+  },
+  "date": "2026-11-07T15:20:55+02:00",
+  "model": {
+    "name": "qwen2.5-1.5b-bf16",
+    "quant": "bf16",
+    "sha256": "cb2b237a41d17d0f8660027bf9ece59c8334e568c7cf391f8ebc233762d1a6af"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "torch_tp",
+    "commit": "fb5b48e",
+    "flags": [
+      "--model",
+      "~/models/hf/Qwen2.5-1.5B-Instruct",
+      "--world",
+      "2",
+      "--max-seq-len",
+      "4096"
+    ],
+    "format": "safetensors-bf16",
+    "runtime": "torch 2.14.1 mps",
+    "world": 2
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    },
+    {
+      "host": "MMF4FWRG4R",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": null,
+    "bw_mbps": null,
+    "measured_at": "2026-11-07T15:20:55+02:00",
+    "rtt_source": null,
+    "ping_decode_ms": null,
+    "awdl": "down",
+    "added_delay_ms": null,
+    "added_delay_measured_ms": null
+  },
+  "prompts": {
+    "set": "eval_long",
+    "version": "1",
+    "subset": null,
+    "ids": [
+      "longopen_01",
+      "longopen_02",
+      "longopen_03",
+      "longopen_04",
+      "longopen_05",
+      "longopen_06",
+      "longopen_07",
+      "longopen_08",
+      "longopen_09",
+      "longopen_10"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    },
+    "fixed_tokens": 64
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": null,
+  "setup": {
+    "load_total_s": 3.0579099655151367,
+    "transfer_s": null,
+    "cache_state": null,
+    "bytes_sent_gb": null
+  },
+  "timing": {
+    "decode_tps_median": 16.373996840798384,
+    "prefill_tps_median": 643.6780960224064,
+    "ttft_s_median": 0.10417258739471436,
+    "ttft_server_s_median": 0.10048103332519531,
+    "decode_ms_per_step_pooled": 61.744849265567844,
+    "decode_tps_pooled": 16.195682909499826,
+    "decode_steps_total": 630,
+    "warmup_s": 0.651170015335083
+  },
+  "comm": {
+    "rpc_commands_per_step": 56.0,
+    "tokens_per_step": 1.0,
+    "rpc_commands_per_token": 56.0,
+    "bytes_per_step": null,
+    "bytes_per_token": 344381.625,
+    "packets_per_token": 111.234375,
+    "serial_waits_per_token": null,
+    "compute_steps": 648,
+    "tokens_generated": 648,
+    "capture_iface": "lo0",
+    "source": "rpc_commands: engine counters: all-reduce frames sent by rank 0 (one per all-reduce, 2 per layer), per step over prefill plus decode steps, per token over generated tokens; blocking_syncs and messages per step: 2 * layers all-reduces plus the STEP frame; engine_bytes: frame bytes sent plus received by rank 0 over the whole run (prefill frames included) per generated token; bytes: tcpdump on torch_port inside the decode windows, as in row A",
+    "blocking_syncs_per_step": 57,
+    "messages_per_step": 57,
+    "bytes_per_step_decode": 349848.0,
+    "bytes_per_step_decode_out": 176472.0,
+    "bytes_per_step_decode_in": 173376.0,
+    "graph_meta_bytes_per_step": null,
+    "worker_capture": false,
+    "clock_offset_s": null,
+    "clock_offset_unc_s": null,
+    "engine_frames_per_token": 57.02006172839506,
+    "engine_bytes_per_token": 718948.9830246913
+  },
+  "memory_buffers_gb": {
+    "m5": 2.24,
+    "loop": 2.24
+  },
+  "memory_peak_gb": {
+    "m5": 0.456,
+    "loop": 0.34
+  },
+  "utilization": {
+    "m5": 0.9999457219251338,
+    "loop": 0.9999459893048129
+  },
+  "correctness": {
+    "exact_match_ratio": null,
+    "first_divergence_median": null,
+    "task_accuracy": null,
+    "baseline_task_accuracy": null
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": null,
+    "a1_id": null
+  },
+  "notes": [
+    "fixed tokens 64: every prompt decodes exactly 64 tokens (ignore_eos); task accuracy not graded",
+    "ping 127.0.0.1: no replies",
+    "iperf3 to 127.0.0.1: unable to connect to server - server may have stopped running or use a different port, firewall issue, etc.: Connection refused (is `iperf3 -s` running on the peer?)",
+    "warm-up request (longopen_01, 8 tokens) took 0.7 s; not in the timings",
+    "torch_tp: each rank reads its own slice from local safetensors; no weight transfer, so transfer_s, cache_state and bytes_sent_gb are null. model.sha256 is sha256(config.json + safetensors index or first MiB), not of the weights",
+    "background ping to 127.0.0.1: no replies; ping_decode_ms null",
+    "no matching BASELINE record for qwen2.5-1.5b-bf16 (sha cb2b237a, bf16) with engine torch_tp on MMF4FWRG4R at fb5b48e with prompts eval_long v1; run: python -m nocturne.bench.run --cell BASELINE --host m5 --model qwen2.5-1.5b-bf16",
+    "quality_pass null: no baseline or no graded prompt"
+  ],
+  "outputs": {
+    "longopen_01": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving a router, access point, radio channels, and packet transmission. Here's a simplified explanation:\n\n1. **Router and Access Point**: The router is the central hub of your Wi-Fi network. It connects to the",
+    "longopen_02": "In the early hours of the morning, the lighthouse keeper, Mr. John Smith, would awaken to the sound of the sea and the distant cries of seagulls. He would then make his way to the small cottage that served as his home and office, where he would prepare a hearty breakfast of porridge and",
+    "longopen_03": "Matrix multiplication on a GPU is fast because GPUs are designed to perform parallel operations efficiently. GPUs have a large number of processing units (cores) that can execute instructions simultaneously, which allows them to perform matrix multiplications much faster than a CPU. Additionally, GPUs have specialized hardware for matrix operations, such as the Streaming Multiprocess",
+    "longopen_04": "Chapter 1: The Tide of Suspicion\n\nThe small coastal town of Millhaven lay nestled between the rolling waves of the Atlantic and the dense, whispering pines of the nearby forest. The town was a place where the sea and the land intertwined, where the rhythm of the tides and the heartbeat of the",
+    "longopen_05": "Bread rises due to the action of yeast, which is a type of fungus that ferments sugars in the dough, producing carbon dioxide gas. This gas causes the dough to expand and rise. The process of bread rising is called fermentation.\n\nYeast is the key ingredient in bread that causes it to rise. It is",
+    "longopen_06": "The bicycle, also known as a bicycle or bicycle, is a two-wheeled, pedal-driven vehicle. It was invented in the 19th century and has since become a popular mode of transportation and recreation. The bicycle has a rich history that spans over a century, with many important inventions and developments that have",
+    "longopen_07": "Welcome to the exciting world of public libraries! As a new volunteer, you'll be playing a crucial role in helping to run the library smoothly. Here's a guide to help you understand how a public library operates:\n\n1. Acquisitions: This is the process of acquiring new books, magazines, and other materials for the",
+    "longopen_08": "Weather and climate are two distinct concepts in meteorology. Weather refers to the short-term conditions of the atmosphere, including temperature, humidity, wind, and precipitation. It can change rapidly and is influenced by local factors such as topography, proximity to water bodies, and proximity to large cities. Climate, on the other hand",
+    "longopen_09": "Dear [Your Sibling's Name],\n\nI hope this letter finds you well. I am writing to you from the International Space Station, where I have been living for the past six months. It's been an incredible experience, and I wanted to share some of the things I've been doing and the view from up here",
+    "longopen_10": "A city bus network is a complex system that involves planning routes, frequencies, transfers, depots, and deciding where new lines should go. Here's a step-by-step explanation of how this planning process works:\n\n1. **Route Planning:**\n   - **Demand Analysis:** The first step is to analyze the demand for"
+  },
+  "per_prompt": {
+    "longopen_01": {
+      "timings": {
+        "prompt_n": 78,
+        "prompt_ms": 105.63993453979492,
+        "predicted_n": 64,
+        "predicted_ms": 3887.7320289611816,
+        "predicted_per_token_ms": 61.71003220573304,
+        "predicted_per_second": 16.204820581945786,
+        "prompt_per_second": 738.3571406002446
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 16.462039956262384,
+      "decode_ms_per_step": 61.71003220573304,
+      "ttft_client_s": 0.10934925079345703,
+      "score": null,
+      "t_send": 1794057684.5220768,
+      "t_done": 1794057688.5190709
+    },
+    "longopen_02": {
+      "timings": {
+        "prompt_n": 71,
+        "prompt_ms": 109.05718803405762,
+        "predicted_n": 64,
+        "predicted_ms": 3916.210889816284,
+        "predicted_per_token_ms": 62.1620776161315,
+        "predicted_per_second": 16.086978401450548,
+        "prompt_per_second": 651.034574427385
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 16.342327264965636,
+      "decode_ms_per_step": 62.1620776161315,
+      "ttft_client_s": 0.11258506774902344,
+      "score": null,
+      "t_send": 1794057688.519099,
+      "t_done": 1794057692.5478761
+    },
+    "longopen_03": {
+      "timings": {
+        "prompt_n": 64,
+        "prompt_ms": 100.57806968688965,
+        "predicted_n": 64,
+        "predicted_ms": 3830.336809158325,
+        "predicted_per_token_ms": 60.798996970767064,
+        "predicted_per_second": 16.447639760912715,
+        "prompt_per_second": 636.3216176174278
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 16.70871340791133,
+      "decode_ms_per_step": 60.798996970767064,
+      "ttft_client_s": 0.10424923896789551,
+      "score": null,
+      "t_send": 1794057692.5479019,
+      "t_done": 1794057696.482532
+    },
+    "longopen_04": {
+      "timings": {
+        "prompt_n": 60,
+        "prompt_ms": 90.6682014465332,
+        "predicted_n": 64,
+        "predicted_ms": 3915.9679412841797,
+        "predicted_per_token_ms": 62.15822129022507,
+        "predicted_per_second": 16.087976445317924,
+        "prompt_per_second": 661.7535039049146
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 16.34334115079916,
+      "decode_ms_per_step": 62.15822129022507,
+      "ttft_client_s": 0.09441828727722168,
+      "score": null,
+      "t_send": 1794057696.4825559,
+      "t_done": 1794057700.492918
+    },
+    "longopen_05": {
+      "timings": {
+        "prompt_n": 57,
+        "prompt_ms": 95.72386741638184,
+        "predicted_n": 64,
+        "predicted_ms": 3931.0142993927,
+        "predicted_per_token_ms": 62.397052371312704,
+        "predicted_per_second": 16.026398074851272,
+        "prompt_per_second": 595.4627778677194
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 16.28078534588066,
+      "decode_ms_per_step": 62.397052371312704,
+      "ttft_client_s": 0.09939408302307129,
+      "score": null,
+      "t_send": 1794057700.4929438,
+      "t_done": 1794057704.5233479
+    },
+    "longopen_06": {
+      "timings": {
+        "prompt_n": 56,
+        "prompt_ms": 103.06215286254883,
+        "predicted_n": 64,
+        "predicted_ms": 3861.3622188568115,
+        "predicted_per_token_ms": 61.29146379137796,
+        "predicted_per_second": 16.315485683353394,
+        "prompt_per_second": 543.3614420483304
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 16.574461646581224,
+      "decode_ms_per_step": 61.29146379137796,
+      "ttft_client_s": 0.10657691955566406,
+      "score": null,
+      "t_send": 1794057704.523374,
+      "t_done": 1794057708.491344
+    },
+    "longopen_07": {
+      "timings": {
+        "prompt_n": 60,
+        "prompt_ms": 90.34299850463867,
+        "predicted_n": 64,
+        "predicted_ms": 3916.370153427124,
+        "predicted_per_token_ms": 62.16460560995435,
+        "predicted_per_second": 16.086324206324107,
+        "prompt_per_second": 664.1355832009416
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 16.34166268578957,
+      "decode_ms_per_step": 62.16460560995435,
+      "ttft_client_s": 0.0941162109375,
+      "score": null,
+      "t_send": 1794057708.4913669,
+      "t_done": 1794057712.501792
+    },
+    "longopen_08": {
+      "timings": {
+        "prompt_n": 58,
+        "prompt_ms": 100.38399696350098,
+        "predicted_n": 64,
+        "predicted_ms": 3901.50785446167,
+        "predicted_per_token_ms": 61.92869610256619,
+        "predicted_per_second": 16.147603016601575,
+        "prompt_per_second": 577.7813372094404
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 16.40391417559525,
+      "decode_ms_per_step": 61.92869610256619,
+      "ttft_client_s": 0.1040959358215332,
+      "score": null,
+      "t_send": 1794057712.501819,
+      "t_done": 1794057716.5074189
+    },
+    "longopen_09": {
+      "timings": {
+        "prompt_n": 59,
+        "prompt_ms": 103.10697555541992,
+        "predicted_n": 64,
+        "predicted_ms": 3822.9618072509766,
+        "predicted_per_token_ms": 60.6819334484282,
+        "predicted_per_second": 16.479369446095035,
+        "prompt_per_second": 572.2212263736467
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 16.740946738890194,
+      "decode_ms_per_step": 60.6819334484282,
+      "ttft_client_s": 0.10668492317199707,
+      "score": null,
+      "t_send": 1794057716.507444,
+      "t_done": 1794057720.437185
+    },
+    "longopen_10": {
+      "timings": {
+        "prompt_n": 59,
+        "prompt_ms": 86.4870548248291,
+        "predicted_n": 64,
+        "predicted_ms": 3915.7910346984863,
+        "predicted_per_token_ms": 62.155413249182324,
+        "predicted_per_second": 16.08870326372024,
+        "prompt_per_second": 682.1830170942762
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 16.344079506001517,
+      "decode_ms_per_step": 62.155413249182324,
+      "ttft_client_s": 0.09027409553527832,
+      "score": null,
+      "t_send": 1794057720.437213,
+      "t_done": 1794057724.4432771
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "test -x /Users/orosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "m5",
+      "cmd": "test -f \"$HOME\"/models/hf/Qwen2.5-1.5B-Instruct/config.json"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "loop",
+      "cmd": "test -x /Users/orosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "loop",
+      "cmd": "test -f \"$HOME\"/models/hf/Qwen2.5-1.5B-Instruct/config.json"
+    },
+    {
+      "host": "loop",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne' rev-parse --short HEAD"
+    },
+    {
+      "host": "loop",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp worker --bind 127.0.0.1 --port 50053 --model \"$HOME\"/models/hf/Qwen2.5-1.5B-Instruct --rank 1 --world 2"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp serve --model \"$HOME\"/models/hf/Qwen2.5-1.5B-Instruct --world 2 --max-seq-len 4096 --host 127.0.0.1 --port 8092 --peer 127.0.0.1:50053"
+    },
+    {
+      "host": "loop",
+      "cmd": "pkill -f 'torch_tp worker.*--port 50053'"
+    }
+  ]
+}

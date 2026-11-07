@@ -1,0 +1,119 @@
+# The experiment matrix. Rows = partition, columns = what fills idle workers during decode.
+# status: ready | later | tool_unsupported. Flag templates are expanded by the adapter named in `adapter`.
+# {rpc} = comma list of worker endpoints, {ts} = tensor split (remote first), {k} = parallel slots,
+# {draft} = draft GGUF path, {model} = main GGUF path, {req_device} = the requester's own device (e.g. MTL0),
+# {torch_model} = safetensors directory for the torch_tp engine (models.<name>.torch_model), {ctx} = context length.
+
+rows:
+  A: {partition: PP, name: "llama.cpp RPC layer split"}
+  B: {partition: TP, name: "tensor parallel: B1 llama.cpp --split-mode tensor over RPC, B1t own torch engine, B1d distributed-llama"}
+  C: {partition: EP, name: "MoE experts pinned to RPC devices with -ot"}
+  D: {partition: hybrid, name: "reference engine, later"}
+cols:
+  1: {decode: single, name: "single prompt"}
+  2: {decode: speculative, name: "speculative draft peer (--model-draft)"}
+  3: {decode: outline, name: "outline decoding, one request becomes k sequences"}
+  4: {decode: independent, name: "k independent requests (llama-server -np k)"}
+
+cells:
+  BASELINE:
+    partition: none
+    decode: single
+    adapter: llamacpp_rpc
+    status: ready
+    flags: ["-m", "{model}", "-ngl", "99", "-np", "1"]
+    flags_by_engine:
+      torch_tp: ["--model", "{torch_model}", "--world", "1", "--max-seq-len", "{ctx}"]
+    notes: "Single machine, no --rpc. Reference for correctness of every other cell on the same host and engine. The
+            adapter comes from models.<name>.engine in peers.yaml (default llamacpp_rpc, ADR-007 amendment 2); the
+            flag template from flags_by_engine.<adapter> when present, else flags."
+  A1:
+    partition: PP
+    decode: single
+    adapter: llamacpp_rpc
+    status: ready
+    flags: ["-m", "{model}", "-ngl", "99", "--rpc", "{rpc}", "-ts", "{ts}", "-np", "1"]
+  A2:
+    partition: PP
+    decode: speculative
+    adapter: llamacpp_rpc
+    status: ready
+    flags: ["-m", "{model}", "-ngl", "99", "--rpc", "{rpc}", "-ts", "{ts}", "-np", "1",
+            "--model-draft", "{draft}", "--spec-type", "draft-simple", "--device-draft", "{req_device}", "-ngld", "all",
+            "--spec-draft-n-max", "8", "--spec-draft-p-min", "0"]
+    notes: "Draft on the requester only (--device-draft {req_device}). --spec-type is required on 1e7bcf3: without it the
+            draft loads but speculation is off ('no implementations specified'), seen in A2 r1-r3 on 2026-10-26.
+            Greedy output must equal A1; otherwise failure_class = wrong_output."
+  A2b:
+    partition: PP
+    decode: speculative
+    adapter: llamacpp_rpc
+    status: ready
+    flags: ["-m", "{model}", "-ngl", "99", "--rpc", "{rpc}", "-ts", "{ts}", "-np", "1",
+            "--model-draft", "{draft}", "--spec-type", "draft-simple", "--device-draft", "{req_device}", "-ngld", "all",
+            "--spec-draft-n-max", "4", "--spec-draft-p-min", "0.75"]
+    notes: "A2 with a shorter, more selective draft. On Wi-Fi A2 (n-max 8, p-min 0) reached acceptance 0.39: it drafted 8
+            tokens per step and the target discarded most of them, so every verify step carried wasted RPC traffic. n-max 4
+            and p-min 0.75 stop drafting when the draft is unsure. Reported as its own row next to A2."
+  A3:
+    partition: PP
+    decode: outline
+    adapter: llamacpp_rpc
+    status: later
+    flags: ["-m", "{model}", "-ngl", "99", "--rpc", "{rpc}", "-ts", "{ts}", "-np", "{k}"]
+    notes: "Outline decoding needs a planner that splits one request into k sequences. Not in this session."
+  A4:
+    partition: PP
+    decode: independent
+    adapter: llamacpp_rpc
+    status: ready
+    flags: ["-m", "{model}", "-ngl", "99", "--rpc", "{rpc}", "-ts", "{ts}", "-np", "{k}", "-cb"]
+    notes: "k long prompts sent concurrently to llama-server slots."
+  B1:
+    partition: TP
+    decode: single
+    adapter: llamacpp_rpc
+    status: ready
+    flags: ["-m", "{model}", "-ngl", "99", "--rpc", "{rpc}", "--split-mode", "tensor", "-ts", "{ts}", "-fit", "off", "-np", "1"]
+    notes: "Supervisor question Q7. Meta backend from llama.cpp PR 19378; upstream documents it for CUDA only and issue 13083
+            says --split-mode row is a no-op over RPC. -fit off is mandatory: common/fit.cpp throws for SPLIT_MODE_TENSOR
+            when fit is on (1e7bcf3). Expected outcomes: (a) loads with both sides holding about half the weights and
+            decodes; (b) loads but load_tensors shows everything local, RPC device ignored; (c) assert or crash. (b) and
+            (c) are failure_class tool_unsupported with the first error line in notes. A failure here says nothing about
+            engine B (ADR-007 symmetric rule)."
+  B1t:
+    partition: TP
+    decode: single
+    adapter: torch_tp
+    status: ready
+    flags: ["--model", "{torch_model}", "--world", "2", "--max-seq-len", "{ctx}", "--reduce-dtype", "bfloat16"]
+    notes: "Own PyTorch engine, engine B spike of ADR-007 amendment 2. Two all-reduces per layer over our TCP transport.
+            System comparison against row A (bf16 vs Q4_K_M, ATen vs ggml kernels); judged by the ADR-007 mandatory
+            requirements, not by tok/s. Expect roughly 1 to 2 tok/s on Wi-Fi for 7B: 56 blocking round trips per token at
+            6 to 20 ms RTT. That number is the measurement, not a bug."
+  B1d:
+    partition: TP
+    decode: single
+    adapter: distributed_llama
+    status: ready
+    flags: ["--model", "{dllama_model}", "--tokenizer", "{dllama_tokenizer}", "--buffer-float-type", "q80",
+            "--nthreads", "{nthreads}", "--workers", "{workers}", "--max-seq-len", "{ctx}"]
+    notes: "distributed-llama tensor parallel: dllama worker on each worker, dllama-api on the root (requester). A system
+            comparison (different engine, weight format q40, CPU or Vulkan backend), not PP vs TP inside one engine. ADR-007
+            amendment 1 accepted 2026-10-27; needs models.<name>.dllama_path. Renamed from B1 by amendment 2. Node count must be a power of two (1 root + 1 worker)."
+  B2d: {partition: TP, decode: speculative, adapter: distributed_llama, status: tool_unsupported, flags: [],
+       notes: "distributed-llama has no draft model support."}
+  B3d: {partition: TP, decode: outline, adapter: distributed_llama, status: later, flags: []}
+  B4d: {partition: TP, decode: independent, adapter: distributed_llama, status: tool_unsupported, flags: [],
+       notes: "dllama-api serves one request at a time (src/dllama-api.cpp server loop, read 2026-10-26); there is no -np
+               equivalent, so k independent requests would serialize."}
+  C1: {partition: EP, decode: single, adapter: llamacpp_rpc, status: later,
+       flags: ["-m", "{model}", "-ngl", "99", "--rpc", "{rpc}", "-ot", "{ot}", "-np", "1"],
+       notes: "--rpc must precede -ot so RPC[ip:port] resolves at parse time (verified in source, not run)."}
+  C2: {partition: EP, decode: speculative, adapter: llamacpp_rpc, status: later, flags: []}
+  C3: {partition: EP, decode: outline, adapter: llamacpp_rpc, status: later, flags: []}
+  C4: {partition: EP, decode: independent, adapter: llamacpp_rpc, status: later, flags: []}
+  D1: {partition: hybrid, decode: single, adapter: reference, status: later, flags: []}
+  D2: {partition: hybrid, decode: speculative, adapter: reference, status: later, flags: []}
+  D3: {partition: hybrid, decode: outline, adapter: reference, status: later, flags: []}
+  D4: {partition: hybrid, decode: independent, adapter: reference, status: later, flags: []}

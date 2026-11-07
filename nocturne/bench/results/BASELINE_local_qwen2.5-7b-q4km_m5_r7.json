@@ -1,0 +1,874 @@
+{
+  "schema_version": 2,
+  "id": "BASELINE_local_qwen2.5-7b-q4km_m5_r7",
+  "cell": {
+    "partition": "none",
+    "decode": "single",
+    "row": "BASELINE",
+    "col": 0,
+    "name": "BASELINE"
+  },
+  "date": "2026-10-26T16:31:54+02:00",
+  "model": {
+    "name": "qwen2.5-7b-q4km",
+    "quant": "Q4_K_M",
+    "sha256": "65b8fcd92af6b4fefa935c625d1ac27ea29dcb6ee14589c55a8f115ceaaa1423"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "llama.cpp",
+    "commit": "1e7bcf3",
+    "flags": [
+      "-m",
+      "/Users/orosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+      "-ngl",
+      "99",
+      "-np",
+      "1",
+      "--port",
+      "8089",
+      "-c",
+      "4096",
+      "--host",
+      "127.0.0.1",
+      "--temp",
+      "0",
+      "--seed",
+      "42",
+      "--samplers",
+      "temperature",
+      "--repeat-penalty",
+      "1.0",
+      "--metrics",
+      "-lv",
+      "4"
+    ]
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    }
+  ],
+  "network": {
+    "type": "local",
+    "rtt_ms_median": null,
+    "bw_mbps": null,
+    "measured_at": "2026-10-26T16:31:54+02:00"
+  },
+  "prompts": {
+    "set": "eval_set",
+    "version": "1",
+    "subset": null,
+    "ids": [
+      "arith_01",
+      "arith_02",
+      "arith_03",
+      "arith_04",
+      "arith_05",
+      "arith_06",
+      "extract_01",
+      "extract_02",
+      "extract_03",
+      "extract_04",
+      "extract_05",
+      "extract_06",
+      "json_01",
+      "json_02",
+      "json_03",
+      "json_04",
+      "json_05",
+      "json_06",
+      "code_01",
+      "code_02",
+      "code_03",
+      "code_04",
+      "code_05",
+      "code_06",
+      "fact_01",
+      "fact_02",
+      "fact_03",
+      "fact_04",
+      "fact_05",
+      "fact_06",
+      "long_01",
+      "long_02",
+      "long_03"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    }
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": true,
+  "setup": {
+    "load_total_s": 2.056022882461548,
+    "transfer_s": null,
+    "cache_state": null,
+    "bytes_sent_gb": null
+  },
+  "timing": {
+    "decode_tps_median": 28.442970827670134,
+    "prefill_tps_median": 237.41851457410507,
+    "ttft_s_median": 0.15181279182434082,
+    "ttft_server_s_median": 0.1462
+  },
+  "comm": {
+    "rpc_commands_per_step": null,
+    "tokens_per_step": null,
+    "rpc_commands_per_token": null,
+    "bytes_per_step": null,
+    "bytes_per_token": null,
+    "packets_per_token": null,
+    "serial_waits_per_token": null,
+    "compute_steps": null,
+    "tokens_generated": null,
+    "capture_iface": null,
+    "source": null
+  },
+  "memory_buffers_gb": {
+    "m5": 4.575
+  },
+  "memory_peak_gb": {
+    "m5": 4.697
+  },
+  "utilization": {
+    "m5": 0.9999216535433071
+  },
+  "correctness": {
+    "exact_match_ratio": null,
+    "first_divergence_median": null,
+    "task_accuracy": 1.0,
+    "baseline_task_accuracy": 1.0
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": null,
+    "a1_id": null
+  },
+  "notes": [
+    "no peer: network probe skipped"
+  ],
+  "outputs": {
+    "arith_01": "936",
+    "arith_02": "543",
+    "arith_03": "437",
+    "arith_04": "12",
+    "arith_05": "150",
+    "arith_06": "36",
+    "extract_01": "Dana Levi",
+    "extract_02": "Room 311",
+    "extract_03": "2026-11-30",
+    "extract_04": "+44 20 7946 0958",
+    "extract_05": "4.2 kg",
+    "extract_06": "LY315",
+    "json_01": "{\"name\": \"Alice\", \"age\": 30}",
+    "json_02": "{\"colors\": [\"red\", \"green\", \"blue\"]}",
+    "json_03": "{\"city\": \"Paris\", \"country\": \"France\"}",
+    "json_04": "{\"ok\": true, \"count\": 3}",
+    "json_05": "{\"temperature_c\": 21.5, \"unit\": \"celsius\"}",
+    "json_06": "{\"items\":[{\"id\":1,\"qty\":2},{\"id\":2,\"qty\":5}]}",
+    "code_01": "```python\ndef is_even(n):\n    return n % 2 == 0\n```",
+    "code_02": "```python\ndef reverse_words(s):\n    return ' '.join(reversed(s.split()))\n```",
+    "code_03": "```python\ndef fib(n):\n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        a, b = 0, 1\n        for _ in range(2, n + 1):\n            a, b = b, a + b\n        return b\n```",
+    "code_04": "```python\ndef count_vowels(s):\n    vowels = 'aeiouAEIOU'\n    return sum(1 for char in s if char in vowels)\n```",
+    "code_05": "```python\ndef flatten(xs):\n    return [x for sublist in xs for x in sublist]\n```",
+    "code_06": "```python\ndef clamp(x, lo, hi):\n    return max(lo, min(x, hi))\n```",
+    "fact_01": "Tokyo",
+    "fact_02": "Au",
+    "fact_03": "8",
+    "fact_04": "Mars",
+    "fact_05": "1969",
+    "fact_06": "Pacific Ocean",
+    "long_01": "1. Unbox your Wi-Fi router and plug in the power adapter.\n2. Connect the router to your modem with an Ethernet cable.\n3. Turn on your computer and navigate to the router's setup page.\n4. Log in using the default username and password.\n5. Change the default password for security.\n6. Update the router's firmware to the latest version.\n7. Set up Wi-Fi networks for both 2.4GHz and 5GHz bands.\n8. Configure security settings, including WPA3 for your Wi-Fi networks.",
+    "long_02": "| Language | Typing                | Typical Use                       |\n|----------|-----------------------|----------------------------------|\n| Python   | Dynamically typed     | Web development, data analysis   |\n| C        | Manually typed        | Systems programming, embedded    |\n| Rust     | Static, strongly typed| Systems programming, concurrency  |\n| Go       | Static, weakly typed  | Web servers, network applications |\n| Java     | Static, strongly typed| Enterprise applications, Android  |\n| JavaScript | Dynamically typed     | Web development, frontend        |",
+    "long_03": "- Always wear safety goggles when working in the chemistry lab.\n- Never eat or drink in the chemistry lab.\n- Ensure proper ventilation is available and used during experiments.\n- Keep long hair tied back and loose clothing secured.\n- Never touch chemicals with bare hands.\n- Label all containers clearly to avoid mix-ups.\n- Do not mix chemicals unless instructed by a lab manual or teacher.\n- Clean up spills immediately to prevent accidents.\n- Use tongs or gloves when handling hot equipment.\n- Know the location and proper use of all fire extinguishers and emergency showers."
+  },
+  "per_prompt": {
+    "arith_01": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 46,
+        "prompt_ms": 163.838,
+        "prompt_per_token_ms": 3.561695652173913,
+        "prompt_per_second": 280.76514605891185,
+        "predicted_n": 4,
+        "predicted_ms": 123.679,
+        "predicted_per_token_ms": 41.226333333333336,
+        "predicted_per_second": 24.25634101181284
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 32.34178801575045,
+      "ttft_client_s": 0.17299365997314453,
+      "score": 1.0,
+      "t_send": 1793025116.7760482,
+      "t_done": 1793025117.07288
+    },
+    "arith_02": {
+      "timings": {
+        "cache_n": 26,
+        "prompt_n": 21,
+        "prompt_ms": 141.869,
+        "prompt_per_token_ms": 6.7556666666666665,
+        "prompt_per_second": 148.02388118616472,
+        "predicted_n": 4,
+        "predicted_ms": 114.564,
+        "predicted_per_token_ms": 38.187999999999995,
+        "predicted_per_second": 26.1862365140882
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 34.91498201878426,
+      "ttft_client_s": 0.14745879173278809,
+      "score": 1.0,
+      "t_send": 1793025117.0729222,
+      "t_done": 1793025117.3351092
+    },
+    "arith_03": {
+      "timings": {
+        "cache_n": 26,
+        "prompt_n": 18,
+        "prompt_ms": 146.2,
+        "prompt_per_token_ms": 8.122222222222222,
+        "prompt_per_second": 123.11901504787963,
+        "predicted_n": 4,
+        "predicted_ms": 112.847,
+        "predicted_per_token_ms": 37.61566666666666,
+        "predicted_per_second": 26.584667735961084
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 35.44622364794811,
+      "ttft_client_s": 0.15216422080993652,
+      "score": 1.0,
+      "t_send": 1793025117.335146,
+      "t_done": 1793025117.6004071
+    },
+    "arith_04": {
+      "timings": {
+        "cache_n": 26,
+        "prompt_n": 19,
+        "prompt_ms": 145.518,
+        "prompt_per_token_ms": 7.658842105263158,
+        "prompt_per_second": 130.56803969268407,
+        "predicted_n": 3,
+        "predicted_ms": 75.931,
+        "predicted_per_token_ms": 37.9655,
+        "predicted_per_second": 26.339703151545482
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 39.509554727318225,
+      "ttft_client_s": 0.15087604522705078,
+      "score": 1.0,
+      "t_send": 1793025117.600425,
+      "t_done": 1793025117.827561
+    },
+    "arith_05": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 34,
+        "prompt_ms": 144.205,
+        "prompt_per_token_ms": 4.2413235294117655,
+        "prompt_per_second": 235.775458548594,
+        "predicted_n": 4,
+        "predicted_ms": 113.195,
+        "predicted_per_token_ms": 37.73166666666666,
+        "predicted_per_second": 26.502937408896152
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 35.337249878528205,
+      "ttft_client_s": 0.149946928024292,
+      "score": 1.0,
+      "t_send": 1793025117.827584,
+      "t_done": 1793025118.090861
+    },
+    "arith_06": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 23,
+        "prompt_ms": 141.896,
+        "prompt_per_token_ms": 6.169391304347825,
+        "prompt_per_second": 162.09054518802503,
+        "predicted_n": 3,
+        "predicted_ms": 75.367,
+        "predicted_per_token_ms": 37.6835,
+        "predicted_per_second": 26.53681319410352
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 39.80521979115528,
+      "ttft_client_s": 0.14712905883789062,
+      "score": 1.0,
+      "t_send": 1793025118.09088,
+      "t_done": 1793025118.313617
+    },
+    "extract_01": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 43,
+        "prompt_ms": 146.562,
+        "prompt_per_token_ms": 3.408418604651163,
+        "prompt_per_second": 293.391192805775,
+        "predicted_n": 4,
+        "predicted_ms": 112.828,
+        "predicted_per_token_ms": 37.60933333333333,
+        "predicted_per_second": 26.589144538589707
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 35.45219271811962,
+      "ttft_client_s": 0.1523759365081787,
+      "score": 1.0,
+      "t_send": 1793025118.313632,
+      "t_done": 1793025118.5790389
+    },
+    "extract_02": {
+      "timings": {
+        "cache_n": 27,
+        "prompt_n": 42,
+        "prompt_ms": 146.212,
+        "prompt_per_token_ms": 3.481238095238095,
+        "prompt_per_second": 287.2541241484967,
+        "predicted_n": 6,
+        "predicted_ms": 191.712,
+        "predicted_per_token_ms": 38.3424,
+        "predicted_per_second": 26.08078784843933
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 31.29694541812719,
+      "ttft_client_s": 0.15181279182434082,
+      "score": 1.0,
+      "t_send": 1793025118.579055,
+      "t_done": 1793025118.922857
+    },
+    "extract_03": {
+      "timings": {
+        "cache_n": 27,
+        "prompt_n": 59,
+        "prompt_ms": 151.206,
+        "prompt_per_token_ms": 2.562813559322034,
+        "prompt_per_second": 390.1961562371864,
+        "predicted_n": 11,
+        "predicted_ms": 387.531,
+        "predicted_per_token_ms": 38.7531,
+        "predicted_per_second": 25.804387261922273
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 28.3848259881145,
+      "ttft_client_s": 0.15697789192199707,
+      "score": 1.0,
+      "t_send": 1793025118.922882,
+      "t_done": 1793025119.467762
+    },
+    "extract_04": {
+      "timings": {
+        "cache_n": 27,
+        "prompt_n": 48,
+        "prompt_ms": 147.922,
+        "prompt_per_token_ms": 3.0817083333333333,
+        "prompt_per_second": 324.49534213977637,
+        "predicted_n": 17,
+        "predicted_ms": 628.576,
+        "predicted_per_token_ms": 39.286,
+        "predicted_per_second": 25.454360331924857
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 27.04525785267016,
+      "ttft_client_s": 0.15456485748291016,
+      "score": 1.0,
+      "t_send": 1793025119.467787,
+      "t_done": 1793025120.2511208
+    },
+    "extract_05": {
+      "timings": {
+        "cache_n": 28,
+        "prompt_n": 42,
+        "prompt_ms": 148.624,
+        "prompt_per_token_ms": 3.5386666666666664,
+        "prompt_per_second": 282.59231348907315,
+        "predicted_n": 5,
+        "predicted_ms": 164.674,
+        "predicted_per_token_ms": 41.1685,
+        "predicted_per_second": 24.290416216281866
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 30.36302027035233,
+      "ttft_client_s": 0.15528416633605957,
+      "score": 1.0,
+      "t_send": 1793025120.251149,
+      "t_done": 1793025120.571167
+    },
+    "extract_06": {
+      "timings": {
+        "cache_n": 27,
+        "prompt_n": 48,
+        "prompt_ms": 148.52,
+        "prompt_per_token_ms": 3.0941666666666667,
+        "prompt_per_second": 323.1887961217344,
+        "predicted_n": 5,
+        "predicted_ms": 164.281,
+        "predicted_per_token_ms": 41.07025,
+        "predicted_per_second": 24.348524783754662
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 30.43565597969333,
+      "ttft_client_s": 0.1539750099182129,
+      "score": 1.0,
+      "t_send": 1793025120.571201,
+      "t_done": 1793025120.889635
+    },
+    "json_01": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 33,
+        "prompt_ms": 144.462,
+        "prompt_per_token_ms": 4.3776363636363635,
+        "prompt_per_second": 228.43377497196497,
+        "predicted_n": 14,
+        "predicted_ms": 492.213,
+        "predicted_per_token_ms": 37.86253846153846,
+        "predicted_per_second": 26.411330054265125
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 28.442970827670134,
+      "ttft_client_s": 0.14991497993469238,
+      "score": 1.0,
+      "t_send": 1793025120.889664,
+      "t_done": 1793025121.531901
+    },
+    "json_02": {
+      "timings": {
+        "cache_n": 29,
+        "prompt_n": 24,
+        "prompt_ms": 142.049,
+        "prompt_per_token_ms": 5.918708333333334,
+        "prompt_per_second": 168.9557828636597,
+        "predicted_n": 13,
+        "predicted_ms": 480.777,
+        "predicted_per_token_ms": 40.06475,
+        "predicted_per_second": 24.95959665291809
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 27.039563040661264,
+      "ttft_client_s": 0.1477348804473877,
+      "score": 1.0,
+      "t_send": 1793025121.531924,
+      "t_done": 1793025122.1606321
+    },
+    "json_03": {
+      "timings": {
+        "cache_n": 29,
+        "prompt_n": 19,
+        "prompt_ms": 146.839,
+        "prompt_per_token_ms": 7.7283684210526316,
+        "prompt_per_second": 129.39341728015037,
+        "predicted_n": 13,
+        "predicted_ms": 462.795,
+        "predicted_per_token_ms": 38.566250000000004,
+        "predicted_per_second": 25.92940718892814
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 28.090191121338822,
+      "ttft_client_s": 0.15335512161254883,
+      "score": 1.0,
+      "t_send": 1793025122.160863,
+      "t_done": 1793025122.777169
+    },
+    "json_04": {
+      "timings": {
+        "cache_n": 29,
+        "prompt_n": 23,
+        "prompt_ms": 142.326,
+        "prompt_per_token_ms": 6.1880869565217385,
+        "prompt_per_second": 161.6008318929781,
+        "predicted_n": 12,
+        "predicted_ms": 445.599,
+        "predicted_per_token_ms": 40.509,
+        "predicted_per_second": 24.68587227529685
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 26.930042482142017,
+      "ttft_client_s": 0.1480729579925537,
+      "score": 1.0,
+      "t_send": 1793025122.777215,
+      "t_done": 1793025123.371101
+    },
+    "json_05": {
+      "timings": {
+        "cache_n": 30,
+        "prompt_n": 28,
+        "prompt_ms": 145.192,
+        "prompt_per_token_ms": 5.185428571428572,
+        "prompt_per_second": 192.84809080390104,
+        "predicted_n": 18,
+        "predicted_ms": 656.828,
+        "predicted_per_token_ms": 38.636941176470586,
+        "predicted_per_second": 25.881966055040284
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 27.404434646513245,
+      "ttft_client_s": 0.15090703964233398,
+      "score": 1.0,
+      "t_send": 1793025123.371131,
+      "t_done": 1793025124.179026
+    },
+    "json_06": {
+      "timings": {
+        "cache_n": 30,
+        "prompt_n": 43,
+        "prompt_ms": 149.228,
+        "prompt_per_token_ms": 3.470418604651163,
+        "prompt_per_second": 288.14967700431555,
+        "predicted_n": 21,
+        "predicted_ms": 762.072,
+        "predicted_per_token_ms": 38.1036,
+        "predicted_per_second": 26.244239389454016
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 27.556451358926715,
+      "ttft_client_s": 0.15518403053283691,
+      "score": 1.0,
+      "t_send": 1793025124.17905,
+      "t_done": 1793025125.096409
+    },
+    "code_01": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 38,
+        "prompt_ms": 145.688,
+        "prompt_per_token_ms": 3.833894736842105,
+        "prompt_per_second": 260.8313656581187,
+        "predicted_n": 20,
+        "predicted_ms": 740.407,
+        "predicted_per_token_ms": 38.96878947368421,
+        "predicted_per_second": 25.661561816676503
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 27.012170333343686,
+      "ttft_client_s": 0.15129613876342773,
+      "score": 1.0,
+      "t_send": 1793025125.0964348,
+      "t_done": 1793025125.988225
+    },
+    "code_02": {
+      "timings": {
+        "cache_n": 29,
+        "prompt_n": 38,
+        "prompt_ms": 145.512,
+        "prompt_per_token_ms": 3.829263157894737,
+        "prompt_per_second": 261.1468469954368,
+        "predicted_n": 20,
+        "predicted_ms": 729.572,
+        "predicted_per_token_ms": 38.398526315789475,
+        "predicted_per_second": 26.042666111089787
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 27.41333274851557,
+      "ttft_client_s": 0.15100693702697754,
+      "score": 1.0,
+      "t_send": 1793025125.988249,
+      "t_done": 1793025126.8689852
+    },
+    "code_03": {
+      "timings": {
+        "cache_n": 29,
+        "prompt_n": 45,
+        "prompt_ms": 147.473,
+        "prompt_per_token_ms": 3.277177777777778,
+        "prompt_per_second": 305.14060200850327,
+        "predicted_n": 75,
+        "predicted_ms": 2858.222,
+        "predicted_per_token_ms": 38.62462162162162,
+        "predicted_per_second": 25.890221263428803
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 26.240089118340002,
+      "ttft_client_s": 0.15359997749328613,
+      "score": 1.0,
+      "t_send": 1793025126.8690062,
+      "t_done": 1793025129.881103
+    },
+    "code_04": {
+      "timings": {
+        "cache_n": 29,
+        "prompt_n": 45,
+        "prompt_ms": 147.773,
+        "prompt_per_token_ms": 3.2838444444444446,
+        "prompt_per_second": 304.5211236152748,
+        "predicted_n": 36,
+        "predicted_ms": 1349.948,
+        "predicted_per_token_ms": 38.56994285714286,
+        "predicted_per_second": 25.926924592650973
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 26.667693866726715,
+      "ttft_client_s": 0.15417218208312988,
+      "score": 1.0,
+      "t_send": 1793025129.8811579,
+      "t_done": 1793025131.3853388
+    },
+    "code_05": {
+      "timings": {
+        "cache_n": 29,
+        "prompt_n": 35,
+        "prompt_ms": 147.419,
+        "prompt_per_token_ms": 4.211971428571429,
+        "prompt_per_second": 237.4185145741051,
+        "predicted_n": 22,
+        "predicted_ms": 812.92,
+        "predicted_per_token_ms": 38.710476190476186,
+        "predicted_per_second": 25.832800275549868
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 27.062933622004625,
+      "ttft_client_s": 0.1532590389251709,
+      "score": 1.0,
+      "t_send": 1793025131.385362,
+      "t_done": 1793025132.3517299
+    },
+    "code_06": {
+      "timings": {
+        "cache_n": 29,
+        "prompt_n": 37,
+        "prompt_ms": 145.12,
+        "prompt_per_token_ms": 3.922162162162162,
+        "prompt_per_second": 254.9614112458655,
+        "predicted_n": 23,
+        "predicted_ms": 844.05,
+        "predicted_per_token_ms": 38.36590909090909,
+        "predicted_per_second": 26.06480658728748
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 27.249570523073277,
+      "ttft_client_s": 0.15127801895141602,
+      "score": 1.0,
+      "t_send": 1793025132.351753,
+      "t_done": 1793025133.3472059
+    },
+    "fact_01": {
+      "timings": {
+        "cache_n": 26,
+        "prompt_n": 18,
+        "prompt_ms": 146.456,
+        "prompt_per_token_ms": 8.136444444444443,
+        "prompt_per_second": 122.90380728683019,
+        "predicted_n": 3,
+        "predicted_ms": 76.842,
+        "predicted_per_token_ms": 38.421,
+        "predicted_per_second": 26.027432914291666
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 39.0411493714375,
+      "ttft_client_s": 0.15270185470581055,
+      "score": 1.0,
+      "t_send": 1793025133.3472571,
+      "t_done": 1793025133.577031
+    },
+    "fact_02": {
+      "timings": {
+        "cache_n": 27,
+        "prompt_n": 16,
+        "prompt_ms": 145.85,
+        "prompt_per_token_ms": 9.115625,
+        "prompt_per_second": 109.70174837161467,
+        "predicted_n": 2,
+        "predicted_ms": 40.315,
+        "predicted_per_token_ms": 40.315,
+        "predicted_per_second": 24.80466327669602
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 49.609326553392044,
+      "ttft_client_s": 0.15146183967590332,
+      "score": 1.0,
+      "t_send": 1793025133.577058,
+      "t_done": 1793025133.769003
+    },
+    "fact_03": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 20,
+        "prompt_ms": 141.754,
+        "prompt_per_token_ms": 7.0877,
+        "prompt_per_second": 141.08949306545142,
+        "predicted_n": 2,
+        "predicted_ms": 38.436,
+        "predicted_per_token_ms": 38.436,
+        "predicted_per_second": 26.017275470912686
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 52.03455094182537,
+      "ttft_client_s": 0.14644622802734375,
+      "score": 1.0,
+      "t_send": 1793025133.7690408,
+      "t_done": 1793025133.954197
+    },
+    "fact_04": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 20,
+        "prompt_ms": 141.408,
+        "prompt_per_token_ms": 7.070399999999999,
+        "prompt_per_second": 141.43471373613943,
+        "predicted_n": 3,
+        "predicted_ms": 76.733,
+        "predicted_per_token_ms": 38.3665,
+        "predicted_per_second": 26.064405145113575
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 39.09660771767036,
+      "ttft_client_s": 0.14679503440856934,
+      "score": 1.0,
+      "t_send": 1793025133.9542348,
+      "t_done": 1793025134.177944
+    },
+    "fact_05": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 23,
+        "prompt_ms": 141.881,
+        "prompt_per_token_ms": 6.1687391304347825,
+        "prompt_per_second": 162.1076817896688,
+        "predicted_n": 5,
+        "predicted_ms": 152.697,
+        "predicted_per_token_ms": 38.17425,
+        "predicted_per_second": 26.195668546205884
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 32.744585682757354,
+      "ttft_client_s": 0.1465599536895752,
+      "score": 1.0,
+      "t_send": 1793025134.177972,
+      "t_done": 1793025134.477474
+    },
+    "fact_06": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 19,
+        "prompt_ms": 145.848,
+        "prompt_per_token_ms": 7.67621052631579,
+        "prompt_per_second": 130.2726125829631,
+        "predicted_n": 3,
+        "predicted_ms": 77.148,
+        "predicted_per_token_ms": 38.574,
+        "predicted_per_second": 25.924197646082856
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 38.88629646912428,
+      "ttft_client_s": 0.15167498588562012,
+      "score": 1.0,
+      "t_send": 1793025134.477497,
+      "t_done": 1793025134.706656
+    },
+    "long_01": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 46,
+        "prompt_ms": 146.953,
+        "prompt_per_token_ms": 3.1946304347826087,
+        "prompt_per_second": 313.0252529720387,
+        "predicted_n": 112,
+        "predicted_ms": 4342.807,
+        "predicted_per_token_ms": 39.12438738738739,
+        "predicted_per_second": 25.55950563771312
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 25.789771454269097,
+      "ttft_client_s": 0.1524808406829834,
+      "score": 1.0,
+      "t_send": 1793025134.706675,
+      "t_done": 1793025139.202261
+    },
+    "long_02": {
+      "timings": {
+        "cache_n": 26,
+        "prompt_n": 45,
+        "prompt_ms": 146.97,
+        "prompt_per_token_ms": 3.266,
+        "prompt_per_second": 306.1849357011635,
+        "predicted_n": 113,
+        "predicted_ms": 4284.906,
+        "predicted_per_token_ms": 38.258089285714284,
+        "predicted_per_second": 26.13826300973697
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 26.371640358038192,
+      "ttft_client_s": 0.1531829833984375,
+      "score": 1.0,
+      "t_send": 1793025139.204017,
+      "t_done": 1793025143.642161
+    },
+    "long_03": {
+      "timings": {
+        "cache_n": 26,
+        "prompt_n": 43,
+        "prompt_ms": 147.439,
+        "prompt_per_token_ms": 3.428813953488372,
+        "prompt_per_second": 291.64603666601107,
+        "predicted_n": 114,
+        "predicted_ms": 4331.031,
+        "predicted_per_token_ms": 38.32770796460177,
+        "predicted_per_second": 26.090785311857616
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 26.32167721727228,
+      "ttft_client_s": 0.1540679931640625,
+      "score": 1.0,
+      "t_send": 1793025143.642221,
+      "t_done": 1793025148.1273239
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server --help"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C /Users/orosentswaig/dev/llama.cpp rev-parse --short HEAD"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server -m /Users/orosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf -ngl 99 -np 1 --port 8089 -c 4096 --host 127.0.0.1 --temp 0 --seed 42 --samplers temperature --repeat-penalty 1.0 --metrics -lv 4"
+    }
+  ]
+}

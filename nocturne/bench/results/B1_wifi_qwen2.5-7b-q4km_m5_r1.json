@@ -1,0 +1,135 @@
+{
+  "schema_version": 2,
+  "id": "B1_wifi_qwen2.5-7b-q4km_m5_r1",
+  "cell": {
+    "partition": "TP",
+    "decode": "single",
+    "row": "B",
+    "col": 1,
+    "name": "B1"
+  },
+  "date": "2026-10-27T17:36:17+02:00",
+  "model": {
+    "name": "qwen2.5-7b-q4km",
+    "quant": "Q4_K_M",
+    "sha256": "65b8fcd92af6b4fefa935c625d1ac27ea29dcb6ee14589c55a8f115ceaaa1423"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "llama.cpp",
+    "commit": "1e7bcf3",
+    "flags": []
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    },
+    {
+      "host": "ohads-MacBook-Air-2",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 16
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": null,
+    "bw_mbps": null,
+    "measured_at": "2026-10-27T17:36:17+02:00"
+  },
+  "prompts": {
+    "set": "eval_set",
+    "version": "1",
+    "subset": 5,
+    "ids": [
+      "arith_01",
+      "arith_02",
+      "arith_03",
+      "arith_04",
+      "arith_05"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    }
+  },
+  "success": false,
+  "failure_class": "tool_unsupported",
+  "quality_pass": false,
+  "setup": {
+    "load_total_s": null,
+    "transfer_s": null,
+    "cache_state": null,
+    "bytes_sent_gb": null
+  },
+  "timing": {
+    "decode_tps_median": null,
+    "prefill_tps_median": null,
+    "ttft_s_median": null,
+    "ttft_server_s_median": null
+  },
+  "comm": {
+    "rpc_commands_per_step": null,
+    "tokens_per_step": null,
+    "rpc_commands_per_token": null,
+    "bytes_per_step": null,
+    "bytes_per_token": null,
+    "packets_per_token": null,
+    "serial_waits_per_token": null,
+    "compute_steps": null,
+    "tokens_generated": null,
+    "capture_iface": null,
+    "source": null
+  },
+  "memory_buffers_gb": {},
+  "memory_peak_gb": {},
+  "utilization": {},
+  "correctness": {
+    "exact_match_ratio": null,
+    "first_divergence_median": null,
+    "task_accuracy": 0.0,
+    "baseline_task_accuracy": 1.0
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": false,
+    "baseline_id": "BASELINE_local_qwen2.5-7b-q4km_m5_r9",
+    "a1_id": null
+  },
+  "notes": [
+    "ping 192.168.1.219: no replies",
+    "iperf3 to 192.168.1.219 failed or returned no JSON",
+    "worker air: ssh to ohadrosentswaig@192.168.1.219 failed (rc 255: ssh: connect to host 192.168.1.219 port 22: Operation timed out); check peers.yaml ssh: for the current network, the binary ~/dev/llama.cpp/build/bin/ggml-rpc-server was not checked",
+    "tensor mode outcome (c): did not load: no error line in server.log; Meta device line: False; flash_attn forced: False"
+  ],
+  "outputs": {},
+  "per_prompt": {},
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server --help"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C /Users/orosentswaig/dev/llama.cpp rev-parse --short HEAD"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -x \"$HOME\"/dev/llama.cpp/build/bin/ggml-rpc-server"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f 'ggml-rpc-server.*-p 50052'"
+    }
+  ]
+}

@@ -1,6 +1,12 @@
 # Nocturne. Current project context
 
-Updated: 2026-10-25. This is a handoff note. It is not an ADR and not an experiment report. Older context is kept below.
+Updated: 2026-11-02. This is a handoff note. It is not an ADR and not an experiment report. Older context is kept below.
+
+## What changed on 2026-11-02
+
+1. Bench schema v3 (`nocturne/bench/schema/record.schema.json`, v2 kept). The number to cite is `decode_ms_per_step_pooled`, the pooled ms per decode step over prompts. The old per prompt median counted the first token as a step. Existing records are not changed; their v3 values are in `results/derived_v3.json`.
+2. New bench options: `--prompt-set eval_long`, `--fixed-tokens N`, `--capture-worker`, `--added-delay-ms`. The capture keeps packet direction, a background ping runs for the whole run, the AWDL state is recorded, one warm-up request precedes the prompts.
+3. Correction note in experiments/RESULTS.md: A1 is the plain PP control, A2 is speculative. Row B against A1: torch TP about 7.6 times slower per step, llama.cpp tensor mode about 14 times, not 19.
 
 ## What changed on 2026-10-24 and 2026-10-25
 
@@ -25,9 +31,9 @@ T1: latency is not a metric. T2: run a huge model over the internet on several h
 
 ## Open questions
 
-- Q7 (new): why did `--split-mode tensor` fail on 32B between the two Macs. No log exists. The supervisor expects it to fit in memory. Repeat with evidence.
+- Q7: why did `--split-mode tensor` fail on 32B between the two Macs. No log of the old failure exists. The mechanism works on 7B. On 2026-10-27 `1e7bcf3` built a Meta device from MTL0 and an RPC device on one Mac, split the 7B weights in half, forced flash attention and decoded with output identical to the baseline. `-fit off` is mandatory. `--split-mode row` fails at load: the RPC device does not support split buffers. On 2026-10-31 the two-Mac run over Wi-Fi worked as well (M5 requester, Air worker, 8 ms RTT, records `B1_wifi_qwen2.5-7b-q4km_m5_r3` to `_r5`). Each Mac holds 2084 MiB of the 7B weights. Output is identical to the baseline in every run. Corrected numbers (2026-11-02, pooled per decode step): 1472 to 1606 ms per step, 0.62 to 0.68 tok/s. The plain PP control A1 on the same pair is 106 to 126 ms per step, so tensor mode over RPC in this build is 13 to 15 times slower at 8 ms RTT. The cost is 57 blocking `get_tensor` per step and 16.6 MB of graph descriptors per step, because the RPC graph cache never hits in tensor mode. Q7 is answered for 7B. The 32B attempt is Part 6 of session 4. Details in experiments/RESULTS.md, Q7 mechanism check, the B1 two-Mac note and the 2026-11-02 correction.
 - From I017: quality protocol, interruption protocol, memory budget for long context. Not decided.
-- ADR-007 (engine) is open. Decision due 15 Nov 2026.
+- ADR-007 (engine) is open. Decision due 15 Nov 2026. Amendments 1 and 2 accepted 2026-10-27: row B of the bench measures three engines (B1 llama.cpp tensor mode over RPC, B1t own PyTorch TP engine as the engine B spike, B1d distributed-llama). Engine A evidence: tensor mode over RPC works on 7B on one Mac and on two Macs (Q7 above). Engine B evidence: the B1t engine exists (`nocturne/engines/torch_tp`, two ranks, own TCP transport, MPS). It reproduces transformers greedy output on 20 prompts with one rank and with two ranks, on loopback and between the two Macs. Stage 3 ran on 2026-10-31 (`B1t_wifi_qwen2.5-7b-bf16_m5_r4` to `_r6`, 7B bf16, rank 1 on the Air). Task accuracy 1.0, 31 of 33 outputs identical to the one-rank baseline, 56 all-reduces and 0.78 MB per token, rank 1 holds 6.5 GB. Corrected numbers (2026-11-02, pooled per decode step): B1t 830 to 865 ms per step, 1.16 to 1.21 tok/s. One-rank bf16 baseline on the M5 141.5 ms per step. Row B against the plain PP control A1 (110 ms per step) on the same pair at 8 ms RTT: torch TP about 7.6 times slower, llama.cpp tensor mode about 14 times slower. Both TP engines pay 57 blocking waits per step, about 13 ms each in B1t and about 26 ms each in B1, against a 4 ms one-way time. Session 4 measures where that time goes (transport overhead, AWDL, added delay sweep). B1d (distributed-llama) is ready and not run. Details in experiments/RESULTS.md, B1t notes and the 2026-11-02 correction.
 - Supervisor to confirm v4, FLOW.md and the flow diagram.
 
 ## Documents not yet synced to v4 and T3

@@ -1,0 +1,366 @@
+{
+  "schema_version": 2,
+  "id": "B1t_wifi_qwen2.5-7b-bf16_m5_loopback_r1",
+  "cell": {
+    "partition": "TP",
+    "decode": "single",
+    "row": "B",
+    "col": 1,
+    "name": "B1t"
+  },
+  "date": "2026-10-31T07:42:07+02:00",
+  "model": {
+    "name": "qwen2.5-7b-bf16",
+    "quant": "bf16",
+    "sha256": "e062a01f39b65664f4bccd56711cfdc1c2197ad6ceff49ee2f10c6b2ebffc178"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "torch_tp",
+    "commit": "fb5b48e",
+    "flags": [
+      "--model",
+      "/Users/orosentswaig/models/hf/Qwen2.5-7B-Instruct",
+      "--world",
+      "2",
+      "--max-seq-len",
+      "4096"
+    ],
+    "format": "safetensors-bf16",
+    "runtime": "torch 2.14.1 mps",
+    "world": 2
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    },
+    {
+      "host": "MMF4FWRG4R",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": null,
+    "bw_mbps": null,
+    "measured_at": "2026-10-31T07:42:07+02:00"
+  },
+  "prompts": {
+    "set": "eval_set",
+    "version": "1",
+    "subset": 10,
+    "ids": [
+      "arith_01",
+      "arith_02",
+      "arith_03",
+      "arith_04",
+      "arith_05",
+      "arith_06",
+      "extract_01",
+      "extract_02",
+      "extract_03",
+      "extract_04"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    }
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": true,
+  "setup": {
+    "load_total_s": 18.187712907791138,
+    "transfer_s": null,
+    "cache_state": null,
+    "bytes_sent_gb": null
+  },
+  "timing": {
+    "decode_tps_median": 8.683857816707125,
+    "prefill_tps_median": 197.60714408616474,
+    "ttft_s_median": 0.2924853563308716,
+    "ttft_server_s_median": 0.28482258319854736
+  },
+  "comm": {
+    "rpc_commands_per_step": 56.0,
+    "tokens_per_step": 1.0,
+    "rpc_commands_per_token": 56.0,
+    "bytes_per_step": null,
+    "bytes_per_token": 677126.8,
+    "packets_per_token": 94.15,
+    "serial_waits_per_token": null,
+    "compute_steps": 60,
+    "tokens_generated": 60,
+    "capture_iface": "lo0",
+    "source": "rpc_commands: engine counters: all-reduce frames sent by rank 0 (one per all-reduce, 2 per layer), per step over prefill plus decode steps, per token over generated tokens; engine_bytes: frame bytes sent plus received by rank 0 over the whole run (prefill frames included) per generated token; bytes: tcpdump on torch_port inside the decode windows, as in row A",
+    "engine_frames_per_token": 57.2,
+    "engine_bytes_per_token": 8561553.733333332
+  },
+  "memory_buffers_gb": {
+    "m5": 9.748,
+    "m5loop": 7.534
+  },
+  "memory_peak_gb": {
+    "m5": 0.158,
+    "m5loop": 0.15
+  },
+  "utilization": {
+    "m5": 0.9100165517241379,
+    "m5loop": 0.9100506896551724
+  },
+  "correctness": {
+    "exact_match_ratio": 1.0,
+    "first_divergence_median": 1.0,
+    "task_accuracy": 1.0,
+    "baseline_task_accuracy": 1.0
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": "BASELINE_local_qwen2.5-7b-bf16_m5_r1",
+    "a1_id": null
+  },
+  "notes": [
+    "ping 127.0.0.1: no replies",
+    "iperf3 to 127.0.0.1: unable to connect to server - server may have stopped running or use a different port, firewall issue, etc.: Connection refused (is `iperf3 -s` running on the peer?)",
+    "torch_tp: each rank reads its own slice from local safetensors; no weight transfer, so transfer_s, cache_state and bytes_sent_gb are null. model.sha256 is sha256(config.json + safetensors index or first MiB), not of the weights"
+  ],
+  "outputs": {
+    "arith_01": "936",
+    "arith_02": "543",
+    "arith_03": "437",
+    "arith_04": "12",
+    "arith_05": "150",
+    "arith_06": "36",
+    "extract_01": "Dana Levi",
+    "extract_02": "Room 311",
+    "extract_03": "2026-11-30",
+    "extract_04": "+44 20 7946 0958"
+  },
+  "per_prompt": {
+    "arith_01": {
+      "timings": {
+        "prompt_n": 46,
+        "prompt_ms": 26167.640686035156,
+        "predicted_n": 4,
+        "predicted_ms": 22836.018085479736,
+        "predicted_per_second": 0.17516188614964343,
+        "prompt_per_second": 1.7578963480857006
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 0.17516188614964343,
+      "ttft_client_s": 26.18880796432495,
+      "score": 1.0,
+      "t_send": 1793425373.05247,
+      "t_done": 1793425422.094978
+    },
+    "arith_02": {
+      "timings": {
+        "prompt_n": 47,
+        "prompt_ms": 407.18674659729004,
+        "predicted_n": 4,
+        "predicted_ms": 452.9252052307129,
+        "predicted_per_second": 8.831480239573914,
+        "prompt_per_second": 115.42615370652832
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 8.831480239573914,
+      "ttft_client_s": 0.4927380084991455,
+      "score": 1.0,
+      "t_send": 1793425422.0998778,
+      "t_done": 1793425423.045609
+    },
+    "arith_03": {
+      "timings": {
+        "prompt_n": 44,
+        "prompt_ms": 235.97311973571777,
+        "predicted_n": 4,
+        "predicted_ms": 467.03195571899414,
+        "predicted_per_second": 8.564724428421634,
+        "prompt_per_second": 186.46191587108976
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 8.564724428421634,
+      "ttft_client_s": 0.24199295043945312,
+      "score": 1.0,
+      "t_send": 1793425423.0456371,
+      "t_done": 1793425423.7548108
+    },
+    "arith_04": {
+      "timings": {
+        "prompt_n": 45,
+        "prompt_ms": 233.06703567504883,
+        "predicted_n": 3,
+        "predicted_ms": 297.90425300598145,
+        "predicted_per_second": 10.07034968359369,
+        "prompt_per_second": 193.077497509089
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 10.07034968359369,
+      "ttft_client_s": 0.24022293090820312,
+      "score": 1.0,
+      "t_send": 1793425423.754852,
+      "t_done": 1793425424.293087
+    },
+    "arith_05": {
+      "timings": {
+        "prompt_n": 58,
+        "prompt_ms": 239.67695236206055,
+        "predicted_n": 4,
+        "predicted_ms": 447.13807106018066,
+        "predicted_per_second": 8.945782653925786,
+        "prompt_per_second": 241.99239613320893
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 8.945782653925786,
+      "ttft_client_s": 0.2488868236541748,
+      "score": 1.0,
+      "t_send": 1793425424.293117,
+      "t_done": 1793425424.989332
+    },
+    "arith_06": {
+      "timings": {
+        "prompt_n": 47,
+        "prompt_ms": 232.51581192016602,
+        "predicted_n": 3,
+        "predicted_ms": 300.46892166137695,
+        "predicted_per_second": 9.98439367177197,
+        "prompt_per_second": 202.1367906632405
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 9.98439367177197,
+      "ttft_client_s": 0.23740291595458984,
+      "score": 1.0,
+      "t_send": 1793425424.989372,
+      "t_done": 1793425425.527284
+    },
+    "extract_01": {
+      "timings": {
+        "prompt_n": 67,
+        "prompt_ms": 287.69588470458984,
+        "predicted_n": 4,
+        "predicted_ms": 454.3910026550293,
+        "predicted_per_second": 8.802991204992617,
+        "prompt_per_second": 232.88480496965238
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 8.802991204992617,
+      "ttft_client_s": 0.29772520065307617,
+      "score": 1.0,
+      "t_send": 1793425425.527345,
+      "t_done": 1793425426.278133
+    },
+    "extract_02": {
+      "timings": {
+        "prompt_n": 69,
+        "prompt_ms": 283.2512855529785,
+        "predicted_n": 6,
+        "predicted_ms": 776.1127948760986,
+        "predicted_per_second": 7.730835053373732,
+        "prompt_per_second": 243.59995353699617
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 7.730835053373732,
+      "ttft_client_s": 0.2896537780761719,
+      "score": 1.0,
+      "t_send": 1793425426.27817,
+      "t_done": 1793425427.3437362
+    },
+    "extract_03": {
+      "timings": {
+        "prompt_n": 86,
+        "prompt_ms": 463.5601043701172,
+        "predicted_n": 11,
+        "predicted_ms": 1517.3718929290771,
+        "predicted_per_second": 7.249376406179514,
+        "prompt_per_second": 185.5207106678352
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 7.249376406179514,
+      "ttft_client_s": 0.4699108600616455,
+      "score": 1.0,
+      "t_send": 1793425427.3439062,
+      "t_done": 1793425429.3315158
+    },
+    "extract_04": {
+      "timings": {
+        "prompt_n": 75,
+        "prompt_ms": 286.3938808441162,
+        "predicted_n": 17,
+        "predicted_ms": 2421.299934387207,
+        "predicted_per_second": 7.021021955424301,
+        "prompt_per_second": 261.87710358526266
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 7.021021955424301,
+      "ttft_client_s": 0.2953169345855713,
+      "score": 1.0,
+      "t_send": 1793425429.331685,
+      "t_done": 1793425432.04837
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "test -x /Users/orosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "m5",
+      "cmd": "test -f /Users/orosentswaig/models/hf/Qwen2.5-7B-Instruct/config.json"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "m5loop",
+      "cmd": "test -x /Users/orosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "m5loop",
+      "cmd": "test -f /Users/orosentswaig/models/hf/Qwen2.5-7B-Instruct/config.json"
+    },
+    {
+      "host": "m5loop",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne' rev-parse --short HEAD"
+    },
+    {
+      "host": "m5loop",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp worker --bind 127.0.0.1 --port 50053 --model /Users/orosentswaig/models/hf/Qwen2.5-7B-Instruct --rank 1 --world 2"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp serve --model /Users/orosentswaig/models/hf/Qwen2.5-7B-Instruct --world 2 --max-seq-len 4096 --host 127.0.0.1 --port 8092 --peer 127.0.0.1:50053"
+    },
+    {
+      "host": "m5loop",
+      "cmd": "pkill -f 'torch_tp worker.*--port 50053'"
+    }
+  ]
+}

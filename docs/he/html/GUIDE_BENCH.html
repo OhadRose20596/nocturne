@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.12.1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>מדריך הרצה: nocturne-bench על שני המקים</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="he.css" />
+</head>
+<body>
+<h1 id="מדריך-הרצה-nocturne-bench-על-שני-המקים">מדריך הרצה:
+nocturne-bench על שני המקים</h1>
+<p>נכתב 2026-10-26 אחרי בניית <code>nocturne/bench/</code>. משלים את
+I021 במסמך המשותף. הפירוט הטכני של ה-bench נמצא
+ב-<code>nocturne/bench/README.md</code> (אנגלית). כאן רק מה שצריך כדי
+להריץ, בסדר, עם הפקודה המדויקת לכל מכונה.</p>
+<p>מוסכמות: <code>[M5]</code> פקודה שמריצים על ה-Mac M5 (24GB,
+<code>orosentswaig@MMF4FWRG4R</code>). <code>[Air]</code> פקודה שמריצים
+על ה-Air (16GB, <code>ohadrosentswaig@Mac</code>). <code>[both]</code>
+על שתיהן. לפני כל פקודה לבדוק את <code>user@host</code> בשורת הפקודה.
+כתובות ה-LAN מהמדידות הקודמות: M5 <code>192.168.1.242</code>, Air
+<code>192.168.1.219</code>. אם הראוטר חילק כתובות אחרות,
+<code>ipconfig getifaddr en0</code> נותן את הנוכחית.</p>
+<h2 id="1-מה-ה-bench-עושה-בפקודה-אחת">1. מה ה-bench עושה בפקודה אחת</h2>
+<p><code>python -m nocturne.bench.run --cell A1 --network wifi --model qwen2.5-7b-q4km --runs 3</code>
+עושה את כל זה בלי התערבות: מודד RTT ורוחב פס ל-worker, מרים
+<code>ggml-rpc-server</code> על ה-Air דרך ssh, מרים
+<code>llama-server</code> על ה-M5 עם דגלים דטרמיניסטיים, מפעיל דוגמי
+ניצול ו-tcpdump, שולח 33 פרומפטים, עוצר הכול, מחשב S ו-B וניצול ונכונות
+מול BASELINE, כותב רשומת JSON ל-<code>nocturne/bench/results/</code>,
+ומוסיף שורה ל-<code>experiments/RESULTS.md</code>. חוזר על זה 3
+פעמים.</p>
+<table>
+<thead>
+<tr>
+<th>תא</th>
+<th>מה רץ</th>
+<th>מה חייב להיות מוכן</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BASELINE</td>
+<td>מודל על מכונה אחת, בלי <code>--rpc</code></td>
+<td>המודל על אותה מכונה</td>
+</tr>
+<tr>
+<td>A1</td>
+<td>PP: requester M5, worker Air</td>
+<td>ssh ל-Air, <code>iperf3 -s</code> על ה-Air, BASELINE של M5 קיים</td>
+</tr>
+<tr>
+<td>A2</td>
+<td>A1 ועוד מודל טיוטה על ה-requester (8 ניחושים לצעד)</td>
+<td>כמו A1, ועוד קובץ הטיוטה על ה-M5</td>
+</tr>
+<tr>
+<td>A2b</td>
+<td>כמו A2 עם טיוטה קצרה וסלקטיבית (4 ניחושים, p-min 0.75)</td>
+<td>כמו A2</td>
+</tr>
+<tr>
+<td>A4</td>
+<td>A1 עם 3 בקשות ארוכות במקביל</td>
+<td>כמו A1</td>
+</tr>
+<tr>
+<td>B1</td>
+<td>TP בתוך llama.cpp עם <code>--split-mode tensor</code> מעל RPC (שאלה
+Q7)</td>
+<td>כמו A1</td>
+</tr>
+<tr>
+<td>B1t</td>
+<td>TP במנוע PyTorch שלנו, שני ranks</td>
+<td>venv של torch על שתי המכונות, ראו סעיף שורה B</td>
+</tr>
+<tr>
+<td>B1d</td>
+<td>TP ב-distributed-llama (אושר ב-27.10, עדיפות נמוכה)</td>
+<td>ראו 2.5 ו-README</td>
+</tr>
+</tbody>
+</table>
+<h3 id="11-סבב-2-למה-מריצים-את-a1-עד-a4-מחדש">1.1 סבב 2: למה מריצים את
+A1 עד A4 מחדש</h3>
+<p>ב-26.10 בערב הרשומה עברה לסכמה גרסה 2 בעקבות הביקורת של Codex (I022).
+הרשומות הישנות (גרסה 1) נשארות כראיה ונקראות על ידי הדוח, אבל חסרים בהן
+שדות שנמדדים רק מעכשיו, ולכן ההשוואות הבאות דורשות סבב חדש של BASELINE,
+A1, A2, A2b ו-A4 על כל רשת. מה חדש ברשומה:</p>
+<table>
+<thead>
+<tr>
+<th>היה</th>
+<th>עכשיו</th>
+<th>למה</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>msgs_per_token_median</code></td>
+<td><code>comm.rpc_commands_per_step</code>,
+<code>comm.tokens_per_step</code>,
+<code>comm.rpc_commands_per_token</code></td>
+<td>צעד אחד מייצר כמה tokens ב-A2 וב-A4</td>
+</tr>
+<tr>
+<td><code>bytes_per_token_median</code>
+מ-<code>tcpdump -i any</code></td>
+<td><code>comm.bytes_per_step</code>, <code>comm.bytes_per_token</code>
+על הממשק של הרשת (<code>comm.capture_iface</code>), איחוד חלונות</td>
+<td><code>-i any</code> ספר כפול ב-A4</td>
+</tr>
+<tr>
+<td><code>memory_peak_gb</code> = סכום buffers מהלוג</td>
+<td><code>memory_buffers_gb</code> (מהלוג) ו-<code>memory_peak_gb</code>
+אמיתי, נדגם כל 500ms, לכל מכונה</td>
+<td>זיכרון הוא תנאי הצלחה, אז הוא חייב להימדד</td>
+</tr>
+<tr>
+<td><code>weight_transfer_s</code> = זמן עד <code>/health</code></td>
+<td><code>setup.load_total_s</code> ו-<code>setup.transfer_s</code>
+(מהודעת set_tensor הראשונה עד האחרונה, לוג ה-worker מקבל חותמות
+זמן)</td>
+<td>להפריד העברה מטעינה</td>
+</tr>
+<tr>
+<td><code>ttft_s</code> מ-<code>prompt_ms</code></td>
+<td><code>ttft_s</code> מהשליחה עד ה-token הראשון בזרם,
+ו-<code>ttft_server_s</code> הישן</td>
+<td>כפי שהוגדר בתכנית</td>
+</tr>
+<tr>
+<td>סף איכות בתוך <code>success</code></td>
+<td><code>success</code> תפעולי בלבד, <code>quality_pass</code>
+נפרד</td>
+<td>ריצה יכולה להצליח ולהיכשל באיכות</td>
+</tr>
+<tr>
+<td>baseline לפי מודל, host, commit</td>
+<td>גם sha256, קוונטיזציה, גרסת סולם ודגלי generation; ציון ה-baseline
+מחושב על אותם פרומפטים שרצו</td>
+<td>A4 רץ רק על 3 פרומפטים</td>
+</tr>
+</tbody>
+</table>
+<p><strong>תנאי חדש להצלחה</strong>: זיכרון חייב להימדד על כל מכונה. על
+מק המדידה היא <code>ps -o rss</code> של התהליך ואינה דורשת sudo. אם משהו
+מונע אותה, הריצה תיכשל; אפשר לעקוף
+ב-<code>--allow-unmeasured-memory</code>, וזה נרשם בהערות.</p>
+<p><strong>סדר סבב 2</strong> (לכל רשת, Wi-Fi קודם ואז hotspot):</p>
+<ol type="1">
+<li><code>git pull</code> או סנכרון iCloud, ואז
+<code>python -m pytest tests/bench -q</code> בשתי המכונות.</li>
+<li>כיול מונה הבייטים פעם אחת (סעיף 2.6).</li>
+<li>BASELINE מחדש על כל מק, ריצה אחת מספיקה (סעיף 4).</li>
+<li>A1, A2, A2b, A4 עם 3 חזרות (סעיפים 5 עד 7). <code>--live</code>
+אופציונלי ולא משפיע על המדידה (סעיף 8.1).</li>
+<li><code>python -m nocturne.bench.report</code>,
+ו-<code>python -m nocturne.bench.recompute --id &lt;id&gt;</code> על
+רשומה ישנה אחת כדי לראות מה אפשר היה לשחזר ממנה.</li>
+</ol>
+<h2 id="2-הכנה-חד-פעמית">2. הכנה חד פעמית</h2>
+<h3 id="21-סביבת-פייתון">2.1 סביבת פייתון</h3>
+<p>הריפו יושב ב-iCloud. Claude Code יצר היום <code>.venv</code> בתוך
+הריפו. זה יעבוד על המכונה שבה נוצר, אבל iCloud יסנכרן אלפי קבצים ו-venv
+אינו עובר בין מכונות. לכן ההוראות כאן יוצרות venv מחוץ ל-iCloud
+ב-<code>~/dev/nocturne-venv</code> על כל מכונה, ואפשר למחוק את
+<code>.venv</code> שבריפו (<code>rm -rf .venv</code>, הוא
+gitignored).</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [both]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/Library/Mobile Documents/com~apple~CloudDocs/Documents/אוניברסיטה/פרוייקט גמר/nocturne&quot;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> install uv iperf3</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> venv <span class="at">--python</span> 3.12 <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-venv&quot;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-venv/bin/activate&quot;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> pip install <span class="at">-e</span> <span class="st">&quot;.[dev]&quot;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> pytest tests/bench <span class="at">-q</span></span></code></pre></div>
+<p>הבדיקות חייבות לעבור לפני כל דבר אחר. אם <code>uv</code> לא מותקן
+ואין Homebrew, <code>python3 -m venv ~/dev/nocturne-venv</code> ואז
+<code>pip install -e ".[dev]"</code> עובד גם כן.</p>
+<h3 id="22-ssh-מה-m5-ל-air-בלי-סיסמה">2.2 ssh מה-M5 ל-Air בלי סיסמה</h3>
+<p>ב-Air: System Settings, General, Sharing, Remote Login מופעל.</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-keygen</span> <span class="at">-t</span> ed25519 <span class="at">-N</span> <span class="st">&quot;&quot;</span> <span class="at">-f</span> ~/.ssh/id_ed25519 <span class="dv">2</span><span class="op">&gt;</span>/dev/null <span class="kw">||</span> <span class="fu">true</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">ssh-copy-id</span> ohadrosentswaig@192.168.1.219</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> ohadrosentswaig@192.168.1.219 <span class="st">&#39;hostname; ls ~/dev/llama.cpp/build/bin/ggml-rpc-server&#39;</span></span></code></pre></div>
+<p>הפקודה האחרונה חייבת להדפיס את שם המכונה ואת נתיב הבינארי. אם הבינארי
+ב-Air נמצא ב-<code>third_party/llama.cpp/build/bin</code> ולא
+ב-<code>~/dev/llama.cpp/build/bin</code>, לתקן את <code>bin</code> של
+ה-Air ב-<code>peers.yaml</code> בסעיף 2.4.</p>
+<h3 id="23-sudo-בלי-סיסמה-ל-powermetrics-ול-tcpdump">2.3 sudo בלי סיסמה
+ל-powermetrics ול-tcpdump</h3>
+<p>בלי זה הריצה עובדת, אבל השדות <code>utilization</code>
+ו-<code>bytes_per_token</code> יהיו null וההערה תסביר למה. כדאי להגדיר
+פעם אחת על שתי המכונות. להחליף את שם המשתמש בהתאם למכונה.</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;orosentswaig ALL=(root) NOPASSWD: /usr/bin/powermetrics, /usr/sbin/tcpdump&quot;</span> <span class="kw">|</span> <span class="fu">sudo</span> tee /etc/sudoers.d/nocturne</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chmod 440 /etc/sudoers.d/nocturne</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> <span class="at">-n</span> powermetrics <span class="at">--samplers</span> gpu_power <span class="at">-i</span> 100 <span class="at">-n</span> 1 <span class="kw">|</span> <span class="fu">head</span> <span class="at">-3</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [Air]</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;ohadrosentswaig ALL=(root) NOPASSWD: /usr/bin/powermetrics, /usr/sbin/tcpdump&quot;</span> <span class="kw">|</span> <span class="fu">sudo</span> tee /etc/sudoers.d/nocturne</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chmod 440 /etc/sudoers.d/nocturne</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> <span class="at">-n</span> powermetrics <span class="at">--samplers</span> gpu_power <span class="at">-i</span> 100 <span class="at">-n</span> 1 <span class="kw">|</span> <span class="fu">head</span> <span class="at">-3</span></span></code></pre></div>
+<h3 id="24-קובץ-peers-לכל-מכונה-מחוץ-ל-icloud">2.4 קובץ peers לכל מכונה,
+מחוץ ל-iCloud</h3>
+<p><code>nocturne/bench/peers.yaml</code> נמצא בתוך הריפו, כלומר בתוך
+iCloud, ולכן שתי המכונות יראו את אותו קובץ. זה שגוי כי בכל מכונה
+<code>ssh: null</code> צריך להצביע על המכונה המקומית. לכן כל מכונה
+מחזיקה קובץ משלה ב-<code>~/.nocturne/peers.yaml</code>, ותמיד מעבירים
+<code>--peers</code>. הקובץ שבריפו ישמש רק כדוגמה.</p>
+<p>שימו לב: הקובץ שנוצר היום בריפו מכיל ל-M5 כתובת
+<code>132.73.206.61</code>. זו כתובת ציבורית, כנראה מרשת האוניברסיטה.
+לפי כלל 7 ב-CLAUDE.md ו-ADR-009, ה-worker נקשר רק לכתובת LAN או
+Tailscale שנבחרה בכוונה. בבית הכתובת היא <code>192.168.1.242</code>.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/.nocturne</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> ~/.nocturne/peers.yaml <span class="op">&lt;&lt;&#39;EOF&#39;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="st">models:</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="st">  qwen2.5-7b-q4km:  {path: &quot;~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf&quot;,  quant: Q4_K_M, draft: &quot;~/models/Qwen2.5-0.5B-Instruct-Q8_0.gguf&quot;}</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="st">  qwen2.5-14b-q4km: {path: &quot;~/models/Qwen2.5-14B-Instruct-Q4_K_M.gguf&quot;, quant: Q4_K_M, draft: &quot;~/models/Qwen2.5-0.5B-Instruct-Q8_0.gguf&quot;}</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="st">  qwen2.5-32b-q4km: {path: &quot;~/models/Qwen2.5-32B-Instruct-Q4_K_M.gguf&quot;, quant: Q4_K_M, draft: &quot;~/models/Qwen2.5-0.5B-Instruct-Q8_0.gguf&quot;}</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="st">peers:</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="st">  m5:</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="st">    host: MMF4FWRG4R</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="st">    ssh: null</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="st">    backend: metal</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="st">    device: MTL0</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="st">    mem_gb: 24</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="st">    os: macos</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="st">    bin: &quot;~/dev/llama.cpp/build/bin&quot;</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="st">    bind: 192.168.1.242</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="st">    networks: {wifi: 192.168.1.242, wired: 10.0.0.2, tailscale: 100.64.0.2, hotspot: 172.20.10.3}</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="st">  air:</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="st">    host: Mac</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="st">    ssh: ohadrosentswaig@192.168.1.219</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="st">    backend: metal</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="st">    device: MTL0</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="st">    mem_gb: 16</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="st">    os: macos</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="st">    bin: &quot;~/dev/llama.cpp/build/bin&quot;</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="st">    bind: 192.168.1.219</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="st">    networks: {wifi: 192.168.1.219, wired: 10.0.0.1, tailscale: 100.64.0.1, hotspot: 172.20.10.2}</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="st">roles: {requester: m5, workers: [air]}</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="st">tensor_split: null</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a><span class="st">rpc_port: 50052</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a><span class="st">server_port: 8089</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [Air]</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/.nocturne</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> ~/.nocturne/peers.yaml <span class="op">&lt;&lt;&#39;EOF&#39;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="st">models:</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="st">  qwen2.5-7b-q4km:  {path: &quot;~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf&quot;,  quant: Q4_K_M, draft: &quot;~/models/Qwen2.5-0.5B-Instruct-Q8_0.gguf&quot;}</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="st">peers:</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="st">  air:</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="st">    host: Mac</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="st">    ssh: null</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="st">    backend: metal</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="st">    device: MTL0</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="st">    mem_gb: 16</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="st">    os: macos</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="st">    bin: &quot;~/dev/llama.cpp/build/bin&quot;</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="st">    bind: 192.168.1.219</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="st">    networks: {wifi: 192.168.1.219, wired: 10.0.0.1, tailscale: 100.64.0.1, hotspot: 172.20.10.2}</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="st">roles: {requester: air, workers: []}</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="st">tensor_split: null</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="st">rpc_port: 50052</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="st">server_port: 8089</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span></code></pre></div>
+<p>הכתובות של <code>wired</code> ו-<code>tailscale</code> הן
+placeholders. לפני ריצה על רשת כזו למלא את הכתובות האמיתיות
+(<code>tailscale ip -4</code> נותן את כתובת ה-Tailscale).</p>
+<h3 id="25-מודלים">2.5 מודלים</h3>
+<p>ה-requester דוחף משקולות ל-worker, ולכן ל-A1 מספיק שהמודל יהיה על
+ה-M5. ל-BASELINE של ה-Air המודל חייב להיות גם על ה-Air. ל-A2 נדרש מודל
+הטיוטה על ה-M5. שם הקובץ ב-Hugging Face הוא באותיות קטנות, ולכן משנים שם
+אחרי ההורדה כדי להתאים ל-peers.yaml.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-la</span> ~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">hf</span> download Qwen/Qwen2.5-0.5B-Instruct-GGUF qwen2.5-0.5b-instruct-q8_0.gguf <span class="at">--local-dir</span> ~/models</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">mv</span> ~/models/qwen2.5-0.5b-instruct-q8_0.gguf ~/models/Qwen2.5-0.5B-Instruct-Q8_0.gguf</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">shasum</span> <span class="at">-a</span> 256 ~/models/Qwen2.5-0.5B-Instruct-Q8_0.gguf</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [Air]</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-la</span> ~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf</span></code></pre></div>
+<p>את ה-sha256 של הטיוטה לרשום ב-<code>experiments/RESULTS.md</code> תחת
+"Model hashes", כמו שאר המודלים.</p>
+<h4 id="זוג-המודלים-לשורה-b1d-distributed-llama-עדיפות-נמוכה">זוג
+המודלים לשורה B1d (distributed-llama, עדיפות נמוכה)</h4>
+<p>שורה B משווה מערכת מול מערכת: llama.cpp עם GGUF מול distributed-llama
+עם פורמט q40 משלו. לכן צריך את אותה משפחת מודל בשני המנועים, Qwen3-8B,
+וכל אחד מהם מקבל BASELINE משלו. ההורדה כמה GB לכל קובץ, ולכן עושים אותה
+בבית. התיקון ל-ADR-007 אושר ב-27.10 (amendment 1 ו-2). התא נקרא עכשיו
+B1d.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">hf</span> download Qwen/Qwen3-8B-GGUF Qwen3-8B-Q4_K_M.gguf <span class="at">--local-dir</span> ~/models</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ex">shasum</span> <span class="at">-a</span> 256 ~/models/Qwen3-8B-Q4_K_M.gguf</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [both]</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/b4rtaz/distributed-llama.git ~/dev/distributed-llama</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/dev/distributed-llama <span class="kw">&amp;&amp;</span> <span class="fu">make</span> dllama <span class="kw">&amp;&amp;</span> <span class="fu">make</span> dllama-api</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/dev/distributed-llama <span class="kw">&amp;&amp;</span> <span class="ex">python3</span> launch.py qwen3_8b_q40 <span class="at">-skip-run</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-la</span> models/qwen3_8b_q40/</span></code></pre></div>
+<p>המודל המומר נדרש רק על ה-root (M5). על ה-Air מספיק הבינארי
+<code>dllama</code>. אחרי ההורדה מוסיפים ל-<code>peers.yaml</code> את
+<code>dllama_bin</code> ו-<code>dllama_nthreads</code> לכל מכונה ואת שני
+המודלים <code>qwen3-8b-q4km</code> ו-<code>qwen3-8b-dllama</code> כמו
+ב-<code>peers.example.yaml</code>. בדיקה בלי להריץ כלום:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> B1d <span class="at">--network</span> wifi <span class="at">--model</span> qwen3-8b-dllama <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--dry-run</span></span></code></pre></div>
+<h3 id="26-כיול-מונה-הבייטים-פעם-אחת">2.6 כיול מונה הבייטים (פעם
+אחת)</h3>
+<p>B נמדד ב-tcpdump על הממשק שמוביל ל-worker. לפני שמצטטים אותו, בודקים
+שהמונה לא סופר כפול: הפקודה שולחת 10MB ידועים דרך אותו מסלול לכידה
+ומדפיסה נמדד מול צפוי. קודם על loopback בכל מכונה, ואז מה-M5 ל-Air על
+הרשת.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.calibrate_capture <span class="at">--local</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.calibrate_capture <span class="at">--network</span> wifi <span class="at">--peers</span> ~/.nocturne/peers.yaml</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [Air]</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.calibrate_capture <span class="at">--local</span></span></code></pre></div>
+<p>יחס של 1.0 עד 1.1 תקין (כותרות TCP). יחס קרוב ל-2 פירושו ספירה כפולה,
+ואז B לא נכנס לשום השוואה עד שזה מתוקן. את השורה מעתיקים לטבלת "Capture
+calibration" ב-<code>nocturne/bench/README.md</code>.</p>
+<h2 id="3-ריצה-ראשונה-בדיקת-עשן-בלי-להריץ-כלום">3. ריצה ראשונה: בדיקת
+עשן בלי להריץ כלום</h2>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/Library/Mobile Documents/com~apple~CloudDocs/Documents/אוניברסיטה/פרוייקט גמר/nocturne&quot;</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-venv/bin/activate&quot;</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> A1 <span class="at">--network</span> wifi <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--dry-run</span></span></code></pre></div>
+<p>הפלט הוא רשימת כל הפקודות שהיו רצות, כולל פקודת ה-ssh ל-Air ושורת
+<code>llama-server</code> המלאה. לקרוא אותה פעם אחת. לבדוק:
+<code>--rpc 192.168.1.219:50052</code>, <code>-ngl 99</code>,
+<code>--temp 0</code>, <code>--seed 42</code>, ו-<code>-ts</code> לא
+מופיע (כי <code>tensor_split: null</code>). אם משהו לא נראה נכון, לתקן
+ב-peers.yaml ולא בקוד.</p>
+<h2 id="4-baseline-על-כל-מכונה">4. BASELINE על כל מכונה</h2>
+<p>BASELINE הוא הייחוס לנכונות. בלי רשומת BASELINE של ה-M5, כל תא אחר
+ייכשל בשלב הנכונות. מתחילים בתת-קבוצה של 5 פרומפטים כדי לראות שהכול
+עובד, ואז ריצה מלאה.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> BASELINE <span class="at">--host</span> m5 <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 1 <span class="at">--subset</span> 5 <span class="at">--no-results-md</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> BASELINE <span class="at">--host</span> m5 <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 3</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [Air]</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/Library/Mobile Documents/com~apple~CloudDocs/Documents/אוניברסיטה/פרוייקט גמר/nocturne&quot;</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-venv/bin/activate&quot;</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> BASELINE <span class="at">--host</span> air <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 3</span></code></pre></div>
+<p>הריצה המלאה על 7B לוקחת בערך 10 עד 15 דקות לחזרה על ה-M5, בעיקר בגלל
+שלושת הפרומפטים הארוכים. הרשומות נכתבות
+ל-<code>nocturne/bench/results/</code>. התיקייה בתוך iCloud, ולכן רשומה
+שנכתבה על ה-Air תופיע גם על ה-M5 אחרי סנכרון. זה רצוי.</p>
+<p>מה לבדוק ברשומה: <code>success: true</code>,
+<code>correctness.task_accuracy</code> (על 7B צפוי 0.7 עד 0.9),
+<code>timing.decode_tps_median</code>, ו-<code>notes</code> ריק או עם
+הסברים שמובנים לכם.</p>
+<h2 id="5-a1-pp-על-wi-fi">5. A1: PP על Wi-Fi</h2>
+<p>לפני כל ריצה ברשת, ה-Air מריץ שרת iperf3. בלי זה <code>bw_mbps</code>
+יהיה null וההערה תגיד שהשרת לא רץ.</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [Air]</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ex">iperf3</span> <span class="at">-s</span> <span class="at">-D</span></span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> A1 <span class="at">--network</span> wifi <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 1 <span class="at">--subset</span> 5 <span class="at">--no-results-md</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> A1 <span class="at">--network</span> wifi <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 3</span></code></pre></div>
+<p>ה-bench מרים את <code>ggml-rpc-server</code> על ה-Air בעצמו ועוצר
+אותו בסוף. אם ריצה קודמת נקטעה והפורט תפוס, על ה-Air:
+<code>pkill -f ggml-rpc-server</code>.</p>
+<p>מה לבדוק ברשומה של A1 (סכמה v2), לעומת BASELINE של ה-M5:</p>
+<table>
+<thead>
+<tr>
+<th>שדה</th>
+<th>ערך צפוי</th>
+<th>אם לא</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>success</code></td>
+<td>true</td>
+<td>לקרוא <code>failure_class</code> ו-<code>notes</code></td>
+</tr>
+<tr>
+<td><code>quality_pass</code></td>
+<td>true</td>
+<td>null פירושו שלא נמצא BASELINE תואם (sha256, קוונטיזציה, גרסת סולם,
+host)</td>
+</tr>
+<tr>
+<td><code>comm.rpc_commands_per_step</code></td>
+<td>6 עד 7 (גבול אחד; 5 set_tensor קטנים, graph_recompute,
+get_tensor)</td>
+<td>אם הרבה יותר, לבדוק את <code>worker_air.log</code></td>
+</tr>
+<tr>
+<td><code>comm.tokens_per_step</code></td>
+<td>1.0 ב-A1, כ-3 ב-A2, 3 ב-A4</td>
+<td></td>
+</tr>
+<tr>
+<td><code>comm.bytes_per_step</code></td>
+<td>15 עד 45 אלף, תלוי בכיול מסעיף 2.6</td>
+<td>null פירושו tcpdump לא רץ, ראו 2.3. <code>comm.capture_iface</code>
+אומר על איזה ממשק נלכד</td>
+</tr>
+<tr>
+<td><code>utilization</code></td>
+<td>0.3 עד 0.5 לכל מכונה, כי ב-PP רק אחת מחשבת בכל רגע</td>
+<td>null פירושו powermetrics לא רץ</td>
+</tr>
+<tr>
+<td><code>memory_buffers_gb</code> / <code>memory_peak_gb</code></td>
+<td>שניהם לכל מכונה. 7B: כ-3.4 ל-M5 ו-1.6 ל-Air ב-buffers</td>
+<td>חסר פירושו שהריצה נכשלה על זיכרון לא מדוד, אלא אם עבר
+<code>--allow-unmeasured-memory</code></td>
+</tr>
+<tr>
+<td><code>correctness.exact_match_ratio</code></td>
+<td>1.0 בין שני Metal (נמדד)</td>
+<td><code>first_divergence_median</code> נמוך ושיטתי הוא באג</td>
+</tr>
+<tr>
+<td><code>correctness.task_accuracy</code></td>
+<td>שווה ל-<code>baseline_task_accuracy</code> על אותם פרומפטים</td>
+<td>הפער מופיע ב-<code>quality_pass</code></td>
+</tr>
+<tr>
+<td><code>setup.load_total_s</code> / <code>setup.transfer_s</code></td>
+<td>קר: כ-55s ו-1.67GB. חם: כ-10s ו-0.23GB</td>
+<td><code>cache_state</code> אומר אם ה-cache פעל</td>
+</tr>
+<tr>
+<td><code>timing.ttft_s</code> / <code>timing.ttft_server_s</code></td>
+<td>0.3s בערך, הראשון מעט גדול מהשני</td>
+<td></td>
+</tr>
+<tr>
+<td><code>network.rtt_ms_median</code></td>
+<td>2 עד 20 ב-Wi-Fi ביתי</td>
+<td>נרשם, לא קריטריון</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-a2-טיוטה-על-ה-requester">6. A2: טיוטה על ה-requester</h2>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> A2 <span class="at">--network</span> wifi <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 3</span></code></pre></div>
+<p>בהגדרות greedy הפלט של A2 חייב להיות זהה לפלט של A1 האחרון שהצליח. אם
+לא, הרשומה תסומן <code>wrong_output</code>. זה כשל אמיתי ולא רעש, ואז
+מדווחים עליו במסמך המשותף. ברשומה יש גם <code>draft_n</code>
+ו-<code>draft_n_accepted</code> לכל פרומפט מתוך <code>timings</code>.
+היחס ביניהם הוא שיעור הקבלה של הטיוטה. שימו לב שהתא הזה עדיין לא מעסיק
+את ה-Air יותר מ-A1, כי הטיוטה רצה על ה-M5. הגרסה עם טיוטה על worker
+(<code>--device-draft RPC[...]</code>) היא ה-session הבא.</p>
+<h3 id="61-a2b-טיוטה-קצרה-וסלקטיבית">6.1 A2b: טיוטה קצרה וסלקטיבית</h3>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> A2b <span class="at">--network</span> wifi <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 3</span></code></pre></div>
+<p>ב-A2 על Wi-Fi הטיוטה ניחשה 8 tokens בכל צעד והתקבלו 39 אחוז מהם. A2b
+מנחשת עד 4 ועוצרת כשהביטחון יורד מ-0.75. ההשוואה המעניינת היא
+<code>tokens_per_step</code> ו-decode של A2 מול A2b על אותה רשת, והפלט
+בשניהם חייב להישאר זהה ל-A1.</p>
+<h2 id="7-a4-שלוש-בקשות-ארוכות-במקביל">7. A4: שלוש בקשות ארוכות
+במקביל</h2>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> A4 <span class="at">--network</span> wifi <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 3</span></code></pre></div>
+<p>k ברירת המחדל הוא מספר הפרומפטים הארוכים, כלומר 3. זה התא הראשון שבו
+<code>utilization</code> של שתי המכונות אמור לעלות מעל 0.5, כי
+llama-server מעבד 3 רצפים בצינור. זו הבדיקה הישירה של טענת "ממלאים את
+הבטלה בלי TP".</p>
+<h2 id="75-שורה-b-שלושה-מנועים-ל-tp">7.5 שורה B: שלושה מנועים ל-TP</h2>
+<p>ההחלטה (ADR-007, amendment 2, 27.10): שורה B נמדדת בשלושה תאים, לכל
+אחד מנוע משלו ו-BASELINE משלו. השוואה בין B1t ל-A1 היא השוואת מערכות
+(bf16 מול Q4_K_M, ליבות ATen מול ggml), לא TP מול PP בתוך מנוע אחד. B1
+הוא היחיד שמשווה TP ל-PP בתוך llama.cpp.</p>
+<table>
+<thead>
+<tr>
+<th>תא</th>
+<th>מנוע</th>
+<th>מה צריך</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B1</td>
+<td>llama.cpp <code>--split-mode tensor -fit off --rpc</code>, אותו
+build <code>1e7bcf3</code></td>
+<td>כמו A1. <code>-fit off</code> חובה: בלעדיו <code>fit.cpp</code> זורק
+שגיאה ב-tensor mode</td>
+</tr>
+<tr>
+<td>B1t</td>
+<td>המנוע שלנו ב-PyTorch, שני ranks, TCP משלנו</td>
+<td>venv של torch על שתי המכונות, המודל בפורמט safetensors על שתיהן</td>
+</tr>
+<tr>
+<td>B1d</td>
+<td>distributed-llama</td>
+<td>ראו 2.5</td>
+</tr>
+</tbody>
+</table>
+<h3 id="751-b1-מה-נמדד-עד-כה">7.5.1 B1: מה נמדד עד כה</h3>
+<p>בדיקת מנגנון על ה-M5 לבד (29.10, worker על 127.0.0.1): ה-build בונה
+"Meta device" מ-MTL0 ומ-RPC0, מחלק את משקלי ה-7B לשניים (2084 MiB לכל
+מכשיר), מדליק flash attention בכוח, ומפענח עם פלט זהה ל-BASELINE ב-15.5
+tok/s. <code>--split-mode row</code> נכשל בטעינה: "device RPC0 does not
+support split buffers". הריצה על שני המקים ב-Wi-Fi עדיין פתוחה. הפירוט
+ב-<code>experiments/RESULTS.md</code> תחת "Q7 mechanism check".</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [Air]</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="ex">iperf3</span> <span class="at">-s</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5] בדיקת עשן ואז הריצה המלאה</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> B1 <span class="at">--network</span> wifi <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--runs</span> 1 <span class="at">--subset</span> 5 <span class="at">--peers</span> ~/.nocturne/peers.yaml</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> B1 <span class="at">--network</span> wifi <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--runs</span> 3 <span class="at">--peers</span> ~/.nocturne/peers.yaml</span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5] נקודת נתונים שנייה, --split-mode row, נרשמת כהערה ולא כתא</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> B1 <span class="at">--network</span> wifi <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--runs</span> 1 <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="st">&quot;--override-flag=--split-mode=row&quot;</span> <span class="at">--tag</span> row <span class="at">--no-results-md</span></span></code></pre></div>
+<h3 id="752-b1t-הכנה-לכל-מכונה">7.5.2 B1t: הכנה לכל מכונה</h3>
+<p>ה-venv של torch נפרד מזה של ה-bench ויושב מחוץ ל-iCloud. הנתיב המלא
+שלו נכנס ל-<code>peers.yaml</code> תחת <code>python</code> של כל
+מכונה.</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [both]</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/Library/Mobile Documents/com~apple~CloudDocs/Documents/אוניברסיטה/פרוייקט גמר/nocturne&quot;</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> venv <span class="at">--python</span> 3.12 <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-torch&quot;</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> pip install <span class="at">--python</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-torch/bin/python&quot;</span> <span class="at">-e</span> <span class="st">&quot;.[dev,bench-torch]&quot;</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-torch/bin/python&quot;</span> <span class="at">-c</span> <span class="st">&quot;import torch; print(torch.__version__, torch.backends.mps.is_available())&quot;</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-torch/bin/python&quot;</span> <span class="at">-m</span> pytest tests/bench/test_torch_tp.py <span class="at">-q</span></span></code></pre></div>
+<p>המודלים בפורמט safetensors, על שתי המכונות באותו נתיב. ה-1.5B הוא
+כ-3GB, ה-7B כ-15GB.</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [both]</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="ex">hf</span> download Qwen/Qwen2.5-1.5B-Instruct <span class="at">--local-dir</span> ~/models/hf/Qwen2.5-1.5B-Instruct</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="ex">hf</span> download Qwen/Qwen2.5-7B-Instruct <span class="at">--local-dir</span> ~/models/hf/Qwen2.5-7B-Instruct</span></code></pre></div>
+<p>ב-<code>peers.yaml</code>: לכל מכונה
+<code>python: /Users/&lt;user&gt;/dev/nocturne-torch/bin/python</code>;
+למודלים <code>qwen2.5-1.5b-bf16</code> ו-<code>qwen2.5-7b-bf16</code> עם
+<code>engine: torch_tp</code> ו-<code>torch_model</code> (ראו
+<code>peers.example.yaml</code>); ברמה העליונה
+<code>torch_port: 50053</code> ו-<code>torch_api_port: 8092</code>.</p>
+<h3 id="753-b1t-בדיקות-נכונות-לפני-ה-bench">7.5.3 B1t: בדיקות נכונות
+לפני ה-bench</h3>
+<p>שלב 1, rank אחד על ה-M5: הפלט החמדני של המנוע שלנו זהה
+ל-<code>generate</code> של transformers על 20 פרומפטים.</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-torch/bin/python&quot;</span> <span class="at">-m</span> nocturne.engines.torch_tp compare <span class="at">--model</span> ~/models/hf/Qwen2.5-1.5B-Instruct <span class="at">--world</span> 1 <span class="at">--n</span> 20</span></code></pre></div>
+<p>שלב 2, שני ranks. קודם שניהם על ה-M5 (loopback), אחר כך rank 1 על
+ה-Air. ה-worker נקשר לכתובת שנבחרה במכוון, אף פעם לא 0.0.0.0; הפורט מקבל
+כל rank 0 (אבטחה נדחתה לפי ADR-009).</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5] חלון 1</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-torch/bin/python&quot;</span> <span class="at">-m</span> nocturne.engines.torch_tp worker <span class="at">--bind</span> 127.0.0.1 <span class="at">--port</span> 50053 <span class="at">--model</span> ~/models/hf/Qwen2.5-1.5B-Instruct <span class="at">--rank</span> 1 <span class="at">--world</span> 2</span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5] חלון 2</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-torch/bin/python&quot;</span> <span class="at">-m</span> nocturne.engines.torch_tp compare <span class="at">--model</span> ~/models/hf/Qwen2.5-1.5B-Instruct <span class="at">--world</span> 2 <span class="at">--peer</span> 127.0.0.1:50053 <span class="at">--n</span> 20</span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [Air] rank 1 על הרשת הביתית (הכתובת של ה-Air)</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-torch/bin/python&quot;</span> <span class="at">-m</span> nocturne.engines.torch_tp worker <span class="at">--bind</span> 192.168.1.219 <span class="at">--port</span> 50053 <span class="at">--model</span> ~/models/hf/Qwen2.5-1.5B-Instruct <span class="at">--rank</span> 1 <span class="at">--world</span> 2</span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/dev/nocturne-torch/bin/python&quot;</span> <span class="at">-m</span> nocturne.engines.torch_tp compare <span class="at">--model</span> ~/models/hf/Qwen2.5-1.5B-Instruct <span class="at">--world</span> 2 <span class="at">--peer</span> 192.168.1.219:50053 <span class="at">--n</span> 20</span></code></pre></div>
+<p>המונים צריכים להראות 56 מסגרות all-reduce לכל טוקן (28 שכבות, שתי
+all-reduce לשכבה) גם ב-1.5B וגם ב-7B.</p>
+<h3 id="754-b1t-ה-bench-עצמו">7.5.4 B1t: ה-bench עצמו</h3>
+<p>BASELINE של המנוע הזה הוא <code>--world 1</code> על ה-M5. ה-7B ב-bf16
+הוא 15GB ולכן ה-BASELINE שלו רץ רק על ה-M5; על ה-Air נכנס רק החצי של B1t
+(כ-7.6GB).</p>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> BASELINE <span class="at">--host</span> m5 <span class="at">--model</span> qwen2.5-7b-bf16 <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 3</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> B1t <span class="at">--network</span> wifi <span class="at">--model</span> qwen2.5-7b-bf16 <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 3</span></code></pre></div>
+<p>מה לצפות: 1 עד 2 tok/s על Wi-Fi ל-7B, כי כל טוקן הוא 56 סבבי הלוך
+ושוב חוסמים ב-6 עד 20 ms RTT. המספר הזה הוא המדידה, לא באג. ברשומה:
+<code>comm.rpc_commands_per_step</code> מגיע ממוני המנוע (מסגרות
+all-reduce), <code>bytes_per_token</code> מ-tcpdump על פורט 50053,
+<code>memory_buffers_gb</code> מ-<code>/metrics</code> של המנוע (הקצאות
+Metal של torch, כי <code>ps -o rss</code> מחסיר).</p>
+<h3 id="755-שורה-b-מה-נמדד-ב-31102026">7.5.5 שורה B: מה נמדד
+ב-31.10.2026</h3>
+<p>שני המנועים רצו על אותו זוג מכונות (M5 מבקש, Air עובד) ועל אותו Wi-Fi
+ביתי (RTT של 8 ms), שלוש ריצות של 33 פרומפטים כל אחת. הרשומות
+ב-<code>nocturne/bench/results/</code> והשורות
+ב-<code>experiments/RESULTS.md</code>.</p>
+<table>
+<thead>
+<tr>
+<th>מנוע</th>
+<th>תא</th>
+<th>decode tok/s</th>
+<th>סבבים לטוקן</th>
+<th>בייטים לטוקן</th>
+<th>זיכרון לכל צד</th>
+<th>פלט זהה ל-BASELINE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>llama.cpp <code>--split-mode tensor</code></td>
+<td>B1</td>
+<td>0.74 עד 0.77</td>
+<td>170 פקודות RPC</td>
+<td>17 MB</td>
+<td>2.4 GB / 2.1 GB</td>
+<td>33 מתוך 33</td>
+</tr>
+<tr>
+<td>torch_tp (המנוע שלנו)</td>
+<td>B1t</td>
+<td>1.32 עד 1.47</td>
+<td>56 all-reduce</td>
+<td>0.78 MB</td>
+<td>9.75 GB / 7.5 GB</td>
+<td>31 מתוך 33</td>
+</tr>
+<tr>
+<td>llama.cpp <code>--split-mode layer</code> (להשוואה)</td>
+<td>A2</td>
+<td>כ-14</td>
+<td>2</td>
+<td>80 KB</td>
+<td>4.2 GB / 2.1 GB</td>
+<td>33 מתוך 33</td>
+</tr>
+</tbody>
+</table>
+<p>שני מנועי ה-TP חסומים על סבבי הלוך ושוב: 56 סבבים ב-8 ms הם כבר 0.45
+שניות לטוקן. <code>--split-mode row</code> נכשל בטעינה בשני המקרים
+(loopback ו-Wi-Fi) עם
+<code>device RPC0 does not support split buffers</code>. שתי הסטיות של
+torch_tp הן עיגול bf16 של שני סכומים חלקיים בפרומפטים הארוכים, לא באג
+(הדיוק במשימה 1.0). B1d (distributed-llama) מוכן ולא רץ.</p>
+<h2 id="8-דוח">8. דוח</h2>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.report</span></code></pre></div>
+<p>מדפיס טבלת 4x4 ב-Markdown לכל רביעייה של מודל, רשת, מכונת requester
+ומנוע, עם הצלחה תפעולית ו-quality_pass בנפרד, task_accuracy, S, B,
+זיכרון ו-TPS חציוני. תאים כמו A2b ו-B1t מופיעים כשורה נפרדת מתחת לטבלה.
+רשומות שמופיעות ב-<code>results/EXCLUDE.yaml</code> (ריצות עשן, ריצות A2
+בלי <code>--spec-type</code>, בדיקות loopback) לא נכנסות לטבלה ומופיעות
+ברשימה בסוף עם הסיבה; הקבצים עצמם נשארים. את הטבלה מדביקים ב-I-entry הבא
+במסמך המשותף יחד עם מזהי הרשומות.</p>
+<h3 id="81-תצוגה-חיה-של-ריצה">8.1 תצוגה חיה של ריצה</h3>
+<p>בזמן שתא רץ אפשר לראות בדפדפן את שתי המכונות עובדות ואת ההודעות
+ביניהן. הדף רץ על ה-M5 בלבד, על 127.0.0.1, בלי שום ספרייה חיצונית, ולא
+כותב כלום לרשומה.</p>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> A1 <span class="at">--network</span> wifi <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 1 <span class="at">--subset</span> 5 <span class="at">--no-results-md</span> <span class="at">--live</span></span></code></pre></div>
+<p>הפקודה מדפיסה שורה <code>[live] http://127.0.0.1:8091/</code>. פותחים
+אותה בדפדפן. למעלה פס שלבים: probe, load (עם cold או warm), prefill,
+decode, done. משמאל כרטיס ה-requester, מימין כרטיס לכל worker: מצב
+(loading, computing, waiting, idle), זיכרון buffers מהטעינה, ועומס GPU
+אם יש sudo ל-powermetrics (אחרת <code>not measured</code>). באמצע זרם
+ההודעות: כל פקודת RPC כשהיא מגיעה, עם סימון לכל צעד decode ומונים של
+פקודות לצעד, פקודות בסך הכול ובייטים. למטה מונה טוקנים, tok/s, ובקשות
+בתעופה.</p>
+<p>ריצה שהסתיימה אפשר להריץ מחדש מהלוגים שלה, במהירות אמיתית:</p>
+<div class="sourceCode" id="cb36"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.live <span class="at">--logs</span> nocturne/bench/results/logs/A1_wifi_qwen2.5-7b-q4km_m5_r2</span></code></pre></div>
+<p>בלי <code>--logs</code> הפקודה נצמדת לתיקיית הלוגים החדשה ביותר.
+<code>--speed 2</code> מכפיל את המהירות. בריצות שנרשמו לפני 2026-10-26
+אין חותמות זמן בלוג של ה-worker, ולכן ההודעות משובצות לפי ספירת צעדים,
+בקירוב.</p>
+<h2 id="9-רשתות-נוספות">9. רשתות נוספות</h2>
+<p>אחרי ש-A1 עובד על Wi-Fi, אותן פקודות עם <code>--network wired</code>,
+<code>--network hotspot</code> או <code>--network tailscale</code>.
+ה-bench לוקח את הכתובת של ה-worker מתוך <code>networks</code> לפי סוג
+הרשת, מקשר אליה את <code>ggml-rpc-server</code>, ומודד אליה RTT ורוחב
+פס. ה-ssh ממשיך לרוץ על הכתובת שב-<code>ssh:</code>, וזה בסדר: בקרה על
+Wi-Fi, נתונים על הרשת הנמדדת. לפני כל רשת לוודא ש-<code>iperf3 -s</code>
+רץ על ה-Air.</p>
+<h3 id="91-כבל-thunderbolt-בין-המקים-זה-wired">9.1 כבל Thunderbolt בין
+המקים (זה <code>wired</code>)</h3>
+<p>כבל USB-C רגיל לא יוצר רשת בין שני מקים. נדרש כבל Thunderbolt או USB4
+(כבל טעינה בלבד לא עובד, כבל USB 3 גם לא). macOS יוצר ממשק Thunderbolt
+Bridge. זו הרשת המהירה ביותר שיש לכם: RTT של עשיריות מילישנייה ורוחב פס
+של עשרות Gbps. לפי ההחלטה הקיימת <code>wired</code> הוא אבחון בלבד, והוא
+הגבול התחתון של <code>S*RTT</code>. זה גם המקום היחיד שבו ל-TP (שורה B)
+יש סיכוי להראות רווח.</p>
+<p>הגדרה חד פעמית בשתי המכונות: System Settings, Network, Thunderbolt
+Bridge, Details, TCP/IP, Configure IPv4: Manually. ב-Air כתובת
+<code>10.0.0.1</code>, ב-M5 כתובת <code>10.0.0.2</code>, מסכה
+<code>255.255.255.0</code>, בלי router. Wi-Fi נשאר דלוק.</p>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ping</span> <span class="at">-c</span> 5 10.0.0.1</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="ex">iperf3</span> <span class="at">-c</span> 10.0.0.1 <span class="at">-t</span> 5</span></code></pre></div>
+<p>RTT צפוי מתחת ל-0.5 מילישנייה ורוחב פס של כמה Gbps. אם
+<code>ping</code> נכשל, הכבל אינו Thunderbolt או שהממשק לא קיבל כתובת.
+<code>ifconfig bridge0</code> מראה את הממשק. אחרי זה
+<code>networks.wired</code> ב-peers.yaml כבר נכון (10.0.0.1 ל-Air,
+10.0.0.2 ל-M5) ואפשר להריץ:</p>
+<div class="sourceCode" id="cb38"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> A1 <span class="at">--network</span> wired <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 3</span></code></pre></div>
+<h3 id="92-נקודה-חמה-מהטלפון-זה-hotspot">9.2 נקודה חמה מהטלפון (זה
+<code>hotspot</code>)</h3>
+<p>נקודה חמה היא רשת Wi-Fi שבה הטלפון הוא הנתב. התעבורה בין המקים עוברת
+מק, טלפון, מק, פעמיים באוויר, ולכן ה-RTT בדרך כלל גבוה מ-Wi-Fi ביתי (5
+עד 30 מילישניות) ורוחב הפס נמוך ממנו. היא אינה תחליף ל-Wi-Fi הביתי בטבלה
+ולכן יש לה סוג רשת משלה, <code>hotspot</code>, כדי שהרשומות לא יתערבבו.
+התעבורה בין המקים לא עוברת בסלולר, אבל כל הורדה מהאינטרנט כן.</p>
+<p>מתי זה שימושי: כשאתם לא בבית, למשל באוניברסיטה, שם רשת הקמפוס בדרך
+כלל מבודדת בין לקוחות ושני המקים לא רואים זה את זה. השימוש השני, החשוב
+יותר, מופיע ב-9.3.</p>
+<p>כתובות הנקודה החמה משתנות בכל חיבור. ב-iPhone הן בדרך כלל
+<code>172.20.10.x</code>. לפני כל ריצה:</p>
+<div class="sourceCode" id="cb39"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [Air]</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="ex">ipconfig</span> getifaddr en0</span></code></pre></div>
+<div class="sourceCode" id="cb40"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="ex">ipconfig</span> getifaddr en0</span></code></pre></div>
+<p>ולעדכן <code>networks.hotspot</code> של שתי המכונות
+ב-<code>~/.nocturne/peers.yaml</code> של ה-M5. אם גם ה-ssh צריך לעבור על
+הנקודה החמה, לעדכן גם <code>ssh:</code>. חלופה שחוסכת את זה:
+<code>ssh: ohadrosentswaig@Mac.local</code>, כי שם Bonjour עובד בכל רשת
+מקומית, גם על Thunderbolt Bridge. ל-<code>networks</code> עדיין נדרשות
+כתובות IP, כי <code>ggml-rpc-server -H</code> מקבל כתובת.</p>
+<div class="sourceCode" id="cb41"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> A1 <span class="at">--network</span> hotspot <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 3</span></code></pre></div>
+<p>ב-Android יש נקודות חמות שמבודדות בין לקוחות (AP isolation). אם
+<code>ping</code> בין המקים נכשל על הנקודה החמה, זו הסיבה, ולא תקלה
+ב-bench.</p>
+<h3
+id="93-אינטרנט-אמיתי-בבית-אחד-air-על-הנקודה-החמה-m5-על-ה-wi-fi-הביתי-tailscale-ביניהם">9.3
+אינטרנט אמיתי בבית אחד: Air על הנקודה החמה, M5 על ה-Wi-Fi הביתי,
+Tailscale ביניהם</h3>
+<p>זה השימוש הכי שימושי בנקודה החמה. ה-Air מחובר לסלולר דרך הטלפון, ה-M5
+לרשת הביתית, ו-Tailscale מחבר ביניהם. התעבורה יוצאת לאינטרנט באמת ועוברת
+דרך שני ספקים, בלי לחכות למחשב של ליאור. ה-RTT הצפוי הוא 30 עד 80
+מילישניות, וגבוה יותר אם Tailscale לא מצליח לפתוח חיבור ישיר דרך ה-CGNAT
+של הסלולר ועובר דרך relay. שני המקרים הם תנאי אינטרנט אמיתיים, והרשומה
+שומרת את מה שנמדד.</p>
+<div class="sourceCode" id="cb42"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [both]</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="ex">tailscale</span> ip <span class="at">-4</span></span></code></pre></div>
+<p>לעדכן <code>networks.tailscale</code> בשתי המכונות ב-peers.yaml של
+ה-M5, ואז:</p>
+<div class="sourceCode" id="cb43"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M5]</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="ex">tailscale</span> ping 100.x.y.z</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> nocturne.bench.run <span class="at">--cell</span> A1 <span class="at">--network</span> tailscale <span class="at">--model</span> qwen2.5-7b-q4km <span class="at">--peers</span> ~/.nocturne/peers.yaml <span class="at">--runs</span> 3</span></code></pre></div>
+<p><code>tailscale ping</code> מדפיס אם החיבור ישיר או דרך relay. לרשום
+את זה ב-<code>notes</code> של הרשומה. כששתי המכונות באותה רשת ביתית,
+Tailscale עושה קיצור ישיר ב-LAN וה-RTT יהיה דומה ל-Wi-Fi. זה לא ניסוי
+אינטרנט, וההרכב מ-9.3 הוא הדרך לקבל אחד.</p>
+<h3 id="94-מה-לצפות">9.4 מה לצפות</h3>
+<table>
+<thead>
+<tr>
+<th>רשת</th>
+<th>RTT טיפוסי</th>
+<th>רוחב פס טיפוסי</th>
+<th>תפקיד במטריצה</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Wi-Fi ביתי</td>
+<td>2 עד 20 מילישניות</td>
+<td>50 עד 300 Mbps</td>
+<td>הבסיס</td>
+</tr>
+<tr>
+<td>Thunderbolt Bridge</td>
+<td>0.1 עד 0.5</td>
+<td>10 עד 40 Gbps</td>
+<td>אבחון, גבול תחתון, הסיכוי היחיד של TP</td>
+</tr>
+<tr>
+<td>נקודה חמה, שני המקים עליה</td>
+<td>5 עד 30</td>
+<td>50 עד 200 Mbps</td>
+<td>תחליף ל-LAN מחוץ לבית</td>
+</tr>
+<tr>
+<td>נקודה חמה ועוד Wi-Fi ביתי דרך Tailscale</td>
+<td>30 עד 80, יותר דרך relay</td>
+<td>10 עד 50 Mbps בכיוון העלאה של הסלולר</td>
+<td>אינטרנט אמיתי בבית אחד</td>
+</tr>
+<tr>
+<td>שני בתים דרך Tailscale</td>
+<td>15 עד 40</td>
+<td>20 עד 100 Mbps העלאה</td>
+<td>יעד T2, עם ליאור</td>
+</tr>
+</tbody>
+</table>
+<h2 id="10-תקלות-נפוצות">10. תקלות נפוצות</h2>
+<table>
+<thead>
+<tr>
+<th>תסמין</th>
+<th>סיבה</th>
+<th>פתרון</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ssh: connect to host ... refused</code></td>
+<td>Remote Login כבוי ב-Air או כתובת השתנתה</td>
+<td>סעיף 2.2, ואז <code>ipconfig getifaddr en0</code> ב-Air</td>
+</tr>
+<tr>
+<td>הריצה מבקשת סיסמת sudo באמצע</td>
+<td>sudoers לא הוגדר או שם משתמש שגוי</td>
+<td>סעיף 2.3. לבדוק <code>whoami</code></td>
+</tr>
+<tr>
+<td><code>bw_mbps: null</code></td>
+<td>iperf3 לא רץ ב-Air</td>
+<td><code>iperf3 -s -D</code> ב-Air</td>
+</tr>
+<tr>
+<td><code>address already in use</code> על 50052 או 8089</td>
+<td>ריצה קודמת נקטעה</td>
+<td><code>pkill -f ggml-rpc-server</code> ב-Air,
+<code>pkill -f llama-server</code> ב-M5</td>
+</tr>
+<tr>
+<td>macOS שואל אם לאפשר ל-llama-server לקבל חיבורים</td>
+<td>חומת האש</td>
+<td>לאשר. llama-server נקשר ל-127.0.0.1, ה-rpc-server לכתובת ה-LAN
+שנבחרה</td>
+</tr>
+<tr>
+<td><code>dyld: Library not loaded</code> או שגיאת LC_RPATH</td>
+<td>הבינארי נבנה בתוך iCloud</td>
+<td>לבנות ב-<code>~/dev/llama.cpp</code> כמו ב-M5</td>
+</tr>
+<tr>
+<td><code>weight_transfer_s</code> ארוך מאוד בכל ריצה</td>
+<td>ה-cache של rpc-server לא פעיל</td>
+<td>ה-bench מעביר <code>-c</code>. לבדוק שיש מקום
+ב-<code>~/Library/Caches/llama.cpp/rpc/</code> ב-Air</td>
+</tr>
+<tr>
+<td><code>task_accuracy</code> נמוך גם ב-BASELINE</td>
+<td>פרומפט או grader בעייתי, לא המערכת</td>
+<td>לפתוח את <code>results/logs/&lt;id&gt;/</code> ולראות איזה פרומפט
+נכשל. לא לתקן את הסולם באמצע סבב. לרשום ולתקן בגרסה 2 של הסולם</td>
+</tr>
+<tr>
+<td>רשומה נכתבה אך <code>success: false</code> עם <code>oom</code></td>
+<td>מודל גדול מדי לתצורה</td>
+<td>7B נכנס בשתי המכונות. 14B ו-32B רק אחרי ש-7B עבר את כל התאים</td>
+</tr>
+</tbody>
+</table>
+<h2 id="11-אחרי-כל-סבב">11. אחרי כל סבב</h2>
+<ol type="1">
+<li><code>git status</code> ב-M5. הרשומות ב-<code>results/</code>
+והשורות החדשות ב-<code>experiments/RESULTS.md</code> נכנסות ל-commit.
+הלוגים ב-<code>results/logs/</code> לא (gitignored).</li>
+<li>I-entry במסמך המשותף: מזהי הרשומות, טבלת הדוח, מה הפתיע, ומה לא
+נבדק.</li>
+<li>לא לשנות את <code>eval_set.jsonl</code> בין תאים של אותו סבב. שינוי
+בסולם מתחיל סבב חדש עם BASELINE חדש.</li>
+<li>רשומות ישנות לא עורכים.
+<code>python -m nocturne.bench.recompute --id &lt;record&gt;</code>
+מדפיס מה אפשר לשחזר מהלוגים של רשומה v1 בלי לכתוב לתוכה.</li>
+<li>בדוח, S הוא <code>rpc_commands_per_token</code> ו-B הוא
+<code>bytes_per_token</code>. ברשומות v1 של A4 שני הערכים היו לכל צעד
+ועם ספירה כפולה, וההערה על כך כבר ב-RESULTS.md.</li>
+</ol>
+</body>
+</html>

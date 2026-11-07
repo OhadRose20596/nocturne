@@ -1,0 +1,87 @@
+# Copy to peers.yaml (gitignored) and edit. One entry per machine.
+# bind: the address the worker listens on. LAN, Tailscale or relay-facing. Never 0.0.0.0 (CLAUDE.md rule 7).
+# Security is deferred by ADR-009: an open RPC port accepts any client.
+# ssh: null for the local machine. Remote workers are driven with `ssh <ssh> <cmd>`, key-based auth.
+# bin: directory holding llama-server and ggml-rpc-server on that machine.
+# dllama_bin: directory holding dllama and dllama-api (row B, distributed-llama checkout); dllama_nthreads: threads per node.
+# models.<name>.dllama_path: the converted .m file on the root only; dllama_tokenizer defaults to the sibling
+#   dllama_tokenizer_<dir name>.t as launch.py writes it.
+# models.<name>.engine: adapter for this model's BASELINE and its torch cells (llamacpp_rpc default, torch_tp, distributed_llama).
+# models.<name>.torch_model: safetensors directory (bf16) for the torch_tp engine; the same path on every peer.
+# python: absolute path of the torch venv interpreter on that peer (row B1t); torch_port: the rank 1 worker port.
+# networks: the worker's address on each network type. The worker binds to it and the requester connects to it.
+#   wired = Thunderbolt Bridge (manual IPs), hotspot = phone hotspot (DHCP, changes per session; check with `ipconfig getifaddr en0`).
+
+models:
+  qwen2.5-7b-q4km:
+    path: "~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf"
+    quant: Q4_K_M
+    draft: "~/models/Qwen2.5-0.5B-Instruct-Q8_0.gguf"
+  qwen2.5-14b-q4km:
+    path: "~/models/Qwen2.5-14B-Instruct-Q4_K_M.gguf"
+    quant: Q4_K_M
+    draft: "~/models/Qwen2.5-0.5B-Instruct-Q8_0.gguf"
+  qwen2.5-32b-q4km:
+    path: "~/models/Qwen2.5-32B-Instruct-Q4_K_M.gguf"
+    quant: Q4_K_M
+    draft: "~/models/Qwen2.5-0.5B-Instruct-Q8_0.gguf"
+  # Row B pair: the same model family in both engines, each with its own BASELINE (README, "Row B comparability").
+  qwen3-8b-q4km:
+    path: "~/models/Qwen3-8B-Q4_K_M.gguf"            # hf download Qwen/Qwen3-8B-GGUF Qwen3-8B-Q4_K_M.gguf --local-dir ~/models
+    quant: Q4_K_M
+  qwen3-8b-dllama:
+    engine: distributed_llama
+    dllama_path: "~/dev/distributed-llama/models/qwen3_8b_q40/dllama_model_qwen3_8b_q40.m"   # python launch.py qwen3_8b_q40
+    dllama_tokenizer: "~/dev/distributed-llama/models/qwen3_8b_q40/dllama_tokenizer_qwen3_8b_q40.t"
+    quant: q40
+    format: dllama-q40
+  # Row B1t: the own torch engine, bf16 safetensors. hf download Qwen/Qwen2.5-7B-Instruct --local-dir ~/models/hf/Qwen2.5-7B-Instruct
+  qwen2.5-1.5b-bf16:
+    engine: torch_tp
+    torch_model: "~/models/hf/Qwen2.5-1.5B-Instruct"
+    quant: bf16
+  qwen2.5-7b-bf16:
+    engine: torch_tp
+    torch_model: "~/models/hf/Qwen2.5-7B-Instruct"
+    quant: bf16
+
+peers:
+  m5:
+    host: MMF4FWRG4R
+    ssh: null
+    backend: metal
+    device: MTL0
+    mem_gb: 24
+    os: macos
+    bin: "~/dev/llama.cpp/build/bin"
+    dllama_bin: "~/dev/distributed-llama"
+    dllama_nthreads: 4
+    python: "/Users/orosentswaig/dev/nocturne-torch/bin/python"
+    bind: 192.168.1.20
+    networks: {wifi: 192.168.1.20, wired: 10.0.0.2, tailscale: 100.64.0.2, hotspot: 172.20.10.3}
+  air:
+    host: ohads-MacBook-Air-2
+    ssh: ohad@192.168.1.10
+    backend: metal
+    device: MTL0
+    mem_gb: 16
+    os: macos
+    bin: "~/dev/llama.cpp/build/bin"
+    dllama_bin: "~/dev/distributed-llama"
+    dllama_nthreads: 4
+    python: "/Users/ohad/dev/nocturne-torch/bin/python"
+    bind: 192.168.1.10
+    networks: {wifi: 192.168.1.10, wired: 10.0.0.1, tailscale: 100.64.0.1, hotspot: 172.20.10.2}
+
+# Which peer runs the requester and which run workers, in --rpc order (remote first in -ts).
+roles:
+  requester: m5
+  workers: [air]
+# Tensor split, remote first. null = let llama.cpp split by free memory.
+tensor_split: null
+rpc_port: 50052
+server_port: 8089
+dllama_port: 9999       # dllama worker port (row B); security deferred by ADR-009, the port accepts any root
+dllama_api_port: 9990   # dllama-api on the requester, bound to 127.0.0.1
+torch_port: 50053       # torch_tp rank 1 worker port (row B1t); security deferred by ADR-009, the port accepts any rank 0
+torch_api_port: 8092    # torch_tp HTTP on the requester, bound to 127.0.0.1

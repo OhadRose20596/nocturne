@@ -66,6 +66,18 @@ Recorded here so the repository is self-contained. The detailed discussion lives
 **Decision (proposed):** (1) Connectivity is a ladder tried automatically by the worker agent: same LAN direct; UPnP port mapping; relay through the tracker host (frp or equivalent). (2) The tracker host is also the relay host. (3) Tailscale stays as a fallback and as the first tool for the first cross-home experiment, since it needs no server. (4) Security (encryption, authentication, abuse) is explicitly deferred and recorded as a known limitation in the thesis. (5) Wired links (Thunderbolt Bridge, Ethernet) are diagnostic tools only, not part of the product. Details in docs/he/CONNECTIVITY.md.
 **Consequences:** (+) A volunteer joins with one install and no router or VPN setup. (+) Works behind CGNAT. (+) Matches BitTorrent practice (UPnP, then relay). (−) Relay doubles per-token network time and is capped by the host's bandwidth; acceptable under T1. (−) An open RPC port accepts any client; must be fixed before any public release. (−) ADR-005 is narrowed, not reversed: Tailscale remains valid for experiments.
 
+## ADR-007, amendment 1: distributed-llama as an external TP measurement tool for row B
+**Date:** 2026-10-26 · **Status:** accepted (team, 2026-10-27)
+**Context:** The bench matrix (nocturne/bench) has a row B for tensor parallelism. ADR-007 names two engine candidates and a symmetric decision rule. Nothing in it covers an external tool used only to measure.
+**Decision (proposed):** llama.cpp RPC remains the existing PP path. Whether TP over RPC is supported must be checked in the pinned build and in a documented experiment; a CLI failure is not proof that TP is infeasible in principle. distributed-llama is added as an external measurement tool for TP in row B, with its own baseline and acceptance criteria. This experiment does not pick the product engine automatically and does not replace the symmetric decision rule of ADR-007.
+**Consequences:** (+) Row B can be measured now, without waiting for the engine decision. (+) B1 is reported as a system comparison, never as PP versus TP inside one engine. (−) One more binary and one more weight format on each machine. Nothing else in ADR-007 changes.
+
+## ADR-007, amendment 2: row B of the bench is measured with three engines
+**Date:** 2026-10-27 · **Status:** accepted (team, 2026-10-27)
+**Context:** Amendment 1 adds distributed-llama as a measurement tool for row B. The supervisor's question Q7 asks whether `--split-mode tensor` works in the pinned llama.cpp build over RPC. ADR-007 asks for an engine B spike (a PyTorch-based runtime) that has not been built. One cell per engine keeps the three apart.
+**Decision:** Row B is measured with three engines, each in its own cell and each with its own BASELINE. B1: llama.cpp `--split-mode tensor -fit off --rpc` at the pinned `1e7bcf3`. B1t: our own PyTorch tensor parallel engine, two ranks, our own TCP transport, MPS on the Macs. B1d: distributed-llama, renamed from B1 (B2 to B4 become B2d to B4d). The B1t engine is the engine B spike of ADR-007. Its acceptance is judged by the mandatory requirements list in ADR-007, not by tok/s. A B1 failure is evidence about this build over RPC only, not about tensor parallelism and not about engine B (symmetric rule). Time is measured, not a criterion (T1).
+**Consequences:** (+) Q7 gets a documented experiment. (+) The engine B spike has a home and a measurement path. (−) One more Python runtime (torch) on each peer, installed as the `[bench-torch]` extra only. (−) The engine name becomes part of baseline matching; records already carry it. Nothing else in ADR-007 changes.
+
 ---
 *Template:*
 ```

@@ -1,0 +1,196 @@
+{
+  "schema_version": 3,
+  "id": "A1_wifi_qwen2.5-7b-q4km_m5_r12",
+  "cell": {
+    "partition": "PP",
+    "decode": "single",
+    "row": "A",
+    "col": 1,
+    "name": "A1"
+  },
+  "date": "2026-11-02T08:41:01+02:00",
+  "model": {
+    "name": "qwen2.5-7b-q4km",
+    "quant": "Q4_K_M",
+    "sha256": "65b8fcd92af6b4fefa935c625d1ac27ea29dcb6ee14589c55a8f115ceaaa1423"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "llama.cpp",
+    "commit": "1e7bcf3",
+    "flags": [
+      "-m",
+      "/Users/orosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+      "-ngl",
+      "99",
+      "--rpc",
+      "192.168.1.219:50052",
+      "-np",
+      "1",
+      "--port",
+      "8089",
+      "-c",
+      "4096",
+      "--host",
+      "127.0.0.1",
+      "--temp",
+      "0",
+      "--seed",
+      "42",
+      "--samplers",
+      "temperature",
+      "--repeat-penalty",
+      "1.0",
+      "--metrics",
+      "-lv",
+      "4"
+    ]
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    },
+    {
+      "host": "Mac",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 16
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": 12.618500000000001,
+    "bw_mbps": null,
+    "measured_at": "2026-11-02T08:41:01+02:00",
+    "rtt_source": "probe",
+    "ping_decode_ms": null,
+    "awdl": "up",
+    "added_delay_ms": null,
+    "added_delay_measured_ms": null
+  },
+  "prompts": {
+    "set": "eval_long",
+    "version": "1",
+    "subset": null,
+    "ids": [
+      "longopen_01",
+      "longopen_02",
+      "longopen_03",
+      "longopen_04",
+      "longopen_05",
+      "longopen_06",
+      "longopen_07",
+      "longopen_08",
+      "longopen_09",
+      "longopen_10"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    },
+    "fixed_tokens": 256
+  },
+  "success": false,
+  "failure_class": "load_fail",
+  "quality_pass": null,
+  "setup": {
+    "load_total_s": null,
+    "transfer_s": null,
+    "cache_state": "cold",
+    "bytes_sent_gb": 0.0
+  },
+  "timing": {
+    "decode_tps_median": null,
+    "prefill_tps_median": null,
+    "ttft_s_median": null,
+    "ttft_server_s_median": null,
+    "decode_ms_per_step_pooled": null,
+    "decode_tps_pooled": null,
+    "decode_steps_total": null,
+    "warmup_s": null
+  },
+  "comm": {
+    "rpc_commands_per_step": null,
+    "tokens_per_step": null,
+    "rpc_commands_per_token": null,
+    "bytes_per_step": null,
+    "bytes_per_token": null,
+    "packets_per_token": null,
+    "serial_waits_per_token": null,
+    "compute_steps": null,
+    "tokens_generated": null,
+    "capture_iface": null,
+    "source": null,
+    "blocking_syncs_per_step": null,
+    "messages_per_step": null,
+    "bytes_per_step_decode": null,
+    "bytes_per_step_decode_out": null,
+    "bytes_per_step_decode_in": null,
+    "graph_meta_bytes_per_step": null,
+    "worker_capture": false,
+    "clock_offset_s": null,
+    "clock_offset_unc_s": null
+  },
+  "memory_buffers_gb": {},
+  "memory_peak_gb": {},
+  "utilization": {},
+  "correctness": {
+    "exact_match_ratio": null,
+    "first_divergence_median": null,
+    "task_accuracy": null,
+    "baseline_task_accuracy": null
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": false,
+    "baseline_id": "BASELINE_local_qwen2.5-7b-q4km_m5_r10",
+    "a1_id": null
+  },
+  "notes": [
+    "fixed tokens 256: every prompt decodes exactly 256 tokens (ignore_eos); task accuracy not graded",
+    "iperf3 to 192.168.1.219: unable to connect to server - server may have stopped running or use a different port, firewall issue, etc.: Connection refused (is `iperf3 -s` running on the peer?)",
+    "llama-server exited rc=-6 during load",
+    "peer air: peers.yaml host 'ohads-MacBook-Air-2' but hostname -s is 'Mac'; record uses the real one",
+    "worker log has no timestamps (runner stamps them since session 2, 2026-10-26); setup.transfer_s null",
+    "worker log has no graph_compute lines (GGML_RPC_DEBUG=1 not set?); msgs_per_token null",
+    "quality_pass null: no baseline or no graded prompt"
+  ],
+  "outputs": {},
+  "per_prompt": {},
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server --help"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C /Users/orosentswaig/dev/llama.cpp rev-parse --short HEAD"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -x \"$HOME\"/dev/llama.cpp/build/bin/ggml-rpc-server"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 GGML_RPC_DEBUG=1 \"$HOME\"/dev/llama.cpp/build/bin/ggml-rpc-server -H 192.168.1.219 -p 50052 -c -d MTL0"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server -m /Users/orosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf -ngl 99 --rpc 192.168.1.219:50052 -np 1 --port 8089 -c 4096 --host 127.0.0.1 --temp 0 --seed 42 --samplers temperature --repeat-penalty 1.0 --metrics -lv 4"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f 'ggml-rpc-server.*-p 50052'"
+    }
+  ]
+}

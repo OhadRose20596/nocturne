@@ -1,0 +1,274 @@
+{
+  "schema_version": 3,
+  "id": "B1t_wifi_qwen2.5-7b-bf16_m5_r7",
+  "cell": {
+    "partition": "TP",
+    "decode": "single",
+    "row": "B",
+    "col": 1,
+    "name": "B1t"
+  },
+  "date": "2026-11-02T08:52:47+02:00",
+  "model": {
+    "name": "qwen2.5-7b-bf16",
+    "quant": "bf16",
+    "sha256": "e062a01f39b65664f4bccd56711cfdc1c2197ad6ceff49ee2f10c6b2ebffc178"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "torch_tp",
+    "commit": "fb5b48e",
+    "flags": [
+      "--model",
+      "~/models/hf/Qwen2.5-7B-Instruct",
+      "--world",
+      "2",
+      "--max-seq-len",
+      "4096"
+    ],
+    "format": "safetensors-bf16",
+    "runtime": "torch 2.14.1 mps",
+    "world": 2
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    },
+    {
+      "host": "Mac",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 16
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": 8.349499999999999,
+    "bw_mbps": 186.5960995445683,
+    "measured_at": "2026-11-02T08:52:47+02:00",
+    "rtt_source": "probe",
+    "ping_decode_ms": {
+      "p50": 9.488,
+      "p95": 83.546,
+      "p99": 102.618,
+      "n": 54469,
+      "interval_s": 0.01,
+      "loss": 0.08649360283461971
+    },
+    "awdl": "up",
+    "added_delay_ms": null,
+    "added_delay_measured_ms": null
+  },
+  "prompts": {
+    "set": "eval_long",
+    "version": "1",
+    "subset": 3,
+    "ids": [
+      "longopen_01",
+      "longopen_02",
+      "longopen_03"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    },
+    "fixed_tokens": 256
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": null,
+  "setup": {
+    "load_total_s": 17.21945333480835,
+    "transfer_s": null,
+    "cache_state": null,
+    "bytes_sent_gb": null
+  },
+  "timing": {
+    "decode_tps_median": 1.3037476270792918,
+    "prefill_tps_median": 27.720437200037942,
+    "ttft_s_median": 2.5740818977355957,
+    "ttft_server_s_median": 2.5612871646881104,
+    "decode_ms_per_step_pooled": 779.4286653107288,
+    "decode_tps_pooled": 1.2829910478097926,
+    "decode_steps_total": 765,
+    "warmup_s": 11.833518981933594
+  },
+  "comm": {
+    "rpc_commands_per_step": 56.0,
+    "tokens_per_step": 1.0,
+    "rpc_commands_per_token": 56.0,
+    "bytes_per_step": null,
+    "bytes_per_token": 814581.8645833334,
+    "packets_per_token": 566.328125,
+    "serial_waits_per_token": null,
+    "compute_steps": 776,
+    "tokens_generated": 776,
+    "capture_iface": "en0",
+    "source": "rpc_commands: engine counters: all-reduce frames sent by rank 0 (one per all-reduce, 2 per layer), per step over prefill plus decode steps, per token over generated tokens; blocking_syncs and messages per step: 2 * layers all-reduces plus the STEP frame; engine_bytes: frame bytes sent plus received by rank 0 over the whole run (prefill frames included) per generated token; bytes: tcpdump on torch_port inside the decode windows, as in row A",
+    "blocking_syncs_per_step": 57,
+    "messages_per_step": 57,
+    "bytes_per_step_decode": 817776.3032679738,
+    "bytes_per_step_decode_out": 412480.3660130719,
+    "bytes_per_step_decode_in": 405295.937254902,
+    "graph_meta_bytes_per_step": null,
+    "worker_capture": true,
+    "clock_offset_s": 0.07267236709594727,
+    "clock_offset_unc_s": 0.0016264915466308594,
+    "engine_frames_per_token": 57.00773195876289,
+    "engine_bytes_per_token": 1112265.5425257732
+  },
+  "memory_buffers_gb": {
+    "m5": 9.748,
+    "air": 7.534
+  },
+  "memory_peak_gb": {
+    "m5": 0.385,
+    "air": 0.206
+  },
+  "utilization": {
+    "m5": 0.4511745939265537,
+    "air": 0.24625858295964126
+  },
+  "correctness": {
+    "exact_match_ratio": 0.0,
+    "first_divergence_median": 107,
+    "task_accuracy": null,
+    "baseline_task_accuracy": null
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": "BASELINE_local_qwen2.5-7b-bf16_m5_r2",
+    "a1_id": null
+  },
+  "notes": [
+    "all-reduce tracing on (--trace-allreduce): each all-reduce is stamped per stage and the add is synchronized; small overhead",
+    "fixed tokens 256: every prompt decodes exactly 256 tokens (ignore_eos); task accuracy not graded",
+    "warm-up request (longopen_01, 8 tokens) took 11.8 s; not in the timings",
+    "peer air: peers.yaml host 'ohads-MacBook-Air-2' but hostname -s is 'Mac'; record uses the real one",
+    "torch_tp: each rank reads its own slice from local safetensors; no weight transfer, so transfer_s, cache_state and bytes_sent_gb are null. model.sha256 is sha256(config.json + safetensors index or first MiB), not of the weights",
+    "all-reduce trace (ms per all-reduce, mean over 775 steps): to_cpu 2.47, send_queued 0.14, recv_done 9.33, to_device 0.74, add 0.49, total 13.16; saved as allreduce_trace.json",
+    "worker clock offset from 56265 echo pairs: 0.07267236709594727 s (half IQR 0.0016264915466308594)",
+    "quality_pass null: no baseline or no graded prompt"
+  ],
+  "outputs": {
+    "longopen_01": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving the router, access points, radio channels, and packets. When you start streaming a video on your laptop, the request is sent to the internet, and the video data is broken down into small packets. These packets travel through the internet to your home network.\n\nYour home router acts as the central hub, connecting your devices to the internet. It receives the video packets and forwards them to the access point, which is often the same device as the router or a separate Wi-Fi extender. The access point then broadcasts the video packets through the air using radio waves on a specific channel. Your laptop, equipped with a Wi-Fi receiver, picks up these radio waves and decodes the packets to reconstruct the video stream.\n\nThe radio channels used by Wi-Fi networks are shared among all devices in the vicinity. When two devices, such as your laptop and another device like a smart speaker, transmit data at the same time on the same channel, a phenomenon called \"collision\" can occur. This happens because the radio waves from both devices overlap, causing interference. To avoid this, Wi-Fi networks use a technique called Carrier Sense Multiple Access with Collision Avoidance (CSMA/CA).",
+    "longopen_02": "In the early morning of a crisp, clear day in 1890, the lighthouse keeper, Thomas, roused himself from his cot in the keeper's quarters. The air was cool and damp, carrying the scent of salt water from the nearby sea. Thomas stretched, his muscles aching from the night's work, and made his way to the kitchen to prepare breakfast. The kitchen was a small, dimly lit space with a wood-burning stove that Thomas had to tend to, ensuring it was ready to heat water for tea and cook a hearty breakfast of bacon, eggs, and biscuits.\n\nAfter breakfast, Thomas donned his heavy woolen uniform, a thick coat, and a wide-brimmed hat to shield his face from the harsh sun. He carried a lantern and a heavy leather-bound logbook, which he would use to record the day's events. The lighthouse itself was a towering structure, its walls made of stone and its roof covered in slate. Thomas climbed the winding staircase, each step creaking under his weight, to reach the lantern room.\n\nThe lantern room was a small, circular space with a large glass window that offered a breathtaking view of the sea. Thomas carefully checked the oil lamps, ensuring they were full and clean",
+    "longopen_03": "Certainly! Let's break down the concepts of why matrix multiplication on a GPU is fast and why moving matrices over a network is slow, and then compare the two with some rough numbers.\n\n### Matrix Multiplication on a GPU\n\n#### Why is it Fast?\n\n1. **Parallel Processing**: GPUs (Graphics Processing Units) are designed to handle parallel processing tasks efficiently. They have thousands of cores that can perform operations simultaneously. For matrix multiplication, each element of the resulting matrix can be computed independently, making it a perfect fit for parallel processing.\n\n2. **Memory Bandwidth**: GPUs have high memory bandwidth, which means they can transfer large amounts of data to and from the GPU's memory very quickly. This is crucial for matrix operations, which involve a lot of data movement.\n\n3. **Specialized Hardware**: GPUs are optimized for tasks like matrix multiplication. They have specialized hardware that can perform matrix operations more efficiently than CPUs (Central Processing Units), which are more general-purpose.\n\n#### Rough Numbers\n\n- **Matrix Size**: Let's consider a 1024x1024 matrix.\n- **Number of Operations**: For a 1024x1024 matrix multiplication, the number of floating-point operations (FLOPs) is \\(102"
+  },
+  "per_prompt": {
+    "longopen_01": {
+      "timings": {
+        "prompt_n": 78,
+        "prompt_ms": 3194.2732334136963,
+        "predicted_n": 256,
+        "predicted_ms": 196357.02085494995,
+        "predicted_per_token_ms": 770.0275327645096,
+        "predicted_per_second": 1.2986548629110133,
+        "prompt_per_second": 24.41870006112219
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.3037476270792918,
+      "decode_ms_per_step": 770.0275327645096,
+      "ttft_client_s": 3.2026710510253906,
+      "score": null,
+      "t_send": 1793602424.358709,
+      "t_done": 1793602623.918832
+    },
+    "longopen_02": {
+      "timings": {
+        "prompt_n": 71,
+        "prompt_ms": 2561.2871646881104,
+        "predicted_n": 256,
+        "predicted_ms": 209225.16417503357,
+        "predicted_per_token_ms": 820.4908399020924,
+        "predicted_per_second": 1.2187826498091412,
+        "prompt_per_second": 27.720437200037942
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.2235621896123143,
+      "decode_ms_per_step": 820.4908399020924,
+      "ttft_client_s": 2.5740818977355957,
+      "score": null,
+      "t_send": 1793602623.9215841,
+      "t_done": 1793602835.721484
+    },
+    "longopen_03": {
+      "timings": {
+        "prompt_n": 64,
+        "prompt_ms": 2254.222869873047,
+        "predicted_n": 256,
+        "predicted_ms": 190680.743932724,
+        "predicted_per_token_ms": 747.7676232655843,
+        "predicted_per_second": 1.3373138511037546,
+        "prompt_per_second": 28.39115903548807
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.3425582191472987,
+      "decode_ms_per_step": 747.7676232655843,
+      "ttft_client_s": 2.271294116973877,
+      "score": null,
+      "t_send": 1793602835.721942,
+      "t_done": 1793603028.67484
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "test -x /Users/orosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "m5",
+      "cmd": "test -f \"$HOME\"/models/hf/Qwen2.5-7B-Instruct/config.json"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -x /Users/ohadrosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -f \"$HOME\"/models/hf/Qwen2.5-7B-Instruct/config.json"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne' rev-parse --short HEAD"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp worker --bind 192.168.1.219 --port 50053 --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --rank 1 --world 2"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp serve --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --world 2 --max-seq-len 4096 --host 127.0.0.1 --port 8092 --peer 192.168.1.219:50053 --trace-allreduce"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 route -n get 192.168.1.242"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f 'torch_tp worker.*--port 50053'"
+    }
+  ]
+}

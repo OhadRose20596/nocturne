@@ -1,0 +1,287 @@
+{
+  "schema_version": 2,
+  "id": "B1_wifi_qwen2.5-7b-q4km_m5_loopback_r1",
+  "cell": {
+    "partition": "TP",
+    "decode": "single",
+    "row": "B",
+    "col": 1,
+    "name": "B1"
+  },
+  "date": "2026-10-27T17:40:33+02:00",
+  "model": {
+    "name": "qwen2.5-7b-q4km",
+    "quant": "Q4_K_M",
+    "sha256": "65b8fcd92af6b4fefa935c625d1ac27ea29dcb6ee14589c55a8f115ceaaa1423"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "llama.cpp",
+    "commit": "1e7bcf3",
+    "flags": [
+      "-m",
+      "/Users/orosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+      "-ngl",
+      "99",
+      "--rpc",
+      "127.0.0.1:50052",
+      "--split-mode",
+      "tensor",
+      "-fit",
+      "off",
+      "-np",
+      "1",
+      "--port",
+      "8089",
+      "-c",
+      "4096",
+      "--host",
+      "127.0.0.1",
+      "--temp",
+      "0",
+      "--seed",
+      "42",
+      "--samplers",
+      "temperature",
+      "--repeat-penalty",
+      "1.0",
+      "--metrics",
+      "-lv",
+      "4"
+    ]
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    },
+    {
+      "host": "MMF4FWRG4R",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": null,
+    "bw_mbps": null,
+    "measured_at": "2026-10-27T17:40:33+02:00"
+  },
+  "prompts": {
+    "set": "eval_set",
+    "version": "1",
+    "subset": 5,
+    "ids": [
+      "arith_01",
+      "arith_02",
+      "arith_03",
+      "arith_04",
+      "arith_05"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    }
+  },
+  "success": false,
+  "failure_class": "tool_unsupported",
+  "quality_pass": true,
+  "setup": {
+    "load_total_s": 35.98115396499634,
+    "transfer_s": 19.658878087997437,
+    "cache_state": "cold",
+    "bytes_sent_gb": 2.311311492
+  },
+  "timing": {
+    "decode_tps_median": 16.27888994249482,
+    "prefill_tps_median": 93.17701201578338,
+    "ttft_s_median": 0.21205973625183105,
+    "ttft_server_s_median": 0.20749
+  },
+  "comm": {
+    "rpc_commands_per_step": 1.5,
+    "tokens_per_step": 0.008006742520016857,
+    "rpc_commands_per_token": 187.3421052631579,
+    "bytes_per_step": 107222.30973451327,
+    "bytes_per_token": 13391502.157894736,
+    "packets_per_token": 1306.5263157894738,
+    "serial_waits_per_token": null,
+    "compute_steps": 2373,
+    "tokens_generated": 19,
+    "capture_iface": "lo0",
+    "source": "rpc_commands: worker GGML_RPC_DEBUG log (12_rpc_trace parse, graph message included), median per step over the last 32 steps; per token = per step / tokens_per_step; bytes: tcpdump on the requester's routed interface, union of decode windows"
+  },
+  "memory_buffers_gb": {
+    "m5": 0.286
+  },
+  "memory_peak_gb": {
+    "m5": 2.204,
+    "m5loop": 2.166
+  },
+  "utilization": {
+    "m5": 0.9974666666666667,
+    "m5loop": 0.997475
+  },
+  "correctness": {
+    "exact_match_ratio": 1.0,
+    "first_divergence_median": 1,
+    "task_accuracy": 1.0,
+    "baseline_task_accuracy": 1.0
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": "BASELINE_local_qwen2.5-7b-q4km_m5_r9",
+    "a1_id": null
+  },
+  "notes": [
+    "ping 127.0.0.1: no replies",
+    "iperf3 to 127.0.0.1: unable to connect to server - server may have stopped running or use a different port, firewall issue, etc.: Connection refused (is `iperf3 -s` running on the peer?)",
+    "tensor mode outcome (b): loaded with all buffers local ({'m5': 0.28607421875}); RPC device ignored in tensor mode; Meta device line: True; flash_attn forced: True"
+  ],
+  "outputs": {
+    "arith_01": "936",
+    "arith_02": "543",
+    "arith_03": "437",
+    "arith_04": "12",
+    "arith_05": "150"
+  },
+  "per_prompt": {
+    "arith_01": {
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 46,
+        "prompt_ms": 493.684,
+        "prompt_per_token_ms": 10.732260869565218,
+        "prompt_per_second": 93.17701201578336,
+        "predicted_n": 4,
+        "predicted_ms": 235.654,
+        "predicted_per_token_ms": 78.55133333333333,
+        "predicted_per_second": 12.730528656420006
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 16.974038208560007,
+      "ttft_client_s": 0.5052039623260498,
+      "score": 1.0,
+      "t_send": 1793115690.827486,
+      "t_done": 1793115691.568328
+    },
+    "arith_02": {
+      "timings": {
+        "cache_n": 26,
+        "prompt_n": 21,
+        "prompt_ms": 202.865,
+        "prompt_per_token_ms": 9.660238095238096,
+        "prompt_per_second": 103.51711729475267,
+        "predicted_n": 4,
+        "predicted_ms": 246.063,
+        "predicted_per_token_ms": 82.021,
+        "predicted_per_second": 12.191999609856014
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 16.25599947980802,
+      "ttft_client_s": 0.20759892463684082,
+      "score": 1.0,
+      "t_send": 1793115691.568371,
+      "t_done": 1793115692.0222871
+    },
+    "arith_03": {
+      "timings": {
+        "cache_n": 26,
+        "prompt_n": 18,
+        "prompt_ms": 205.524,
+        "prompt_per_token_ms": 11.418,
+        "prompt_per_second": 87.58101243650376,
+        "predicted_n": 4,
+        "predicted_ms": 251.784,
+        "predicted_per_token_ms": 83.928,
+        "predicted_per_second": 11.914974740253552
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 15.886632987004734,
+      "ttft_client_s": 0.21039843559265137,
+      "score": 1.0,
+      "t_send": 1793115692.0223308,
+      "t_done": 1793115692.484885
+    },
+    "arith_04": {
+      "timings": {
+        "cache_n": 26,
+        "prompt_n": 19,
+        "prompt_ms": 207.49,
+        "prompt_per_token_ms": 10.920526315789473,
+        "prompt_per_second": 91.5706781049689,
+        "predicted_n": 3,
+        "predicted_ms": 160.74,
+        "predicted_per_token_ms": 80.37,
+        "predicted_per_second": 12.442453651860147
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 18.66368047779022,
+      "ttft_client_s": 0.21205973625183105,
+      "score": 1.0,
+      "t_send": 1793115692.484908,
+      "t_done": 1793115692.8581219
+    },
+    "arith_05": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 34,
+        "prompt_ms": 227.342,
+        "prompt_per_token_ms": 6.686529411764706,
+        "prompt_per_second": 149.55441581405987,
+        "predicted_n": 4,
+        "predicted_ms": 245.717,
+        "predicted_per_token_ms": 81.90566666666668,
+        "predicted_per_second": 12.209167456871116
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 16.27888994249482,
+      "ttft_client_s": 0.23230290412902832,
+      "score": 1.0,
+      "t_send": 1793115692.858145,
+      "t_done": 1793115693.336535
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server --help"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C /Users/orosentswaig/dev/llama.cpp rev-parse --short HEAD"
+    },
+    {
+      "host": "m5loop",
+      "cmd": "test -x /Users/orosentswaig/dev/llama.cpp/build/bin/ggml-rpc-server"
+    },
+    {
+      "host": "m5loop",
+      "cmd": "GGML_RPC_DEBUG=1 /Users/orosentswaig/dev/llama.cpp/build/bin/ggml-rpc-server -H 127.0.0.1 -p 50052 -c -d MTL0"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server -m /Users/orosentswaig/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf -ngl 99 --rpc 127.0.0.1:50052 --split-mode tensor -fit off -np 1 --port 8089 -c 4096 --host 127.0.0.1 --temp 0 --seed 42 --samplers temperature --repeat-penalty 1.0 --metrics -lv 4"
+    },
+    {
+      "host": "m5loop",
+      "cmd": "pkill -f 'ggml-rpc-server.*-p 50052'"
+    }
+  ]
+}

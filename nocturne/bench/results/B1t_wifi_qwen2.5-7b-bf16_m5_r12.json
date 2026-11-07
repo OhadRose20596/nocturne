@@ -1,0 +1,421 @@
+{
+  "schema_version": 3,
+  "id": "B1t_wifi_qwen2.5-7b-bf16_m5_r12",
+  "cell": {
+    "partition": "TP",
+    "decode": "single",
+    "row": "B",
+    "col": 1,
+    "name": "B1t"
+  },
+  "date": "2026-11-07T16:32:55+02:00",
+  "model": {
+    "name": "qwen2.5-7b-bf16",
+    "quant": "bf16",
+    "sha256": "e062a01f39b65664f4bccd56711cfdc1c2197ad6ceff49ee2f10c6b2ebffc178"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "torch_tp",
+    "commit": "fb5b48e",
+    "flags": [
+      "--model",
+      "~/models/hf/Qwen2.5-7B-Instruct",
+      "--world",
+      "2",
+      "--max-seq-len",
+      "4096",
+      "--reduce-dtype",
+      "bfloat16"
+    ],
+    "format": "safetensors-bf16",
+    "runtime": "torch 2.14.1 mps",
+    "world": 2
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    },
+    {
+      "host": "Mac",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 16
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": 31.823,
+    "bw_mbps": 243.346258708094,
+    "measured_at": "2026-11-07T16:32:55+02:00",
+    "rtt_source": "probe",
+    "ping_decode_ms": {
+      "p50": 9.246,
+      "p95": 79.436,
+      "p99": 99.258,
+      "n": 170540,
+      "interval_s": 0.01,
+      "loss": 0.10387637332152122
+    },
+    "awdl": "up",
+    "added_delay_ms": null,
+    "added_delay_measured_ms": null
+  },
+  "prompts": {
+    "set": "eval_long",
+    "version": "1",
+    "subset": null,
+    "ids": [
+      "longopen_01",
+      "longopen_02",
+      "longopen_03",
+      "longopen_04",
+      "longopen_05",
+      "longopen_06",
+      "longopen_07",
+      "longopen_08",
+      "longopen_09",
+      "longopen_10"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    },
+    "fixed_tokens": 256
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": null,
+  "setup": {
+    "load_total_s": 19.27669405937195,
+    "transfer_s": null,
+    "cache_state": null,
+    "bytes_sent_gb": null
+  },
+  "timing": {
+    "decode_tps_median": 1.361371808227485,
+    "prefill_tps_median": 29.835380339777423,
+    "ttft_s_median": 2.1160091161727905,
+    "ttft_server_s_median": 2.101995587348938,
+    "decode_ms_per_step_pooled": 746.3080916685217,
+    "decode_tps_pooled": 1.3399291943415743,
+    "decode_steps_total": 2550,
+    "warmup_s": 9.4512038230896
+  },
+  "comm": {
+    "rpc_commands_per_step": 56.0,
+    "tokens_per_step": 1.0,
+    "rpc_commands_per_token": 56.0,
+    "bytes_per_step": null,
+    "bytes_per_token": 814018.10625,
+    "packets_per_token": 565.8984375,
+    "serial_waits_per_token": null,
+    "compute_steps": 2568,
+    "tokens_generated": 2568,
+    "capture_iface": "en0",
+    "source": "rpc_commands: engine counters: all-reduce frames sent by rank 0 (one per all-reduce, 2 per layer), per step over prefill plus decode steps, per token over generated tokens; blocking_syncs and messages per step: 2 * layers all-reduces plus the STEP frame; engine_bytes: frame bytes sent plus received by rank 0 over the whole run (prefill frames included) per generated token; bytes: tcpdump on torch_port inside the decode windows, as in row A",
+    "blocking_syncs_per_step": 57,
+    "messages_per_step": 57,
+    "bytes_per_step_decode": 817210.334117647,
+    "bytes_per_step_decode_out": 412223.32235294115,
+    "bytes_per_step_decode_in": 404987.0117647059,
+    "graph_meta_bytes_per_step": null,
+    "worker_capture": true,
+    "clock_offset_s": 0.03309744596481323,
+    "clock_offset_unc_s": 0.0014511197805404663,
+    "engine_frames_per_token": 57.00506230529595,
+    "engine_bytes_per_token": 1030016.7601246106
+  },
+  "memory_buffers_gb": {
+    "m5": 9.748,
+    "air": 7.534
+  },
+  "memory_peak_gb": {
+    "m5": 0.453,
+    "air": 0.205
+  },
+  "utilization": {
+    "m5": 0.4159417761692651,
+    "air": 0.27778016915703413
+  },
+  "correctness": {
+    "exact_match_ratio": 0.0,
+    "first_divergence_median": 70.5,
+    "task_accuracy": null,
+    "baseline_task_accuracy": null
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": "BASELINE_local_qwen2.5-7b-bf16_m5_r2",
+    "a1_id": null
+  },
+  "notes": [
+    "fixed tokens 256: every prompt decodes exactly 256 tokens (ignore_eos); task accuracy not graded",
+    "warm-up request (longopen_01, 8 tokens) took 9.5 s; not in the timings",
+    "peer air: peers.yaml host 'ohads-MacBook-Air-2' but hostname -s is 'Mac'; record uses the real one",
+    "torch_tp: each rank reads its own slice from local safetensors; no weight transfer, so transfer_s, cache_state and bytes_sent_gb are null. model.sha256 is sha256(config.json + safetensors index or first MiB), not of the weights",
+    "worker clock offset from 65534 echo pairs: 0.03309744596481323 s (half IQR 0.0014511197805404663)",
+    "quality_pass null: no baseline or no graded prompt"
+  ],
+  "outputs": {
+    "longopen_01": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving the router, access points, radio channels, and packets. When you start streaming a video on your laptop, the request is sent to the internet, and the video data is broken down into small packets. These packets travel through the internet to your home network.\n\nYour home router acts as the central hub, connecting your devices to the internet. It receives the video packets and forwards them to the access point, which is often the same device as the router or a separate Wi-Fi extender. The access point then broadcasts the video packets through the air using radio waves on a specific channel. Your laptop, equipped with a Wi-Fi receiver, picks up these radio waves and decodes the packets to reconstruct the video stream.\n\nThe radio channels used by Wi-Fi networks are shared among all devices in the vicinity. When two devices, such as your laptop and another device like a smart speaker, transmit data at the same time on the same channel, a phenomenon called \"collision\" can occur. This happens because the radio waves from both devices overlap, causing interference. To avoid this, Wi-Fi networks use a technique called Carrier Sense Multiple Access with Collision Avoidance (CSMA/CA).",
+    "longopen_02": "In the early morning of a crisp, clear day in 1890, the lighthouse keeper, Thomas, roused himself from his cot in the keeper's quarters. The air was cool and damp, carrying the scent of salt water from the nearby sea. Thomas stretched, his muscles aching from the night's work, and made his way to the kitchen to prepare breakfast. The kitchen was a small, dimly lit space with a wood-burning stove that Thomas had to tend to, ensuring it was ready to heat water for tea and cook a hearty breakfast of bacon, eggs, and biscuits.\n\nAfter breakfast, Thomas donned his heavy woolen uniform, a thick coat, and a wide-brimmed hat to shield his face from the harsh sun. He carried a lantern and a heavy leather-bound logbook, which he would use to record the day's events. The lighthouse itself was a towering structure, its walls made of stone and its roof covered in slate. Thomas climbed the winding staircase, each step creaking under his weight, to reach the lantern room.\n\nThe lantern room was a small, circular space with a large glass window that offered a breathtaking view of the sea. Thomas carefully checked the oil lamps, ensuring they were full and clean",
+    "longopen_03": "Certainly! Let's break down the concepts of why matrix multiplication on a GPU is fast and why moving matrices over a network is slow, and then compare the two with some rough numbers.\n\n### Matrix Multiplication on a GPU\n\n#### Why is it Fast?\n\n1. **Parallel Processing**: GPUs (Graphics Processing Units) are designed to handle parallel processing tasks efficiently. They have thousands of cores that can perform operations simultaneously. For matrix multiplication, each element of the resulting matrix can be computed independently, making it a perfect fit for parallel processing.\n\n2. **Memory Bandwidth**: GPUs have high memory bandwidth, which means they can transfer large amounts of data to and from the GPU's memory very quickly. This is crucial for matrix operations, which involve a lot of data movement.\n\n3. **Specialized Hardware**: GPUs are optimized for tasks like matrix multiplication. They have specialized hardware that can perform matrix operations more efficiently than CPUs (Central Processing Units), which are more general-purpose.\n\n#### Rough Numbers\n\n- **Matrix Size**: Let's consider a 1024x1024 matrix.\n- **Number of Operations**: For a 1024x1024 matrix multiplication, the number of floating-point operations (FLOPs) is \\(102",
+    "longopen_04": "### Chapter One: The Fog of Morning\n\nThe first light of dawn painted the sky in a soft, hazy blue, as if the world itself was still half-asleep. The small coastal town of Seabrook, nestled between the vast expanse of the Atlantic and the whispering pines, was waking up to a day that promised to be as unremarkable as the last. The air was thick with the salty tang of the sea, and the rhythmic lapping of waves against the shore was the only sound that broke the early morning silence.\n\nDetective Eliza Hart stood on the edge of the pier, her boots sinking slightly into the damp wood. She was a woman of average height, with a sharp, angular face framed by a mass of dark curls that seemed to defy the morning chill. Her eyes, a piercing blue, scanned the horizon, searching for any sign of the day's first visitors. Seabrook was a place where the residents knew each other by name, and the few tourists who wandered in were often greeted with a friendly wave or a curious glance.\n\nEliza had been called to the town for a routine investigation, but something about the atmosphere felt off. The usual morning bustle was absent, and the few people she",
+    "longopen_05": "Bread rising is a fascinating process that involves several key components and steps. Let's break it down:\n\n### 1. Yeast\nYeast is the primary agent responsible for the rising of bread. It's a type of single-celled fungus that consumes sugars and produces carbon dioxide gas as a byproduct. This gas production is what causes the bread to rise.\n\n### 2. Sugar\nSugar is often added to the dough to feed the yeast. When yeast consumes sugar, it undergoes a process called fermentation, which produces carbon dioxide and alcohol. The carbon dioxide gas is what causes the bread to rise.\n\n### 3. Gluten\nGluten is a protein found in wheat flour that gives bread its structure. When water is added to flour, the gluten proteins start to form a network. As the yeast ferments and produces carbon dioxide, this network of gluten traps the gas, causing the bread to expand.\n\n### 4. Temperature\nTemperature plays a crucial role in the rising process. Yeast is a living organism and its activity is highly temperature-dependent. \n\n- **Optimal Temperature**: Yeast works best in a warm environment, typically between 75\u00b0F to 85\u00b0F (24\u00b0C to 29\u00b0C). At this temperature,",
+    "longopen_06": "The bicycle has a rich and fascinating history that spans several centuries, evolving from simple running machines to the sophisticated and efficient machines we see today. Here's a detailed timeline of the key developments in bicycle technology:\n\n### 1. Early Running Machines (1790s-1810s)\n- **First Running Machine (1790s)**: The first known running machine, or \"c\u00e9l\u00e9rif\u00e8re,\" was invented by Comte de Sivrac in France. It was a wooden wheel mounted on a frame with a seat, but it had no pedals and the rider had to run to propel it.\n- **First Pedal-Powered Machine (1817)**: The \"Draisine\" or \"Laufmaschine\" (running machine) was invented by Karl von Drais, a German baron. This two-wheeled machine had a seat and handlebars but no pedals. The rider propelled it by pushing their feet against the ground.\n\n### 2. Development of the Bicycle (1830s-1860s)\n- **First Bicycle with Pedals (1839)**: Kirkpatrick Macmillan, a Scottish blacksmith, is credited with inventing the first bicycle with",
+    "longopen_07": "Certainly! Running a public library involves a variety of tasks and responsibilities, from acquiring new materials to managing events and ensuring the smooth operation of the lending system. Here\u2019s a guide for a new volunteer to help you understand the key aspects of library operations:\n\n### 1. Acquisitions\nAcquisitions involve the process of selecting and purchasing new materials for the library collection. This includes books, magazines, DVDs, audiobooks, and other digital resources.\n\n- **Selection Criteria**: Consider the needs and interests of the community, as well as the library\u2019s mission and budget. Factors like age-appropriateness, relevance, and popularity are important.\n- **Purchasing**: Once materials are selected, they need to be purchased. This can involve negotiating with publishers, distributors, and other vendors.\n- **Processing**: After materials are received, they need to be processed. This includes barcoding, cataloging, and shelving.\n\n### 2. Cataloguing\nCataloguing is the process of organizing and describing library materials so that they can be easily found and accessed by patrons.\n\n- **Metadata Creation**: Create detailed records for each item, including title, author, publisher, publication date, and subject headings.\n- **Cataloging Systems**: Use a library management system (LMS",
+    "longopen_08": "Certainly! Understanding the difference between weather and climate, how forecasts are made, and why forecasts for longer periods are less certain is an important aspect of meteorology and climatology.\n\n### Weather vs. Climate\n\n**Weather** refers to the short-term state of the atmosphere in a specific place and time. It can change from day to day and even hour to hour. Weather can include conditions such as temperature, humidity, cloud cover, precipitation, wind, and atmospheric pressure. For example, a weather forecast might predict that it will rain tomorrow, or that there will be a high-pressure system moving in, causing clear skies and cooler temperatures.\n\n**Climate**, on the other hand, refers to the long-term average of weather conditions in a particular area. It is typically measured over a period of 30 years or more. Climate includes the general patterns of weather and the frequency of different weather events. For example, the climate of a region might be described as having hot summers and mild winters, or as being consistently rainy throughout the year.\n\n### How Forecasts Are Made\n\nWeather forecasts are made using a combination of observational data, computer models, and statistical methods. Here\u2019s a simplified overview of the process:\n\n1. **Observations**: Meteorologists gather data from various sources, including",
+    "longopen_09": "Dear [Sibling's Name],\n\nI hope this letter finds you well and that you're doing great back on Earth. It's been a little over three months since I left, and I can hardly believe it's already time to write to you again. I miss you so much, and I hope you're not too lonely without me.\n\nFirst, let me tell you about my daily routine here on the space station. It's quite different from what you're used to, but it's also incredibly interesting. We wake up at 6:30 AM, and after a quick breakfast, we start our morning exercises. We have to stay in shape, and the zero-gravity environment makes it a bit more challenging. After that, we have a meeting with Mission Control to discuss the day's tasks and any updates.\n\nThen, we split into different teams for our work. I'm part of the science team, and we conduct experiments on everything from plant growth to human physiology. It's fascinating to see how things work differently in space. We also have to do regular maintenance on the station, which can be quite exciting, especially when we're fixing something that's been giving us trouble.\n\nIn the afternoon, we have a break for lunch, and then it's back to work",
+    "longopen_10": "Planning a city bus network involves a complex process that considers various factors to ensure efficient, reliable, and accessible public transportation. Here\u2019s a breakdown of the key components and decision-making processes involved:\n\n### 1. **Routes**\n- **Demand Analysis**: Planners start by analyzing the demand for bus services in different areas of the city. This includes understanding the number of passengers, their travel patterns, and the frequency of trips.\n- **Geographic Considerations**: Routes are designed to cover major residential, commercial, and industrial areas, as well as key destinations like schools, hospitals, and public transport hubs.\n- **Integration with Other Modes**: Routes are planned to integrate with other forms of public transport, such as trains, subways, and ferries, to provide seamless travel options for passengers.\n\n### 2. **Frequencies**\n- **Peak and Off-Peak Hours**: Frequencies are adjusted based on the time of day. During peak hours, buses run more frequently to accommodate higher passenger volumes.\n- **Service Levels**: The number of buses and the frequency of service are determined based on the number of passengers and the length of the route. For example, a route with high demand might have buses every 10 minutes, while a less busy route might have buses"
+  },
+  "per_prompt": {
+    "longopen_01": {
+      "timings": {
+        "prompt_n": 78,
+        "prompt_ms": 2542.855978012085,
+        "predicted_n": 256,
+        "predicted_ms": 183442.72923469543,
+        "predicted_per_token_ms": 719.3832519007664,
+        "predicted_per_second": 1.3900796235633557,
+        "prompt_per_second": 30.674171354752716
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.3955309162047806,
+      "decode_ms_per_step": 719.3832519007664,
+      "ttft_client_s": 2.5514109134674072,
+      "score": null,
+      "t_send": 1794062032.863383,
+      "t_done": 1794062218.8579452
+    },
+    "longopen_02": {
+      "timings": {
+        "prompt_n": 71,
+        "prompt_ms": 2260.3557109832764,
+        "predicted_n": 256,
+        "predicted_ms": 183414.76821899414,
+        "predicted_per_token_ms": 719.2736008588006,
+        "predicted_per_second": 1.3902915369144884,
+        "prompt_per_second": 31.410985295369425
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.3957436605886626,
+      "decode_ms_per_step": 719.2736008588006,
+      "ttft_client_s": 2.2695209980010986,
+      "score": null,
+      "t_send": 1794062218.85835,
+      "t_done": 1794062404.5425699
+    },
+    "longopen_03": {
+      "timings": {
+        "prompt_n": 64,
+        "prompt_ms": 2101.6740798950195,
+        "predicted_n": 256,
+        "predicted_ms": 183684.57984924316,
+        "predicted_per_token_ms": 720.3316856833065,
+        "predicted_per_second": 1.3882493577266426,
+        "prompt_per_second": 30.451914791277655
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.3936934728549824,
+      "decode_ms_per_step": 720.3316856833065,
+      "ttft_client_s": 2.114798069000244,
+      "score": null,
+      "t_send": 1794062404.5426319,
+      "t_done": 1794062590.3422248
+    },
+    "longopen_04": {
+      "timings": {
+        "prompt_n": 60,
+        "prompt_ms": 2102.3170948028564,
+        "predicted_n": 256,
+        "predicted_ms": 194151.7460346222,
+        "predicted_per_token_ms": 761.3793962142047,
+        "predicted_per_second": 1.3134056489738033,
+        "prompt_per_second": 28.53993821784837
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.3185562593619358,
+      "decode_ms_per_step": 761.3793962142047,
+      "ttft_client_s": 2.117220163345337,
+      "score": null,
+      "t_send": 1794062590.342315,
+      "t_done": 1794062786.611774
+    },
+    "longopen_05": {
+      "timings": {
+        "prompt_n": 57,
+        "prompt_ms": 3487.556219100952,
+        "predicted_n": 256,
+        "predicted_ms": 195560.77098846436,
+        "predicted_per_token_ms": 766.9049842684876,
+        "predicted_per_second": 1.3039424968059765,
+        "prompt_per_second": 16.343822556269465
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.309055996793451,
+      "decode_ms_per_step": 766.9049842684876,
+      "ttft_client_s": 3.4952101707458496,
+      "score": null,
+      "t_send": 1794062786.611876,
+      "t_done": 1794062985.668889
+    },
+    "longopen_06": {
+      "timings": {
+        "prompt_n": 56,
+        "prompt_ms": 1977.7510166168213,
+        "predicted_n": 256,
+        "predicted_ms": 191146.0509300232,
+        "predicted_per_token_ms": 749.5923565883262,
+        "predicted_per_second": 1.3340584268379845,
+        "prompt_per_second": 28.31498986955126
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.339290028511859,
+      "decode_ms_per_step": 749.5923565883262,
+      "ttft_client_s": 1.99186372756958,
+      "score": null,
+      "t_send": 1794062985.6690502,
+      "t_done": 1794063178.807203
+    },
+    "longopen_07": {
+      "timings": {
+        "prompt_n": 60,
+        "prompt_ms": 1998.4650611877441,
+        "predicted_n": 256,
+        "predicted_ms": 196950.7279396057,
+        "predicted_per_token_ms": 772.355795841591,
+        "predicted_per_second": 1.294740073660428,
+        "prompt_per_second": 30.023041766034332
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.2998174857139981,
+      "decode_ms_per_step": 772.355795841591,
+      "ttft_client_s": 2.010098934173584,
+      "score": null,
+      "t_send": 1794063178.807276,
+      "t_done": 1794063377.768526
+    },
+    "longopen_08": {
+      "timings": {
+        "prompt_n": 58,
+        "prompt_ms": 2113.8851642608643,
+        "predicted_n": 256,
+        "predicted_ms": 204788.71774673462,
+        "predicted_per_token_ms": 803.0930107715083,
+        "predicted_per_second": 1.245185783698116,
+        "prompt_per_second": 27.437630473309145
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.2500688652028145,
+      "decode_ms_per_step": 803.0930107715083,
+      "ttft_client_s": 2.1279048919677734,
+      "score": null,
+      "t_send": 1794063377.768624,
+      "t_done": 1794063584.6870441
+    },
+    "longopen_09": {
+      "timings": {
+        "prompt_n": 59,
+        "prompt_ms": 1871.129035949707,
+        "predicted_n": 256,
+        "predicted_ms": 185044.15488243103,
+        "predicted_per_token_ms": 725.6633524801217,
+        "predicted_per_second": 1.3780494723652086,
+        "prompt_per_second": 31.53176444084951
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.3834535879431114,
+      "decode_ms_per_step": 725.6633524801217,
+      "ttft_client_s": 1.8898899555206299,
+      "score": null,
+      "t_send": 1794063584.687315,
+      "t_done": 1794063771.6240819
+    },
+    "longopen_10": {
+      "timings": {
+        "prompt_n": 59,
+        "prompt_ms": 1990.035057067871,
+        "predicted_n": 256,
+        "predicted_ms": 184901.38792991638,
+        "predicted_per_token_ms": 725.1034820781034,
+        "predicted_per_second": 1.3791134985782436,
+        "prompt_per_second": 29.647718913520514
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 1.3845217868079622,
+      "decode_ms_per_step": 725.1034820781034,
+      "ttft_client_s": 2.0292649269104004,
+      "score": null,
+      "t_send": 1794063771.624375,
+      "t_done": 1794063958.560488
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "test -x /Users/orosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "m5",
+      "cmd": "test -f \"$HOME\"/models/hf/Qwen2.5-7B-Instruct/config.json"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -x /Users/ohadrosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -f \"$HOME\"/models/hf/Qwen2.5-7B-Instruct/config.json"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne' rev-parse --short HEAD"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp worker --bind 192.168.1.219 --port 50053 --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --rank 1 --world 2"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp serve --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --world 2 --max-seq-len 4096 --reduce-dtype bfloat16 --host 127.0.0.1 --port 8092 --peer 192.168.1.219:50053"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 route -n get 192.168.1.242"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f 'torch_tp worker.*--port 50053'"
+    }
+  ]
+}

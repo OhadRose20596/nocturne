@@ -25,6 +25,7 @@ scripts/      bash, numbered; all source scripts/common.sh. Each file starts wit
   12_rpc_trace.py        per-step RPC command/bytes trace -> experiments/r3/trace/
   14_build_he_html.sh    docs/he/*.md -> docs/he/html/ (RTL)
 nocturne/     Python package (O5): tracker/, worker_agent/, requester/, placement/ (stubs)
+  bench/                 experiment matrix runner (cells x decode x network). README.md there; run with .venv (uv, Python 3.12)
 experiments/  RESULTS.md (append-only), R0_PROTOCOL.md, r0/, r3/, inventory/. Raw run folders are evidence; never edit them
 docs/         CURRENT_CONTEXT, GOAL_AND_OBJECTIVES (v4), FLOW, PLATFORM, BACKGROUND_AND_DESIGN, ARCHITECTURE,
               DECISIONS, SETUP_GUIDE, LEARNING_RESOURCES, BACKENDS (background), archive/ (superseded versions)

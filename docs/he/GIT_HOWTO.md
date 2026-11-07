@@ -52,7 +52,35 @@ git remote add origin git@github.com:<user>/nocturne.git
 git push -u origin main
 ```
 
-להוסיף את ליאור ואת חן כ-collaborators דרך Settings של ה-repo.
+## 3א. שיתוף עם ליאור וחן
+
+ה-repo פרטי, לכן כל אחד צריך הזמנה וחשבון GitHub.
+
+באתר: ה-repo `nocturne`, לשונית Settings, בתפריט השמאלי Collaborators (תחת Access), Add people, שם משתמש או אימייל, Add. המוזמן מקבל מייל ולוחץ Accept. עד אז הוא לא רואה את ה-repo.
+
+מהטרמינל, אותו דבר:
+
+```bash
+gh api -X PUT repos/<your-user>/nocturne/collaborators/<lior-github-user> -f permission=push
+gh api -X PUT repos/<your-user>/nocturne/collaborators/<chen-github-user> -f permission=pull
+```
+
+הרשאות: ליאור Write (push), כי הוא מעלה תוצאות ניסויים. חן Read (pull) מספיק.
+
+אין את שם המשתמש שלהם: בשדה Add people מקלידים כתובת מייל. אם יש חשבון עם המייל הזה ההזמנה מגיעה אליו. אם אין, GitHub שולח מייל עם הרשמה והזמנה יחד.
+
+קישור שיתוף פשוט, כמו ב-Google Drive, לא קיים ל-repo פרטי. מי שאינו מוזמן רואה 404. אם רוצים קישור שעובד לכולם: להפוך ל-Public (Settings, General, Danger Zone, Change visibility). אז הכול גלוי, כולל כתובות IP פנימיות ושמות מחשבים בתיקיות הניסויים. לפני המעבר ל-Public לוודא: `git ls-files | grep SHARED` מחזיר ריק.
+
+מה שהמוזמן עושה אחרי שאישר, מחוץ ל-iCloud:
+
+```bash
+mkdir -p ~/dev && cd ~/dev
+git clone https://github.com/<your-user>/nocturne.git
+cd nocturne
+cp env.example .env
+```
+
+HTTPS דורש `gh auth login` פעם אחת. SSH דורש מפתח בחשבון (Settings, SSH and GPG keys) וכתובת `git@github.com:<your-user>/nocturne.git`.
 
 ## 4. Git בתוך iCloud: אזהרה והמלצה
 

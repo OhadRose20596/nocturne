@@ -1,0 +1,378 @@
+{
+  "schema_version": 3,
+  "id": "BASELINE_local_qwen2.5-7b-bf16_m5_r2",
+  "cell": {
+    "partition": "none",
+    "decode": "single",
+    "row": "BASELINE",
+    "col": 0,
+    "name": "BASELINE"
+  },
+  "date": "2026-11-02T08:15:36+02:00",
+  "model": {
+    "name": "qwen2.5-7b-bf16",
+    "quant": "bf16",
+    "sha256": "e062a01f39b65664f4bccd56711cfdc1c2197ad6ceff49ee2f10c6b2ebffc178"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "torch_tp",
+    "commit": "fb5b48e",
+    "flags": [
+      "--model",
+      "~/models/hf/Qwen2.5-7B-Instruct",
+      "--world",
+      "1",
+      "--max-seq-len",
+      "4096"
+    ],
+    "format": "safetensors-bf16",
+    "runtime": "torch 2.14.1 mps",
+    "world": 1
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24
+    }
+  ],
+  "network": {
+    "type": "local",
+    "rtt_ms_median": null,
+    "bw_mbps": null,
+    "measured_at": "2026-11-02T08:15:36+02:00",
+    "rtt_source": null,
+    "ping_decode_ms": null,
+    "awdl": "up",
+    "added_delay_ms": null,
+    "added_delay_measured_ms": null
+  },
+  "prompts": {
+    "set": "eval_long",
+    "version": "1",
+    "subset": null,
+    "ids": [
+      "longopen_01",
+      "longopen_02",
+      "longopen_03",
+      "longopen_04",
+      "longopen_05",
+      "longopen_06",
+      "longopen_07",
+      "longopen_08",
+      "longopen_09",
+      "longopen_10"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    },
+    "fixed_tokens": 256
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": null,
+  "setup": {
+    "load_total_s": 15.346114158630371,
+    "transfer_s": null,
+    "cache_state": null,
+    "bytes_sent_gb": null
+  },
+  "timing": {
+    "decode_tps_median": 8.08560003470583,
+    "prefill_tps_median": 264.87181266658064,
+    "ttft_s_median": 0.26297807693481445,
+    "ttft_server_s_median": 0.23217546939849854,
+    "decode_ms_per_step_pooled": 125.26916335610782,
+    "decode_tps_pooled": 7.98281055934938,
+    "decode_steps_total": 2550,
+    "warmup_s": 26.631605863571167
+  },
+  "comm": {
+    "rpc_commands_per_step": null,
+    "tokens_per_step": 1.0,
+    "rpc_commands_per_token": null,
+    "bytes_per_step": null,
+    "bytes_per_token": null,
+    "packets_per_token": null,
+    "serial_waits_per_token": null,
+    "compute_steps": 2568,
+    "tokens_generated": 2568,
+    "capture_iface": null,
+    "source": "rpc_commands: engine counters: all-reduce frames sent by rank 0 (one per all-reduce, 2 per layer), per step over prefill plus decode steps, per token over generated tokens; blocking_syncs and messages per step: 2 * layers all-reduces plus the STEP frame; engine_bytes: frame bytes sent plus received by rank 0 over the whole run (prefill frames included) per generated token; bytes: tcpdump on torch_port inside the decode windows, as in row A",
+    "blocking_syncs_per_step": 57,
+    "messages_per_step": 57,
+    "bytes_per_step_decode": null,
+    "bytes_per_step_decode_out": null,
+    "bytes_per_step_decode_in": null,
+    "graph_meta_bytes_per_step": null,
+    "worker_capture": false,
+    "clock_offset_s": null,
+    "clock_offset_unc_s": null,
+    "engine_frames_per_token": null,
+    "engine_bytes_per_token": null
+  },
+  "memory_buffers_gb": {
+    "m5": 16.224
+  },
+  "memory_peak_gb": {
+    "m5": 0.163
+  },
+  "utilization": {
+    "m5": 0.9829708078532348
+  },
+  "correctness": {
+    "exact_match_ratio": null,
+    "first_divergence_median": null,
+    "task_accuracy": null,
+    "baseline_task_accuracy": null
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": null,
+    "a1_id": null
+  },
+  "notes": [
+    "--fixed-tokens 256 ignored: the torch_tp adapter has no fixed token mode",
+    "fixed tokens 256: every prompt decodes exactly 256 tokens (ignore_eos); task accuracy not graded",
+    "no peer: network probe skipped",
+    "warm-up request (longopen_01, 8 tokens) took 26.6 s; not in the timings",
+    "torch_tp: each rank reads its own slice from local safetensors; no weight transfer, so transfer_s, cache_state and bytes_sent_gb are null. model.sha256 is sha256(config.json + safetensors index or first MiB), not of the weights",
+    "quality_pass null: no baseline or no graded prompt"
+  ],
+  "outputs": {
+    "longopen_01": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving the router, access points, radio channels, and packets. When you start streaming a video on your laptop, the request is sent to the internet, and the video data is broken down into small packets. These packets travel through the internet to your home network.\n\nYour home router acts as the central hub, connecting your devices to the internet. It receives the video packets and forwards them to the access point, which is often the same device as the router or a separate Wi-Fi extender. The access point then broadcasts the video packets through the air using radio waves on a specific channel. Your laptop, equipped with a Wi-Fi receiver, picks up these radio waves and decodes the packets to reconstruct the video stream.\n\nThe radio channels used by Wi-Fi networks are like lanes on a highway. Each device on your network, including your laptop, uses a specific lane to transmit and receive data. When two devices try to transmit at the same time, it can cause a collision, similar to a traffic jam. To avoid this, Wi-Fi networks use a protocol called CSMA/CA (Carrier Sense Multiple Access with Collision Avoidance). This protocol allows devices to listen to the channel",
+    "longopen_02": "In the early morning of a crisp, clear day in 1890, the lighthouse keeper, Thomas, roused himself from his narrow bed in the keeper's quarters. The air was cool, and the sound of the sea was a constant, soothing hum. Thomas stretched, his muscles aching from the previous night's work, and made his way to the kitchen to prepare breakfast. The kitchen was a small, dimly lit space with a wood-burning stove that Thomas had to tend to regularly to keep the lighthouse warm and the keeper's quarters comfortable.\n\nAfter a simple breakfast of porridge and tea, Thomas donned his heavy woolen uniform, a thick coat, and a wide-brimmed hat to shield his face from the harsh sun. He carried a lantern and a notebook, ready to record the weather and any observations about the sea and the surrounding area. The day's weather was perfect for lighthouse keeping: the sky was a clear, cloudless blue, and the sea was calm, with only a gentle breeze.\n\nThomas made his way to the lighthouse, a towering structure of stone and brick, its walls weathered by years of salt spray and wind. He ascended the winding staircase, each step creaking under his weight",
+    "longopen_03": "Certainly! Let's break down the concepts of why matrix multiplication on a GPU is fast and why moving matrices over a network is slow, and then compare the two with some rough numbers.\n\n### Matrix Multiplication on a GPU\n\n#### Why is it Fast?\n\n1. **Parallel Processing**: GPUs (Graphics Processing Units) are designed to handle parallel processing tasks efficiently. They have thousands of cores that can perform operations simultaneously. For matrix multiplication, each element of the resulting matrix can be computed independently, making it a perfect fit for parallel processing.\n\n2. **Memory Bandwidth**: GPUs have high memory bandwidth, which means they can transfer large amounts of data quickly. This is crucial for matrix operations, where large matrices need to be loaded into memory and processed.\n\n3. **Specialized Hardware**: GPUs are optimized for floating-point operations, which are common in matrix multiplication. They have specialized hardware that can perform these operations faster than CPUs.\n\n#### Rough Numbers\n\n- **Matrix Size**: Consider a 1024x1024 matrix.\n- **Operation Count**: For matrix multiplication, the number of operations is approximately \\(1024^3 = 1,073,741,824\\) (1.07 billion).\n- **Performance",
+    "longopen_04": "### Chapter One: The Fog of Morning\n\nThe first light of dawn painted the sky in a soft, hazy blue, as if the world itself was still half-asleep. The small coastal town of Seabrook, nestled between the vast expanse of the Atlantic and the whispering pines, was waking up to a day that promised to be as serene as the night before. The air was crisp, carrying the faint scent of salt and the distant sound of seagulls, their calls echoing over the calm waters.\n\nDetective Eliza Hart stood on the edge of the pier, her boots sinking slightly into the damp wood. She was a woman of average height, with a sharp, angular face framed by a mass of dark curls that she had tied back into a practical ponytail. Her eyes, a deep, almost black brown, were sharp and observant, scanning the horizon as if searching for something\u2014or someone\u2014that was just out of sight. She wore a navy blue suit that was slightly too large for her, a gift from her father, who had been a detective himself. The suit was a reminder of her roots and the legacy she had inherited.\n\nSeabrook was a place where everyone knew everyone else, and the tight-knit community was",
+    "longopen_05": "Bread rising is a fascinating process that involves several key components and steps. Let's break it down:\n\n### 1. Yeast\nYeast is the primary agent responsible for the rising of bread. It's a type of single-celled fungus that consumes sugars and produces carbon dioxide gas as a byproduct. This gas production is what causes the bread to rise.\n\n### 2. Sugar\nSugar serves as a food source for the yeast. When yeast consumes sugar, it undergoes a process called fermentation, which produces carbon dioxide and alcohol. The carbon dioxide gas is what causes the bread to expand and rise.\n\n### 3. Gluten\nGluten is a protein found in wheat and other grains. When flour is mixed with water, the gluten proteins form a network that traps the carbon dioxide gas produced by the yeast. This network gives the bread its structure and helps it hold its shape as it rises and bakes.\n\n### 4. Temperature\nTemperature plays a crucial role in the yeast's activity. Yeast is most active in a warm environment, typically between 75\u00b0F to 100\u00b0F (24\u00b0C to 38\u00b0C). If the temperature is too low, the yeast will be sluggish and the bread won't rise properly. If",
+    "longopen_06": "The bicycle has a rich and fascinating history that spans several centuries, evolving from simple running machines to the sophisticated and efficient vehicles we know today. Here's a detailed timeline of the key developments in bicycle technology:\n\n### 1. Early Running Machines (1790s-1810s)\n- **First Running Machine**: The first known running machine, or \"c\u00e9l\u00e9rif\u00e8re,\" was invented by Comte de Sivrac in France around 1790. It was a wooden wheel mounted on a frame with a seat.\n- **First Bicycle**: In 1817, Karl Drais, a German baron, invented the \"Draisine\" or \"Laufmaschine\" (running machine). This two-wheeled, steerable machine was propelled by the rider's feet pushing against the ground. It was made of wood and had no pedals.\n\n### 2. Development of the Bicycle (1830s-1860s)\n- **Invention of Pedals**: In 1839, Kirkpatrick Macmillan, a Scottish blacksmith, is credited with adding pedals to the Draisine, creating the first pedal-driven bicycle. However, the claim is disputed.\n- **",
+    "longopen_07": "Certainly! Running a public library involves a variety of tasks and responsibilities, from acquiring new materials to managing events and ensuring the smooth operation of the lending system. Here\u2019s a guide for a new volunteer to help you understand the key aspects of library operations:\n\n### 1. Acquisitions\nAcquisitions involve the process of selecting and purchasing new materials for the library collection. This includes books, magazines, DVDs, audiobooks, and other digital resources.\n\n- **Selection Criteria**: Consider the needs and interests of the community, as well as the library\u2019s mission and budget. Factors like age-appropriateness, relevance, and popularity are important.\n- **Purchasing**: Once materials are selected, they need to be purchased. This can involve ordering from publishers, distributors, or directly from authors.\n- **Processing**: After materials are received, they need to be processed. This includes barcoding, cataloging, and shelving.\n\n### 2. Cataloguing\nCataloguing is the process of organizing and describing library materials so that they can be easily found and accessed by patrons.\n\n- **Metadata Creation**: Create detailed records for each item, including title, author, publisher, publication date, and subject headings.\n- **Cataloging Systems**: Use a library management system (L",
+    "longopen_08": "Certainly! Understanding the difference between weather and climate, how forecasts are made, and why forecasts for longer periods are less certain is an important aspect of meteorology and climatology.\n\n### Weather vs. Climate\n\n**Weather** refers to the short-term state of the atmosphere in a specific place and time. It can change from day to day and even hour to hour. Weather can include conditions such as temperature, humidity, cloud cover, precipitation, wind, and atmospheric pressure. For example, a weather report might predict that it will rain tomorrow, or that there will be a high-pressure system moving in, causing clear skies and cooler temperatures.\n\n**Climate**, on the other hand, refers to the long-term average of weather conditions in a particular area. It is typically measured over a period of 30 years or more. Climate includes the general patterns of weather and the frequency of different weather events. For example, the climate of a region might be described as having hot summers and mild winters, or as being consistently wet and rainy.\n\n### How Forecasts Are Made\n\nWeather forecasts are made using a combination of observational data, computer models, and statistical methods. Here\u2019s a simplified overview of the process:\n\n1. **Observations**: Meteorologists gather data from various sources, including weather",
+    "longopen_09": "Dear [Sibling's Name],\n\nI hope this letter finds you well and that you're doing great back on Earth. It's been a little over three months since I left, and I can hardly believe it's already time to write to you again. I miss you so much, and I hope you're not too lonely without me.\n\nFirst, let me tell you about my daily routine here on the space station. It's quite different from what you're used to, but it's also incredibly interesting. We wake up at 7:00 AM, and after a quick breakfast, we start our morning exercises. We have to stay in shape, and the zero-gravity environment makes it a bit more challenging. After that, we have a meeting with Mission Control to discuss the day's tasks and any updates.\n\nThen, we split into different teams for our work. I'm part of the science team, and we conduct experiments on everything from plant growth to human physiology. It's fascinating to see how things work differently in space. We also have to do regular maintenance on the station, which can be quite exciting, especially when we're fixing something that's been giving us trouble.\n\nIn the afternoon, we have a break for lunch, and then it's back to work",
+    "longopen_10": "Planning a city bus network involves a series of strategic decisions and considerations to ensure that the system is efficient, accessible, and meets the needs of the community. Here\u2019s a breakdown of the key components and processes involved:\n\n### 1. **Route Planning**\n- **Identifying Demand**: Planners start by analyzing the demand for bus services, which includes identifying areas with high population density, employment centers, residential areas, and other key destinations. Surveys, travel demand models, and data from existing transit systems are used to understand where people want to go and when.\n- **Geographic Considerations**: Routes are planned to cover the most important areas while minimizing travel time and distance. Factors such as road conditions, traffic patterns, and pedestrian accessibility are also considered.\n- **Frequency and Timing**: The frequency of buses on each route is determined based on the demand and the capacity of the buses. Timing is set to align with peak travel periods, such as rush hours, and to ensure that buses are not overcrowded.\n\n### 2. **Frequencies**\n- **Peak vs. Off-Peak**: Frequencies are typically higher during peak hours and lower during off-peak hours to optimize resource use and meet demand.\n- **Service Levels**: The number of buses and the frequency"
+  },
+  "per_prompt": {
+    "longopen_01": {
+      "timings": {
+        "prompt_n": 78,
+        "prompt_ms": 219.61688995361328,
+        "predicted_n": 256,
+        "predicted_ms": 33198.578119277954,
+        "predicted_per_token_ms": 130.190502428541,
+        "predicted_per_second": 7.681051853601074,
+        "prompt_per_second": 355.16394033480253
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 7.711173625575981,
+      "decode_ms_per_step": 130.190502428541,
+      "ttft_client_s": 0.2598850727081299,
+      "score": null,
+      "t_send": 1793600182.188982,
+      "t_done": 1793600215.652309
+    },
+    "longopen_02": {
+      "timings": {
+        "prompt_n": 71,
+        "prompt_ms": 256.8359375,
+        "predicted_n": 256,
+        "predicted_ms": 33232.72705078125,
+        "predicted_per_token_ms": 130.3244198069853,
+        "predicted_per_second": 7.673159040193945,
+        "prompt_per_second": 276.44106463878325
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 7.703249859959411,
+      "decode_ms_per_step": 130.3244198069853,
+      "ttft_client_s": 0.287952184677124,
+      "score": null,
+      "t_send": 1793600215.652788,
+      "t_done": 1793600249.176946
+    },
+    "longopen_03": {
+      "timings": {
+        "prompt_n": 64,
+        "prompt_ms": 232.48887062072754,
+        "predicted_n": 256,
+        "predicted_ms": 31978.88493537903,
+        "predicted_per_token_ms": 125.40739190344716,
+        "predicted_per_second": 7.9740116178312155,
+        "prompt_per_second": 275.28199448483224
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 8.005282251626632,
+      "decode_ms_per_step": 125.40739190344716,
+      "ttft_client_s": 0.26874685287475586,
+      "score": null,
+      "t_send": 1793600249.1779861,
+      "t_done": 1793600281.426058
+    },
+    "longopen_04": {
+      "timings": {
+        "prompt_n": 60,
+        "prompt_ms": 247.4050521850586,
+        "predicted_n": 256,
+        "predicted_ms": 31570.430994033813,
+        "predicted_per_token_ms": 123.80561174130908,
+        "predicted_per_second": 8.077178295354598,
+        "prompt_per_second": 242.5172787301049
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 8.108853504355988,
+      "decode_ms_per_step": 123.80561174130908,
+      "ttft_client_s": 0.2703409194946289,
+      "score": null,
+      "t_send": 1793600281.426341,
+      "t_done": 1793600313.2719371
+    },
+    "longopen_05": {
+      "timings": {
+        "prompt_n": 57,
+        "prompt_ms": 236.30809783935547,
+        "predicted_n": 256,
+        "predicted_ms": 31508.586883544922,
+        "predicted_per_token_ms": 123.56308581782322,
+        "predicted_per_second": 8.0930319389592,
+        "prompt_per_second": 241.21052355450448
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 8.124769319111982,
+      "decode_ms_per_step": 123.56308581782322,
+      "ttft_client_s": 0.26265716552734375,
+      "score": null,
+      "t_send": 1793600313.272214,
+      "t_done": 1793600345.049462
+    },
+    "longopen_06": {
+      "timings": {
+        "prompt_n": 56,
+        "prompt_ms": 731.3599586486816,
+        "predicted_n": 256,
+        "predicted_ms": 31418.801069259644,
+        "predicted_per_token_ms": 123.21098458533193,
+        "predicted_per_second": 8.116159475273346,
+        "prompt_per_second": 76.569682736624
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 8.147987551646967,
+      "decode_ms_per_step": 123.21098458533193,
+      "ttft_client_s": 0.7701430320739746,
+      "score": null,
+      "t_send": 1793600345.049742,
+      "t_done": 1793600377.244861
+    },
+    "longopen_07": {
+      "timings": {
+        "prompt_n": 60,
+        "prompt_ms": 186.13505363464355,
+        "predicted_n": 256,
+        "predicted_ms": 31788.7020111084,
+        "predicted_per_token_ms": 124.66157651415058,
+        "predicted_per_second": 8.021717901878835,
+        "prompt_per_second": 322.346590974591
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 8.053175619141106,
+      "decode_ms_per_step": 124.66157651415058,
+      "ttft_client_s": 0.21866226196289062,
+      "score": null,
+      "t_send": 1793600377.2456808,
+      "t_done": 1793600409.254064
+    },
+    "longopen_08": {
+      "timings": {
+        "prompt_n": 58,
+        "prompt_ms": 228.63006591796875,
+        "predicted_n": 256,
+        "predicted_ms": 31752.54225730896,
+        "predicted_per_token_ms": 124.51977355807435,
+        "predicted_per_second": 8.030853023785925,
+        "prompt_per_second": 253.6849200787533
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 8.062346565055673,
+      "decode_ms_per_step": 124.51977355807435,
+      "ttft_client_s": 0.26329898834228516,
+      "score": null,
+      "t_send": 1793600409.254302,
+      "t_done": 1793600441.270674
+    },
+    "longopen_09": {
+      "timings": {
+        "prompt_n": 59,
+        "prompt_ms": 231.86206817626953,
+        "predicted_n": 256,
+        "predicted_ms": 31487.260103225708,
+        "predicted_per_token_ms": 123.47945138519886,
+        "predicted_per_second": 8.098513467479394,
+        "prompt_per_second": 254.46163084832904
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 8.13027234382245,
+      "decode_ms_per_step": 123.47945138519886,
+      "ttft_client_s": 0.25026988983154297,
+      "score": null,
+      "t_send": 1793600441.270924,
+      "t_done": 1793600473.008875
+    },
+    "longopen_10": {
+      "timings": {
+        "prompt_n": 59,
+        "prompt_ms": 187.74104118347168,
+        "predicted_n": 256,
+        "predicted_ms": 31499.853134155273,
+        "predicted_per_token_ms": 123.52883582021676,
+        "predicted_per_second": 8.09527583871506,
+        "prompt_per_second": 314.2626653611753
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 8.127022018474726,
+      "decode_ms_per_step": 123.52883582021676,
+      "ttft_client_s": 0.21403193473815918,
+      "score": null,
+      "t_send": 1793600473.009108,
+      "t_done": 1793600504.72842
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "test -x /Users/orosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "m5",
+      "cmd": "test -f \"$HOME\"/models/hf/Qwen2.5-7B-Instruct/config.json"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne' rev-parse --short HEAD"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp serve --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --world 1 --max-seq-len 4096 --host 127.0.0.1 --port 8092"
+    }
+  ]
+}
