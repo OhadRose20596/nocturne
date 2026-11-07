@@ -15,6 +15,7 @@ from pathlib import Path
 
 import httpx
 
+from ..probes.memlog import breakdown, classify_oom, ts_shares
 from .base import Completion, Engine, EngineUnsupported
 
 # -lv 4: at the default verbosity (3) this build does not print load_tensors / buffer size / offloaded lines,
@@ -29,7 +30,7 @@ SPEC_FLAGS = {"--model-draft", "--spec-draft-n-max", "--spec-draft-p-min", "--sp
 # prefix, device names MTL0 / MTL0_Mapped / CPU_Mapped / RPC[ip:port]). In tensor mode (B1) the device is "Meta()" and
 # the size is the per device share: the 7B Q4_K_M model buffer is 4168 MiB in layer mode and "Meta() model buffer size
 # = 2084.43 MiB" with two devices (loopback run, 2026-10-27), and the worker received 2.3 GB of set_tensor payload.
-BUF = re.compile(r"^(?:[\d.]+\s+[A-Z]\s+)?(?:load_tensors|llama_kv_cache|llama_context|graph_reserve|llama_kv_cache_unified|llama_memory_recurrent)?:?\s*"
+BUF = re.compile(r"^(?:[\d.]+\s+[A-Z]\s+)?(?:load_tensors|llama_kv_cache|llama_context|graph_reserve|sched_reserve|llama_kv_cache_unified|llama_memory_recurrent)?:?\s*"
                  r"(RPC\d*\[[^\]]+\]|Meta\(\)|Metal(?:_Mapped)?|MTL\d+(?:_Mapped)?|CUDA\d+(?:_Host)?|Vulkan\d+|CPU(?:_Mapped)?|CPU_AARCH64|CPU_REPACK)\s+"
                  r"(?:model|KV|compute|output) buffer size\s*=\s*([\d.]+) MiB", re.MULTILINE)
 OOM = re.compile(r"out of memory|OutOfMemory|failed to allocate|kIOGPUCommandBufferCallbackErrorOutOfMemory|"
@@ -268,11 +269,11 @@ class LlamaCppRpc(Engine):
         i = 0
         while i < len(tmpl):
             tok = tmpl[i]
-            if tok in ("-ts", "--tensor-split") and not subst["{ts}"]:
-                i += 2
-                continue
             if tok in self.overrides and i + 1 < len(tmpl):
                 flags += [tok, self.overrides[tok]]
+                i += 2
+                continue
+            if tok in ("-ts", "--tensor-split") and not subst["{ts}"]:
                 i += 2
                 continue
             flags.append(subst.get(tok, tok))
@@ -301,16 +302,18 @@ class LlamaCppRpc(Engine):
             except httpx.HTTPError:
                 pass
             time.sleep(1)
-        raise LoadFailed("load_fail", f"llama-server not healthy after {self.load_timeout_s} s")
+        raise LoadFailed("timeout", f"llama-server not healthy after {self.load_timeout_s} s")
 
     def _classify_log(self) -> str:
         text = self.server_log.read_text(errors="replace") if self.server_log.exists() else ""
-        if OOM.search(text):
-            return "oom"
+        wt = {n: (p.read_text(errors="replace") if p.exists() else "") for n, p in self.worker_logs.items()}
+        cls = classify_oom(text, wt, loaded=False)
+        if cls:
+            return cls
         if self.tensor_mode() and TP_UNSUPPORTED.search(text):
             return "tool_unsupported"
         if NET_ERR.search(text):
-            return "network_abort"
+            return "rpc_disconnect"
         return "load_fail"
 
     def first_error_line(self) -> str | None:
@@ -406,13 +409,18 @@ class LlamaCppRpc(Engine):
                 tp["meta_device"] = True
             fa = re.search(r"enabling flash_attn since it is required for SPLIT_MODE_TENSOR", text)
             tp["flash_attn_forced"] = bool(fa)
+        bd, bd_lines = breakdown(text, req, ip_to_host, meta_hosts, ts_shares(list(self.flags)))
         return {
             "tp_outcome": tp,
+            "oom_class": classify_oom(text, worker_texts, loaded=self.load_s is not None),
+            "memory_breakdown_gb": bd,
+            "memory_log_lines": bd_lines,
             "engine": {"name": self.name, "commit": self.commit, "flags": list(self.flags)},
-            "setup": {"load_total_s": self.load_s, "transfer_s": transfer_s, "cache_state": cache_state,
+            "setup": {"ctx": self.ctx, "load_total_s": self.load_s, "transfer_s": transfer_s, "cache_state": cache_state,
                       "bytes_sent_gb": (bytes_sent / 1e9) if worker_texts else None},
             "setup_notes": transfer_notes,
-            "memory_buffers_gb": {h: round(v, 3) for h, v in by_host.items()},
+            "memory_buffers_gb": ({h: round(sum(d.values()), 3) for h, d in bd.items()} if "Meta()" in text
+                                  else {h: round(v, 3) for h, v in by_host.items()}),
             "generation": dict(GENERATION),
             "worker_logs": worker_texts,
             "placement_lines": placement,

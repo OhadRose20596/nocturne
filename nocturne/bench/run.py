@@ -37,7 +37,8 @@ def peers_for_record(cfg: dict, requester: str, workers: list[str]) -> list[dict
     out = []
     for name, role in [(requester, "requester")] + [(w, "worker") for w in workers]:
         p = cfg["peers"][name]
-        out.append({"host": p["host"], "role": role, "backend": p["backend"], "os": p["os"], "mem_gb": p["mem_gb"]})
+        out.append({"host": p["host"], "role": role, "backend": p["backend"], "os": p["os"], "mem_gb": p["mem_gb"],
+                    "metal_working_set_gb": p.get("metal_working_set_gb")})
     return out
 
 
@@ -216,6 +217,7 @@ def run_once(a, cells, cfg, cell_cfg, run_idx: int, results_dir: Path, live_srv=
     rec["network"].update(probe)
     rec["network"]["rtt_source"] = "probe" if probe.get("rtt_ms_median") is not None else None
     rec["network"]["awdl"] = "unknown" if a.dry_run else net.awdl_state()
+    rec["network"]["vpn_state"] = "unknown" if a.dry_run else net.vpn_state()
     rec["network"]["added_delay_ms"] = getattr(a, "added_delay_ms", None)
     notes += n_notes
     pinger = None
@@ -324,7 +326,9 @@ def run_once(a, cells, cfg, cell_cfg, run_idx: int, results_dir: Path, live_srv=
 
     ctr = eng.counters()
     rec["engine"] = ctr["engine"]
-    rec["setup"] = ctr["setup"]
+    rec["setup"] = dict(ctr["setup"], ctx=a.ctx)
+    rec["memory_breakdown_gb"] = ctr.get("memory_breakdown_gb", {})
+    rec["memory_log_lines"] = ctr.get("memory_log_lines", [])
     notes += ctr.get("setup_notes", [])
     rec["memory_buffers_gb"] = ctr["memory_buffers_gb"]
     rec["model"]["sha256"] = ctr["model_sha256"]
@@ -455,10 +459,14 @@ def run_once(a, cells, cfg, cell_cfg, run_idx: int, results_dir: Path, live_srv=
     if rec["failure_class"] is None:
         if not comps or any(c.error for c in comps):
             errs = [c.error for c in comps if c.error][:3]
-            if not server_alive and ctr["oom_in_log"]:
+            if ctr.get("oom_class"):
+                rec["failure_class"] = ctr["oom_class"]
+            elif not server_alive and ctr["oom_in_log"]:
                 rec["failure_class"] = "oom"
+            elif any("Timeout" in (e or "") for e in errs):
+                rec["failure_class"] = "timeout"
             elif not server_alive or ctr["net_err_in_log"]:
-                rec["failure_class"] = "network_abort" if ctr["net_err_in_log"] else "engine_abort"
+                rec["failure_class"] = "rpc_disconnect" if ctr["net_err_in_log"] else "engine_abort"
             else:
                 rec["failure_class"] = "engine_abort"
             notes.append(f"request errors: {errs}" if errs else "no completions")

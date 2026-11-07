@@ -150,3 +150,14 @@ def awdl_state(run=subprocess.run) -> str:
         return "unknown"
     flags = (r.stdout.splitlines() or [""])[0]
     return "up" if "<UP," in flags or ",UP," in flags or "<UP>" in flags else "down"
+
+
+def vpn_state(run=subprocess.run) -> str:
+    """connected, disconnected or unknown from `scutil --nc list` (macOS)."""
+    try:
+        r = run(["scutil", "--nc", "list"], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return "unknown"
+    if r.returncode != 0:
+        return "unknown"
+    return "connected" if any("(Connected)" in l for l in (r.stdout or "").splitlines()) else "disconnected"

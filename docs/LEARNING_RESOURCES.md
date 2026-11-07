@@ -86,6 +86,7 @@ Format: `- [tag] Title — why it matters for us. URL`
 - [must] **PyTorch, MPS backend** — the Metal device for `torch` on the Macs; which ops exist, and the CPU fallback env var for the ones that do not. Used by the own tensor parallel engine (cell B1t). https://docs.pytorch.org/docs/stable/notes/mps.html
 - [must] **Transformers, Qwen2 model code and GGUF loading** — the reference forward pass our sharded blocks must match, and `gguf_file=` for loading row A's exact Q4_K_M weights. https://huggingface.co/docs/transformers/en/model_doc/qwen2
 - [must] **safetensors, `safe_open` and tensor slicing** — load one shard of a weight without materializing the whole file; each rank reads only its slice. https://huggingface.co/docs/safetensors/en/api/torch
+- [must] **matplotlib, stacked bar charts** (`bar(..., bottom=)`) — the session 5 memory edge figures (per node model, KV and compute against the capacity line). https://matplotlib.org/stable/gallery/lines_bars_and_markers/bar_stacked.html
 
 ---
 

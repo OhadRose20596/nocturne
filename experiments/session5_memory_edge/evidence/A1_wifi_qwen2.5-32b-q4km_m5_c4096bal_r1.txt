@@ -1,0 +1,33 @@
+== placement.log (6 lines)
+0.08.968.465 I load_tensors: offloaded 65/65 layers to GPU
+0.08.968.470 I load_tensors:   CPU_Mapped model buffer size =   417.66 MiB
+0.08.968.471 I load_tensors:  MTL0_Mapped model buffer size =  9297.10 MiB
+0.08.968.472 I load_tensors: RPC0[192.168.1.219:50052] model buffer size =  9211.25 MiB
+1.03.080.479 I llama_kv_cache: RPC0[192.168.1.219:50052] KV buffer size =   528.00 MiB
+1.03.687.901 I sched_reserve: RPC0[192.168.1.219:50052] compute buffer size =   186.01 MiB
+== server.log (23 lines)
+0.00.467.637 I cmn  common_param:   - MTL0    : Apple M5 (18186 MiB, 18185 MiB free)
+0.00.467.638 I cmn  common_param:   - BLAS    : Accelerate (0 MiB, 0 MiB free)
+0.00.467.648 I cmn  common_param:   - CPU     : Apple M5 (24576 MiB, 24576 MiB free)
+0.00.533.572 I cmn  common_param:   - RPC0    : 192.168.1.219:50052 (12124 MiB, 12123 MiB free)
+0.02.329.860 I common_memory_breakdown_print: | memory breakdown [MiB]         | total    free    self   model   context   compute    unaccounted |
+0.02.329.864 I common_memory_breakdown_print: |   - RPC0 (192.168.1.219:50052) | 12124 = 12123 + (9925 =  9211 +     528 +     186) +       -9924 |
+0.02.329.865 I common_memory_breakdown_print: |   - MTL0 (Apple M5)            | 18186 = 18185 + (9979 =  9297 +     496 +     186) +       -9978 |
+0.02.329.866 I common_memory_breakdown_print: |   - Host                       |                   465 =   417 +       0 +      48                |
+0.08.968.465 I load_tensors: offloaded 65/65 layers to GPU
+0.08.968.470 I load_tensors:   CPU_Mapped model buffer size =   417.66 MiB
+0.08.968.471 I load_tensors:  MTL0_Mapped model buffer size =  9297.10 MiB
+0.08.968.472 I load_tensors: RPC0[192.168.1.219:50052] model buffer size =  9211.25 MiB
+1.02.461.698 I llama_context:        CPU  output buffer size =     0.58 MiB
+1.02.564.429 I llama_kv_cache:       MTL0 KV buffer size =   496.00 MiB
+1.03.080.479 I llama_kv_cache: RPC0[192.168.1.219:50052] KV buffer size =   528.00 MiB
+1.03.080.959 I llama_kv_cache: size = 1024.00 MiB (  4096 cells,  64 layers,  1/1 seqs), K (f16):  512.00 MiB, V (f16):  512.00 MiB
+1.03.687.901 I sched_reserve: RPC0[192.168.1.219:50052] compute buffer size =   186.01 MiB
+1.03.687.907 I sched_reserve:       MTL0 compute buffer size =   186.01 MiB
+1.03.687.908 I sched_reserve:        CPU compute buffer size =    24.01 MiB
+2.37.608.656 I common_memory_breakdown_print: | memory breakdown [MiB]         | total   free    self   model   context   compute    unaccounted |
+2.37.608.658 I common_memory_breakdown_print: |   - RPC0 (192.168.1.219:50052) | 12124 = 2198 + (9925 =  9211 +     528 +     186) +           0 |
+2.37.608.659 I common_memory_breakdown_print: |   - MTL0 (Apple M5)            | 18186 = 8206 + (9979 =  9297 +     496 +     186) +           0 |
+2.37.608.659 I common_memory_breakdown_print: |   - Host                       |                  441 =   417 +       0 +      24                |
+== worker_air.log (1 lines)
+1794069210.675338   MTL0: Apple M3 (12124 MiB, 12123 MiB free)

@@ -1,6 +1,6 @@
-"""Record writer. One JSON record per run, validated against schema/record.schema.json (v3) before writing.
-File name: <cell>_<network>_<model>_r<n>.json under results/. Readers call upgrade() so v1 and v2 records
-(schema/record.schema.v1.json, record.schema.v2.json) present v3 field names; files on disk are never rewritten."""
+"""Record writer. One JSON record per run, validated against schema/record.schema.json (v4) before writing.
+File name: <cell>_<network>_<model>_r<n>.json under results/. Readers call upgrade() so v1 to v3 records
+(schema/record.schema.v1.json to v3) present v4 field names; files on disk are never rewritten."""
 import datetime
 import json
 import re
@@ -12,10 +12,12 @@ HERE = Path(__file__).resolve().parent
 SCHEMA_PATH = HERE / "schema" / "record.schema.json"
 SCHEMA_V1_PATH = HERE / "schema" / "record.schema.v1.json"
 SCHEMA_V2_PATH = HERE / "schema" / "record.schema.v2.json"
-SCHEMA_VERSION = 3
+SCHEMA_V3_PATH = HERE / "schema" / "record.schema.v3.json"
+SCHEMA_VERSION = 4
 RESULTS_DIR = HERE / "results"
 FAILURE_CLASSES = (None, "load_fail", "oom", "network_abort", "engine_abort", "wrong_output", "tool_unsupported",
-                   "unmeasured_memory")
+                   "unmeasured_memory", "oom_requester_load", "oom_requester_compute", "oom_worker_load",
+                   "oom_worker_compute", "rpc_disconnect", "timeout")
 
 
 def load_schema() -> dict:
@@ -24,7 +26,7 @@ def load_schema() -> dict:
 
 def validate(rec: dict) -> None:
     v = rec.get("schema_version", SCHEMA_VERSION)
-    path = {1: SCHEMA_V1_PATH, 2: SCHEMA_V2_PATH}.get(v, SCHEMA_PATH)
+    path = {1: SCHEMA_V1_PATH, 2: SCHEMA_V2_PATH, 3: SCHEMA_V3_PATH}.get(v, SCHEMA_PATH)
     jsonschema.validate(rec, json.loads(path.read_text()), cls=jsonschema.Draft202012Validator)
 
 
@@ -55,15 +57,37 @@ V3_COMM = {"blocking_syncs_per_step": None, "messages_per_step": None, "bytes_pe
 V3_NETWORK = {"rtt_source": "probe", "ping_decode_ms": None, "awdl": None, "added_delay_ms": None, "added_delay_measured_ms": None}
 
 
+V4_NETWORK = {"vpn_state": None}
+
+
 def upgrade(rec: dict) -> dict:
-    """v1 -> v2 -> v3 view of a record, in memory only. Values an older record did not measure stay null; the pooled
+    """v1 -> v2 -> v3 -> v4 view of a record, in memory only. Values an older record did not measure stay null; the pooled
     timing is derived from per_prompt, which every version carries."""
-    if rec.get("schema_version", 1) >= SCHEMA_VERSION:
+    ver = rec.get("schema_version", 1)
+    if ver >= SCHEMA_VERSION:
         return rec
     r = json.loads(json.dumps(rec))
+    if ver < 3:
+        r = _upgrade_to_v3(r)
+    r["schema_version"] = SCHEMA_VERSION
+    r["setup"].setdefault("ctx", None)
+    r.setdefault("memory_breakdown_gb", {})
+    r.setdefault("memory_log_lines", [])
+    for p in r.get("peers", []):
+        p.setdefault("metal_working_set_gb", None)
+    for k, v in V4_NETWORK.items():
+        r["network"].setdefault(k, v)
+    return r
+
+
+def _upgrade_to_v3(rec: dict) -> dict:
+    if rec.get("schema_version", 1) >= 3:
+        return rec
+    r = rec
+    orig = rec.get("schema_version", 1)
     if r.get("schema_version", 1) == 1:
         r = _upgrade_v1_to_v2(r)
-    r["schema_version"] = SCHEMA_VERSION
+    r["schema_version"] = 3
     for k, v in V3_TIMING.items():
         r["timing"].setdefault(k, v)
     r["timing"].update({k: v for k, v in pooled_timing(r.get("per_prompt", {})).items()})
@@ -73,7 +97,7 @@ def upgrade(rec: dict) -> dict:
         r["network"].setdefault(k, v)
     r["network"]["rtt_source"] = "probe" if r["network"].get("rtt_ms_median") is not None else None
     r["prompts"].setdefault("fixed_tokens", None)
-    r["comm"]["source"] = (r["comm"].get("source") or "") + " [v%d record, v3 view in memory]" % rec.get("schema_version", 1)
+    r["comm"]["source"] = (r["comm"].get("source") or "") + " [v%d record, v4 view in memory]" % orig
     return r
 
 
@@ -143,12 +167,12 @@ def empty_record(cell_name: str, cell_cfg: dict, network: str, model_name: str, 
         "draft_model": None,
         "engine": {"name": "", "commit": "", "flags": []},
         "peers": [],
-        "network": dict({"type": network, "rtt_ms_median": None, "bw_mbps": None, "measured_at": None}, **V3_NETWORK),
+        "network": dict({"type": network, "rtt_ms_median": None, "bw_mbps": None, "measured_at": None}, **V3_NETWORK, **V4_NETWORK),
         "prompts": {"set": "", "version": "", "subset": None, "ids": [], "generation": {}, "fixed_tokens": None},
         "success": False,
         "failure_class": None,
         "quality_pass": None,
-        "setup": {"load_total_s": None, "transfer_s": None, "cache_state": None, "bytes_sent_gb": None},
+        "setup": {"ctx": None, "load_total_s": None, "transfer_s": None, "cache_state": None, "bytes_sent_gb": None},
         "timing": dict({"decode_tps_median": None, "prefill_tps_median": None, "ttft_s_median": None, "ttft_server_s_median": None},
                        **V3_TIMING),
         "comm": dict({"rpc_commands_per_step": None, "tokens_per_step": None, "rpc_commands_per_token": None,
@@ -156,6 +180,8 @@ def empty_record(cell_name: str, cell_cfg: dict, network: str, model_name: str, 
                       "serial_waits_per_token": None, "compute_steps": None, "tokens_generated": None,
                       "capture_iface": None, "source": None}, **V3_COMM),
         "memory_buffers_gb": {},
+        "memory_breakdown_gb": {},
+        "memory_log_lines": [],
         "memory_peak_gb": {},
         "utilization": {},
         "correctness": {"exact_match_ratio": None, "first_divergence_median": None,

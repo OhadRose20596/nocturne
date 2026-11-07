@@ -92,7 +92,7 @@ def test_write_read_and_run_index(tmp_path):
     record.write(_rec(run=2), tmp_path)
     recs = record.read_all(tmp_path)
     assert [r["id"] for r in recs] == ["A1_wifi_qwen2.5-7b-q4km_r1", "A1_wifi_qwen2.5-7b-q4km_r2"]
-    assert json.loads(p.read_text())["schema_version"] == 3
+    assert json.loads(p.read_text())["schema_version"] == 4
 
 
 def test_write_refuses_invalid(tmp_path):
@@ -185,7 +185,7 @@ def test_upgrade_v1_record_in_memory():
     assert u["memory_buffers_gb"] == v1["memory_peak_gb"] and u["memory_peak_gb"] == {"m5": None, "air": None}
     assert u["quality_pass"] is True and u["checks"]["a2_identity"] is True
     assert record.upgrade(u) is u
-    assert u["schema_version"] == 3 and u["network"]["rtt_source"] == "probe" and u["prompts"]["fixed_tokens"] is None
+    assert u["schema_version"] == 4 and u["network"]["rtt_source"] == "probe" and u["prompts"]["fixed_tokens"] is None
     assert u["comm"]["blocking_syncs_per_step"] is None and u["comm"]["worker_capture"] is False
     # pooled timing is derived from per_prompt for every version: 714 tokens over 33 prompts is 681 steps
     assert u["timing"]["decode_steps_total"] == 681 and 80 < u["timing"]["decode_ms_per_step_pooled"] < 120
@@ -199,7 +199,7 @@ def test_upgrade_v2_record_in_memory():
     u = record.upgrade(v2)
     record.validate(u)
     assert v2["schema_version"] == 2 and "decode_ms_per_step_pooled" not in v2["timing"]
-    assert u["schema_version"] == 3 and u["comm"]["source"].endswith("[v2 record, v3 view in memory]")
+    assert u["schema_version"] == 4 and u["comm"]["source"].endswith("[v2 record, v4 view in memory]")
     assert abs(u["timing"]["decode_ms_per_step_pooled"] - 1605.98) < 0.1 and abs(u["timing"]["decode_tps_median"] - 0.742) < 0.001
     assert u["per_prompt"]["long_03"]["decode_ms_per_step"] == v2["per_prompt"]["long_03"]["timings"]["predicted_ms"] / 113
 

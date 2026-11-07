@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "nocturne-bench-record-v3",
+  "$id": "nocturne-bench-record-v4",
   "title": "Nocturne bench record",
   "type": "object",
   "additionalProperties": false,
@@ -27,11 +27,13 @@
     "correctness",
     "fault_test",
     "checks",
-    "notes"
+    "notes",
+    "memory_breakdown_gb",
+    "memory_log_lines"
   ],
   "properties": {
     "schema_version": {
-      "const": 3
+      "const": 4
     },
     "id": {
       "type": "string",
@@ -203,6 +205,13 @@
           "mem_gb": {
             "type": "number",
             "minimum": 0
+          },
+          "metal_working_set_gb": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Metal recommendedMaxWorkingSetSize in GB, from peers.yaml; the capacity line"
           }
         }
       }
@@ -331,6 +340,18 @@
             "null"
           ],
           "description": "ping median with the delay on minus the median with it off, measured right before the run"
+        },
+        "vpn_state": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "connected",
+            "disconnected",
+            "unknown",
+            null
+          ]
         }
       }
     },
@@ -394,13 +415,20 @@
         "engine_abort",
         "wrong_output",
         "tool_unsupported",
-        "unmeasured_memory"
+        "unmeasured_memory",
+        "oom_requester_load",
+        "oom_requester_compute",
+        "oom_worker_load",
+        "oom_worker_compute",
+        "rpc_disconnect",
+        "timeout"
       ]
     },
     "setup": {
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "ctx",
         "load_total_s",
         "transfer_s",
         "cache_state",
@@ -437,6 +465,13 @@
             "number",
             "null"
           ]
+        },
+        "ctx": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "--ctx of the run (per slot); llama-server was started with ctx times parallel slots"
         }
       }
     },
@@ -834,7 +869,24 @@
           ]
         }
       }
+    },
+    "memory_breakdown_gb": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "number"
+        }
+      },
+      "description": "per peer: GB by kind from the engine log: model, kv, compute, output (logits buffer), cpu (any CPU device buffer)"
+    },
+    "memory_log_lines": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "the matched buffer size log lines, so a reviewer can recompute the breakdown"
     }
   },
-  "description": "v3 (2026-11-02, session 4 Part 0): decode_ms_per_step_pooled and decode_tps_pooled next to the old per prompt median; comm gains blocking_syncs_per_step, messages_per_step, direction aware bytes_per_step_decode, graph_meta_bytes_per_step and the worker capture clock offset; network gains the in-decode ping percentiles, the AWDL state and the added delay; prompts.fixed_tokens. v2 is kept in record.schema.v2.json, v1 in record.schema.v1.json; readers accept both through record.upgrade(). v2 (2026-10-26, review I022): comm renamed to per step and per token, memory split into buffers and peak, ttft split into client and server, setup split into load_total and transfer, success and quality_pass separated, checks block."
+  "description": "v4 (2026-11-07, session 5): setup.ctx, memory_breakdown_gb, memory_log_lines, peers.metal_working_set_gb, network.vpn_state, failure classes by node (oom_requester_load, oom_requester_compute, oom_worker_load, oom_worker_compute, rpc_disconnect, timeout). v3 (2026-11-02, session 4 Part 0): decode_ms_per_step_pooled and decode_tps_pooled next to the old per prompt median; comm gains blocking_syncs_per_step, messages_per_step, direction aware bytes_per_step_decode, graph_meta_bytes_per_step and the worker capture clock offset; network gains the in-decode ping percentiles, the AWDL state and the added delay; prompts.fixed_tokens. v2 is kept in record.schema.v2.json, v1 in record.schema.v1.json; readers accept both through record.upgrade(). v2 (2026-10-26, review I022): comm renamed to per step and per token, memory split into buffers and peak, ttft split into client and server, setup split into load_total and transfer, success and quality_pass separated, checks block."
 }
