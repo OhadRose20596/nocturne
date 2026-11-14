@@ -1,6 +1,6 @@
 # Session 5 progress
 
-Updated 2026-11-14 15:17:44. Steps known so far: 59, finished: 53. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
+Updated 2026-11-14 16:00:15. Steps known so far: 62, finished: 62. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
 
 | group | step | status | records | start | end |
 |---|---|---|---|---|---|
@@ -57,12 +57,15 @@ Updated 2026-11-14 15:17:44. Steps known so far: 59, finished: 53. Later groups 
 | G4 | qwen2.5-7b-q4km ctx 32768 Air alone | done earlier: ok | BASELINE_local_qwen2.5-7b-q4km_air_c32768_r1 |  |  |
 | G4 | qwen2.5-7b-q4km ctx 32768 PP default | done earlier: ok | A1_wifi_qwen2.5-7b-q4km_m5_c32768_r1 |  |  |
 | G4 | qwen2.5-7b-q4km ctx 32768 TP | done earlier: ok | B1_wifi_qwen2.5-7b-q4km_m5_c32768_r1 |  |  |
-| G3 | qwen2.5-32b-q6k ctx 4096 PP default, eval_long | pending |  |  |  |
-| G3 | qwen2.5-32b-q6k ctx 4096 PP default, eval_kv4k | pending |  |  |  |
-| G3 | qwen2.5-32b-q6k ctx 4096 PP 3:2, eval_long | pending |  |  |  |
-| G3 | qwen2.5-32b-q6k ctx 4096 PP 3:2, eval_kv4k | pending |  |  |  |
-| G3 | qwen2.5-32b-q6k ctx 16384 TP 3:2, eval_long | pending |  |  |  |
-| G3 | qwen2.5-32b-q6k ctx 16384 TP 3:2, eval_kv4k | pending |  |  |  |
+| G3 | qwen2.5-32b-q6k ctx 4096 PP default, eval_long | done earlier: ok | A1_wifi_qwen2.5-32b-q6k_m5_c4096long_r1 |  |  |
+| G3 | qwen2.5-32b-q6k ctx 4096 PP default, eval_kv4k | done earlier: ok | A1_wifi_qwen2.5-32b-q6k_m5_c4096kv4k_r1 |  |  |
+| G3 | qwen2.5-32b-q6k ctx 4096 PP 3:2, eval_long | done earlier: ok | A1_wifi_qwen2.5-32b-q6k_m5_c4096proplong_r1 |  |  |
+| G3 | qwen2.5-32b-q6k ctx 4096 PP 3:2, eval_kv4k | done earlier: ok | A1_wifi_qwen2.5-32b-q6k_m5_c4096propkv4k_r1 |  |  |
+| G3 | qwen2.5-32b-q6k ctx 16384 TP 3:2, eval_long | done earlier: ok | B1_wifi_qwen2.5-32b-q6k_m5_c16384proplong_r1 |  |  |
+| G3 | qwen2.5-32b-q6k ctx 16384 TP 3:2, eval_kv4k | done earlier: ok | B1_wifi_qwen2.5-32b-q6k_m5_c16384propkv4k_r1 |  |  |
+| G2c | qwen2.5-32b-q6k ctx 16384 PP 3:2 | fail (oom_requester_compute) | A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r1 A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r2 A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r3 | 2026-11-14 15:25:38 | 2026-11-14 15:27:04 |
+| G2c | qwen2.5-32b-q6k ctx 16384 TP 3:2 | ok | B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r1 B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r2 B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r3 | 2026-11-14 15:43:51 | 2026-11-14 15:56:50 |
+| G2c | qwen2.5-32b-q6k ctx 16384 PP default | fail (oom_worker_load) | A1_wifi_qwen2.5-32b-q6k_m5_c16384_r1 A1_wifi_qwen2.5-32b-q6k_m5_c16384_r2 | 2026-11-14 15:57:52 | 2026-11-14 15:59:16 |
 
 ## Log (last 40 lines)
 
@@ -90,4 +93,21 @@ Changes not staged for commit:
 [2026-11-14 15:17:44] == G4: 14B and 7B Q4_K_M, every partition, ctx 4096 and 32768 (16 steps)
 [2026-11-14 15:17:44] commit G4: ok
 [2026-11-14 15:17:44] == G3: real long prompts at the edge of each partition (6 steps)
+[2026-11-14 15:17:44] commit G3: ok
+[2026-11-14 15:17:44] == G2c: Q-C candidate: 32B Q6_K ctx 16384, TP 3:2 completed where both PP splits failed; repeats (3 steps)
+[2026-11-14 15:17:44] preflight qwen2.5-32b-q6k
+[2026-11-14 15:19:33]   [m5] model sha 3393e05b1239, free 485.0 GB
+[2026-11-14 15:19:33]   [air] model sha 3393e05b1239, free 63.0 GB
+[2026-11-14 15:19:33]   vpn_state disconnected, awdl up
+[2026-11-14 15:19:33]   worker 192.168.1.219:50052 closed (the bench starts it over ssh)
+[2026-11-14 15:19:33] run qwen2.5-32b-q6k ctx 16384 PP 3:2 (G2c): nocturne.bench.run --cell A1 --model qwen2.5-32b-q6k --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 16384 --runs 1 --no-results-md --allow-unmeasured-memory --tag c16384prop --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8 --override-flag=-ts=2,3
+[2026-11-14 15:25:37]   A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r2: FAIL (oom_requester_compute), quality unknown  decode None  cmds/step 11  cmds/tok None  B/tok None  acc 0.0 
+[2026-11-14 15:25:38] run qwen2.5-32b-q6k ctx 16384 PP 3:2 (G2c): nocturne.bench.run --cell A1 --model qwen2.5-32b-q6k --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 16384 --runs 1 --no-results-md --allow-unmeasured-memory --tag c16384prop --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8 --override-flag=-ts=2,3
+[2026-11-14 15:27:04]   A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r3: FAIL (oom_requester_compute), quality unknown  decode None  cmds/step 11  cmds/tok None  B/tok None  acc 0.0 
+[2026-11-14 15:27:59] run qwen2.5-32b-q6k ctx 16384 TP 3:2 (G2c): nocturne.bench.run --cell B1 --model qwen2.5-32b-q6k --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 16384 --runs 1 --no-results-md --allow-unmeasured-memory --tag c16384prop --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8 --override-flag=-ts=3,2
+[2026-11-14 15:43:51]   B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r2: OK, quality unknown  decode 0.2811667920865608  cmds/step 1.5  cmds/tok 457.78125  B/tok 65750137.21875  acc 1.0 
+[2026-11-14 15:43:51] run qwen2.5-32b-q6k ctx 16384 TP 3:2 (G2c): nocturne.bench.run --cell B1 --model qwen2.5-32b-q6k --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 16384 --runs 1 --no-results-md --allow-unmeasured-memory --tag c16384prop --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8 --override-flag=-ts=3,2
+[2026-11-14 15:56:50]   B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r3: OK, quality unknown  decode 0.28014895569505893  cmds/step 1.5  cmds/tok 457.78125  B/tok 65751237.84375  acc 1.0 
+[2026-11-14 15:57:52] run qwen2.5-32b-q6k ctx 16384 PP default (G2c): nocturne.bench.run --cell A1 --model qwen2.5-32b-q6k --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 16384 --runs 1 --no-results-md --allow-unmeasured-memory --tag c16384 --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8
+[2026-11-14 15:59:16]   A1_wifi_qwen2.5-32b-q6k_m5_c16384_r2: FAIL (oom_worker_load), quality unknown  decode None  cmds/step 5.0  cmds/tok None  B/tok None  acc 0.0 
 ```
