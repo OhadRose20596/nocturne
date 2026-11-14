@@ -174,7 +174,10 @@ class LlamaCppRpc(Engine):
     def prepare(self) -> None:
         req = self.requester_peer()
         dry = self.runner.dry_run
-        if not dry and not Path(self._bin(req, "llama-server")).is_file():
+        if not dry and req.get("ssh"):
+            if self.runner.run(req, ["test", "-x", self._bin(req, "llama-server")], timeout=30).returncode != 0:
+                raise EngineUnsupported(f"llama-server not found in {req['bin']} on {req['name']}")
+        elif not dry and not Path(self._bin(req, "llama-server")).is_file():
             raise EngineUnsupported(f"llama-server not found in {req['bin']} on {req['name']}")
         if not dry and not Path(self.model["path"]).is_file():
             raise EngineUnsupported(f"model file missing on requester: {self.model['path']}")
@@ -209,6 +212,8 @@ class LlamaCppRpc(Engine):
             if self._worker_ip(w).startswith("0.0.0.0"):
                 raise EngineUnsupported(f"worker {w['name']} bind is 0.0.0.0; refuse (CLAUDE.md rule 7)")
             r = self.runner.run(w, ["test", "-x", self._bin(w, "ggml-rpc-server")], timeout=30)
+            if not dry and r.returncode == 255 and w.get("ssh"):
+                raise LoadFailed("network_abort", preflight_message(w, self._bin(w, "ggml-rpc-server"), r.returncode, r.stderr or ""))
             if not dry and r.returncode != 0:
                 raise EngineUnsupported(preflight_message(w, self._bin(w, "ggml-rpc-server"), r.returncode, r.stderr or ""))
 
@@ -248,11 +253,18 @@ class LlamaCppRpc(Engine):
             for line in pipe:
                 fh.write(f"{time.time():.6f} {line}" if line.strip() else line)
 
+    def _remote_path(self, path: str) -> str:
+        """peers.yaml paths are expanded with this machine's home; a requester reached over ssh has its own home."""
+        home = os.path.expanduser("~")
+        if path and self.requester_peer().get("ssh") and path.startswith(home + "/"):
+            return "~/" + path[len(home) + 1:]
+        return path
+
     def build_flags(self, k: int = 1) -> list[str]:
         workers = self.worker_peers()
         subst = {
-            "{model}": self.model["path"],
-            "{draft}": self.model.get("draft") or "",
+            "{model}": self._remote_path(self.model["path"]),
+            "{draft}": self._remote_path(self.model.get("draft") or ""),
             "{rpc}": ",".join(self._endpoint(w) for w in workers),
             "{k}": str(k),
             "{ts}": "",
@@ -289,6 +301,11 @@ class LlamaCppRpc(Engine):
         fh = None if self.runner.dry_run else self.server_log.open("w")
         t0 = time.time()
         self.server = self.runner.spawn(req, argv, stdout=fh, stderr=subprocess.STDOUT)
+        if req.get("ssh"):
+            # llama-server listens on the remote requester's loopback; reach it through a local forward
+            port = str(self.peers["server_port"])
+            self.runner.spawn({"name": "local", "ssh": None}, ["ssh", "-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes",
+                                                                "-N", "-L", f"{port}:127.0.0.1:{port}", req["ssh"]])
         if self.runner.dry_run:
             return
         url = self._server_url() + "/health"
@@ -348,6 +365,9 @@ class LlamaCppRpc(Engine):
 
     def stop(self) -> None:
         self.runner.stop_all()
+        req = self.requester_peer()
+        if req.get("ssh"):
+            self.runner.run(req, ["pkill", "-f", f"llama-server.*--port {self.peers['server_port']}"], timeout=20)
         port = str(self.peers["rpc_port"])
         for w in self.worker_peers():
             self.runner.run(w, ["pkill", "-f", f"ggml-rpc-server.*-p {port}"], timeout=20)

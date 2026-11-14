@@ -11,11 +11,14 @@ from . import record
 from .probes import memlog
 
 ROOT = Path(__file__).resolve().parents[2]
-TAG = re.compile(r"_c(\d+)(bal|prop)?_r\d+$")
+TAG = re.compile(r"_c(\d+)([a-z0-9]*)_r\d+$")
 DEVLINE = re.compile(r"-\s+(MTL\d+|RPC\d+)\s*:\s*(.+?)\s*\((\d+) MiB, \d+ MiB free\)")
 WDEV = re.compile(r"MTL\d+: .*?\((\d+) MiB, \d+ MiB free\)")
 NODES = ("m5", "air")
-PARTITION_ORDER = ["local M5", "local Air", "PP default", "PP balanced", "TP", "TP 3:2", "TP torch"]
+invalid: list[str] = []
+PARTITION_ORDER = ["local M5", "local Air", "PP default", "PP 3:2", "PP balanced", "TP", "TP 3:2", "TP torch"]
+# Runs that carry no memory evidence for a reason the record itself cannot show.
+EXCLUDE = {"B1_wifi_qwen2.5-32b-q6k_m5_c4096prop_r1": "the Air dropped off the network during load (2026-11-08 05:25; ssh to the Air timed out in the runs before and after it)"}
 
 
 def partition(r: dict, var) -> str:
@@ -24,9 +27,9 @@ def partition(r: dict, var) -> str:
         req = next(p for p in r["peers"] if p["role"] == "requester")
         return "local M5" if req["host"] == "MMF4FWRG4R" else "local Air"
     if c == "A1":
-        return "PP balanced" if var == "bal" else "PP default"
+        return "PP balanced" if "bal" in (var or "") else ("PP 3:2" if "prop" in (var or "") else "PP default")
     if c == "B1":
-        return "TP 3:2" if var == "prop" else "TP"
+        return "TP 3:2" if "prop" in (var or "") else "TP"
     if c == "B1t":
         return "TP torch"
     return c
@@ -85,15 +88,25 @@ def node_view(r: dict, bd: dict | None = None) -> dict:
 def rows(results: Path) -> list[dict]:
     logs = results / "logs"
     groups: dict = {}
+    invalid.clear()
     for r in record.read_all(results):
         m = TAG.search(r["id"])
         if not m:
             continue
+        if any("failed (rc 255" in n for n in r["notes"]):
+            invalid.append(f"{r['id']}: worker unreachable over ssh before load (no memory evidence)")
+            continue
+        if any("llama-server not found in" in n for n in r["notes"]):
+            invalid.append(f"{r['id']}: harness error before load (remote binary check), fixed and rerun")
+            continue
+        if r["id"] in EXCLUDE:
+            invalid.append(f"{r['id']}: {EXCLUDE[r['id']]}")
+            continue
         ctx = r["setup"].get("ctx") or int(m.group(1))
-        key = (r["model"]["name"], r["model"].get("quant", ""), ctx, partition(r, m.group(2)))
+        key = (r["model"]["name"], r["model"].get("quant", ""), ctx, partition(r, m.group(2)), r["prompts"].get("set") or "eval_set")
         groups.setdefault(key, []).append(r)
     out = []
-    for (model, quant, ctx, part), rs in groups.items():
+    for (model, quant, ctx, part, pset), rs in groups.items():
         rs.sort(key=lambda x: x["date"])
         notes = []
         for x in rs:
@@ -106,7 +119,7 @@ def rows(results: Path) -> list[dict]:
         ref = (ok or rs)[-1]
         nv = node_view(ref, corrected_breakdown(ref, logs))
         cap = capacity_mib(ref, logs)
-        row = {"model": model, "quant": quant, "ctx": ctx, "partition": part,
+        row = {"model": model, "quant": quant, "ctx": ctx, "partition": part, "prompts": pset,
                "fits": "yes" if ok else "no", "runs_ok": f"{len(ok)}/{len(rs)}",
                "failure_class": ";".join(sorted({x["failure_class"] for x in rs if x["failure_class"]})) or "",
                "run_ids": " ".join(x["id"] for x in rs), "note": " ".join(notes)}
@@ -126,7 +139,8 @@ def rows(results: Path) -> list[dict]:
         out.append(row)
     # identity against PP default at the same (model, ctx): the same engine, the reference when no BASELINE fits
     for row in out:
-        pp = next((x for x in out if x["model"] == row["model"] and x["ctx"] == row["ctx"] and x["partition"] == "PP default"), None)
+        pp = next((x for x in out if x["model"] == row["model"] and x["ctx"] == row["ctx"] and x["partition"] == "PP default"
+                   and x["prompts"] == row["prompts"]), None)
         a, b = row["_outputs"], (pp or {}).get("_outputs")
         row["identical_to_pp_default"] = (f"{sum(a[i] == b.get(i) for i in a)}/{len(a)}" if a and b else None)
     for row in out:
@@ -142,7 +156,7 @@ def write(out_rows: list[dict], out_dir: Path) -> None:
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
         w.writerows(out_rows)
-    show = ["model", "ctx", "partition", "fits", "runs_ok", "failure_class",
+    show = ["model", "ctx", "partition", "prompts", "fits", "runs_ok", "failure_class",
             "m5_model_gib", "m5_kv_gib", "m5_compute_gib", "m5_total_gib", "m5_headroom_gib",
             "air_model_gib", "air_kv_gib", "air_compute_gib", "air_total_gib", "air_headroom_gib",
             "task_accuracy", "identical_to_pp_default", "bytes_per_token", "ms_per_step_background"]
@@ -154,9 +168,11 @@ def write(out_rows: list[dict], out_dir: Path) -> None:
              "", "| " + " | ".join(show) + " |", "|" + "---|" * len(show)]
     for r in out_rows:
         lines.append("| " + " | ".join(fmt(r[c]) for c in show) + " |")
+    if invalid:
+        lines += ["", "## Runs excluded (not memory evidence)", ""] + [f"- {x}" for x in invalid]
     lines += ["", "## Run ids", ""]
     for r in out_rows:
-        lines.append(f"- {r['model']} ctx {r['ctx']} {r['partition']}: {r['run_ids']}")
+        lines.append(f"- {r['model']} ctx {r['ctx']} {r['partition']} {r['prompts']}: {r['run_ids']}")
     (out_dir / "EDGE_TABLE.md").write_text("\n".join(lines) + "\n")
 
 

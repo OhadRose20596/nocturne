@@ -78,3 +78,15 @@ def test_meta_split_by_ts_shares():
     assert bd["m5"]["model"] == round(11117.5 / 1024, 3) and bd["air"]["model"] == round(11117.5 * 2 / 3 / 1024, 3)
     assert bd["m5"]["kv"] == 5.0 and bd["air"]["kv"] == 3.0
     assert bd["air"]["compute"] == bd["m5"]["compute"] and lines[-1].startswith("llama_kv_cache: size")
+
+
+def test_session5_step_ids_and_flags():
+    from nocturne.bench.session5 import Step
+    s = Step("G2a", "A1", "qwen2.5-32b-q5km", 4096, "prop")
+    assert s.prefix() == "A1_wifi_qwen2.5-32b-q5km_m5_c4096prop_r" and "--override-flag=-ts=2,3" in s.argv()
+    t = Step("G2a", "B1", "qwen2.5-32b-q5km", 4096, "prop")
+    assert "--override-flag=-ts=3,2" in t.argv()
+    b = Step("G4", "BASELINE", "qwen2.5-7b-q4km", 4096, host="air")
+    assert b.prefix() == "BASELINE_local_qwen2.5-7b-q4km_air_c4096_r" and b.argv()[b.argv().index("--host") + 1] == "air"
+    g = Step("G3", "A1", "qwen2.5-32b-q4km", 32768, "", pset="eval_kv4k", fixed=64, subset=None)
+    assert g.tag == "c32768kv4k" and "--subset" not in g.argv()

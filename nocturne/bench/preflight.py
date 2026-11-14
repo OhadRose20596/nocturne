@@ -24,6 +24,7 @@ def main(argv=None) -> int:
     ap.add_argument("--model", required=True)
     ap.add_argument("--min-free-gb", type=float, default=30)
     ap.add_argument("--network", default="wifi")
+    ap.add_argument("--no-worker-model", action="store_true", help="the worker has no copy (RPC workers never read it); hash the requester's only")
     ap.add_argument("--peers", type=Path, default=Path("~/.nocturne/peers.yaml").expanduser())
     a = ap.parse_args(argv)
     cfg = config.load_peers(a.peers)
@@ -45,6 +46,8 @@ def main(argv=None) -> int:
         print(f"[{n}] model sha {str(shas[n])[:12]}, free {free} GB")
         if free is None or free < a.min_free_gb:
             bad.append(f"{n}: free disk {free} GB under {a.min_free_gb}")
+    if a.no_worker_model:
+        shas = {n: v for n, v in shas.items() if n == names[0]}
     if len(set(shas.values())) != 1 or None in shas.values():
         bad.append(f"model sha256 differs or missing: {shas}")
     vpn, awdl = net.vpn_state(), net.awdl_state()
