@@ -23,21 +23,21 @@ Source: the engine's own log of `experiments/r3/capacity/20261010-164354_MMF4FWR
 
 | cell | quantity | Ohad | Claude | outcome |
 |---|---|---|---|---|
-| PP default (about 37 / 27 layers) | M5 model / KV / compute | | 10939 / 592 / 184 (plus CPU 418 and 22) | |
-| PP default | Air model / KV / compute | | 7569 / 432 / 184 | |
-| PP default | totals vs line | | M5 about 11.7 GiB of 18.2 GB. Air about 8.0 GiB of 12.1 GB. Headroom Air about 3 GB | |
-| PP balanced `-ts 1,1` (32 / 32) | M5 model / KV / compute | | 9560 / 512 / 184 | |
-| PP balanced | Air model / KV / compute | | 8950 / 512 / 184 | |
-| TP `-ts 1,1 -fit off` | M5 model / KV / compute | | 9500 to 9900 / 512 / 250 to 600 (low confidence, I have no TP number) | |
-| TP | Air model / KV / compute | | 8700 to 9000 / 512 / 250 to 600 | |
-| TP vs balanced PP | requester total | | TP requester 0.3 to 0.6 GB heavier. Both per node totals within 10 percent of balanced PP (Part 6 of session 4, kept) | |
+| PP default (about 37 / 27 layers) | M5 model / KV / compute | | 10939 / 592 / 184 (plus CPU 418 and 22) | 10939 / 592 / 184 MiB, CPU 418 and 24. Holds. `A1_wifi_qwen2.5-32b-q4km_m5_c4096_r1` |
+| PP default | Air model / KV / compute | | 7569 / 432 / 184 | 7569 / 432 / 184 MiB. Holds (same 37/27 split as 2026-10-10). Same run |
+| PP default | totals vs line | | M5 about 11.7 GiB of 18.2 GB. Air about 8.0 GiB of 12.1 GB. Headroom Air about 3 GB | M5 11.44 GiB, headroom 6.32 GiB. Air 8.00 GiB, headroom 3.84 GiB (line 12124 MiB). Holds |
+| PP balanced `-ts 1,1` (32 / 32) | M5 model / KV / compute | | 9560 / 512 / 184 | 9297 / 492 / 184 MiB. Weights 260 MiB lower than predicted: 1:1 gave the M5 31 layers plus the output layer, not 32 plus output. `A1_wifi_qwen2.5-32b-q4km_m5_c4096bal_r1` |
+| PP balanced | Air model / KV / compute | | 8950 / 512 / 184 | 9211 / 532 / 184 MiB (33 layers). Holds within 3 percent. Same run |
+| TP `-ts 1,1 -fit off` | M5 model / KV / compute | | 9500 to 9900 / 512 / 250 to 600 (low confidence, I have no TP number) | 9255 / 512 / 186 MiB. Fails: weights below the range and compute buffer equal to PP, not larger. `B1_wifi_qwen2.5-32b-q4km_m5_c4096_r1` |
+| TP | Air model / KV / compute | | 8700 to 9000 / 512 / 250 to 600 | 9255 / 512 / 186 MiB (requester share applied to the worker; checked against 9.9 GB of set_tensor on a cold load). Weights fail high, compute fails low |
+| TP vs balanced PP | requester total | | TP requester 0.3 to 0.6 GB heavier. Both per node totals within 10 percent of balanced PP (Part 6 of session 4, kept) | Within 10 percent: holds (9.72 against 9.74 and 9.69 GiB). Requester heavier: fails. TP splits the output layer too and keeps only the 418 MiB embedding on CPU, as PP does; the requester is 0.02 GiB lighter in TP |
 
 | ctx | BASELINE M5 | A1 default | A1 balanced | B1 TP |
 |---|---|---|---|---|
-| 512 | Ohad: / Claude: OOM at first compute (as 2026-10-10 at 2048; KV saving is only 0.4 GiB) / outcome: | Ohad: / Claude: completes / outcome: | Ohad: / Claude: completes / outcome: | Ohad: / Claude: completes, or tool_unsupported with one error line (I give 35 percent to tool_unsupported) / outcome: |
-| 4096 | Ohad: / Claude: OOM / outcome: | Ohad: / Claude: completes / outcome: | Ohad: / Claude: completes / outcome: | Ohad: / Claude: as ctx 512 / outcome: |
-| 16384 | Ohad: / Claude: OOM / outcome: | Ohad: / Claude: completes (KV 4 GiB total; Air about 9.4 GiB) / outcome: | Ohad: / Claude: completes (Air about 10.3 GiB, headroom 1.8 GB) / outcome: | Ohad: / Claude: completes if ctx 512 did / outcome: |
-| 32768 | Ohad: / Claude: OOM / outcome: | Ohad: / Claude: completes with Air headroom under 1.5 GB (about 11.0 GiB used, KV 8 GiB total) / outcome: | Ohad: / Claude: fails on the Air, oom_worker (about 12.9 GiB against 12.1 GB) / outcome: | Ohad: / Claude: fails on the Air, same arithmetic plus replication / outcome: |
+| 512 | Ohad: / Claude: OOM at first compute (as 2026-10-10 at 2048; KV saving is only 0.4 GiB) / outcome: oom_requester_compute, holds (`..._m5_c512_r2`) | Ohad: / Claude: completes / outcome: completes, 8/8 correct | Ohad: / Claude: completes / outcome: completes | Ohad: / Claude: completes, or tool_unsupported with one error line (I give 35 percent to tool_unsupported) / outcome: completes; tensor mode works over RPC on 1e7bcf3 for 32B (the 2026-10-10 failure is not reproduced) |
+| 4096 | Ohad: / Claude: OOM / outcome: oom_requester_compute, holds | Ohad: / Claude: completes / outcome: completes | Ohad: / Claude: completes / outcome: completes | Ohad: / Claude: as ctx 512 / outcome: completes |
+| 16384 | Ohad: / Claude: OOM / outcome: oom_requester_compute, holds | Ohad: / Claude: completes (KV 4 GiB total; Air about 9.4 GiB) / outcome: completes, Air 9.27 GiB, holds | Ohad: / Claude: completes (Air about 10.3 GiB, headroom 1.8 GB) / outcome: completes, Air 11.25 GiB, headroom 0.59 GiB; total within 1 GiB, headroom overestimated (unit mix) | Ohad: / Claude: completes if ctx 512 did / outcome: completes, Air 11.23 GiB |
+| 32768 | Ohad: / Claude: OOM / outcome: oom_requester_compute, holds | Ohad: / Claude: completes with Air headroom under 1.5 GB (about 11.0 GiB used, KV 8 GiB total) / outcome: completes, Air 10.99 GiB, headroom 0.85 GiB, holds | Ohad: / Claude: fails on the Air, oom_worker (about 12.9 GiB against 12.1 GB) / outcome: oom_worker_load, Air 13.35 GiB, holds | Ohad: / Claude: fails on the Air, same arithmetic plus replication / outcome: oom_worker_load, Air 13.27 GiB; fails as predicted but there is no replication term. Added cell TP 3:2: completes, Air 10.46 GiB, headroom 1.37 GiB (`B1_..._c32768prop_r1`) |
 
 Note: units of the 12.1 GB line against GiB figures are mixed above. The EDGE_TABLE will use one unit.
 Falsifier to watch: balanced PP failing at 32768 while default PP completes shows that the split choice matters more than PP versus TP.
