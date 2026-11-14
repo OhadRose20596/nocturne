@@ -1,0 +1,262 @@
+{
+  "schema_version": 4,
+  "id": "B1_wifi_qwen2.5-32b-q6k_m5_c16384propkv4k_r1",
+  "cell": {
+    "partition": "TP",
+    "decode": "single",
+    "row": "B",
+    "col": 1,
+    "name": "B1"
+  },
+  "date": "2026-11-14T14:53:54+02:00",
+  "model": {
+    "name": "qwen2.5-32b-q6k",
+    "quant": "Q6_K",
+    "sha256": "3393e05b12396e0e6c786f5fb99837eb77ef9eb0b30d940e30d94c2f5506054a"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "llama.cpp",
+    "commit": "1e7bcf3",
+    "flags": [
+      "-m",
+      "/Users/orosentswaig/models/Qwen2.5-32B-Instruct-Q6_K.gguf",
+      "-ngl",
+      "99",
+      "--rpc",
+      "192.168.1.219:50052",
+      "--split-mode",
+      "tensor",
+      "-ts",
+      "3,2",
+      "-fit",
+      "off",
+      "-np",
+      "1",
+      "--port",
+      "8089",
+      "-c",
+      "16384",
+      "--host",
+      "127.0.0.1",
+      "--temp",
+      "0",
+      "--seed",
+      "42",
+      "--samplers",
+      "temperature",
+      "--repeat-penalty",
+      "1.0",
+      "--metrics",
+      "-lv",
+      "4"
+    ]
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24,
+      "metal_working_set_gb": 18.2
+    },
+    {
+      "host": "Mac",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 16,
+      "metal_working_set_gb": 12.1
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": 22.669,
+    "bw_mbps": 223.12391018071713,
+    "measured_at": "2026-11-14T14:53:54+02:00",
+    "rtt_source": "probe",
+    "ping_decode_ms": {
+      "p50": 15.929,
+      "p95": 101.997,
+      "p99": 217.41,
+      "n": 28853,
+      "interval_s": 0.01,
+      "loss": 0.17649323685785823
+    },
+    "awdl": "up",
+    "added_delay_ms": null,
+    "added_delay_measured_ms": null,
+    "vpn_state": "disconnected"
+  },
+  "prompts": {
+    "set": "eval_kv4k",
+    "version": "1",
+    "subset": null,
+    "ids": [
+      "kv4k_01"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    },
+    "fixed_tokens": 64
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": null,
+  "setup": {
+    "ctx": 16384,
+    "load_total_s": 196.8939561843872,
+    "transfer_s": 177.5478060245514,
+    "cache_state": "warm",
+    "bytes_sent_gb": 14.428222104
+  },
+  "timing": {
+    "decode_tps_median": 0.1826653478951599,
+    "prefill_tps_median": 0.15709539413584886,
+    "ttft_s_median": 6.563071966171265,
+    "ttft_server_s_median": 6.365559,
+    "decode_ms_per_step_pooled": 5561.388777777778,
+    "decode_tps_pooled": 0.17981120183429802,
+    "decode_steps_total": 63,
+    "warmup_s": 683.1763980388641
+  },
+  "comm": {
+    "rpc_commands_per_step": 1.5,
+    "tokens_per_step": 0.0030764793539393358,
+    "rpc_commands_per_token": 487.5703125,
+    "bytes_per_step": 261459.05302119887,
+    "bytes_per_token": 84986448.125,
+    "packets_per_token": 60196.109375,
+    "serial_waits_per_token": null,
+    "compute_steps": 20803,
+    "tokens_generated": 64,
+    "capture_iface": "en0",
+    "source": "rpc_commands: worker GGML_RPC_DEBUG log (12_rpc_trace parse, graph message included), median per step over the last 32 steps; per token = per step / tokens_per_step; blocking_syncs, messages and graph_meta per decode step: the same log inside the decode windows / sum(predicted_n - 1); bytes: tcpdump on the requester's routed interface, union of decode windows, per decode step and per direction",
+    "blocking_syncs_per_step": 128.984126984127,
+    "messages_per_step": 519.8571428571429,
+    "bytes_per_step_decode": 86335439.36507936,
+    "bytes_per_step_decode_out": 83500707.55555555,
+    "bytes_per_step_decode_in": 2834731.8095238097,
+    "graph_meta_bytes_per_step": 84249450.15873016,
+    "worker_capture": false,
+    "clock_offset_s": null,
+    "clock_offset_unc_s": null
+  },
+  "memory_buffers_gb": {
+    "m5": 18.008,
+    "air": 11.482
+  },
+  "memory_breakdown_gb": {
+    "m5": {
+      "model": 14.684,
+      "kv": 2.5,
+      "compute": 0.193,
+      "output": 0.0,
+      "cpu": 0.631
+    },
+    "air": {
+      "model": 9.789,
+      "kv": 1.5,
+      "compute": 0.193,
+      "output": 0.0,
+      "cpu": 0.0
+    }
+  },
+  "memory_log_lines": [
+    "0.07.403.004 I load_tensors:   CPU_Mapped model buffer size =   609.08 MiB",
+    "0.07.403.008 I load_tensors:       Meta() model buffer size = 15036.25 MiB",
+    "3.03.529.907 I llama_context:        CPU  output buffer size =     0.58 MiB",
+    "3.04.285.268 I llama_kv_cache:     Meta() KV buffer size =  2560.00 MiB",
+    "3.04.805.479 I sched_reserve:     Meta() compute buffer size =   198.01 MiB",
+    "3.04.805.482 I sched_reserve:        CPU compute buffer size =    36.01 MiB",
+    "llama_kv_cache: size = 4096.00 MiB"
+  ],
+  "memory_peak_gb": {
+    "m5": 17.246,
+    "air": 11.324
+  },
+  "utilization": {
+    "m5": 0.2941957057057057,
+    "air": 0.09996213562442467
+  },
+  "correctness": {
+    "exact_match_ratio": null,
+    "first_divergence_median": null,
+    "task_accuracy": null,
+    "baseline_task_accuracy": null
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": null,
+    "a1_id": null
+  },
+  "notes": [
+    "flag override: -ts 3,2 (second data point, not the cell's template; recorded as a note, listed in results/EXCLUDE.yaml, not a RESULTS.md table row)",
+    "fixed tokens 64: every prompt decodes exactly 64 tokens (ignore_eos); task accuracy not graded",
+    "warm-up request (kv4k_01, 8 tokens) took 683.2 s; not in the timings",
+    "peer air: peers.yaml host 'ohads-MacBook-Air-2' but hostname -s is 'Mac'; record uses the real one",
+    "tensor mode outcome (a): both sides hold weights: {'m5': 18.007744140624997, 'air': 17.37720703125} GB per host; Meta() model buffer 15036.25 MiB per device, 2 devices; Meta device line: True; flash_attn forced: True",
+    "no matching BASELINE record for qwen2.5-32b-q6k (sha 3393e05b, Q6_K) with engine llama.cpp on MMF4FWRG4R at 1e7bcf3 with prompts eval_kv4k v1; run: python -m nocturne.bench.run --cell BASELINE --host m5 --model qwen2.5-32b-q6k",
+    "quality_pass null: no baseline or no graded prompt"
+  ],
+  "outputs": {
+    "kv4k_01": "After analyzing the provided log, here are the key findings:\n\n1. **Node that Sent the Most Data in Total:**\n   - **Node echo** sent the most data in total. The entries show that node echo sent a significant amount of data to various nodes, including large transfers like 8190 kil"
+  },
+  "per_prompt": {
+    "kv4k_01": {
+      "timings": {
+        "cache_n": 3936,
+        "prompt_n": 1,
+        "prompt_ms": 6365.559,
+        "prompt_per_token_ms": 6365.559,
+        "prompt_per_second": 0.15709539413584886,
+        "predicted_n": 64,
+        "predicted_ms": 350367.493,
+        "predicted_per_token_ms": 5561.388777777778,
+        "predicted_per_second": 0.17981120183429802
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 0.1826653478951599,
+      "decode_ms_per_step": 5561.388777777778,
+      "ttft_client_s": 6.563071966171265,
+      "score": null,
+      "t_send": 1794661737.681247,
+      "t_done": 1794662094.627318
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server --help"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C /Users/orosentswaig/dev/llama.cpp rev-parse --short HEAD"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -x \"$HOME\"/dev/llama.cpp/build/bin/ggml-rpc-server"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 GGML_RPC_DEBUG=1 \"$HOME\"/dev/llama.cpp/build/bin/ggml-rpc-server -H 192.168.1.219 -p 50052 -c -d MTL0"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server -m /Users/orosentswaig/models/Qwen2.5-32B-Instruct-Q6_K.gguf -ngl 99 --rpc 192.168.1.219:50052 --split-mode tensor -ts 3,2 -fit off -np 1 --port 8089 -c 16384 --host 127.0.0.1 --temp 0 --seed 42 --samplers temperature --repeat-penalty 1.0 --metrics -lv 4"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f 'ggml-rpc-server.*-p 50052'"
+    }
+  ]
+}

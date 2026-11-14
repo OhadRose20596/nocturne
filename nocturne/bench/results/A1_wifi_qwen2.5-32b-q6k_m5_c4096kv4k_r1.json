@@ -1,0 +1,257 @@
+{
+  "schema_version": 4,
+  "id": "A1_wifi_qwen2.5-32b-q6k_m5_c4096kv4k_r1",
+  "cell": {
+    "partition": "PP",
+    "decode": "single",
+    "row": "A",
+    "col": 1,
+    "name": "A1"
+  },
+  "date": "2026-11-14T13:03:23+02:00",
+  "model": {
+    "name": "qwen2.5-32b-q6k",
+    "quant": "Q6_K",
+    "sha256": "3393e05b12396e0e6c786f5fb99837eb77ef9eb0b30d940e30d94c2f5506054a"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "llama.cpp",
+    "commit": "1e7bcf3",
+    "flags": [
+      "-m",
+      "/Users/orosentswaig/models/Qwen2.5-32B-Instruct-Q6_K.gguf",
+      "-ngl",
+      "99",
+      "--rpc",
+      "192.168.1.219:50052",
+      "-np",
+      "1",
+      "--port",
+      "8089",
+      "-c",
+      "4096",
+      "--host",
+      "127.0.0.1",
+      "--temp",
+      "0",
+      "--seed",
+      "42",
+      "--samplers",
+      "temperature",
+      "--repeat-penalty",
+      "1.0",
+      "--metrics",
+      "-lv",
+      "4"
+    ]
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24,
+      "metal_working_set_gb": 18.2
+    },
+    {
+      "host": "Mac",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 16,
+      "metal_working_set_gb": 12.1
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": 8.402000000000001,
+    "bw_mbps": 339.146638214445,
+    "measured_at": "2026-11-14T13:03:23+02:00",
+    "rtt_source": "probe",
+    "ping_decode_ms": {
+      "p50": 7.833,
+      "p95": 71.33,
+      "p99": 94.441,
+      "n": 1774,
+      "interval_s": 0.01,
+      "loss": 0.1326387457151229
+    },
+    "awdl": "up",
+    "added_delay_ms": null,
+    "added_delay_measured_ms": null,
+    "vpn_state": "disconnected"
+  },
+  "prompts": {
+    "set": "eval_kv4k",
+    "version": "1",
+    "subset": null,
+    "ids": [
+      "kv4k_01"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    },
+    "fixed_tokens": 64
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": null,
+  "setup": {
+    "ctx": 4096,
+    "load_total_s": 53.60029911994934,
+    "transfer_s": 41.30425500869751,
+    "cache_state": "warm",
+    "bytes_sent_gb": 0.334524784
+  },
+  "timing": {
+    "decode_tps_median": 3.1291499434381698,
+    "prefill_tps_median": 3.215041248979224,
+    "ttft_s_median": 0.3565378189086914,
+    "ttft_server_s_median": 0.31103800000000004,
+    "decode_ms_per_step_pooled": 324.64823809523807,
+    "decode_tps_pooled": 3.080256975571949,
+    "decode_steps_total": 63,
+    "warmup_s": 53.220993995666504
+  },
+  "comm": {
+    "rpc_commands_per_step": 7.0,
+    "tokens_per_step": 0.7901234567901234,
+    "rpc_commands_per_token": 8.859375,
+    "bytes_per_step": 40138.20987654321,
+    "bytes_per_token": 50799.921875,
+    "packets_per_token": 55.296875,
+    "serial_waits_per_token": null,
+    "compute_steps": 81,
+    "tokens_generated": 64,
+    "capture_iface": "en0",
+    "source": "rpc_commands: worker GGML_RPC_DEBUG log (12_rpc_trace parse, graph message included), median per step over the last 32 steps; per token = per step / tokens_per_step; blocking_syncs, messages and graph_meta per decode step: the same log inside the decode windows / sum(predicted_n - 1); bytes: tcpdump on the requester's routed interface, union of decode windows, per decode step and per direction",
+    "blocking_syncs_per_step": 1.0,
+    "messages_per_step": 7.0,
+    "bytes_per_step_decode": 51606.269841269845,
+    "bytes_per_step_decode_out": 30865.444444444445,
+    "bytes_per_step_decode_in": 20740.825396825396,
+    "graph_meta_bytes_per_step": 0.0,
+    "worker_capture": false,
+    "clock_offset_s": null,
+    "clock_offset_unc_s": null
+  },
+  "memory_buffers_gb": {
+    "m5": 15.759,
+    "air": 10.663
+  },
+  "memory_breakdown_gb": {
+    "m5": {
+      "model": 14.38,
+      "kv": 0.578,
+      "compute": 0.182,
+      "output": 0.0,
+      "cpu": 0.619
+    },
+    "air": {
+      "model": 10.059,
+      "kv": 0.422,
+      "compute": 0.182,
+      "output": 0.0,
+      "cpu": 0.0
+    }
+  },
+  "memory_log_lines": [
+    "0.10.602.324 I load_tensors:   CPU_Mapped model buffer size =   609.08 MiB",
+    "0.10.602.326 I load_tensors:  MTL0_Mapped model buffer size = 14725.04 MiB",
+    "0.10.602.327 I load_tensors: RPC0[192.168.1.219:50052] model buffer size = 10300.82 MiB",
+    "0.51.420.743 I llama_context:        CPU  output buffer size =     0.58 MiB",
+    "0.51.525.320 I llama_kv_cache:       MTL0 KV buffer size =   592.00 MiB",
+    "0.51.633.955 I llama_kv_cache: RPC0[192.168.1.219:50052] KV buffer size =   432.00 MiB",
+    "0.51.769.859 I sched_reserve: RPC0[192.168.1.219:50052] compute buffer size =   186.01 MiB",
+    "0.51.769.863 I sched_reserve:       MTL0 compute buffer size =   186.01 MiB",
+    "0.51.769.864 I sched_reserve:        CPU compute buffer size =    24.01 MiB",
+    "llama_kv_cache: size = 1024.00 MiB"
+  ],
+  "memory_peak_gb": {
+    "m5": 2.762,
+    "air": 10.681
+  },
+  "utilization": {
+    "m5": 0.5323647668393783,
+    "air": 0.4005010416666666
+  },
+  "correctness": {
+    "exact_match_ratio": null,
+    "first_divergence_median": null,
+    "task_accuracy": null,
+    "baseline_task_accuracy": null
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": null,
+    "a1_id": null
+  },
+  "notes": [
+    "fixed tokens 64: every prompt decodes exactly 64 tokens (ignore_eos); task accuracy not graded",
+    "warm-up request (kv4k_01, 8 tokens) took 53.2 s; not in the timings",
+    "peer air: peers.yaml host 'ohads-MacBook-Air-2' but hostname -s is 'Mac'; record uses the real one",
+    "no matching BASELINE record for qwen2.5-32b-q6k (sha 3393e05b, Q6_K) with engine llama.cpp on MMF4FWRG4R at 1e7bcf3 with prompts eval_kv4k v1; run: python -m nocturne.bench.run --cell BASELINE --host m5 --model qwen2.5-32b-q6k",
+    "quality_pass null: no baseline or no graded prompt"
+  ],
+  "outputs": {
+    "kv4k_01": "After analyzing the provided log, here are the key findings:\n\n1. **Node that Sent the Most Data in Total:**\n   - **Node echo** sent the most data in total. The entries show that node echo sent a significant amount of data to various nodes, including large transfers like 8190 kil"
+  },
+  "per_prompt": {
+    "kv4k_01": {
+      "timings": {
+        "cache_n": 3936,
+        "prompt_n": 1,
+        "prompt_ms": 311.038,
+        "prompt_per_token_ms": 311.038,
+        "prompt_per_second": 3.215041248979224,
+        "predicted_n": 64,
+        "predicted_ms": 20452.839,
+        "predicted_per_token_ms": 324.64823809523807,
+        "predicted_per_second": 3.080256975571949
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 3.1291499434381698,
+      "decode_ms_per_step": 324.64823809523807,
+      "ttft_client_s": 0.3565378189086914,
+      "score": null,
+      "t_send": 1794654333.2191732,
+      "t_done": 1794654354.0329092
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server --help"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C /Users/orosentswaig/dev/llama.cpp rev-parse --short HEAD"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -x \"$HOME\"/dev/llama.cpp/build/bin/ggml-rpc-server"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 GGML_RPC_DEBUG=1 \"$HOME\"/dev/llama.cpp/build/bin/ggml-rpc-server -H 192.168.1.219 -p 50052 -c -d MTL0"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server -m /Users/orosentswaig/models/Qwen2.5-32B-Instruct-Q6_K.gguf -ngl 99 --rpc 192.168.1.219:50052 -np 1 --port 8089 -c 4096 --host 127.0.0.1 --temp 0 --seed 42 --samplers temperature --repeat-penalty 1.0 --metrics -lv 4"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f 'ggml-rpc-server.*-p 50052'"
+    }
+  ]
+}

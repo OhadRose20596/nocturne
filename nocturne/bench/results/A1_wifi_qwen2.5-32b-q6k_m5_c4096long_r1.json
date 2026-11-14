@@ -1,0 +1,303 @@
+{
+  "schema_version": 4,
+  "id": "A1_wifi_qwen2.5-32b-q6k_m5_c4096long_r1",
+  "cell": {
+    "partition": "PP",
+    "decode": "single",
+    "row": "A",
+    "col": 1,
+    "name": "A1"
+  },
+  "date": "2026-11-14T12:52:58+02:00",
+  "model": {
+    "name": "qwen2.5-32b-q6k",
+    "quant": "Q6_K",
+    "sha256": "3393e05b12396e0e6c786f5fb99837eb77ef9eb0b30d940e30d94c2f5506054a"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "llama.cpp",
+    "commit": "1e7bcf3",
+    "flags": [
+      "-m",
+      "/Users/orosentswaig/models/Qwen2.5-32B-Instruct-Q6_K.gguf",
+      "-ngl",
+      "99",
+      "--rpc",
+      "192.168.1.219:50052",
+      "-np",
+      "1",
+      "--port",
+      "8089",
+      "-c",
+      "4096",
+      "--host",
+      "127.0.0.1",
+      "--temp",
+      "0",
+      "--seed",
+      "42",
+      "--samplers",
+      "temperature",
+      "--repeat-penalty",
+      "1.0",
+      "--metrics",
+      "-lv",
+      "4"
+    ]
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24,
+      "metal_working_set_gb": 18.2
+    },
+    {
+      "host": "Mac",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 16,
+      "metal_working_set_gb": 12.1
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": 8.775,
+    "bw_mbps": 235.10084339310828,
+    "measured_at": "2026-11-14T12:52:58+02:00",
+    "rtt_source": "probe",
+    "ping_decode_ms": {
+      "p50": 8.07,
+      "p95": 81.844,
+      "p99": 98.108,
+      "n": 20864,
+      "interval_s": 0.01,
+      "loss": 0.13442647336606106
+    },
+    "awdl": "up",
+    "added_delay_ms": null,
+    "added_delay_measured_ms": null,
+    "vpn_state": "disconnected"
+  },
+  "prompts": {
+    "set": "eval_long",
+    "version": "1",
+    "subset": 3,
+    "ids": [
+      "longopen_01",
+      "longopen_02",
+      "longopen_03"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    },
+    "fixed_tokens": 256
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": null,
+  "setup": {
+    "ctx": 4096,
+    "load_total_s": 295.54333901405334,
+    "transfer_s": 278.00020480155945,
+    "cache_state": "warm",
+    "bytes_sent_gb": 9.195387288
+  },
+  "timing": {
+    "decode_tps_median": 3.3061331559592895,
+    "prefill_tps_median": 21.258808454415533,
+    "ttft_s_median": 2.95226788520813,
+    "ttft_server_s_median": 1.1933399999999998,
+    "decode_ms_per_step_pooled": 315.0882248366013,
+    "decode_tps_pooled": 3.173714284367754,
+    "decode_steps_total": 765,
+    "warmup_s": 5.720419883728027
+  },
+  "comm": {
+    "rpc_commands_per_step": 7.0,
+    "tokens_per_step": 0.987146529562982,
+    "rpc_commands_per_token": 7.091145833333333,
+    "bytes_per_step": 45045.449871465295,
+    "bytes_per_token": 45631.979166666664,
+    "packets_per_token": 52.34765625,
+    "serial_waits_per_token": null,
+    "compute_steps": 778,
+    "tokens_generated": 768,
+    "capture_iface": "en0",
+    "source": "rpc_commands: worker GGML_RPC_DEBUG log (12_rpc_trace parse, graph message included), median per step over the last 32 steps; per token = per step / tokens_per_step; blocking_syncs, messages and graph_meta per decode step: the same log inside the decode windows / sum(predicted_n - 1); bytes: tcpdump on the requester's routed interface, union of decode windows, per decode step and per direction",
+    "blocking_syncs_per_step": 1.0,
+    "messages_per_step": 7.0,
+    "bytes_per_step_decode": 45810.92810457516,
+    "bytes_per_step_decode_out": 25143.11111111111,
+    "bytes_per_step_decode_in": 20667.816993464054,
+    "graph_meta_bytes_per_step": 2584.9934640522874,
+    "worker_capture": false,
+    "clock_offset_s": null,
+    "clock_offset_unc_s": null
+  },
+  "memory_buffers_gb": {
+    "m5": 15.759,
+    "air": 10.663
+  },
+  "memory_breakdown_gb": {
+    "m5": {
+      "model": 14.38,
+      "kv": 0.578,
+      "compute": 0.182,
+      "output": 0.0,
+      "cpu": 0.619
+    },
+    "air": {
+      "model": 10.059,
+      "kv": 0.422,
+      "compute": 0.182,
+      "output": 0.0,
+      "cpu": 0.0
+    }
+  },
+  "memory_log_lines": [
+    "0.12.657.441 I load_tensors:   CPU_Mapped model buffer size =   609.08 MiB",
+    "0.12.657.442 I load_tensors:  MTL0_Mapped model buffer size = 14725.04 MiB",
+    "0.12.657.442 I load_tensors: RPC0[192.168.1.219:50052] model buffer size = 10300.82 MiB",
+    "4.49.667.487 I llama_context:        CPU  output buffer size =     0.58 MiB",
+    "4.49.708.643 I llama_kv_cache:       MTL0 KV buffer size =   592.00 MiB",
+    "4.49.933.881 I llama_kv_cache: RPC0[192.168.1.219:50052] KV buffer size =   432.00 MiB",
+    "4.50.589.201 I sched_reserve: RPC0[192.168.1.219:50052] compute buffer size =   186.01 MiB",
+    "4.50.589.205 I sched_reserve:       MTL0 compute buffer size =   186.01 MiB",
+    "4.50.589.205 I sched_reserve:        CPU compute buffer size =    24.01 MiB",
+    "llama_kv_cache: size = 1024.00 MiB"
+  ],
+  "memory_peak_gb": {
+    "m5": 0.699,
+    "air": 6.796
+  },
+  "utilization": {
+    "m5": 0.5215794298245614,
+    "air": 0.40452435555555555
+  },
+  "correctness": {
+    "exact_match_ratio": null,
+    "first_divergence_median": null,
+    "task_accuracy": null,
+    "baseline_task_accuracy": null
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": null,
+    "a1_id": null
+  },
+  "notes": [
+    "fixed tokens 256: every prompt decodes exactly 256 tokens (ignore_eos); task accuracy not graded",
+    "warm-up request (longopen_01, 8 tokens) took 5.7 s; not in the timings",
+    "peer air: peers.yaml host 'ohads-MacBook-Air-2' but hostname -s is 'Mac'; record uses the real one",
+    "no matching BASELINE record for qwen2.5-32b-q6k (sha 3393e05b, Q6_K) with engine llama.cpp on MMF4FWRG4R at 1e7bcf3 with prompts eval_long v1; run: python -m nocturne.bench.run --cell BASELINE --host m5 --model qwen2.5-32b-q6k",
+    "quality_pass null: no baseline or no graded prompt"
+  ],
+  "outputs": {
+    "longopen_01": "A home Wi-Fi network is like a digital highway that connects your laptop to the internet, allowing you to watch videos and access other online content. At the heart of this network is the router, which acts as the central hub. The router connects to your internet service provider (ISP) and distributes the internet connection to all the devices in your home that are connected to it.\n\nThe router also serves as the access point for your Wi-Fi network. It broadcasts a wireless signal that your laptop can pick up, allowing it to connect to the internet without the need for cables. This wireless signal operates on specific radio channels, which are like lanes on a highway. These channels are part of the radio frequency spectrum and are used to transmit data between the router and your laptop.\n\nWhen you start streaming a video, the video data is broken down into small pieces called packets. These packets travel from the internet to your router, and then the router sends them to your laptop over the Wi-Fi network. Each packet contains a small part of the video, and your laptop reassembles these packets to play the video smoothly.\n\nHowever, in a home network, there can be multiple devices trying to use the Wi-Fi at the same time. When two devices attempt to transmit data over the same radio channel",
+    "longopen_02": "A day in the life of a lighthouse keeper in 1890 was a solitary and demanding routine, marked by the relentless vigilance required to ensure the safety of mariners navigating perilous coastal waters. The keeper's day began before the first light of dawn, as the keeper would rise to prepare for the day's tasks.\n\nAt 4:30 AM, the keeper would light the lamp, a massive, intricate mechanism that required precise maintenance. The lamp itself was a complex assembly of wicks, chimneys, and reflectors, all designed to produce a powerful beam that could be seen for miles out at sea. The keeper would carefully trim the wicks, ensuring they burned evenly and efficiently, and then fill the reservoir with kerosene, the fuel that powered the light.\n\nThe weather played a critical role in the keeper's daily routine. On a clear, calm morning, the keeper might have a relatively straightforward task of lighting the lamp and checking the mechanism. However, on a stormy day, the keeper would face additional challenges. The wind and rain could cause the lamp to flicker or go out, requiring frequent checks and adjustments. The keeper would also need to ensure that the lens was clean and free of salt spray, which could obscure the",
+    "longopen_03": "When discussing matrix multiplication on a GPU and moving matrices over a network, we're comparing two very different operations that involve different types of hardware and communication protocols. Let's break down each scenario to understand why one is fast and the other is slow.\n\n### Matrix Multiplication on a GPU\n\n**Why it's fast:**\n\n1. **Parallel Processing:** GPUs (Graphics Processing Units) are designed to handle multiple tasks simultaneously. They have thousands of cores that can perform operations in parallel. This is particularly beneficial for matrix multiplication, which involves a lot of independent calculations that can be executed concurrently.\n\n2. **Memory Bandwidth:** GPUs have high memory bandwidth, which means they can read and write data to memory very quickly. This is crucial for matrix operations, which require frequent access to memory to fetch and store data.\n\n3. **Optimized Algorithms:** Libraries like cuBLAS (CUDA Basic Linear Algebra Subroutines) are optimized for GPU architectures. These libraries take advantage of the GPU's parallel processing capabilities to perform matrix operations efficiently.\n\n**Rough Numbers:**\n\n- A modern GPU can perform matrix multiplication at a rate of several teraflops (trillion floating-point operations per second). For example, the NVIDIA A100 GPU can perform up to 19.5"
+  },
+  "per_prompt": {
+    "longopen_01": {
+      "timings": {
+        "cache_n": 77,
+        "prompt_n": 1,
+        "prompt_ms": 489.883,
+        "prompt_per_token_ms": 489.883,
+        "prompt_per_second": 2.041303739872582,
+        "predicted_n": 256,
+        "predicted_ms": 86312.783,
+        "predicted_per_token_ms": 338.48150196078427,
+        "predicted_per_second": 2.95437119667431
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 2.9659569660730325,
+      "decode_ms_per_step": 338.48150196078427,
+      "ttft_client_s": 0.5172951221466064,
+      "score": null,
+      "t_send": 1794653903.3456588,
+      "t_done": 1794653990.17915
+    },
+    "longopen_02": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 47,
+        "prompt_ms": 1193.34,
+        "prompt_per_token_ms": 25.390212765957447,
+        "prompt_per_second": 39.3852548309786,
+        "predicted_n": 256,
+        "predicted_ms": 77431.848,
+        "predicted_per_token_ms": 303.65430588235296,
+        "predicted_per_second": 3.2932185733188235
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 3.3061331559592895,
+      "decode_ms_per_step": 303.65430588235296,
+      "ttft_client_s": 2.95226788520813,
+      "score": null,
+      "t_send": 1794653990.179878,
+      "t_done": 1794654070.569294
+    },
+    "longopen_03": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 40,
+        "prompt_ms": 1881.573,
+        "prompt_per_token_ms": 47.039325000000005,
+        "prompt_per_second": 21.258808454415533,
+        "predicted_n": 256,
+        "predicted_ms": 77297.861,
+        "predicted_per_token_ms": 303.1288666666667,
+        "predicted_per_second": 3.298926991006905
+      },
+      "finish_reason": "length",
+      "error": null,
+      "decode_tps": 3.3118639595990893,
+      "decode_ms_per_step": 303.1288666666667,
+      "ttft_client_s": 3.3999249935150146,
+      "score": null,
+      "t_send": 1794654070.569647,
+      "t_done": 1794654151.276278
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server --help"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C /Users/orosentswaig/dev/llama.cpp rev-parse --short HEAD"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -x \"$HOME\"/dev/llama.cpp/build/bin/ggml-rpc-server"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 GGML_RPC_DEBUG=1 \"$HOME\"/dev/llama.cpp/build/bin/ggml-rpc-server -H 192.168.1.219 -p 50052 -c -d MTL0"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server -m /Users/orosentswaig/models/Qwen2.5-32B-Instruct-Q6_K.gguf -ngl 99 --rpc 192.168.1.219:50052 -np 1 --port 8089 -c 4096 --host 127.0.0.1 --temp 0 --seed 42 --samplers temperature --repeat-penalty 1.0 --metrics -lv 4"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f 'ggml-rpc-server.*-p 50052'"
+    }
+  ]
+}
