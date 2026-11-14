@@ -1,0 +1,313 @@
+{
+  "schema_version": 4,
+  "id": "BASELINE_local_qwen2.5-14b-q4km_air_c32768_r1",
+  "cell": {
+    "partition": "none",
+    "decode": "single",
+    "row": "BASELINE",
+    "col": 0,
+    "name": "BASELINE"
+  },
+  "date": "2026-11-14T12:22:49+02:00",
+  "model": {
+    "name": "qwen2.5-14b-q4km",
+    "quant": "Q4_K_M",
+    "sha256": "e47ad95dad6ff848b431053b375adb5d39321290ea2c638682577dafca87c008"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "llama.cpp",
+    "commit": "1e7bcf3",
+    "flags": [
+      "-m",
+      "~/models/Qwen2.5-14B-Instruct-Q4_K_M.gguf",
+      "-ngl",
+      "99",
+      "-np",
+      "1",
+      "--port",
+      "8089",
+      "-c",
+      "32768",
+      "--host",
+      "127.0.0.1",
+      "--temp",
+      "0",
+      "--seed",
+      "42",
+      "--samplers",
+      "temperature",
+      "--repeat-penalty",
+      "1.0",
+      "--metrics",
+      "-lv",
+      "4"
+    ]
+  },
+  "peers": [
+    {
+      "host": "Mac",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 16,
+      "metal_working_set_gb": 12.1
+    }
+  ],
+  "network": {
+    "type": "local",
+    "rtt_ms_median": null,
+    "bw_mbps": null,
+    "measured_at": "2026-11-14T12:22:49+02:00",
+    "rtt_source": null,
+    "ping_decode_ms": null,
+    "awdl": "up",
+    "added_delay_ms": null,
+    "added_delay_measured_ms": null,
+    "vpn_state": "disconnected"
+  },
+  "prompts": {
+    "set": "eval_set",
+    "version": "1",
+    "subset": 8,
+    "ids": [
+      "arith_01",
+      "arith_02",
+      "arith_03",
+      "arith_04",
+      "arith_05",
+      "arith_06",
+      "extract_01",
+      "extract_02"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    },
+    "fixed_tokens": null
+  },
+  "success": false,
+  "failure_class": "oom_requester_compute",
+  "quality_pass": true,
+  "setup": {
+    "ctx": 32768,
+    "load_total_s": 8.507637977600098,
+    "transfer_s": null,
+    "cache_state": null,
+    "bytes_sent_gb": null
+  },
+  "timing": {
+    "decode_tps_median": null,
+    "prefill_tps_median": null,
+    "ttft_s_median": null,
+    "ttft_server_s_median": null,
+    "decode_ms_per_step_pooled": null,
+    "decode_tps_pooled": null,
+    "decode_steps_total": null,
+    "warmup_s": 0.13796401023864746
+  },
+  "comm": {
+    "rpc_commands_per_step": null,
+    "tokens_per_step": null,
+    "rpc_commands_per_token": null,
+    "bytes_per_step": null,
+    "bytes_per_token": null,
+    "packets_per_token": null,
+    "serial_waits_per_token": null,
+    "compute_steps": null,
+    "tokens_generated": null,
+    "capture_iface": null,
+    "source": null,
+    "blocking_syncs_per_step": null,
+    "messages_per_step": null,
+    "bytes_per_step_decode": null,
+    "bytes_per_step_decode_out": null,
+    "bytes_per_step_decode_in": null,
+    "graph_meta_bytes_per_step": null,
+    "worker_capture": false,
+    "clock_offset_s": null,
+    "clock_offset_unc_s": null
+  },
+  "memory_buffers_gb": {
+    "air": 14.624
+  },
+  "memory_breakdown_gb": {
+    "air": {
+      "model": 7.957,
+      "kv": 6.0,
+      "compute": 0.207,
+      "output": 0.0,
+      "cpu": 0.459
+    }
+  },
+  "memory_log_lines": [
+    "0.04.963.094 I load_tensors:   CPU_Mapped model buffer size =   417.66 MiB",
+    "0.04.963.095 I load_tensors:  MTL0_Mapped model buffer size =  8148.38 MiB",
+    "0.04.965.839 I llama_context:        CPU  output buffer size =     0.58 MiB",
+    "0.04.966.482 I llama_kv_cache:       MTL0 KV buffer size =  6144.00 MiB",
+    "0.05.477.066 I sched_reserve:       MTL0 compute buffer size =   212.44 MiB",
+    "0.05.477.069 I sched_reserve:        CPU compute buffer size =    52.01 MiB",
+    "llama_kv_cache: size = 6144.00 MiB"
+  ],
+  "memory_peak_gb": {
+    "air": null
+  },
+  "utilization": {
+    "air": null
+  },
+  "correctness": {
+    "exact_match_ratio": null,
+    "first_divergence_median": null,
+    "task_accuracy": 0.0,
+    "baseline_task_accuracy": 0.0
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": false,
+    "baseline_id": null,
+    "a1_id": null
+  },
+  "notes": [
+    "no peer: network probe skipped",
+    "warm-up request (arith_01, 8 tokens) took 0.1 s; not in the timings",
+    "peer air: peers.yaml host 'ohads-MacBook-Air-2' but hostname -s is 'Mac'; record uses the real one",
+    "air: no utilization samples. needs passwordless sudo for powermetrics",
+    "air: memory_peak_gb not_measured (no samples from ps rss of llama-server)",
+    "request errors: ['finish_reason=None', 'finish_reason=None', 'finish_reason=None']"
+  ],
+  "outputs": {
+    "arith_01": "",
+    "arith_02": "",
+    "arith_03": "",
+    "arith_04": "",
+    "arith_05": "",
+    "arith_06": "",
+    "extract_01": "",
+    "extract_02": ""
+  },
+  "per_prompt": {
+    "arith_01": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": 0.0,
+      "t_send": 1794651779.698241,
+      "t_done": 1794651779.728919
+    },
+    "arith_02": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": 0.0,
+      "t_send": 1794651779.728983,
+      "t_done": 1794651779.764543
+    },
+    "arith_03": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": 0.0,
+      "t_send": 1794651779.7646139,
+      "t_done": 1794651779.799541
+    },
+    "arith_04": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": 0.0,
+      "t_send": 1794651779.799597,
+      "t_done": 1794651779.837739
+    },
+    "arith_05": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": 0.0,
+      "t_send": 1794651779.837793,
+      "t_done": 1794651779.86746
+    },
+    "arith_06": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": 0.0,
+      "t_send": 1794651779.867507,
+      "t_done": 1794651779.90084
+    },
+    "extract_01": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": 0.0,
+      "t_send": 1794651779.900952,
+      "t_done": 1794651779.9367502
+    },
+    "extract_02": {
+      "timings": {},
+      "finish_reason": null,
+      "error": "finish_reason=None",
+      "decode_tps": null,
+      "decode_ms_per_step": null,
+      "ttft_client_s": null,
+      "score": 0.0,
+      "t_send": 1794651779.936796,
+      "t_done": 1794651779.973494
+    }
+  },
+  "commands": [
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -x \"$HOME\"/dev/llama.cpp/build/bin/llama-server"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 \"$HOME\"/dev/llama.cpp/build/bin/llama-server --help"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 git -C \"$HOME\"/dev/llama.cpp rev-parse --short HEAD"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 \"$HOME\"/dev/llama.cpp/build/bin/llama-server --version"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 \"$HOME\"/dev/llama.cpp/build/bin/llama-server -m \"$HOME\"/models/Qwen2.5-14B-Instruct-Q4_K_M.gguf -ngl 99 -np 1 --port 8089 -c 32768 --host 127.0.0.1 --temp 0 --seed 42 --samplers temperature --repeat-penalty 1.0 --metrics -lv 4"
+    },
+    {
+      "host": "local",
+      "cmd": "ssh -o BatchMode=yes -o ExitOnForwardFailure=yes -N -L 8089:127.0.0.1:8089 ohadrosentswaig@192.168.1.219"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f 'llama-server.*--port 8089'"
+    }
+  ]
+}
