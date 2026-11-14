@@ -1,0 +1,422 @@
+{
+  "schema_version": 4,
+  "id": "B1_wifi_qwen2.5-32b-q6k_m5_c512prop_r1",
+  "cell": {
+    "partition": "TP",
+    "decode": "single",
+    "row": "B",
+    "col": 1,
+    "name": "B1"
+  },
+  "date": "2026-11-14T10:25:25+02:00",
+  "model": {
+    "name": "qwen2.5-32b-q6k",
+    "quant": "Q6_K",
+    "sha256": "3393e05b12396e0e6c786f5fb99837eb77ef9eb0b30d940e30d94c2f5506054a"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "llama.cpp",
+    "commit": "1e7bcf3",
+    "flags": [
+      "-m",
+      "/Users/orosentswaig/models/Qwen2.5-32B-Instruct-Q6_K.gguf",
+      "-ngl",
+      "99",
+      "--rpc",
+      "192.168.1.219:50052",
+      "--split-mode",
+      "tensor",
+      "-ts",
+      "3,2",
+      "-fit",
+      "off",
+      "-np",
+      "1",
+      "--port",
+      "8089",
+      "-c",
+      "512",
+      "--host",
+      "127.0.0.1",
+      "--temp",
+      "0",
+      "--seed",
+      "42",
+      "--samplers",
+      "temperature",
+      "--repeat-penalty",
+      "1.0",
+      "--metrics",
+      "-lv",
+      "4"
+    ]
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24,
+      "metal_working_set_gb": 18.2
+    },
+    {
+      "host": "Mac",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 16,
+      "metal_working_set_gb": 12.1
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": 10.33,
+    "bw_mbps": 279.39842034891564,
+    "measured_at": "2026-11-14T10:25:25+02:00",
+    "rtt_source": "probe",
+    "ping_decode_ms": {
+      "p50": 14.686,
+      "p95": 95.723,
+      "p99": 170.537,
+      "n": 9950,
+      "interval_s": 0.01,
+      "loss": 0.17692333215983091
+    },
+    "awdl": "up",
+    "added_delay_ms": null,
+    "added_delay_measured_ms": null,
+    "vpn_state": "disconnected"
+  },
+  "prompts": {
+    "set": "eval_set",
+    "version": "1",
+    "subset": 8,
+    "ids": [
+      "arith_01",
+      "arith_02",
+      "arith_03",
+      "arith_04",
+      "arith_05",
+      "arith_06",
+      "extract_01",
+      "extract_02"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    },
+    "fixed_tokens": null
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": null,
+  "setup": {
+    "ctx": 512,
+    "load_total_s": 373.8638000488281,
+    "transfer_s": 341.3295900821686,
+    "cache_state": "cold",
+    "bytes_sent_gb": 11.207186656
+  },
+  "timing": {
+    "decode_tps_median": 0.27390871277849704,
+    "prefill_tps_median": 2.9243629214523814,
+    "ttft_s_median": 10.405927538871765,
+    "ttft_server_s_median": 8.5674505,
+    "decode_ms_per_step_pooled": 5036.995333333333,
+    "decode_tps_pooled": 0.19853105548506234,
+    "decode_steps_total": 24,
+    "warmup_s": 26.511620044708252
+  },
+  "comm": {
+    "rpc_commands_per_step": 1.5,
+    "tokens_per_step": 0.0032766741757116525,
+    "rpc_commands_per_token": 457.78125,
+    "bytes_per_step": 215455.75721892278,
+    "bytes_per_token": 65754403.90625,
+    "packets_per_token": 46577.6875,
+    "serial_waits_per_token": null,
+    "compute_steps": 9766,
+    "tokens_generated": 32,
+    "capture_iface": "en0",
+    "source": "rpc_commands: worker GGML_RPC_DEBUG log (12_rpc_trace parse, graph message included), median per step over the last 32 steps; per token = per step / tokens_per_step; blocking_syncs, messages and graph_meta per decode step: the same log inside the decode windows / sum(predicted_n - 1); bytes: tcpdump on the requester's routed interface, union of decode windows, per decode step and per direction",
+    "blocking_syncs_per_step": 129.0,
+    "messages_per_step": 520.0,
+    "bytes_per_step_decode": 87672538.54166667,
+    "bytes_per_step_decode_out": 84797410.875,
+    "bytes_per_step_decode_in": 2875127.6666666665,
+    "graph_meta_bytes_per_step": 84249648.0,
+    "worker_capture": false,
+    "clock_offset_s": null,
+    "clock_offset_unc_s": null
+  },
+  "memory_buffers_gb": {
+    "m5": 15.555,
+    "air": 10.014
+  },
+  "memory_breakdown_gb": {
+    "m5": {
+      "model": 14.684,
+      "kv": 0.078,
+      "compute": 0.178,
+      "output": 0.0,
+      "cpu": 0.615
+    },
+    "air": {
+      "model": 9.789,
+      "kv": 0.047,
+      "compute": 0.178,
+      "output": 0.0,
+      "cpu": 0.0
+    }
+  },
+  "memory_log_lines": [
+    "0.08.522.164 I load_tensors:   CPU_Mapped model buffer size =   609.08 MiB",
+    "0.08.522.284 I load_tensors:       Meta() model buffer size = 15036.25 MiB",
+    "5.49.384.574 I llama_context:        CPU  output buffer size =     0.58 MiB",
+    "5.49.487.318 I llama_kv_cache:     Meta() KV buffer size =    80.00 MiB",
+    "5.49.750.363 I sched_reserve:     Meta() compute buffer size =   182.51 MiB",
+    "5.49.750.366 I sched_reserve:        CPU compute buffer size =    20.51 MiB",
+    "llama_kv_cache: size =  128.00 MiB"
+  ],
+  "memory_peak_gb": {
+    "m5": 0.148,
+    "air": 9.931
+  },
+  "utilization": {
+    "m5": 0.383872942206655,
+    "air": 0.10325727029438
+  },
+  "correctness": {
+    "exact_match_ratio": null,
+    "first_divergence_median": null,
+    "task_accuracy": 1.0,
+    "baseline_task_accuracy": null
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": null,
+    "a1_id": null
+  },
+  "notes": [
+    "flag override: -ts 3,2 (second data point, not the cell's template; recorded as a note, listed in results/EXCLUDE.yaml, not a RESULTS.md table row)",
+    "warm-up request (arith_01, 8 tokens) took 26.5 s; not in the timings",
+    "peer air: peers.yaml host 'ohads-MacBook-Air-2' but hostname -s is 'Mac'; record uses the real one",
+    "tensor mode outcome (a): both sides hold weights: {'m5': 15.555595703125, 'air': 14.9401953125} GB per host; Meta() model buffer 15036.25 MiB per device, 2 devices; Meta device line: True; flash_attn forced: True",
+    "no matching BASELINE record for qwen2.5-32b-q6k (sha 3393e05b, Q6_K) with engine llama.cpp on MMF4FWRG4R at 1e7bcf3 with prompts eval_set v1; run: python -m nocturne.bench.run --cell BASELINE --host m5 --model qwen2.5-32b-q6k",
+    "quality_pass null: no baseline or no graded prompt"
+  ],
+  "outputs": {
+    "arith_01": "936",
+    "arith_02": "543",
+    "arith_03": "437",
+    "arith_04": "12",
+    "arith_05": "150",
+    "arith_06": "36",
+    "extract_01": "Dana Levi",
+    "extract_02": "Room 311"
+  },
+  "per_prompt": {
+    "arith_01": {
+      "timings": {
+        "cache_n": 45,
+        "prompt_n": 1,
+        "prompt_ms": 4453.605,
+        "prompt_per_token_ms": 4453.605,
+        "prompt_per_second": 0.22453720076207928,
+        "predicted_n": 4,
+        "predicted_ms": 13910.212,
+        "predicted_per_token_ms": 4636.7373333333335,
+        "predicted_per_second": 0.2156688913152438
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 0.2875585217536584,
+      "decode_ms_per_step": 4636.7373333333335,
+      "ttft_client_s": 4.471038103103638,
+      "score": 1.0,
+      "t_send": 1794645148.225431,
+      "t_done": 1794645166.608198
+    },
+    "arith_02": {
+      "timings": {
+        "cache_n": 26,
+        "prompt_n": 21,
+        "prompt_ms": 6907.599,
+        "prompt_per_token_ms": 328.9332857142857,
+        "prompt_per_second": 3.040130152314864,
+        "predicted_n": 4,
+        "predicted_ms": 13563.202,
+        "predicted_per_token_ms": 4521.067333333333,
+        "predicted_per_second": 0.22118670797647932
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 0.29491561063530575,
+      "decode_ms_per_step": 4521.067333333333,
+      "ttft_client_s": 6.928186893463135,
+      "score": 1.0,
+      "t_send": 1794645166.608549,
+      "t_done": 1794645187.101172
+    },
+    "arith_03": {
+      "timings": {
+        "cache_n": 26,
+        "prompt_n": 18,
+        "prompt_ms": 8509.891,
+        "prompt_per_token_ms": 472.7717222222222,
+        "prompt_per_second": 2.115185729170914,
+        "predicted_n": 4,
+        "predicted_ms": 17844.832,
+        "predicted_per_token_ms": 5948.2773333333325,
+        "predicted_per_second": 0.16811590044669517
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 0.22415453392892687,
+      "decode_ms_per_step": 5948.2773333333325,
+      "ttft_client_s": 8.526850938796997,
+      "score": 1.0,
+      "t_send": 1794645187.101443,
+      "t_done": 1794645213.4770198
+    },
+    "arith_04": {
+      "timings": {
+        "cache_n": 26,
+        "prompt_n": 19,
+        "prompt_ms": 8625.01,
+        "prompt_per_token_ms": 453.9478947368421,
+        "prompt_per_second": 2.2028959966423227,
+        "predicted_n": 3,
+        "predicted_ms": 11167.56,
+        "predicted_per_token_ms": 5583.78,
+        "predicted_per_second": 0.1790901503999083
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 0.26863522559986247,
+      "decode_ms_per_step": 5583.78,
+      "ttft_client_s": 8.664952039718628,
+      "score": 1.0,
+      "t_send": 1794645213.4776268,
+      "t_done": 1794645233.3115551
+    },
+    "arith_05": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 34,
+        "prompt_ms": 12105.694,
+        "prompt_per_token_ms": 356.04982352941175,
+        "prompt_per_second": 2.8085956905898994,
+        "predicted_n": 4,
+        "predicted_ms": 17239.479,
+        "predicted_per_token_ms": 5746.4929999999995,
+        "predicted_per_second": 0.17401918004598632
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 0.2320255733946484,
+      "decode_ms_per_step": 5746.4929999999995,
+      "ttft_client_s": 12.146903038024902,
+      "score": 1.0,
+      "t_send": 1794645233.3120341,
+      "t_done": 1794645262.701633
+    },
+    "arith_06": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 23,
+        "prompt_ms": 7369.01,
+        "prompt_per_token_ms": 320.3917391304348,
+        "prompt_per_second": 3.1211791000419327,
+        "predicted_n": 3,
+        "predicted_ms": 9333.739,
+        "predicted_per_token_ms": 4666.8695,
+        "predicted_per_second": 0.2142764009150031
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 0.32141460137250466,
+      "decode_ms_per_step": 4666.8695,
+      "ttft_client_s": 122.22116422653198,
+      "score": 1.0,
+      "t_send": 1794645262.7022378,
+      "t_done": 1794645394.2571
+    },
+    "extract_01": {
+      "timings": {
+        "cache_n": 24,
+        "prompt_n": 43,
+        "prompt_ms": 9915.178,
+        "prompt_per_token_ms": 230.58553488372092,
+        "prompt_per_second": 4.336785481813841,
+        "predicted_n": 4,
+        "predicted_ms": 14327.561,
+        "predicted_per_token_ms": 4775.853666666667,
+        "predicted_per_second": 0.20938664996784867
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 0.27918219995713156,
+      "decode_ms_per_step": 4775.853666666667,
+      "ttft_client_s": 111.46930480003357,
+      "score": 1.0,
+      "t_send": 1794645394.257785,
+      "t_done": 1794645520.0566201
+    },
+    "extract_02": {
+      "timings": {
+        "cache_n": 27,
+        "prompt_n": 42,
+        "prompt_ms": 9637.486,
+        "prompt_per_token_ms": 229.4639523809524,
+        "prompt_per_second": 4.357982984359198,
+        "predicted_n": 6,
+        "predicted_ms": 23501.303,
+        "predicted_per_token_ms": 4700.2606,
+        "predicted_per_second": 0.2127541609075888
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 0.2553049930891066,
+      "decode_ms_per_step": 4700.2606,
+      "ttft_client_s": 155.36612391471863,
+      "score": 1.0,
+      "t_send": 1794645520.057033,
+      "t_done": 1794645698.9260259
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server --help"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C /Users/orosentswaig/dev/llama.cpp rev-parse --short HEAD"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -x \"$HOME\"/dev/llama.cpp/build/bin/ggml-rpc-server"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 GGML_RPC_DEBUG=1 \"$HOME\"/dev/llama.cpp/build/bin/ggml-rpc-server -H 192.168.1.219 -p 50052 -c -d MTL0"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/llama.cpp/build/bin/llama-server -m /Users/orosentswaig/models/Qwen2.5-32B-Instruct-Q6_K.gguf -ngl 99 --rpc 192.168.1.219:50052 --split-mode tensor -ts 3,2 -fit off -np 1 --port 8089 -c 512 --host 127.0.0.1 --temp 0 --seed 42 --samplers temperature --repeat-penalty 1.0 --metrics -lv 4"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f 'ggml-rpc-server.*-p 50052'"
+    }
+  ]
+}
