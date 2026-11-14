@@ -1,6 +1,6 @@
 # Session 5 progress
 
-Updated 2026-11-14 15:17:44. Steps known so far: 37, finished: 27. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
+Updated 2026-11-14 15:17:44. Steps known so far: 53, finished: 37. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
 
 | group | step | status | records | start | end |
 |---|---|---|---|---|---|
@@ -31,16 +31,32 @@ Updated 2026-11-14 15:17:44. Steps known so far: 37, finished: 27. Later groups 
 | G2b | qwen2.5-32b-q6k ctx 16384 PP 3:2 | done earlier: oom_requester_compute | A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r1 |  |  |
 | G2b | qwen2.5-32b-q6k ctx 16384 TP 3:2 | done earlier: ok | B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r1 |  |  |
 | G2b | qwen2.5-32b-q6k ctx 32768 TP 3:2 | done earlier: oom_worker_compute | B1_wifi_qwen2.5-32b-q6k_m5_c32768prop_r1 |  |  |
-| G1r | qwen2.5-32b-q4km ctx 512 PP default | pending |  |  |  |
-| G1r | qwen2.5-32b-q4km ctx 512 PP balanced | pending |  |  |  |
-| G1r | qwen2.5-32b-q4km ctx 4096 PP default | pending |  |  |  |
-| G1r | qwen2.5-32b-q4km ctx 4096 PP balanced | pending |  |  |  |
-| G1r | qwen2.5-32b-q4km ctx 16384 PP default | pending |  |  |  |
-| G1r | qwen2.5-32b-q4km ctx 16384 PP balanced | pending |  |  |  |
-| G1r | qwen2.5-32b-q4km ctx 32768 PP default | pending |  |  |  |
-| G1r | qwen2.5-32b-q4km ctx 32768 PP balanced | pending |  |  |  |
-| G1r | qwen2.5-32b-q4km ctx 4096 TP | pending |  |  |  |
-| G1r | qwen2.5-32b-q4km ctx 32768 TP 3:2 | pending |  |  |  |
+| G1r | qwen2.5-32b-q4km ctx 512 PP default | done earlier: ok, ok, ok | A1_wifi_qwen2.5-32b-q4km_m5_c512_r1 A1_wifi_qwen2.5-32b-q4km_m5_c512_r2 A1_wifi_qwen2.5-32b-q4km_m5_c512_r3 |  |  |
+| G1r | qwen2.5-32b-q4km ctx 512 PP balanced | done earlier: ok, ok, ok | A1_wifi_qwen2.5-32b-q4km_m5_c512bal_r1 A1_wifi_qwen2.5-32b-q4km_m5_c512bal_r2 A1_wifi_qwen2.5-32b-q4km_m5_c512bal_r3 |  |  |
+| G1r | qwen2.5-32b-q4km ctx 4096 PP default | done earlier: ok, ok, ok | A1_wifi_qwen2.5-32b-q4km_m5_c4096_r1 A1_wifi_qwen2.5-32b-q4km_m5_c4096_r2 A1_wifi_qwen2.5-32b-q4km_m5_c4096_r3 |  |  |
+| G1r | qwen2.5-32b-q4km ctx 4096 PP balanced | done earlier: ok, ok, ok | A1_wifi_qwen2.5-32b-q4km_m5_c4096bal_r1 A1_wifi_qwen2.5-32b-q4km_m5_c4096bal_r2 A1_wifi_qwen2.5-32b-q4km_m5_c4096bal_r3 |  |  |
+| G1r | qwen2.5-32b-q4km ctx 16384 PP default | done earlier: ok, ok, ok | A1_wifi_qwen2.5-32b-q4km_m5_c16384_r1 A1_wifi_qwen2.5-32b-q4km_m5_c16384_r2 A1_wifi_qwen2.5-32b-q4km_m5_c16384_r3 |  |  |
+| G1r | qwen2.5-32b-q4km ctx 16384 PP balanced | done earlier: ok, ok, ok | A1_wifi_qwen2.5-32b-q4km_m5_c16384bal_r1 A1_wifi_qwen2.5-32b-q4km_m5_c16384bal_r2 A1_wifi_qwen2.5-32b-q4km_m5_c16384bal_r3 |  |  |
+| G1r | qwen2.5-32b-q4km ctx 32768 PP default | done earlier: ok, ok, ok | A1_wifi_qwen2.5-32b-q4km_m5_c32768_r1 A1_wifi_qwen2.5-32b-q4km_m5_c32768_r2 A1_wifi_qwen2.5-32b-q4km_m5_c32768_r3 |  |  |
+| G1r | qwen2.5-32b-q4km ctx 32768 PP balanced | done earlier: oom_worker_load, oom_worker_load, oom_worker_load | A1_wifi_qwen2.5-32b-q4km_m5_c32768bal_r1 A1_wifi_qwen2.5-32b-q4km_m5_c32768bal_r2 A1_wifi_qwen2.5-32b-q4km_m5_c32768bal_r3 |  |  |
+| G1r | qwen2.5-32b-q4km ctx 4096 TP | done earlier: ok, ok | B1_wifi_qwen2.5-32b-q4km_m5_c4096_r1 B1_wifi_qwen2.5-32b-q4km_m5_c4096_r2 |  |  |
+| G1r | qwen2.5-32b-q4km ctx 32768 TP 3:2 | done earlier: oom, ok | B1_wifi_qwen2.5-32b-q4km_m5_c32768prop_r1 B1_wifi_qwen2.5-32b-q4km_m5_c32768prop_r2 |  |  |
+| G4 | qwen2.5-14b-q4km ctx 4096 M5 alone | pending |  |  |  |
+| G4 | qwen2.5-14b-q4km ctx 4096 Air alone | pending |  |  |  |
+| G4 | qwen2.5-14b-q4km ctx 4096 PP default | pending |  |  |  |
+| G4 | qwen2.5-14b-q4km ctx 4096 TP | pending |  |  |  |
+| G4 | qwen2.5-14b-q4km ctx 32768 M5 alone | pending |  |  |  |
+| G4 | qwen2.5-14b-q4km ctx 32768 Air alone | pending |  |  |  |
+| G4 | qwen2.5-14b-q4km ctx 32768 PP default | pending |  |  |  |
+| G4 | qwen2.5-14b-q4km ctx 32768 TP | pending |  |  |  |
+| G4 | qwen2.5-7b-q4km ctx 4096 M5 alone | pending |  |  |  |
+| G4 | qwen2.5-7b-q4km ctx 4096 Air alone | pending |  |  |  |
+| G4 | qwen2.5-7b-q4km ctx 4096 PP default | pending |  |  |  |
+| G4 | qwen2.5-7b-q4km ctx 4096 TP | pending |  |  |  |
+| G4 | qwen2.5-7b-q4km ctx 32768 M5 alone | pending |  |  |  |
+| G4 | qwen2.5-7b-q4km ctx 32768 Air alone | pending |  |  |  |
+| G4 | qwen2.5-7b-q4km ctx 32768 PP default | pending |  |  |  |
+| G4 | qwen2.5-7b-q4km ctx 32768 TP | pending |  |  |  |
 
 ## Log (last 40 lines)
 
@@ -64,4 +80,6 @@ Your branch is ahead of 'origin/main' by 13 commits.
 Changes not staged for commit:
   (use "git
 [2026-11-14 15:17:44] == G1r: repeats of the 32B Q4_K_M cells (10 steps)
+[2026-11-14 15:17:44] commit G1r: ok
+[2026-11-14 15:17:44] == G4: 14B and 7B Q4_K_M, every partition, ctx 4096 and 32768 (16 steps)
 ```
