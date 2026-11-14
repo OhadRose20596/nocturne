@@ -1,6 +1,6 @@
 # Session 5 progress
 
-Updated 2026-11-14 09:59:54. Steps known so far: 16, finished: 16. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
+Updated 2026-11-14 10:12:15. Steps known so far: 19, finished: 19. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
 
 | group | step | status | records | start | end |
 |---|---|---|---|---|---|
@@ -20,6 +20,9 @@ Updated 2026-11-14 09:59:54. Steps known so far: 16, finished: 16. Later groups 
 | G2a | qwen2.5-32b-q8 ctx 4096 PP balanced | fail (oom_worker_load) | A1_wifi_qwen2.5-32b-q8_m5_c4096bal_r2 | 2026-11-14 09:30:26 | 2026-11-14 09:33:37 |
 | G2a | qwen2.5-32b-q8 ctx 4096 TP | fail (oom_worker_load) | B1_wifi_qwen2.5-32b-q8_m5_c4096_r2 | 2026-11-14 09:34:02 | 2026-11-14 09:45:44 |
 | G2a | qwen2.5-32b-q8 ctx 4096 TP 3:2 | fail (oom_requester_compute) | B1_wifi_qwen2.5-32b-q8_m5_c4096prop_r2 | 2026-11-14 09:46:12 | 2026-11-14 09:59:19 |
+| G2edge | qwen2.5-32b-q8 ctx 512 PP default | fail (oom_worker_load) | A1_wifi_qwen2.5-32b-q8_m5_c512_r1 | 2026-11-14 09:59:55 | 2026-11-14 10:01:21 |
+| G2edge | qwen2.5-32b-q8 ctx 512 PP 3:2 | fail (oom_worker_load) | A1_wifi_qwen2.5-32b-q8_m5_c512prop_r1 | 2026-11-14 10:01:51 | 2026-11-14 10:03:05 |
+| G2edge | qwen2.5-32b-q8 ctx 512 TP 3:2 | fail (oom_requester_compute) | B1_wifi_qwen2.5-32b-q8_m5_c512prop_r1 | 2026-11-14 10:03:34 | 2026-11-14 10:11:39 |
 
 ## Log (last 40 lines)
 
@@ -43,4 +46,12 @@ Updated 2026-11-14 09:59:54. Steps known so far: 16, finished: 16. Later groups 
 [2026-11-14 09:45:44]   B1_wifi_qwen2.5-32b-q8_m5_c4096_r2: FAIL (oom_worker_load), quality unknown  decode None  cmds/step 2.0  cmds/tok None  B/tok None  acc 0.0 
 [2026-11-14 09:46:12] run qwen2.5-32b-q8 ctx 4096 TP 3:2 (G2a): nocturne.bench.run --cell B1 --model qwen2.5-32b-q8 --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 4096 --runs 1 --no-results-md --allow-unmeasured-memory --tag c4096prop --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8 --override-flag=-ts=3,2
 [2026-11-14 09:59:19]   B1_wifi_qwen2.5-32b-q8_m5_c4096prop_r2: FAIL (oom_requester_compute), quality unknown  decode None  cmds/step 4  cmds/tok None  B/tok None  acc 0.0 
+[2026-11-14 09:59:54] commit G2a: ok
+[2026-11-14 09:59:54] == G2edge: models that fit nowhere at 4096, checked at ctx 512 (3 steps)
+[2026-11-14 09:59:55] run qwen2.5-32b-q8 ctx 512 PP default (G2edge): nocturne.bench.run --cell A1 --model qwen2.5-32b-q8 --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 512 --runs 1 --no-results-md --allow-unmeasured-memory --tag c512 --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8
+[2026-11-14 10:01:21]   A1_wifi_qwen2.5-32b-q8_m5_c512_r1: FAIL (oom_worker_load), quality unknown  decode None  cmds/step 5.0  cmds/tok None  B/tok None  acc 0.0 
+[2026-11-14 10:01:51] run qwen2.5-32b-q8 ctx 512 PP 3:2 (G2edge): nocturne.bench.run --cell A1 --model qwen2.5-32b-q8 --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 512 --runs 1 --no-results-md --allow-unmeasured-memory --tag c512prop --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8 --override-flag=-ts=2,3
+[2026-11-14 10:03:05]   A1_wifi_qwen2.5-32b-q8_m5_c512prop_r1: FAIL (oom_worker_load), quality unknown  decode None  cmds/step 5.0  cmds/tok None  B/tok None  acc 0.0 
+[2026-11-14 10:03:34] run qwen2.5-32b-q8 ctx 512 TP 3:2 (G2edge): nocturne.bench.run --cell B1 --model qwen2.5-32b-q8 --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 512 --runs 1 --no-results-md --allow-unmeasured-memory --tag c512prop --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8 --override-flag=-ts=3,2
+[2026-11-14 10:11:39]   B1_wifi_qwen2.5-32b-q8_m5_c512prop_r1: FAIL (oom_requester_compute), quality unknown  decode None  cmds/step 4  cmds/tok None  B/tok None  acc 0.0 
 ```
