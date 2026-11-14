@@ -1,6 +1,6 @@
 # Session 5 progress
 
-Updated 2026-11-14 16:11:50. Steps known so far: 63, finished: 63. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
+Updated 2026-11-14 16:11:50. Steps known so far: 65, finished: 63. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
 
 | group | step | status | records | start | end |
 |---|---|---|---|---|---|
@@ -67,6 +67,8 @@ Updated 2026-11-14 16:11:50. Steps known so far: 63, finished: 63. Later groups 
 | G2c | qwen2.5-32b-q6k ctx 16384 TP 3:2 | done earlier: ok, ok, ok | B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r1 B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r2 B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r3 |  |  |
 | G2c | qwen2.5-32b-q6k ctx 16384 PP default | done earlier: oom_worker_load, oom_worker_load | A1_wifi_qwen2.5-32b-q6k_m5_c16384_r1 A1_wifi_qwen2.5-32b-q6k_m5_c16384_r2 |  |  |
 | G2d | qwen2.5-32b-q6k ctx 16384 PP 3:2 no-mmap | ok | A1_wifi_qwen2.5-32b-q6k_m5_c16384propnommap_r1 A1_wifi_qwen2.5-32b-q6k_m5_c16384propnommap_r2 | 2026-11-14 16:09:29 | 2026-11-14 16:10:49 |
+| G5 | qwen2.5-1.5b-bf16 ctx 4096 TP torch | pending |  |  |  |
+| G5 | qwen2.5-7b-bf16 ctx 4096 TP torch | pending |  |  |  |
 
 ## Log (last 40 lines)
 
@@ -107,4 +109,6 @@ Changes not staged for commit:
 [2026-11-14 16:09:29]   A1_wifi_qwen2.5-32b-q6k_m5_c16384propnommap_r1: OK, quality unknown  decode 4.035424060871512  cmds/step 7.0  cmds/tok 8.3125  B/tok 104894.5625  acc 1.0 
 [2026-11-14 16:09:29] run qwen2.5-32b-q6k ctx 16384 PP 3:2 no-mmap (G2d): nocturne.bench.run --cell A1 --model qwen2.5-32b-q6k --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 16384 --runs 1 --no-results-md --allow-unmeasured-memory --tag c16384propnommap --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8 --override-flag=-ts=2,3 --override-flag=--load-mode=none
 [2026-11-14 16:10:49]   A1_wifi_qwen2.5-32b-q6k_m5_c16384propnommap_r2: OK, quality unknown  decode 4.285937958237989  cmds/step 7.0  cmds/tok 8.3125  B/tok 102892.15625  acc 1.0 
+[2026-11-14 16:11:50] commit G2d: ok
+[2026-11-14 16:11:50] == G5: torch_tp engine, bf16, ctx 4096 (2 steps)
 ```
