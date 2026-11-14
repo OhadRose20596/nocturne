@@ -1,0 +1,380 @@
+{
+  "schema_version": 4,
+  "id": "B1t_wifi_qwen2.5-1.5b-bf16_m5_c4096_r1",
+  "cell": {
+    "partition": "TP",
+    "decode": "single",
+    "row": "B",
+    "col": 1,
+    "name": "B1t"
+  },
+  "date": "2026-11-14T16:00:16+02:00",
+  "model": {
+    "name": "qwen2.5-1.5b-bf16",
+    "quant": "bf16",
+    "sha256": "cb2b237a41d17d0f8660027bf9ece59c8334e568c7cf391f8ebc233762d1a6af"
+  },
+  "draft_model": null,
+  "engine": {
+    "name": "torch_tp",
+    "commit": "a622877",
+    "flags": [
+      "--model",
+      "~/models/hf/Qwen2.5-1.5B-Instruct",
+      "--world",
+      "2",
+      "--max-seq-len",
+      "4096",
+      "--reduce-dtype",
+      "bfloat16"
+    ],
+    "format": "safetensors-bf16",
+    "runtime": "torch 2.14.1 mps",
+    "world": 2
+  },
+  "peers": [
+    {
+      "host": "MMF4FWRG4R",
+      "role": "requester",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 24,
+      "metal_working_set_gb": 18.2
+    },
+    {
+      "host": "Mac",
+      "role": "worker",
+      "backend": "metal",
+      "os": "macos",
+      "mem_gb": 16,
+      "metal_working_set_gb": 12.1
+    }
+  ],
+  "network": {
+    "type": "wifi",
+    "rtt_ms_median": 8.1265,
+    "bw_mbps": 333.68640089438446,
+    "measured_at": "2026-11-14T16:00:16+02:00",
+    "rtt_source": "probe",
+    "ping_decode_ms": {
+      "p50": 9.066,
+      "p95": 69.094,
+      "p99": 94.315,
+      "n": 1148,
+      "interval_s": 0.01,
+      "loss": 0.11332939581686075
+    },
+    "awdl": "up",
+    "added_delay_ms": null,
+    "added_delay_measured_ms": null,
+    "vpn_state": "disconnected"
+  },
+  "prompts": {
+    "set": "eval_set",
+    "version": "1",
+    "subset": 8,
+    "ids": [
+      "arith_01",
+      "arith_02",
+      "arith_03",
+      "arith_04",
+      "arith_05",
+      "arith_06",
+      "extract_01",
+      "extract_02"
+    ],
+    "generation": {
+      "temperature": 0,
+      "seed": 42,
+      "samplers": [
+        "temperature"
+      ],
+      "repeat_penalty": 1.0
+    },
+    "fixed_tokens": null
+  },
+  "success": true,
+  "failure_class": null,
+  "quality_pass": null,
+  "setup": {
+    "load_total_s": 5.190950870513916,
+    "transfer_s": null,
+    "cache_state": null,
+    "bytes_sent_gb": null,
+    "ctx": 4096
+  },
+  "timing": {
+    "decode_tps_median": 2.500687419654232,
+    "prefill_tps_median": 53.76503683953571,
+    "ttft_s_median": 0.918861985206604,
+    "ttft_server_s_median": 0.9109219312667847,
+    "decode_ms_per_step_pooled": 539.4712885220846,
+    "decode_tps_pooled": 1.8536667683271202,
+    "decode_steps_total": 24,
+    "warmup_s": 2.8133020401000977
+  },
+  "comm": {
+    "rpc_commands_per_step": 56.0,
+    "tokens_per_step": 1.0,
+    "rpc_commands_per_token": 56.0,
+    "bytes_per_step": null,
+    "bytes_per_token": 264829.5,
+    "packets_per_token": 255.9375,
+    "serial_waits_per_token": null,
+    "compute_steps": 36,
+    "tokens_generated": 36,
+    "capture_iface": "en0",
+    "source": "rpc_commands: engine counters: all-reduce frames sent by rank 0 (one per all-reduce, 2 per layer), per step over prefill plus decode steps, per token over generated tokens; blocking_syncs and messages per step: 2 * layers all-reduces plus the STEP frame; engine_bytes: frame bytes sent plus received by rank 0 over the whole run (prefill frames included) per generated token; bytes: tcpdump on torch_port inside the decode windows, as in row A",
+    "blocking_syncs_per_step": 57,
+    "messages_per_step": 57,
+    "bytes_per_step_decode": 353106.0,
+    "bytes_per_step_decode_out": 178221.66666666666,
+    "bytes_per_step_decode_in": 174884.33333333334,
+    "graph_meta_bytes_per_step": null,
+    "worker_capture": false,
+    "clock_offset_s": null,
+    "clock_offset_unc_s": null,
+    "engine_frames_per_token": 57.30555555555556,
+    "engine_bytes_per_token": 4785493.944444444
+  },
+  "memory_buffers_gb": {
+    "m5": 2.24,
+    "air": 2.24
+  },
+  "memory_breakdown_gb": {},
+  "memory_log_lines": [],
+  "memory_peak_gb": {
+    "m5": 0.455,
+    "air": 0.349
+  },
+  "utilization": {
+    "m5": 0.5406754098360655,
+    "air": 0.24753666666666668
+  },
+  "correctness": {
+    "exact_match_ratio": null,
+    "first_divergence_median": null,
+    "task_accuracy": 1.0,
+    "baseline_task_accuracy": null
+  },
+  "fault_test": null,
+  "checks": {
+    "a2_identity": null,
+    "memory_measured": true,
+    "baseline_id": null,
+    "a1_id": null
+  },
+  "notes": [
+    "warm-up request (arith_01, 8 tokens) took 2.8 s; not in the timings",
+    "peer air: peers.yaml host 'ohads-MacBook-Air-2' but hostname -s is 'Mac'; record uses the real one",
+    "torch_tp: each rank reads its own slice from local safetensors; no weight transfer, so transfer_s, cache_state and bytes_sent_gb are null. model.sha256 is sha256(config.json + safetensors index or first MiB), not of the weights",
+    "no matching BASELINE record for qwen2.5-1.5b-bf16 (sha cb2b237a, bf16) with engine torch_tp on MMF4FWRG4R at a622877 with prompts eval_set v1; run: python -m nocturne.bench.run --cell BASELINE --host m5 --model qwen2.5-1.5b-bf16",
+    "quality_pass null: no baseline or no graded prompt"
+  ],
+  "outputs": {
+    "arith_01": "936",
+    "arith_02": "543",
+    "arith_03": "437",
+    "arith_04": "12",
+    "arith_05": "150",
+    "arith_06": "36",
+    "extract_01": "Dana Levi",
+    "extract_02": "Room 311"
+  },
+  "per_prompt": {
+    "arith_01": {
+      "timings": {
+        "prompt_n": 46,
+        "prompt_ms": 893.6738967895508,
+        "predicted_n": 4,
+        "predicted_ms": 1593.0261611938477,
+        "predicted_per_token_ms": 531.0087203979492,
+        "predicted_per_second": 1.8832082442084543,
+        "prompt_per_second": 51.47291441011221
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 2.5109443256112725,
+      "decode_ms_per_step": 531.0087203979492,
+      "ttft_client_s": 0.9009268283843994,
+      "score": 1.0,
+      "t_send": 1794664860.3171442,
+      "t_done": 1794664862.8114939
+    },
+    "arith_02": {
+      "timings": {
+        "prompt_n": 47,
+        "prompt_ms": 822.0930099487305,
+        "predicted_n": 4,
+        "predicted_ms": 1798.7210750579834,
+        "predicted_per_token_ms": 599.5736916859945,
+        "predicted_per_second": 1.6678516984092668,
+        "prompt_per_second": 57.17114661141704
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 2.223802264545689,
+      "decode_ms_per_step": 599.5736916859945,
+      "ttft_client_s": 0.8318288326263428,
+      "score": 1.0,
+      "t_send": 1794664862.81159,
+      "t_done": 1794664865.4424589
+    },
+    "arith_03": {
+      "timings": {
+        "prompt_n": 44,
+        "prompt_ms": 878.2069683074951,
+        "predicted_n": 4,
+        "predicted_ms": 1564.4049644470215,
+        "predicted_per_token_ms": 521.4683214823405,
+        "predicted_per_second": 1.9176620300872198,
+        "prompt_per_second": 50.10208480217143
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 2.5568827067829596,
+      "decode_ms_per_step": 521.4683214823405,
+      "ttft_client_s": 0.8862311840057373,
+      "score": 1.0,
+      "t_send": 1794664865.4425228,
+      "t_done": 1794664867.893497
+    },
+    "arith_04": {
+      "timings": {
+        "prompt_n": 45,
+        "prompt_ms": 928.1699657440186,
+        "predicted_n": 3,
+        "predicted_ms": 1105.3979396820068,
+        "predicted_per_token_ms": 552.6989698410034,
+        "predicted_per_second": 1.8093031732765361,
+        "prompt_per_second": 48.4824996076318
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 2.713954759914804,
+      "decode_ms_per_step": 552.6989698410034,
+      "ttft_client_s": 0.9367971420288086,
+      "score": 1.0,
+      "t_send": 1794664867.893576,
+      "t_done": 1794664869.935979
+    },
+    "arith_05": {
+      "timings": {
+        "prompt_n": 58,
+        "prompt_ms": 1262.1290683746338,
+        "predicted_n": 4,
+        "predicted_ms": 1606.8787574768066,
+        "predicted_per_token_ms": 535.6262524922689,
+        "predicted_per_second": 1.8669734639536433,
+        "prompt_per_second": 45.95409570488083
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 2.489297951938191,
+      "decode_ms_per_step": 535.6262524922689,
+      "ttft_client_s": 1.2682671546936035,
+      "score": 1.0,
+      "t_send": 1794664869.9360309,
+      "t_done": 1794664872.811384
+    },
+    "arith_06": {
+      "timings": {
+        "prompt_n": 47,
+        "prompt_ms": 838.4299278259277,
+        "predicted_n": 3,
+        "predicted_ms": 1077.4390697479248,
+        "predicted_per_token_ms": 538.7195348739624,
+        "predicted_per_second": 1.8562534589245177,
+        "prompt_per_second": 56.057159268959204
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 2.7843801883867765,
+      "decode_ms_per_step": 538.7195348739624,
+      "ttft_client_s": 0.8461041450500488,
+      "score": 1.0,
+      "t_send": 1794664872.811456,
+      "t_done": 1794664874.735393
+    },
+    "extract_01": {
+      "timings": {
+        "prompt_n": 67,
+        "prompt_ms": 1188.852071762085,
+        "predicted_n": 4,
+        "predicted_ms": 1606.1480045318604,
+        "predicted_per_token_ms": 535.3826681772867,
+        "predicted_per_second": 1.8678228852728935,
+        "prompt_per_second": 56.356885428726535
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 2.4904305136971914,
+      "decode_ms_per_step": 535.3826681772867,
+      "ttft_client_s": 1.1971848011016846,
+      "score": 1.0,
+      "t_send": 1794664874.7354932,
+      "t_done": 1794664877.538949
+    },
+    "extract_02": {
+      "timings": {
+        "prompt_n": 69,
+        "prompt_ms": 1122.6580142974854,
+        "predicted_n": 6,
+        "predicted_ms": 2595.294952392578,
+        "predicted_per_token_ms": 519.0589904785156,
+        "predicted_per_second": 1.9265632969349193,
+        "prompt_per_second": 61.46128128179573
+      },
+      "finish_reason": "stop",
+      "error": null,
+      "decode_tps": 2.311875956321903,
+      "decode_ms_per_step": 519.0589904785156,
+      "ttft_client_s": 1.129889726638794,
+      "score": 1.0,
+      "t_send": 1794664877.5390131,
+      "t_done": 1794664881.264351
+    }
+  },
+  "commands": [
+    {
+      "host": "m5",
+      "cmd": "test -x /Users/orosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "m5",
+      "cmd": "test -f \"$HOME\"/models/hf/Qwen2.5-1.5B-Instruct/config.json"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -x /Users/ohadrosentswaig/dev/nocturne-torch/bin/python"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 test -f \"$HOME\"/models/hf/Qwen2.5-1.5B-Instruct/config.json"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -c 'import torch, transformers, safetensors; print(torch.__version__)'"
+    },
+    {
+      "host": "m5",
+      "cmd": "git -C '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne' rev-parse --short HEAD"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp worker --bind 192.168.1.219 --port 50053 --model \"$HOME\"/models/hf/Qwen2.5-1.5B-Instruct --rank 1 --world 2"
+    },
+    {
+      "host": "m5",
+      "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -m nocturne.engines.torch_tp serve --model \"$HOME\"/models/hf/Qwen2.5-1.5B-Instruct --world 2 --max-seq-len 4096 --reduce-dtype bfloat16 --host 127.0.0.1 --port 8092 --peer 192.168.1.219:50053"
+    },
+    {
+      "host": "air",
+      "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f 'torch_tp worker.*--port 50053'"
+    }
+  ]
+}

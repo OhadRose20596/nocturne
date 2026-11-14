@@ -1,6 +1,6 @@
 # Session 5 progress
 
-Updated 2026-11-14 16:00:15. Steps known so far: 62, finished: 62. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
+Updated 2026-11-14 16:04:42. Steps known so far: 64, finished: 64. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
 
 | group | step | status | records | start | end |
 |---|---|---|---|---|---|
@@ -66,11 +66,12 @@ Updated 2026-11-14 16:00:15. Steps known so far: 62, finished: 62. Later groups 
 | G2c | qwen2.5-32b-q6k ctx 16384 PP 3:2 | fail (oom_requester_compute) | A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r1 A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r2 A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r3 | 2026-11-14 15:25:38 | 2026-11-14 15:27:04 |
 | G2c | qwen2.5-32b-q6k ctx 16384 TP 3:2 | ok | B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r1 B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r2 B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r3 | 2026-11-14 15:43:51 | 2026-11-14 15:56:50 |
 | G2c | qwen2.5-32b-q6k ctx 16384 PP default | fail (oom_worker_load) | A1_wifi_qwen2.5-32b-q6k_m5_c16384_r1 A1_wifi_qwen2.5-32b-q6k_m5_c16384_r2 | 2026-11-14 15:57:52 | 2026-11-14 15:59:16 |
+| G5 | qwen2.5-1.5b-bf16 ctx 4096 TP torch | ok | B1t_wifi_qwen2.5-1.5b-bf16_m5_c4096_r1 | 2026-11-14 16:00:16 | 2026-11-14 16:01:22 |
+| G5 | qwen2.5-7b-bf16 ctx 4096 TP torch | ok | B1t_wifi_qwen2.5-7b-bf16_m5_c4096_r1 | 2026-11-14 16:02:21 | 2026-11-14 16:03:43 |
 
 ## Log (last 40 lines)
 
 ```
-[2026-11-14 15:17:44] == G0: layer mode -ts order check (32B Q4_K_M, ctx 32768, PP 3:2) (1 steps)
 [2026-11-14 15:17:44] commit G0: ok
 [2026-11-14 15:17:44] == G2a: 32B Q5_K_M, Q6_K, Q8_0 at ctx 4096, all partitions (15 steps)
 [2026-11-14 15:17:44] commit G2a: ok
@@ -110,4 +111,10 @@ Changes not staged for commit:
 [2026-11-14 15:56:50]   B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r3: OK, quality unknown  decode 0.28014895569505893  cmds/step 1.5  cmds/tok 457.78125  B/tok 65751237.84375  acc 1.0 
 [2026-11-14 15:57:52] run qwen2.5-32b-q6k ctx 16384 PP default (G2c): nocturne.bench.run --cell A1 --model qwen2.5-32b-q6k --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 16384 --runs 1 --no-results-md --allow-unmeasured-memory --tag c16384 --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8
 [2026-11-14 15:59:16]   A1_wifi_qwen2.5-32b-q6k_m5_c16384_r2: FAIL (oom_worker_load), quality unknown  decode None  cmds/step 5.0  cmds/tok None  B/tok None  acc 0.0 
+[2026-11-14 16:00:16] commit G2c: ok
+[2026-11-14 16:00:16] == G5: torch_tp engine, bf16, ctx 4096 (2 steps)
+[2026-11-14 16:00:16] run qwen2.5-1.5b-bf16 ctx 4096 TP torch (G5): nocturne.bench.run --cell B1t --model qwen2.5-1.5b-bf16 --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 4096 --runs 1 --no-results-md --allow-unmeasured-memory --tag c4096 --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8
+[2026-11-14 16:01:22]   B1t_wifi_qwen2.5-1.5b-bf16_m5_c4096_r1: OK, quality unknown  decode 2.500687419654232  cmds/step 56.0  cmds/tok 56.0  B/tok 264829.5  acc 1.0 
+[2026-11-14 16:02:21] run qwen2.5-7b-bf16 ctx 4096 TP torch (G5): nocturne.bench.run --cell B1t --model qwen2.5-7b-bf16 --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 4096 --runs 1 --no-results-md --allow-unmeasured-memory --tag c4096 --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8
+[2026-11-14 16:03:43]   B1t_wifi_qwen2.5-7b-bf16_m5_c4096_r1: OK, quality unknown  decode 1.9114998306584179  cmds/step 56.0  cmds/tok 56.0  B/tok 612780.0  acc 1.0 
 ```
