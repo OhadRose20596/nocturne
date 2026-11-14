@@ -1,6 +1,6 @@
 # Session 5 progress
 
-Updated 2026-11-14 16:06:14. Steps known so far: 62, finished: 59. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
+Updated 2026-11-14 16:11:50. Steps known so far: 63, finished: 63. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
 
 | group | step | status | records | start | end |
 |---|---|---|---|---|---|
@@ -63,9 +63,10 @@ Updated 2026-11-14 16:06:14. Steps known so far: 62, finished: 59. Later groups 
 | G3 | qwen2.5-32b-q6k ctx 4096 PP 3:2, eval_kv4k | done earlier: ok | A1_wifi_qwen2.5-32b-q6k_m5_c4096propkv4k_r1 |  |  |
 | G3 | qwen2.5-32b-q6k ctx 16384 TP 3:2, eval_long | done earlier: ok | B1_wifi_qwen2.5-32b-q6k_m5_c16384proplong_r1 |  |  |
 | G3 | qwen2.5-32b-q6k ctx 16384 TP 3:2, eval_kv4k | done earlier: ok | B1_wifi_qwen2.5-32b-q6k_m5_c16384propkv4k_r1 |  |  |
-| G2c | qwen2.5-32b-q6k ctx 16384 PP 3:2 | pending |  |  |  |
-| G2c | qwen2.5-32b-q6k ctx 16384 TP 3:2 | pending |  |  |  |
-| G2c | qwen2.5-32b-q6k ctx 16384 PP default | pending |  |  |  |
+| G2c | qwen2.5-32b-q6k ctx 16384 PP 3:2 | done earlier: oom_requester_compute, oom_requester_compute, oom_requester_compute | A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r1 A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r2 A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r3 |  |  |
+| G2c | qwen2.5-32b-q6k ctx 16384 TP 3:2 | done earlier: ok, ok, ok | B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r1 B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r2 B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r3 |  |  |
+| G2c | qwen2.5-32b-q6k ctx 16384 PP default | done earlier: oom_worker_load, oom_worker_load | A1_wifi_qwen2.5-32b-q6k_m5_c16384_r1 A1_wifi_qwen2.5-32b-q6k_m5_c16384_r2 |  |  |
+| G2d | qwen2.5-32b-q6k ctx 16384 PP 3:2 no-mmap | ok | A1_wifi_qwen2.5-32b-q6k_m5_c16384propnommap_r1 A1_wifi_qwen2.5-32b-q6k_m5_c16384propnommap_r2 | 2026-11-14 16:09:29 | 2026-11-14 16:10:49 |
 
 ## Log (last 40 lines)
 
@@ -95,4 +96,15 @@ Changes not staged for commit:
 [2026-11-14 16:06:14] == G3: real long prompts at the edge of each partition (6 steps)
 [2026-11-14 16:06:14] commit G3: ok
 [2026-11-14 16:06:14] == G2c: Q-C candidate: 32B Q6_K ctx 16384, TP 3:2 completed where both PP splits failed; repeats (3 steps)
+[2026-11-14 16:06:14] commit G2c: ok
+[2026-11-14 16:06:14] == G2d: Q-C mechanism: 32B Q6_K ctx 16384 PP 3:2 with the weights not memory-mapped (--load-mode none) (1 steps)
+[2026-11-14 16:06:15] preflight qwen2.5-32b-q6k
+[2026-11-14 16:08:04]   [m5] model sha 3393e05b1239, free 484.0 GB
+[2026-11-14 16:08:04]   [air] model sha 3393e05b1239, free 47.0 GB
+[2026-11-14 16:08:04]   vpn_state disconnected, awdl up
+[2026-11-14 16:08:04]   worker 192.168.1.219:50052 closed (the bench starts it over ssh)
+[2026-11-14 16:08:04] run qwen2.5-32b-q6k ctx 16384 PP 3:2 no-mmap (G2d): nocturne.bench.run --cell A1 --model qwen2.5-32b-q6k --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 16384 --runs 1 --no-results-md --allow-unmeasured-memory --tag c16384propnommap --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8 --override-flag=-ts=2,3 --override-flag=--load-mode=none
+[2026-11-14 16:09:29]   A1_wifi_qwen2.5-32b-q6k_m5_c16384propnommap_r1: OK, quality unknown  decode 4.035424060871512  cmds/step 7.0  cmds/tok 8.3125  B/tok 104894.5625  acc 1.0 
+[2026-11-14 16:09:29] run qwen2.5-32b-q6k ctx 16384 PP 3:2 no-mmap (G2d): nocturne.bench.run --cell A1 --model qwen2.5-32b-q6k --peers /Users/orosentswaig/.nocturne/peers.yaml --ctx 16384 --runs 1 --no-results-md --allow-unmeasured-memory --tag c16384propnommap --load-timeout 2400 --request-timeout 3600 --network wifi --subset 8 --override-flag=-ts=2,3 --override-flag=--load-mode=none
+[2026-11-14 16:10:49]   A1_wifi_qwen2.5-32b-q6k_m5_c16384propnommap_r2: OK, quality unknown  decode 4.285937958237989  cmds/step 7.0  cmds/tok 8.3125  B/tok 102892.15625  acc 1.0 
 ```
