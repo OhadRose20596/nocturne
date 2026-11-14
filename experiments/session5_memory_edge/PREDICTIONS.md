@@ -46,37 +46,40 @@ Falsifier to watch: balanced PP failing at 32768 while default PP completes show
 
 | model | A1 default | A1 balanced | B1 TP | Ohad | outcome |
 |---|---|---|---|---|---|
-| L4 32B Q5_K_M | completes (Air about 9 GiB, M5 about 13 GiB) | completes | completes if TP works at all | | |
-| L5 32B Q6_K | completes with under 1.5 GB headroom on the Air with a split near 27 / 37 layers; I give 60 percent to completes, 40 percent to OOM on one node | likely fails or marginal, since 1,1 puts about 12.6 GiB on the Air | fails or marginal, same arithmetic as balanced PP | | |
-| L6 32B Q8_0 | fails at load (34.8 GB against 30.3 GB combined) | fails | fails | | |
+| L4 32B Q5_K_M | completes (Air about 9 GiB, M5 about 13 GiB) | completes | completes if TP works at all | | Holds. All five cells complete. PP default M5 13.24 / Air 9.29 GiB. Balanced PP Air 11.29 GiB, headroom 0.55. TP 1:1 Air 11.26 GiB. 8/8 correct, identical to PP default. `*_q5km_m5_c4096*` |
+| L5 32B Q6_K | completes with under 1.5 GB headroom on the Air with a split near 27 / 37 layers; I give 60 percent to completes, 40 percent to OOM on one node | likely fails or marginal, since 1,1 puts about 12.6 GiB on the Air | fails or marginal, same arithmetic as balanced PP | | Holds. PP default completes, Air 10.66 GiB, headroom 1.18. Balanced PP fails, oom_worker_load, Air 12.99 GiB. TP 1:1 fails the same way, Air 12.90 GiB. Added cells PP 3:2 and TP 3:2 both complete (Air headroom 1.56 and 1.49). |
+| L6 32B Q8_0 | fails at load (34.8 GB against 30.3 GB combined) | fails | fails | | Holds. Every cell fails at ctx 4096 and at ctx 512: oom_worker_load in PP and TP 1:1, oom_requester_compute in TP 3:2 (M5 weight share alone 18.8 GiB against a 17.76 GiB line). |
 
 Q-C prediction: no. No (model, ctx) exists where TP completes and PP fails. Confidence about 85 percent. The 15 percent is mostly that PP default packs the Air too tightly in a case where a TP split would not.
+
+Outcome: holds, with one qualification. At 32B Q6_K ctx 16384, TP 3:2 completed 3/3 while PP default failed 2/2 (Air 0.10 GiB over the line) and PP 3:2 failed 3/3 (M5 out of memory at the warm-up run, 0.44 GiB under the line by the buffer sums). PP 3:2 with `--load-mode none` completed 2/2 with the same buffers and outputs identical to TP 3:2 (8/8). The failure is the default memory mapped load on the requester, not the partition. The 15 percent case (PP default packs the Air too tightly) did happen at this cell; a one layer shift fixes it.
+Context sweep outcome: PP edge for Q6_K is ctx 16384 (no mmap), TP 3:2 edge is ctx 16384. Both fail at 32768. Equal, as predicted.
 Context sweep for the largest PP model that completed: PP edge in ctx at or above TP edge. Stop rule applies to a model failing at ctx 512 in both.
 
 ## Group 3. Real long prompts at the edge
 
 | item | Ohad | Claude | outcome |
 |---|---|---|---|
-| Populated KV (eval_long and about 4000 token prompt) against reserved KV | | llama.cpp reserves the whole KV at load, so peak memory does not move by more than 0.2 GB from empty to populated. Compute buffers can grow by a few hundred MiB at the first long prefill | |
-| Output identical to BASELINE where BASELINE exists | | 14B and 7B: identical on the graded subset. 32B has no BASELINE on the M5, so correctness for 32B is graded against the expected answers only, not against the engine | |
+| Populated KV (eval_long and about 4000 token prompt) against reserved KV | | llama.cpp reserves the whole KV at load, so peak memory does not move by more than 0.2 GB from empty to populated. Compute buffers can grow by a few hundred MiB at the first long prefill | Partly checked. Every long prompt run completed at the edge of its partition (Q6_K ctx 4096 PP default and PP 3:2, Q6_K ctx 16384 TP 3:2). The engine's buffer lines are identical to the short prompt runs, compute buffers included: no growth. Peak resident memory during the long prefill was not measured, so the 0.2 GB bound is not tested. |
+| Output identical to BASELINE where BASELINE exists | | 14B and 7B: identical on the graded subset. 32B has no BASELINE on the M5, so correctness for 32B is graded against the expected answers only, not against the engine | Holds. 14B and 7B, PP and TP, both ctx: exact match with BASELINE 1.0. 32B: every completed cell answers 8/8 and is identical to PP default at the same ctx (8/8); long prompts 3/3 and 1/1 identical. |
 
 ## Group 4. 14B and 7B, ctx 4096 and 32768
 
 | item | Ohad | Claude | outcome |
 |---|---|---|---|
-| 14B BASELINE M5, both ctx | | completes (weights 9 GB plus KV 6 GiB at 32768 is about 16 GiB, under 18.2 GB) | |
-| 14B BASELINE Air, ctx 4096 | | completes (about 10 GiB, under 12.1 GB) | |
-| 14B BASELINE Air, ctx 32768 | | fails (about 15 GiB) | |
-| 14B PP and TP, both ctx | | complete; PP and TP per node totals within 10 percent | |
-| 7B all cells, both ctx | | complete (KV 1.75 GiB at 32768) | |
+| 14B BASELINE M5, both ctx | | completes (weights 9 GB plus KV 6 GiB at 32768 is about 16 GiB, under 18.2 GB) | Holds. 8.81 and 14.16 GiB |
+| 14B BASELINE Air, ctx 4096 | | completes (about 10 GiB, under 12.1 GB) | Holds. 8.81 GiB, headroom 3.01 (I overestimated by about 1 GiB) |
+| 14B BASELINE Air, ctx 32768 | | fails (about 15 GiB) | Holds. 14.16 GiB, out of memory at first compute |
+| 14B PP and TP, both ctx | | complete; PP and TP per node totals within 10 percent | Completes: holds. Within 10 percent: fails, because PP default is not balanced (M5 5.43 against Air 3.48 GiB at 4096, TP 4.46 on each). The sums agree (8.91 against 8.92 GiB) |
+| 7B all cells, both ctx | | complete (KV 1.75 GiB at 32768) | Holds. KV 1.75 GiB at 32768 exactly |
 
 ## Group 5. torch_tp, bf16
 
 | item | Ohad | Claude | outcome |
 |---|---|---|---|
-| T1 1.5B ctx 4096 | | completes | |
-| T2 7B ctx 4096 | | completes (B1t exists), about 7.6 GB sharded plus about 2.2 GB replicated per node | |
-| T3 14B | | OOM on the Air side at load (29.5 GB over two nodes, replicated embedding and head about 2.2 GB each leaves under 1 GB on the Air) | |
+| T1 1.5B ctx 4096 | | completes | Holds, 8/8 correct (`B1t_wifi_qwen2.5-1.5b-bf16_m5_c4096_r1`) |
+| T2 7B ctx 4096 | | completes (B1t exists), about 7.6 GB sharded plus about 2.2 GB replicated per node | Completes: holds, 8/8. Memory per node not measured (torch_tp writes no buffer lines), so the split is untested |
+| T3 14B | | OOM on the Air side at load (29.5 GB over two nodes, replicated embedding and head about 2.2 GB each leaves under 1 GB on the Air) | Not run (disk; optional in the brief) |
 
 ## Not predicted, stated up front
 

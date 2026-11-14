@@ -53,6 +53,7 @@ import re,sys
 p=sys.argv[1]; s=open(p,encoding='utf-8').read()
 s=re.sub(r'<header id="title-block-header">.*?</header>\s*', '', s, flags=re.S)
 s=s.replace('<html xmlns="http://www.w3.org/1999/xhtml" lang="he" xml:lang="he" dir="rtl">','<html lang="he" dir="rtl">')
+s=re.sub(r'src="(?!https?:|/|data:)', 'src="../', s)
 open(p,'w',encoding='utf-8').write(s)
 PY
   echo "  $name.html"

@@ -11,6 +11,12 @@ Append-only. Every row: who, when, which llama.cpp commit, which model, which de
 
 | file | sha256 | size |
 |---|---|---|
+| Qwen2.5-32B-Instruct-Q4_K_M.gguf (bartowski) | 2e5f6daea180dbc59f65a40641e94d3973b5dbaa32b3c0acf54647fa874e519e | 19851336576 |
+| Qwen2.5-32B-Instruct-Q5_K_M.gguf (bartowski) | 371c9d50b4c2db96c7b6695b81a23c03c10a0ee780a8c3fe9193aac148febdaf | 23262157696 |
+| Qwen2.5-32B-Instruct-Q6_K.gguf (bartowski) | 3393e05b12396e0e6c786f5fb99837eb77ef9eb0b30d940e30d94c2f5506054a | 26886155136 |
+| Qwen2.5-32B-Instruct-Q8_0.gguf (bartowski) | fc5103335689b33d576ebe8bf50b35a5e04ca6f7cf0753c2f2df1079dabbb78f | 34820885376 |
+
+Rows added 2026-11-07 (session 5). Each hash was computed on both Macs and matched; the Air copy of Q8_0 was deleted after the check (disk), RPC workers do not read the file.
 
 ## Table A — PoC-0: single machine, chosen device (`scripts/05_bench.sh`)
 
@@ -175,3 +181,86 @@ One row per successful run. Full record: nocturne/bench/results/<id>.json.
 | 2026-11-07T15:23:43+02:00 | B1t_wifi_qwen2.5-1.5b-bf16_m5_loopback_r8 | MMF4FWRG4R | MMF4FWRG4R | torch_tp fb5b48e | qwen2.5-1.5b-bf16 | wifi; awdl down; fixed 64; eval_long | null | null | 16.1 pooled | 56.0 | 344382 | 2.2 | null | null |
 | 2026-11-07T15:54:35+02:00 | B1t_wifi_qwen2.5-7b-bf16_m5_r11 | MMF4FWRG4R | Mac | torch_tp fb5b48e | qwen2.5-7b-bf16 | wifi; awdl up; fixed 256; eval_long | 8.9 | null | 1.1 pooled | 56.0 | 816568 | 9.7 | null | null |
 | 2026-11-07T16:32:55+02:00 | B1t_wifi_qwen2.5-7b-bf16_m5_r12 | MMF4FWRG4R | Mac | torch_tp fb5b48e | qwen2.5-7b-bf16 | wifi; awdl up; fixed 256; eval_long | 31.8 | 243 | 1.3 pooled | 56.0 | 814018 | 9.7 | null | null |
+| 2026-11-07T17:06:04+02:00 | B1t_wifi_qwen2.5-7b-bf16_m5_r13 | MMF4FWRG4R | Mac | torch_tp fb5b48e | qwen2.5-7b-bf16 | wifi; awdl up; fixed 256; eval_long | 8.2 | 284 | 1.3 pooled | 56.0 | 813979 | 9.7 | null | null |
+
+## Session 5, memory edge, 2026-11
+
+Runs 2026-11-07 to 2026-11-14. Requester M5 MMF4FWRG4R (Metal line 18186 MiB), worker Air "Mac" (Metal line 12124 MiB), home Wi-Fi, VPN off. llama.cpp `1e7bcf3` (Metal, RPC). torch_tp for the bf16 rows.
+Models: Qwen2.5 Instruct GGUF from bartowski (hashes in the Model hashes table above), torch_tp from HF bf16.
+Partitions: PP is `--split-mode layer`, TP is `--split-mode tensor`; ratios are M5:Air. GiB per node are the engine's GPU buffers (weights, KV, compute); TP per node values derive from the `Meta()` line and the `-ts` ratio.
+Analysis: experiments/session5_memory_edge/REPORT.md. Generated table and excluded runs: experiments/session5_memory_edge/EDGE_TABLE.md. Log excerpts: experiments/session5_memory_edge/evidence/.
+Q-C answer: no (model, context) needs TP on this pair. The deciding row is 32B Q6_K ctx 16384: PP 3:2 fails with the default mmap load and completes with `--load-mode none`.
+
+| model | ctx | partition | prompts | fits | runs ok | failure class | M5 GiB | M5 headroom | Air GiB | Air headroom | run ids |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| qwen2.5-1.5b-bf16 | 4096 | TP torch | eval_set | yes | 1/1 | - | - | - | - | - | B1t_wifi_qwen2.5-1.5b-bf16_m5_c4096_r1 |
+| qwen2.5-14b-q4km | 4096 | local M5 | eval_set | yes | 1/1 | - | 8.81 | 8.95 | - | - | BASELINE_local_qwen2.5-14b-q4km_m5_c4096_r1 |
+| qwen2.5-14b-q4km | 4096 | local Air | eval_set | yes | 1/1 | - | - | - | 8.81 | 3.01 | BASELINE_local_qwen2.5-14b-q4km_air_c4096_r1 |
+| qwen2.5-14b-q4km | 4096 | PP default | eval_set | yes | 1/1 | - | 5.431 | 12.33 | 3.483 | 8.36 | A1_wifi_qwen2.5-14b-q4km_m5_c4096_r1 |
+| qwen2.5-14b-q4km | 4096 | TP | eval_set | yes | 1/1 | - | 4.458 | 13.3 | 4.458 | 7.38 | B1_wifi_qwen2.5-14b-q4km_m5_c4096_r1 |
+| qwen2.5-14b-q4km | 32768 | local M5 | eval_set | yes | 1/1 | - | 14.164 | 3.6 | - | - | BASELINE_local_qwen2.5-14b-q4km_m5_c32768_r1 |
+| qwen2.5-14b-q4km | 32768 | local Air | eval_set | no | 0/1 | oom_requester_compute | - | - | 14.164 | -2.35 | BASELINE_local_qwen2.5-14b-q4km_air_c32768_r1 |
+| qwen2.5-14b-q4km | 32768 | PP default | eval_set | yes | 1/1 | - | 8.597 | 9.16 | 5.795 | 6.04 | A1_wifi_qwen2.5-14b-q4km_m5_c32768_r1 |
+| qwen2.5-14b-q4km | 32768 | TP | eval_set | yes | 1/1 | - | 7.207 | 10.55 | 7.207 | 4.63 | B1_wifi_qwen2.5-14b-q4km_m5_c32768_r1 |
+| qwen2.5-32b-q4km | 512 | local M5 | eval_set | no | 0/2 | engine_abort;oom_requester_compute | 18.378 | -0.62 | - | - | BASELINE_local_qwen2.5-32b-q4km_m5_c512_r1 BASELINE_local_qwen2.5-32b-q4km_m5_c512_r2 |
+| qwen2.5-32b-q4km | 512 | PP default | eval_set | yes | 3/3 | - | 10.933 | 6.83 | 7.623 | 4.22 | A1_wifi_qwen2.5-32b-q4km_m5_c512_r1 A1_wifi_qwen2.5-32b-q4km_m5_c512_r2 A1_wifi_qwen2.5-32b-q4km_m5_c512_r3 |
+| qwen2.5-32b-q4km | 512 | PP balanced | eval_set | yes | 3/3 | - | 9.318 | 8.44 | 9.237 | 2.6 | A1_wifi_qwen2.5-32b-q4km_m5_c512bal_r1 A1_wifi_qwen2.5-32b-q4km_m5_c512bal_r2 A1_wifi_qwen2.5-32b-q4km_m5_c512bal_r3 |
+| qwen2.5-32b-q4km | 512 | TP | eval_set | yes | 1/1 | - | 9.279 | 8.48 | 9.279 | 2.56 | B1_wifi_qwen2.5-32b-q4km_m5_c512_r1 |
+| qwen2.5-32b-q4km | 4096 | local M5 | eval_set | no | 0/1 | oom_requester_compute | 19.257 | -1.5 | - | - | BASELINE_local_qwen2.5-32b-q4km_m5_c4096_r1 |
+| qwen2.5-32b-q4km | 4096 | PP default | eval_set | yes | 3/3 | - | 11.443 | 6.32 | 7.996 | 3.84 | A1_wifi_qwen2.5-32b-q4km_m5_c4096_r1 A1_wifi_qwen2.5-32b-q4km_m5_c4096_r2 A1_wifi_qwen2.5-32b-q4km_m5_c4096_r3 |
+| qwen2.5-32b-q4km | 4096 | PP balanced | eval_set | yes | 3/3 | - | 9.745 | 8.01 | 9.693 | 2.15 | A1_wifi_qwen2.5-32b-q4km_m5_c4096bal_r1 A1_wifi_qwen2.5-32b-q4km_m5_c4096bal_r2 A1_wifi_qwen2.5-32b-q4km_m5_c4096bal_r3 |
+| qwen2.5-32b-q4km | 4096 | TP | eval_set | yes | 2/2 | - | 9.721 | 8.04 | 9.721 | 2.12 | B1_wifi_qwen2.5-32b-q4km_m5_c4096_r1 B1_wifi_qwen2.5-32b-q4km_m5_c4096_r2 |
+| qwen2.5-32b-q4km | 16384 | local M5 | eval_set | no | 0/1 | oom_requester_compute | 22.268 | -4.51 | - | - | BASELINE_local_qwen2.5-32b-q4km_m5_c16384_r1 |
+| qwen2.5-32b-q4km | 16384 | PP default | eval_set | yes | 3/3 | - | 13.188 | 4.57 | 9.273 | 2.57 | A1_wifi_qwen2.5-32b-q4km_m5_c16384_r1 A1_wifi_qwen2.5-32b-q4km_m5_c16384_r2 A1_wifi_qwen2.5-32b-q4km_m5_c16384_r3 |
+| qwen2.5-32b-q4km | 16384 | PP balanced | eval_set | yes | 3/3 | - | 11.21 | 6.55 | 11.25 | 0.59 | A1_wifi_qwen2.5-32b-q4km_m5_c16384bal_r1 A1_wifi_qwen2.5-32b-q4km_m5_c16384bal_r2 A1_wifi_qwen2.5-32b-q4km_m5_c16384bal_r3 |
+| qwen2.5-32b-q4km | 16384 | TP | eval_set | yes | 1/1 | - | 11.232 | 6.53 | 11.232 | 0.61 | B1_wifi_qwen2.5-32b-q4km_m5_c16384_r1 |
+| qwen2.5-32b-q4km | 32768 | local M5 | eval_set | no | 0/1 | oom_requester_compute | 26.284 | -8.52 | - | - | BASELINE_local_qwen2.5-32b-q4km_m5_c32768_r1 |
+| qwen2.5-32b-q4km | 32768 | PP default | eval_set | yes | 3/3 | - | 15.517 | 2.24 | 10.994 | 0.85 | A1_wifi_qwen2.5-32b-q4km_m5_c32768_r1 A1_wifi_qwen2.5-32b-q4km_m5_c32768_r2 A1_wifi_qwen2.5-32b-q4km_m5_c32768_r3 |
+| qwen2.5-32b-q4km | 32768 | PP 3:2 | eval_set | yes | 1/1 | - | 15.897 | 1.86 | 10.613 | 1.23 | A1_wifi_qwen2.5-32b-q4km_m5_c32768prop_r1 |
+| qwen2.5-32b-q4km | 32768 | PP balanced | eval_set | no | 0/3 | oom_worker_load | 13.163 | 4.6 | 13.347 | -1.51 | A1_wifi_qwen2.5-32b-q4km_m5_c32768bal_r1 A1_wifi_qwen2.5-32b-q4km_m5_c32768bal_r2 A1_wifi_qwen2.5-32b-q4km_m5_c32768bal_r3 |
+| qwen2.5-32b-q4km | 32768 | TP | eval_set | no | 0/1 | oom_worker_load | 13.266 | 4.49 | 13.266 | -1.43 | B1_wifi_qwen2.5-32b-q4km_m5_c32768_r1 |
+| qwen2.5-32b-q4km | 32768 | TP 3:2 | eval_set | yes | 2/2 | - | 16.084 | 1.68 | 10.465 | 1.37 | B1_wifi_qwen2.5-32b-q4km_m5_c32768prop_r1 B1_wifi_qwen2.5-32b-q4km_m5_c32768prop_r2 |
+| qwen2.5-32b-q5km | 4096 | PP default | eval_set | yes | 1/1 | - | 13.235 | 4.52 | 9.289 | 2.55 | A1_wifi_qwen2.5-32b-q5km_m5_c4096_r2 |
+| qwen2.5-32b-q5km | 4096 | PP 3:2 | eval_set | yes | 1/1 | - | 13.564 | 4.2 | 8.961 | 2.88 | A1_wifi_qwen2.5-32b-q5km_m5_c4096prop_r1 |
+| qwen2.5-32b-q5km | 4096 | PP balanced | eval_set | yes | 1/1 | - | 11.231 | 6.53 | 11.293 | 0.55 | A1_wifi_qwen2.5-32b-q5km_m5_c4096bal_r2 |
+| qwen2.5-32b-q5km | 4096 | TP | eval_set | yes | 1/1 | - | 11.263 | 6.5 | 11.263 | 0.58 | B1_wifi_qwen2.5-32b-q5km_m5_c4096_r2 |
+| qwen2.5-32b-q5km | 4096 | TP 3:2 | eval_set | yes | 1/1 | - | 13.519 | 4.24 | 9.032 | 2.81 | B1_wifi_qwen2.5-32b-q5km_m5_c4096prop_r2 |
+| qwen2.5-32b-q6k | 512 | PP default | eval_set | yes | 1/1 | - | 14.63 | 3.13 | 10.29 | 1.55 | A1_wifi_qwen2.5-32b-q6k_m5_c512_r1 |
+| qwen2.5-32b-q6k | 512 | PP 3:2 | eval_set | yes | 1/1 | - | 15.004 | 2.76 | 9.916 | 1.92 | A1_wifi_qwen2.5-32b-q6k_m5_c512prop_r1 |
+| qwen2.5-32b-q6k | 512 | PP balanced | eval_set | no | 0/1 | oom_worker_load | 12.383 | 5.38 | 12.537 | -0.7 | A1_wifi_qwen2.5-32b-q6k_m5_c512bal_r1 |
+| qwen2.5-32b-q6k | 512 | TP 3:2 | eval_set | yes | 1/1 | - | 14.94 | 2.82 | 10.014 | 1.83 | B1_wifi_qwen2.5-32b-q6k_m5_c512prop_r1 |
+| qwen2.5-32b-q6k | 4096 | PP default | eval_set | yes | 1/1 | - | 15.14 | 2.62 | 10.663 | 1.18 | A1_wifi_qwen2.5-32b-q6k_m5_c4096_r2 |
+| qwen2.5-32b-q6k | 4096 | PP default | eval_kv4k | yes | 1/1 | - | 15.14 | 2.62 | 10.663 | 1.18 | A1_wifi_qwen2.5-32b-q6k_m5_c4096kv4k_r1 |
+| qwen2.5-32b-q6k | 4096 | PP default | eval_long | yes | 1/1 | - | 15.14 | 2.62 | 10.663 | 1.18 | A1_wifi_qwen2.5-32b-q6k_m5_c4096long_r1 |
+| qwen2.5-32b-q6k | 4096 | PP 3:2 | eval_set | yes | 1/1 | - | 15.528 | 2.23 | 10.275 | 1.56 | A1_wifi_qwen2.5-32b-q6k_m5_c4096prop_r1 |
+| qwen2.5-32b-q6k | 4096 | PP 3:2 | eval_kv4k | yes | 1/1 | - | 15.528 | 2.23 | 10.275 | 1.56 | A1_wifi_qwen2.5-32b-q6k_m5_c4096propkv4k_r1 |
+| qwen2.5-32b-q6k | 4096 | PP 3:2 | eval_long | yes | 1/1 | - | 15.528 | 2.23 | 10.275 | 1.56 | A1_wifi_qwen2.5-32b-q6k_m5_c4096proplong_r1 |
+| qwen2.5-32b-q6k | 4096 | PP balanced | eval_set | no | 0/1 | oom_worker_load | 12.81 | 4.95 | 12.993 | -1.15 | A1_wifi_qwen2.5-32b-q6k_m5_c4096bal_r2 |
+| qwen2.5-32b-q6k | 4096 | TP | eval_set | no | 0/1 | oom_worker_load | 12.903 | 4.86 | 12.903 | -1.06 | B1_wifi_qwen2.5-32b-q6k_m5_c4096_r2 |
+| qwen2.5-32b-q6k | 4096 | TP 3:2 | eval_set | yes | 1/1 | - | 15.491 | 2.27 | 10.346 | 1.49 | B1_wifi_qwen2.5-32b-q6k_m5_c4096prop_r2 |
+| qwen2.5-32b-q6k | 16384 | PP default | eval_set | no | 0/2 | oom_worker_load | 16.885 | 0.87 | 11.94 | -0.1 | A1_wifi_qwen2.5-32b-q6k_m5_c16384_r1 A1_wifi_qwen2.5-32b-q6k_m5_c16384_r2 |
+| qwen2.5-32b-q6k | 16384 | PP 3:2 | eval_set | no | 0/3 | oom_requester_compute | 17.32 | 0.44 | 11.505 | 0.33 | A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r1 A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r2 A1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r3 |
+| qwen2.5-32b-q6k | 16384 | PP 3:2 no-mmap | eval_set | yes | 2/2 | - | 17.32 | 0.44 | 11.505 | 0.33 | A1_wifi_qwen2.5-32b-q6k_m5_c16384propnommap_r1 A1_wifi_qwen2.5-32b-q6k_m5_c16384propnommap_r2 |
+| qwen2.5-32b-q6k | 16384 | TP 3:2 | eval_set | yes | 3/3 | - | 17.377 | 0.38 | 11.482 | 0.36 | B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r1 B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r2 B1_wifi_qwen2.5-32b-q6k_m5_c16384prop_r3 |
+| qwen2.5-32b-q6k | 16384 | TP 3:2 | eval_kv4k | yes | 1/1 | - | 17.377 | 0.38 | 11.482 | 0.36 | B1_wifi_qwen2.5-32b-q6k_m5_c16384propkv4k_r1 |
+| qwen2.5-32b-q6k | 16384 | TP 3:2 | eval_long | yes | 1/1 | - | 17.377 | 0.38 | 11.482 | 0.36 | B1_wifi_qwen2.5-32b-q6k_m5_c16384proplong_r1 |
+| qwen2.5-32b-q6k | 32768 | TP 3:2 | eval_set | no | 0/1 | oom_worker_compute | 19.911 | -2.15 | 13.016 | -1.18 | B1_wifi_qwen2.5-32b-q6k_m5_c32768prop_r1 |
+| qwen2.5-32b-q8 | 512 | PP default | eval_set | no | 0/1 | oom_worker_load | 18.875 | -1.12 | 13.26 | -1.42 | A1_wifi_qwen2.5-32b-q8_m5_c512_r1 |
+| qwen2.5-32b-q8 | 512 | PP 3:2 | eval_set | no | 0/1 | oom_worker_load | 19.359 | -1.6 | 12.775 | -0.94 | A1_wifi_qwen2.5-32b-q8_m5_c512prop_r1 |
+| qwen2.5-32b-q8 | 512 | TP 3:2 | eval_set | no | 0/1 | oom_requester_compute | 19.079 | -1.32 | 12.787 | -0.95 | B1_wifi_qwen2.5-32b-q8_m5_c512prop_r1 |
+| qwen2.5-32b-q8 | 4096 | PP default | eval_set | no | 0/1 | oom_worker_load | 19.385 | -1.63 | 13.633 | -1.79 | A1_wifi_qwen2.5-32b-q8_m5_c4096_r2 |
+| qwen2.5-32b-q8 | 4096 | PP 3:2 | eval_set | no | 0/1 | oom_worker_load | 19.883 | -2.12 | 13.134 | -1.29 | A1_wifi_qwen2.5-32b-q8_m5_c4096prop_r1 |
+| qwen2.5-32b-q8 | 4096 | PP balanced | eval_set | no | 0/1 | oom_worker_load | 16.395 | 1.36 | 16.622 | -4.78 | A1_wifi_qwen2.5-32b-q8_m5_c4096bal_r2 |
+| qwen2.5-32b-q8 | 4096 | TP | eval_set | no | 0/1 | oom_worker_load | 16.51 | 1.25 | 16.51 | -4.67 | B1_wifi_qwen2.5-32b-q8_m5_c4096_r2 |
+| qwen2.5-32b-q8 | 4096 | TP 3:2 | eval_set | no | 0/1 | oom_requester_compute | 19.575 | -1.82 | 13.174 | -1.33 | B1_wifi_qwen2.5-32b-q8_m5_c4096prop_r2 |
+| qwen2.5-7b-bf16 | 4096 | TP torch | eval_set | yes | 1/1 | - | - | - | - | - | B1t_wifi_qwen2.5-7b-bf16_m5_c4096_r1 |
+| qwen2.5-7b-q4km | 4096 | local M5 | eval_set | yes | 1/1 | - | 4.415 | 13.34 | - | - | BASELINE_local_qwen2.5-7b-q4km_m5_c4096_r1 |
+| qwen2.5-7b-q4km | 4096 | local Air | eval_set | yes | 1/1 | - | - | - | 4.415 | 7.4 | BASELINE_local_qwen2.5-7b-q4km_air_c4096_r2 |
+| qwen2.5-7b-q4km | 4096 | PP default | eval_set | yes | 1/1 | - | 3.262 | 14.5 | 1.77 | 10.07 | A1_wifi_qwen2.5-7b-q4km_m5_c4096_r1 |
+| qwen2.5-7b-q4km | 4096 | TP | eval_set | yes | 1/1 | - | 2.271 | 15.49 | 2.271 | 9.57 | B1_wifi_qwen2.5-7b-q4km_m5_c4096_r1 |
+| qwen2.5-7b-q4km | 32768 | local M5 | eval_set | yes | 1/1 | - | 5.973 | 11.79 | - | - | BASELINE_local_qwen2.5-7b-q4km_m5_c32768_r1 |
+| qwen2.5-7b-q4km | 32768 | local Air | eval_set | yes | 1/1 | - | - | - | 5.973 | 5.84 | BASELINE_local_qwen2.5-7b-q4km_air_c32768_r1 |
+| qwen2.5-7b-q4km | 32768 | PP default | eval_set | yes | 1/1 | - | 4.164 | 13.6 | 2.453 | 9.39 | A1_wifi_qwen2.5-7b-q4km_m5_c32768_r1 |
+| qwen2.5-7b-q4km | 32768 | TP | eval_set | yes | 1/1 | - | 3.064 | 14.7 | 3.064 | 8.78 | B1_wifi_qwen2.5-7b-q4km_m5_c32768_r1 |
+
+End of the Session 5 block. Bench rows after this line go to a new "Bench matrix, continued" table.

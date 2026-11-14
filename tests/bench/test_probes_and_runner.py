@@ -165,6 +165,11 @@ def test_append_results_md(tmp_path):
     rec["network"].update({"awdl": "down", "added_delay_ms": 10.0}); rec["prompts"] = {"fixed_tokens": 256, "set": "eval_long"}
     runmod.append_results_md(rec, md)
     assert "| wifi; awdl down; delay 10.0 ms; fixed 256; eval_long | 3.2 | 240 | 6.2 pooled |" in md.read_text()
+    # a hand-written section appended after the table: the next row opens a continuation table
+    md.write_text(md.read_text() + "\n## Session 5\n\nText.\n")
+    runmod.append_results_md(rec, md)
+    tail = md.read_text().split("## Session 5")[1]
+    assert "### Bench matrix, continued" in tail and "| date | id |" in tail and tail.rstrip().endswith("|")
 
 
 def test_stop_all_kills_process_group():

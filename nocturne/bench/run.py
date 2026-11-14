@@ -49,6 +49,8 @@ def append_results_md(rec: dict, path: Path = RESULTS_MD) -> None:
     with path.open("a") as f:
         if "## Bench matrix (nocturne/bench" not in text:
             f.write(RESULTS_MD_HEADER)
+        elif not text.rstrip().splitlines()[-1].startswith("|"):
+            f.write("\n### Bench matrix, continued\n\n" + RESULTS_MD_HEADER.split("\n\n")[-1])
         req = next(p["host"] for p in rec["peers"] if p["role"] == "requester")
         workers = ",".join(p["host"] for p in rec["peers"] if p["role"] == "worker") or "-"
         # Same columns as the rows written since 2026-10-26 (the table is append-only): S = rpc_commands_per_token,
