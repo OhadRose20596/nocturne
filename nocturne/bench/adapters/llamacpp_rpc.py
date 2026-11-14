@@ -290,6 +290,9 @@ class LlamaCppRpc(Engine):
                 continue
             flags.append(subst.get(tok, tok))
             i += 1
+        for tok, val in self.overrides.items():
+            if tok not in tmpl:
+                flags += [tok, val] if val else [tok]
         flags += ["--port", str(self.peers["server_port"]), "-c", str(self.ctx * max(1, k))] + FIXED_SERVER_FLAGS
         return flags
 

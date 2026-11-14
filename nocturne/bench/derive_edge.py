@@ -16,7 +16,7 @@ DEVLINE = re.compile(r"-\s+(MTL\d+|RPC\d+)\s*:\s*(.+?)\s*\((\d+) MiB, \d+ MiB fr
 WDEV = re.compile(r"MTL\d+: .*?\((\d+) MiB, \d+ MiB free\)")
 NODES = ("m5", "air")
 invalid: list[str] = []
-PARTITION_ORDER = ["local M5", "local Air", "PP default", "PP 3:2", "PP balanced", "TP", "TP 3:2", "TP torch"]
+PARTITION_ORDER = ["local M5", "local Air", "PP default", "PP 3:2", "PP 3:2 no-mmap", "PP balanced", "TP", "TP 3:2", "TP torch"]
 # Runs that carry no memory evidence for a reason the record itself cannot show.
 EXCLUDE = {"B1_wifi_qwen2.5-32b-q6k_m5_c4096prop_r1": "the Air dropped off the network during load (2026-11-08 05:25; ssh to the Air timed out in the runs before and after it)"}
 
@@ -27,6 +27,8 @@ def partition(r: dict, var) -> str:
         req = next(p for p in r["peers"] if p["role"] == "requester")
         return "local M5" if req["host"] == "MMF4FWRG4R" else "local Air"
     if c == "A1":
+        if "nommap" in (var or ""):
+            return "PP 3:2 no-mmap"
         return "PP balanced" if "bal" in (var or "") else ("PP 3:2" if "prop" in (var or "") else "PP default")
     if c == "B1":
         return "TP 3:2" if "prop" in (var or "") else "TP"

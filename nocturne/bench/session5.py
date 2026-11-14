@@ -22,10 +22,10 @@ PY = sys.executable
 SIZE = ["qwen2.5-7b-q4km", "qwen2.5-14b-q4km", "qwen2.5-32b-q4km", "qwen2.5-32b-q5km", "qwen2.5-32b-q6k", "qwen2.5-32b-q8"]
 NO_WORKER_COPY = {"qwen2.5-32b-q8"}          # deleted on the Air after the hash check (disk); workers never read it
 LABEL = {("A1", ""): "PP default", ("A1", "prop"): "PP 3:2", ("A1", "bal"): "PP balanced", ("B1", ""): "TP",
-         ("B1", "prop"): "TP 3:2", ("BASELINE", ""): "local", ("B1t", ""): "TP torch"}
+         ("B1", "prop"): "TP 3:2", ("A1", "propnommap"): "PP 3:2 no-mmap", ("BASELINE", ""): "local", ("B1t", ""): "TP torch"}
 # Device order differs by mode on 1e7bcf3: layer mode lists RPC devices first (-ts Air,M5), tensor mode puts the
 # requester first (-ts M5,Air; checked against the worker's set_tensor bytes, 2026-11-07). Both give M5 3, Air 2.
-TS = {("A1", "bal"): "1,1", ("A1", "prop"): "2,3", ("B1", "prop"): "3,2"}
+TS = {("A1", "bal"): "1,1", ("A1", "prop"): "2,3", ("A1", "propnommap"): "2,3", ("B1", "prop"): "3,2"}
 
 
 def now() -> str:
@@ -80,6 +80,8 @@ class Step:
             a += ["--fixed-tokens", str(self.fixed)]
         if (self.cell, self.var) in TS:
             a.append(f"--override-flag=-ts={TS[(self.cell, self.var)]}")
+        if "nommap" in self.var:
+            a.append("--override-flag=--load-mode=none")
         return a
 
 
@@ -131,9 +133,21 @@ class Orchestrator:
             self.say("Air not reachable over ssh; retrying in 60 s")
             time.sleep(60)
 
+    def prune_air_cache(self, min_free_gb: int = 25):
+        """ggml-rpc-server -c stores every received tensor on the Air's disk; clear it when free space runs low."""
+        ssh = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", self.air]
+        r = subprocess.run(ssh + ["df -g ~ | tail -1 | awk '{print $4}'"], capture_output=True, text=True, timeout=60)
+        free = r.stdout.strip()
+        if not free.isdigit() or int(free) >= min_free_gb:
+            return
+        r = subprocess.run(ssh + ["du -sh ~/Library/Caches/llama.cpp/rpc; rm -rf ~/Library/Caches/llama.cpp/rpc; "
+                                  "df -g ~ | tail -1 | awk '{print $4}'"], capture_output=True, text=True, timeout=600)
+        self.say(f"Air free disk {free} GB: cleared the RPC tensor cache ({' '.join(r.stdout.split())} GB free after)")
+
     def preflight(self, model: str):
         if model in self.preflighted or self.a.dry_run:
             return
+        self.prune_air_cache()
         argv = [PY, "-m", "nocturne.bench.preflight", "--model", model, "--min-free-gb", "25"]
         if model in NO_WORKER_COPY:
             argv.append("--no-worker-model")
@@ -201,7 +215,8 @@ class Orchestrator:
         if len(have) >= s.reps:
             s.status = "done earlier: " + ", ".join("ok" if r["success"] else str(r["failure_class"]) for r in have)
             return
-        self.preflight(s.model)
+        if s.cell != "B1t":
+            self.preflight(s.model)
         while len(s.records()) < s.reps:
             self.gate()
             s.status, s.t0 = "running", now()
@@ -295,6 +310,11 @@ class Orchestrator:
             g3 += [Step("G3", c, best["model"], int(best["ctx"]), v, pset="eval_long", fixed=256, subset=3),
                    Step("G3", c, best["model"], int(best["ctx"]), v, pset="eval_kv4k", fixed=64, subset=None)]
         self.group("G3", "real long prompts at the edge of each partition", g3)
+        self.group("G2c", "Q-C candidate: 32B Q6_K ctx 16384, TP 3:2 completed where both PP splits failed; repeats",
+                   [Step("G2c", "A1", "qwen2.5-32b-q6k", 16384, "prop", reps=3), Step("G2c", "B1", "qwen2.5-32b-q6k", 16384, "prop", reps=3),
+                    Step("G2c", "A1", "qwen2.5-32b-q6k", 16384, "", reps=2)])
+        self.group("G2d", "Q-C mechanism: 32B Q6_K ctx 16384 PP 3:2 with the weights not memory-mapped (--load-mode none)",
+                   [Step("G2d", "A1", "qwen2.5-32b-q6k", 16384, "propnommap", reps=2)])
         self.group("G5", "torch_tp engine, bf16, ctx 4096",
                    [Step("G5", "B1t", "qwen2.5-1.5b-bf16", 4096), Step("G5", "B1t", "qwen2.5-7b-bf16", 4096)])
 
