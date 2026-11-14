@@ -1,6 +1,6 @@
 # Session 5 progress
 
-Updated 2026-11-14 16:06:14. Steps known so far: 59, finished: 53. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
+Updated 2026-11-14 16:06:14. Steps known so far: 62, finished: 59. Later groups add steps from earlier results (the largest model that fits, the edge per partition).
 
 | group | step | status | records | start | end |
 |---|---|---|---|---|---|
@@ -57,12 +57,15 @@ Updated 2026-11-14 16:06:14. Steps known so far: 59, finished: 53. Later groups 
 | G4 | qwen2.5-7b-q4km ctx 32768 Air alone | done earlier: ok | BASELINE_local_qwen2.5-7b-q4km_air_c32768_r1 |  |  |
 | G4 | qwen2.5-7b-q4km ctx 32768 PP default | done earlier: ok | A1_wifi_qwen2.5-7b-q4km_m5_c32768_r1 |  |  |
 | G4 | qwen2.5-7b-q4km ctx 32768 TP | done earlier: ok | B1_wifi_qwen2.5-7b-q4km_m5_c32768_r1 |  |  |
-| G3 | qwen2.5-32b-q6k ctx 4096 PP default, eval_long | pending |  |  |  |
-| G3 | qwen2.5-32b-q6k ctx 4096 PP default, eval_kv4k | pending |  |  |  |
-| G3 | qwen2.5-32b-q6k ctx 4096 PP 3:2, eval_long | pending |  |  |  |
-| G3 | qwen2.5-32b-q6k ctx 4096 PP 3:2, eval_kv4k | pending |  |  |  |
-| G3 | qwen2.5-32b-q6k ctx 16384 TP 3:2, eval_long | pending |  |  |  |
-| G3 | qwen2.5-32b-q6k ctx 16384 TP 3:2, eval_kv4k | pending |  |  |  |
+| G3 | qwen2.5-32b-q6k ctx 4096 PP default, eval_long | done earlier: ok | A1_wifi_qwen2.5-32b-q6k_m5_c4096long_r1 |  |  |
+| G3 | qwen2.5-32b-q6k ctx 4096 PP default, eval_kv4k | done earlier: ok | A1_wifi_qwen2.5-32b-q6k_m5_c4096kv4k_r1 |  |  |
+| G3 | qwen2.5-32b-q6k ctx 4096 PP 3:2, eval_long | done earlier: ok | A1_wifi_qwen2.5-32b-q6k_m5_c4096proplong_r1 |  |  |
+| G3 | qwen2.5-32b-q6k ctx 4096 PP 3:2, eval_kv4k | done earlier: ok | A1_wifi_qwen2.5-32b-q6k_m5_c4096propkv4k_r1 |  |  |
+| G3 | qwen2.5-32b-q6k ctx 16384 TP 3:2, eval_long | done earlier: ok | B1_wifi_qwen2.5-32b-q6k_m5_c16384proplong_r1 |  |  |
+| G3 | qwen2.5-32b-q6k ctx 16384 TP 3:2, eval_kv4k | done earlier: ok | B1_wifi_qwen2.5-32b-q6k_m5_c16384propkv4k_r1 |  |  |
+| G2c | qwen2.5-32b-q6k ctx 16384 PP 3:2 | pending |  |  |  |
+| G2c | qwen2.5-32b-q6k ctx 16384 TP 3:2 | pending |  |  |  |
+| G2c | qwen2.5-32b-q6k ctx 16384 PP default | pending |  |  |  |
 
 ## Log (last 40 lines)
 
@@ -90,4 +93,6 @@ Changes not staged for commit:
 [2026-11-14 16:06:14] == G4: 14B and 7B Q4_K_M, every partition, ctx 4096 and 32768 (16 steps)
 [2026-11-14 16:06:14] commit G4: ok
 [2026-11-14 16:06:14] == G3: real long prompts at the edge of each partition (6 steps)
+[2026-11-14 16:06:14] commit G3: ok
+[2026-11-14 16:06:14] == G2c: Q-C candidate: 32B Q6_K ctx 16384, TP 3:2 completed where both PP splits failed; repeats (3 steps)
 ```
