@@ -59,7 +59,7 @@ Bytes per step: every hidden state frame carries `2 * hidden` bytes (bf16) plus 
 So `bytes ~= (embed + layers + hops) * (2 * hidden + 24)`.
 The formula counts every frame sent by every process. The old two rank engine reported 56 all-reduce frames per step: one direction only (rank 0's sends). Both directions plus the STEP frame make 113, and its 0.81 MB per step already counted both directions.
 Prediction: the counters match this formula exactly on every run (frames), and within 1 percent for bytes. Confidence 90 percent. The 10 percent is a frame I forgot (for example a reset or a metrics frame inside the decode window).
-Outcome: holds. Measured frames per decode step equal the formula on all 25 completed placement runs (2, 29, 34, 115, 116, 346, 1148). Bytes per step match the estimate (for example 819,932 against 0.820 MB for P1, 7,208 against 7.2 kB for P5).
+Outcome: holds. Measured frames per decode step equal the formula on all 24 completed placement runs (2, 29, 34, 115, 116, 346, 1148). Bytes per step match the estimate (for example 819,932 against 0.820 MB for P1, 7,208 against 7.2 kB for P5).
 
 ## Correctness criterion, and one problem with it
 
