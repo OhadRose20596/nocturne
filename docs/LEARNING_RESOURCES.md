@@ -42,11 +42,13 @@ Format: `- [tag] Title — why it matters for us. URL`
 
 ## 5. Distributed LLM inference — prior art (literature review core)
 
-- [must] Borzunov et al., **Petals: Collaborative Inference and Fine-tuning of Large Models** (2022). The closest system; DHT-based, client routes through servers. https://arxiv.org/abs/2209.01188
+- [must] Borzunov et al., **Petals: Collaborative Inference and Fine-tuning of Large Models** (2022). The closest system; DHT-based, client routes through servers. Session 6: related work for hybrid placement; every server holds whole blocks (pipeline stages only), so a node smaller than one block cannot take part. https://arxiv.org/abs/2209.01188
 - [must] Borzunov et al., **Distributed Inference and Fine-tuning of LLMs Over The Internet** (NeurIPS 2023). Fault tolerance and load balancing under churn — our O6 baseline. https://arxiv.org/abs/2312.08361
 - [must] Li et al., **Prima.cpp: Fast 30–70B LLM Inference on Heterogeneous and Low-Resource Home Clusters** (2025). Piped-ring parallelism + Halda layer-to-device assignment — the placement algorithm to compare against. https://arxiv.org/abs/2504.08791
 - [should] **exo** (exo-explore). Peer-to-peer, auto-discovery, ring memory-weighted partitioning, no master. The "no coordinator" alternative. https://github.com/exo-explore/exo
 - [should] **Petals repository** — read `server/block_selection.py` for how servers pick which blocks to serve (rarest-first analog). https://github.com/bigscience-workshop/petals
+- [must] Shoeybi et al., **Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism** (2019). Column and row splits of attention and MLP, and the vocab parallel embedding and output head; the split the torch_tp engine uses in session 6. https://arxiv.org/abs/1909.08053
+- [must] **vLLM, `QKVParallelLinear` (source)**: how a tensor parallel group larger than the number of KV heads replicates KV heads (`num_kv_head_replicas`); the reference for session 6 KV head replication. https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/linear.py
 - [should] Mei et al., **Helix: Distributed Serving of LLMs via Max-Flow on Heterogeneous GPUs** (2024). Placement as an optimization problem. https://arxiv.org/abs/2406.01566
 - [should] **HexGen-2** — heterogeneous serving, placement via graph partitioning. https://arxiv.org/abs/2502.07903
 - [background] Kwon et al., **vLLM / PagedAttention** (2023). KV-cache management background. https://arxiv.org/abs/2309.06180
@@ -87,6 +89,7 @@ Format: `- [tag] Title — why it matters for us. URL`
 - [must] **Transformers, Qwen2 model code and GGUF loading** — the reference forward pass our sharded blocks must match, and `gguf_file=` for loading row A's exact Q4_K_M weights. https://huggingface.co/docs/transformers/en/model_doc/qwen2
 - [must] **safetensors, `safe_open` and tensor slicing** — load one shard of a weight without materializing the whole file; each rank reads only its slice. https://huggingface.co/docs/safetensors/en/api/torch
 - [must] **matplotlib, stacked bar charts** (`bar(..., bottom=)`) — the session 5 memory edge figures (per node model, KV and compute against the capacity line). https://matplotlib.org/stable/gallery/lines_bars_and_markers/bar_stacked.html
+- [must] **PyTorch, `torch.mps.set_per_process_memory_fraction`**: caps one process's MPS allocations; session 6 uses it to enforce a rank's memory budget (checked first by a probe that allocates above the cap). https://docs.pytorch.org/docs/stable/generated/torch.mps.set_per_process_memory_fraction.html
 
 ---
 
