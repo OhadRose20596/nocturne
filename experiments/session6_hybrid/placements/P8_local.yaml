@@ -1,0 +1,50 @@
+# P8-local: each pair on one Mac, stages alternating between the Macs
+model: qwen2.5-0.5b-bf16
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 3]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+      - {host: m5, device: mps, port: 50071}
+  - name: s1
+    layers: [3, 6]
+    ranks:
+      - {host: air, device: mps, port: 50070}
+      - {host: air, device: mps, port: 50071}
+  - name: s2
+    layers: [6, 9]
+    ranks:
+      - {host: m5, device: mps, port: 50072}
+      - {host: m5, device: mps, port: 50073}
+  - name: s3
+    layers: [9, 12]
+    ranks:
+      - {host: air, device: mps, port: 50072}
+      - {host: air, device: mps, port: 50073}
+  - name: s4
+    layers: [12, 15]
+    ranks:
+      - {host: m5, device: mps, port: 50074}
+      - {host: m5, device: mps, port: 50075}
+  - name: s5
+    layers: [15, 18]
+    ranks:
+      - {host: air, device: mps, port: 50074}
+      - {host: air, device: mps, port: 50075}
+  - name: s6
+    layers: [18, 21]
+    ranks:
+      - {host: m5, device: mps, port: 50076}
+      - {host: m5, device: mps, port: 50077}
+  - name: s7
+    layers: [21, 24]
+    lm_head: true
+    ranks:
+      - {host: air, device: mps, port: 50076}
+      - {host: air, device: mps, port: 50077}

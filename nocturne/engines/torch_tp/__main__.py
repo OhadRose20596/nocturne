@@ -3,7 +3,11 @@ compare: greedy output against transformers generate (stage 1 and 2 of the B1t p
   python -m nocturne.engines.torch_tp worker --bind <addr> --port 50053 --model <dir> --rank 1 --world 2
   python -m nocturne.engines.torch_tp serve --model <dir> --world 2 --peer <addr>:50053 --port 8092 --max-seq-len 4096
   python -m nocturne.engines.torch_tp compare --model <dir> --world 1 --n 20
-  python -m nocturne.engines.torch_tp.microbench listen|run ...   (transport exchange benchmark, no model)"""
+  python -m nocturne.engines.torch_tp.microbench listen|run ...   (transport exchange benchmark, no model)
+Session 6, hybrid placement (stages of TP groups; README "Placement file"):
+  python -m nocturne.engines.torch_tp plan --placement <yaml> [--force]          planner table and frame formula
+  python -m nocturne.engines.torch_tp launch --placement <yaml> --port 8092       start every rank, serve HTTP
+  python -m nocturne.engines.torch_tp rank --listen <addr[,addr]> --port N --model <dir> --device mps   (started by launch)"""
 import argparse
 import sys
 
@@ -27,7 +31,54 @@ def main(argv=None):
     c.add_argument("--model", required=True); c.add_argument("--world", type=int, default=1); c.add_argument("--peer")
     c.add_argument("--n", type=int, default=20); c.add_argument("--max-tokens", type=int, default=64)
     c.add_argument("--max-seq-len", type=int, default=4096); c.add_argument("--device")
+    r = sub.add_parser("rank")
+    r.add_argument("--listen", required=True, help="comma separated addresses chosen on purpose (never 0.0.0.0)")
+    r.add_argument("--port", type=int, required=True); r.add_argument("--model", required=True); r.add_argument("--device")
+    r.add_argument("--name", default=""); r.add_argument("--tag", default="", help="run tag, lets the launcher find the process")
+    pl = sub.add_parser("plan")
+    pl.add_argument("--placement", required=True); pl.add_argument("--peers", default="~/.nocturne/peers.yaml")
+    pl.add_argument("--force", action="store_true", help="print the plan even when a rank is over its budget")
+    la = sub.add_parser("launch")
+    la.add_argument("--placement", required=True); la.add_argument("--peers", default="~/.nocturne/peers.yaml")
+    la.add_argument("--port", type=int, default=8092); la.add_argument("--log-dir")
+    la.add_argument("--force", action="store_true", help="skip the planner's budget check (the ranks still enforce it)")
     a = ap.parse_args(argv)
+    if a.cmd == "rank":
+        import os
+        from .hybrid import rank_main
+        return rank_main(a.listen.split(","), a.port, os.path.expanduser(a.model), a.device)
+    if a.cmd == "plan":
+        import os
+        from .config import load_config
+        from .launch import load_peers, model_dir_of
+        from .plan import Dims, PlanError, format_plan, placement_from_dict, plan
+        import yaml
+        p = placement_from_dict(yaml.safe_load(open(a.placement)))
+        cfg = load_config(os.path.expanduser(model_dir_of(p.model, load_peers(a.peers))))
+        try:
+            specs = plan(cfg, p)
+        except PlanError as e:
+            print(f"rejected: {e}")
+            if not a.force:
+                return 2
+            specs = plan(cfg, p, check_budget=False)
+        print(format_plan(specs, Dims.of(cfg)))
+        return 0
+    if a.cmd == "launch":
+        from transformers import AutoTokenizer
+        from .launch import Launch
+        from .server import serve
+        L = Launch(a.placement, a.peers, a.log_dir, force=a.force)
+        eng = L.start()
+        tok = AutoTokenizer.from_pretrained(L.local_model_dir)
+        srv = serve(eng, tok, "127.0.0.1", a.port, model_name=L.placement.model)
+        try:
+            srv.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            L.stop()
+        return 0
     if a.cmd == "worker":
         from .engine import serve_rank
         serve_rank(a.model, a.rank, a.world, a.bind, a.port, a.device)

@@ -1,0 +1,16 @@
+# P3: 1.5B TP 3 (4, 4, 4 heads, both KV heads replicated), all on the M5
+model: qwen2.5-1.5b-bf16
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 28]
+    embed: true
+    lm_head: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+      - {host: m5, device: mps, port: 50071}
+      - {host: m5, device: mps, port: 50072}

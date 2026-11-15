@@ -1,0 +1,29 @@
+# P9: P7 with the weak ranks on CPU (a CPU only volunteer)
+model: qwen2.5-7b-bf16
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 12]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+  - name: s1
+    layers: [12, 14]
+    ranks:
+      - {host: m5, device: cpu, port: 50071, budget_gb: 0.4}
+      - {host: m5, device: cpu, port: 50072, budget_gb: 0.4}
+      - {host: air, device: cpu, port: 50070, budget_gb: 0.4}
+  - name: s2
+    layers: [14, 28]
+    ranks:
+      - {host: air, device: mps, port: 50071}
+  - name: head
+    lm_head: true
+    ranks:
+      - {host: m5, device: cpu, port: 50073, budget_gb: 0.4}
+      - {host: air, device: cpu, port: 50072, budget_gb: 0.4}
+      - {host: air, device: cpu, port: 50073, budget_gb: 0.4}

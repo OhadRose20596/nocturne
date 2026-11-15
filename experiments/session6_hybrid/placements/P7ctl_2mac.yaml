@@ -1,0 +1,29 @@
+# P7-ctl: the weak nodes under pure PP, M5 and Air; the planner must reject it
+model: qwen2.5-7b-bf16
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 12]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+  - name: s1a
+    layers: [12, 13]
+    ranks:
+      - {host: m5, device: mps, port: 50071, budget_gb: 0.4}
+  - name: s1b
+    layers: [13, 14]
+    ranks:
+      - {host: m5, device: mps, port: 50072, budget_gb: 0.4}
+  - name: s2
+    layers: [14, 28]
+    ranks:
+      - {host: air, device: mps, port: 50070}
+  - name: head
+    lm_head: true
+    ranks:
+      - {host: air, device: mps, port: 50071, budget_gb: 0.4}

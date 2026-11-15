@@ -28,7 +28,7 @@ from .config import Qwen2Config, load_config
 from .engine import LinkLost, REDUCE_DTYPES, _from_bytes, mem_metrics, pick_device
 from .loader import BudgetExceeded, LoadSpec, load_slices
 from .model import Comm, Qwen2TP, pick_global
-from .plan import Dims, RankSpec
+from .plan import Dims, RankSpec, needed_peers
 
 FLAG_LOGITS = 1
 DATA_TIMEOUT_S = None
@@ -45,6 +45,14 @@ def _flush_print(*a, **kw):
 
 
 # ---- memory of this process ------------------------------------------------------------------------------------------
+def idle_footprint(device: str) -> dict:
+    """Footprint of this process with the device initialized and nothing loaded (the runtime overhead)."""
+    torch.zeros(1, device=device)
+    if device == "mps":
+        torch.mps.synchronize()
+    return footprint()
+
+
 def footprint() -> dict:
     """phys_footprint and its lifetime maximum (macOS proc_pid_rusage, flavor 4), and peak RSS (getrusage)."""
     out = {"peak_rss_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss}
@@ -150,15 +158,10 @@ class RankRuntime:
         self.loaded_bytes = self.kv_bytes = 0
         self.load_s = 0.0
         self.steps = 0
+        self.idle = idle_footprint(device)
 
     def peers(self) -> dict[int, str]:
-        """gid -> role of every data link this rank needs."""
-        p = {s.gid: "grp" for s in self.group if s.gid != self.spec.gid}
-        if self.up_spec:
-            p[self.up_spec.gid] = "up"
-        for s in self.down_specs:
-            p[s.gid] = "down"
-        return p
+        return needed_peers(self.spec, self.specs)
 
     def load(self) -> None:
         d = Dims.of(self.cfg)
@@ -224,7 +227,7 @@ class RankRuntime:
     def metrics(self) -> dict:
         m = {"name": self.spec.name, "gid": self.spec.gid, "host": self.spec.host, "device": self.device,
              "pid": os.getpid(), "torch": torch.__version__, "loaded_tensor_bytes": self.loaded_bytes,
-             "kv_bytes": self.kv_bytes, "planned": self.spec.planned, "budget": self.spec.budget, "load_s": self.load_s,
+             "kv_bytes": self.kv_bytes, "idle": self.idle, "planned": self.spec.planned, "budget": self.spec.budget, "load_s": self.load_s,
              "steps": self.steps, "allreduce_calls": self.comm.calls, "links": {k: l.counters.snapshot() for k, l in self.links.items()}}
         m.update(mem_metrics(self.device))
         m.update(footprint())

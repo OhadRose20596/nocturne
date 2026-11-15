@@ -1,0 +1,24 @@
+# P6: 7B hybrid without budgets, widths 1, 3, 1, all on the M5
+model: qwen2.5-7b-bf16
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 12]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+  - name: s1
+    layers: [12, 14]
+    ranks:
+      - {host: m5, device: mps, port: 50071}
+      - {host: m5, device: mps, port: 50072}
+      - {host: m5, device: mps, port: 50073}
+  - name: s2
+    layers: [14, 28]
+    lm_head: true
+    ranks:
+      - {host: m5, device: mps, port: 50074}

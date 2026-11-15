@@ -1,0 +1,18 @@
+# P5: 7B PP only, 2 stages of 1 rank (12 and 16 layers, as llama.cpp chose in A1)
+model: qwen2.5-7b-bf16
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 12]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+  - name: s1
+    layers: [12, 28]
+    lm_head: true
+    ranks:
+      - {host: air, device: mps, port: 50070}

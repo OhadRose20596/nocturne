@@ -1,0 +1,16 @@
+# P2: 7B TP 3, KV aligned heads 14, 7, 7, two on the M5 and one on the Air
+model: qwen2.5-7b-bf16
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 28]
+    embed: true
+    lm_head: true
+    ranks:
+      - {host: m5, device: mps, port: 50070, heads: 14}
+      - {host: m5, device: mps, port: 50071, heads: 7}
+      - {host: air, device: mps, port: 50070, heads: 7}

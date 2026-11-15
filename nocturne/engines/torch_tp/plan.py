@@ -303,6 +303,32 @@ def plan(cfg, p: Placement, check_budget: bool = True) -> list[RankSpec]:
     return specs
 
 
+def needed_peers(spec: RankSpec, specs: list[RankSpec]) -> dict[int, str]:
+    """gid -> role ("grp", "up", "down") of every data link a rank needs: its group, the previous stage's leader,
+    and, for a leader, every rank of the next stage."""
+    p = {s.gid: "grp" for s in specs if s.stage == spec.stage and s.gid != spec.gid}
+    up = next((s for s in specs if s.stage == spec.stage - 1 and s.group_rank == 0), None)
+    if up:
+        p[up.gid] = "up"
+    if spec.group_rank == 0:
+        for s in specs:
+            if s.stage == spec.stage + 1:
+                p[s.gid] = "down"
+    return p
+
+
+def listen_addrs(specs: list[RankSpec], hosts: dict[str, str]) -> dict[int, list[str]]:
+    """Per rank, the addresses its inbound peers need: 127.0.0.1 for a peer on the same host, the host's chosen
+    address for a peer on another host. Inbound peers are the coordinator (ctl link, gid 0's host) and every needed
+    peer with a higher gid."""
+    out = {}
+    for s in specs:
+        inbound = [specs[g].host for g in needed_peers(s, specs) if g > s.gid] + ([specs[0].host] if s.gid else [])
+        addrs = (["127.0.0.1"] if s.host in inbound else []) + ([hosts[s.host]] if any(h != s.host for h in inbound) else [])
+        out[s.gid] = addrs or ["127.0.0.1"]
+    return out
+
+
 # ---- frames per decode step (section 4 of the session 6 prompt) --------------------------------------------------------
 def frames_per_step(specs: list[RankSpec], embed_split: bool | None = None) -> dict:
     """Predicted frames sent by all processes in one decode step, by term. The coordinator is gid 0."""
