@@ -1,0 +1,34 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "P7ctl_2mac_qwen2.5-7b-bf16_r1",
+ "date": "2026-11-15T21:30:52+0200",
+ "placement": {
+  "file": "experiments/session6_hybrid/placements/P7ctl_2mac.yaml",
+  "sha256": "b66c2d2892f8836143fd56cd3af5b1a7dcb1932db8c42b08541be8848cd6763d",
+  "yaml": "# P7-ctl: the weak nodes under pure PP, M5 and Air; the planner must reject it\nmodel: qwen2.5-7b-bf16\ncoordinator: {host: m5}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nstages:\n  - name: s0\n    layers: [0, 12]\n    embed: true\n    ranks:\n      - {host: m5, device: mps, port: 50070}\n  - name: s1a\n    layers: [12, 13]\n    ranks:\n      - {host: m5, device: mps, port: 50071, budget_gb: 0.4}\n  - name: s1b\n    layers: [13, 14]\n    ranks:\n      - {host: m5, device: mps, port: 50072, budget_gb: 0.4}\n  - name: s2\n    layers: [14, 28]\n    ranks:\n      - {host: air, device: mps, port: 50070}\n  - name: head\n    lm_head: true\n    ranks:\n      - {host: air, device: mps, port: 50071, budget_gb: 0.4}\n"
+ },
+ "git": {
+  "sha": "36e3843e0dc8b598d44a14aeeff236c34faecfe2",
+  "dirty": false
+ },
+ "torch_coordinator": "2.14.1",
+ "args": {
+  "placement": "experiments/session6_hybrid/placements/P7ctl_2mac.yaml",
+  "run_id": "P7ctl_2mac_qwen2.5-7b-bf16_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "R0_qwen2.5-7b-bf16_mps_r3"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "force": false,
+  "mps_fraction_cap": false
+ },
+ "outcome": "plan_rejected",
+ "error": "over budget: s1a/0 on m5: planned 0.590 GB (weights 0.466, KV 0.008, workspace 0.115) > budget 0.400 GB; s1b/0 on m5: planned 0.590 GB (weights 0.466, KV 0.008, workspace 0.115) > budget 0.400 GB; head/0 on air: planned 1.106 GB (weights 1.090, KV 0.000, workspace 0.016) > budget 0.400 GB"
+}

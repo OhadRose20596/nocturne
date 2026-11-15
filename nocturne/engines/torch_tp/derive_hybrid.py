@@ -33,6 +33,9 @@ def records() -> list[dict]:
     out = []
     for f in sorted(RUNS.glob("*/record.json")):
         r = json.loads(f.read_text())
+        note = f.parent / "ABORTED.txt"
+        if note.exists():            # stopped by hand; the note says why and nothing from it is used
+            r["outcome"], r["error"] = "aborted", note.read_text().strip()
         if r.get("outcome"):
             out.append(r)
     return out
@@ -143,15 +146,31 @@ def placement_diagram(path: Path) -> None:
     plt.close(fig)
 
 
+def representative(recs: list[dict]) -> list[dict]:
+    """One completed run per cell: the two Mac variant when there is one, else loopback; run 1; no controls."""
+    by_cell: dict[str, list[dict]] = {}
+    for r in recs:
+        stem = Path(r["placement"]["file"]).stem
+        if r["outcome"] != "completed" or stem.startswith("R0_") or "bf16ctl" in r["run_id"] or "mpscap" in r["run_id"]:
+            continue
+        by_cell.setdefault(stem.split("_")[0], []).append(r)
+    out = []
+    for cell in sorted(by_cell):
+        rs = sorted(by_cell[cell], key=lambda r: (0 if any(t in r["run_id"] for t in ("_2mac_", "_wifi_")) else 1, r["run_id"]))
+        out.append(rs[0])
+    return out
+
+
 def bytes_figure(recs: list[dict]) -> None:
     import matplotlib.pyplot as plt
-    done = [r for r in recs if r["outcome"] == "completed" and not r["run_id"].startswith("R0_")]
+    done = representative(recs)
     if not done:
         return
     rows = []
     for r in done:
+        cell = Path(r["placement"]["file"]).stem.replace("_2mac", ", two Macs").replace("_wifi", "-wifi, two Macs").replace("_loopback", ", one Mac")
         for k in r["ranks"]:
-            rows.append((f"{r['run_id']}  {k['name']}", k))
+            rows.append((f"{cell}   {k['name']} ({HOST_NAME.get(k['host'], k['host'])}, {k['device']})", k))
     fig, ax = plt.subplots(figsize=(8, 0.22 * len(rows) + 1.4), facecolor=SURFACE)
     _style(ax)
     for i, (label, k) in enumerate(rows):

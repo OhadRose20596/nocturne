@@ -1,0 +1,305 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "P7ctl_2mac_forced_qwen2.5-7b-bf16_r1",
+ "date": "2026-11-15T21:30:54+0200",
+ "placement": {
+  "file": "experiments/session6_hybrid/placements/P7ctl_2mac.yaml",
+  "sha256": "b66c2d2892f8836143fd56cd3af5b1a7dcb1932db8c42b08541be8848cd6763d",
+  "yaml": "# P7-ctl: the weak nodes under pure PP, M5 and Air; the planner must reject it\nmodel: qwen2.5-7b-bf16\ncoordinator: {host: m5}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nstages:\n  - name: s0\n    layers: [0, 12]\n    embed: true\n    ranks:\n      - {host: m5, device: mps, port: 50070}\n  - name: s1a\n    layers: [12, 13]\n    ranks:\n      - {host: m5, device: mps, port: 50071, budget_gb: 0.4}\n  - name: s1b\n    layers: [13, 14]\n    ranks:\n      - {host: m5, device: mps, port: 50072, budget_gb: 0.4}\n  - name: s2\n    layers: [14, 28]\n    ranks:\n      - {host: air, device: mps, port: 50070}\n  - name: head\n    lm_head: true\n    ranks:\n      - {host: air, device: mps, port: 50071, budget_gb: 0.4}\n"
+ },
+ "git": {
+  "sha": "36e3843e0dc8b598d44a14aeeff236c34faecfe2",
+  "dirty": false
+ },
+ "torch_coordinator": "2.14.1",
+ "args": {
+  "placement": "experiments/session6_hybrid/placements/P7ctl_2mac.yaml",
+  "run_id": "P7ctl_2mac_forced_qwen2.5-7b-bf16_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "R0_qwen2.5-7b-bf16_mps_r3"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "force": true,
+  "mps_fraction_cap": false
+ },
+ "outcome": "rank_failed",
+ "model": {
+  "key": "qwen2.5-7b-bf16",
+  "dir": "~/models/hf/Qwen2.5-7B-Instruct",
+  "sha256": {
+   "config.json": "7463bb0ea78315365e6c6b74de4e73bbcc8359dfb0c5a737584e077d42c0b03c",
+   "generation_config.json": "3a8f9087e486054c8a4a08dae2e5a3ba62e23da212b5b8c08bc42cb983c3459f",
+   "model-00001-of-00004.safetensors": "a1333e6293854747c481288ea83b348226af178dd565c49b6f9495ba1966aba7",
+   "model-00002-of-00004.safetensors": "f5d25a2772cb825164a2a2c0fb6d51a87e282abf21e4dd75bc5cfb3cd0ea6185",
+   "model-00003-of-00004.safetensors": "8efdec4c1bc12317ae1a38dc42b595ce777738a64deea3fcb8a0a91381bcdfd5",
+   "model-00004-of-00004.safetensors": "1a72d403cdf0c1ec3cb7f289f17b394a01e64394c2e9b3c0f94dbce3faf879bd",
+   "model.safetensors.index.json": "624bf7c47cd12468fdc16e38a47cf4f19e0415b859a223ba3c027eed2f0e1028",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  }
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    12
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": [
+    0,
+    152064
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 6683381760,
+    "kv": 100663296,
+    "workspace": 115015680,
+    "total": 6899060736,
+    "layer_bytes": 466115584,
+    "vocab_bytes": 1089994752,
+    "kv_heads_replicated": 0
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s1a/0",
+   "stage": 1,
+   "stage_name": "s1a",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50071,
+   "layers": [
+    12,
+    13
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": null,
+   "head_rows": null,
+   "final_norm": false,
+   "budget": 400000000,
+   "planned": {
+    "weights": 466115584,
+    "kv": 8388608,
+    "workspace": 115015680,
+    "total": 589519872,
+    "layer_bytes": 466115584,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0
+   }
+  },
+  {
+   "gid": 2,
+   "name": "s1b/0",
+   "stage": 2,
+   "stage_name": "s1b",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50072,
+   "layers": [
+    13,
+    14
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": null,
+   "head_rows": null,
+   "final_norm": false,
+   "budget": 400000000,
+   "planned": {
+    "weights": 466115584,
+    "kv": 8388608,
+    "workspace": 115015680,
+    "total": 589519872,
+    "layer_bytes": 466115584,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0
+   }
+  },
+  {
+   "gid": 3,
+   "name": "s2/0",
+   "stage": 3,
+   "stage_name": "s2",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "air",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    14,
+    28
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": null,
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 6525618176,
+    "kv": 117440512,
+    "workspace": 115015680,
+    "total": 6758074368,
+    "layer_bytes": 466115584,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0
+   }
+  },
+  {
+   "gid": 4,
+   "name": "head/0",
+   "stage": 4,
+   "stage_name": "head",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "air",
+   "device": "mps",
+   "port": 50071,
+   "layers": [
+    0,
+    0
+   ],
+   "q0": 0,
+   "q1": 0,
+   "m0": 0,
+   "m1": 0,
+   "kv0": 0,
+   "kv1": 0,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    152064
+   ],
+   "final_norm": true,
+   "budget": 400000000,
+   "planned": {
+    "weights": 1090001920,
+    "kv": 0,
+    "workspace": 15592448,
+    "total": 1105594368,
+    "layer_bytes": 0,
+    "vocab_bytes": 1089994752,
+    "kv_heads_replicated": 0
+   }
+  }
+ ],
+ "frames": {
+  "predicted": {
+   "token": 0,
+   "embed": 0,
+   "layers": 0,
+   "hops": 4,
+   "head": 1,
+   "total": 5
+  }
+ },
+ "preflight": {
+  "hosts": {
+   "air": {
+    "caffeinate": "on",
+    "awdl": "up",
+    "vpn_state": "disconnected",
+    "engine_sha256": "18dd5c557acf8b88f7b336ecc3d4bb4ec71cf400e8726a0fd9bbecfe07c11622",
+    "model_sha256": {
+     "config.json": "7463bb0ea78315365e6c6b74de4e73bbcc8359dfb0c5a737584e077d42c0b03c",
+     "generation_config.json": "3a8f9087e486054c8a4a08dae2e5a3ba62e23da212b5b8c08bc42cb983c3459f",
+     "model-00001-of-00004.safetensors": "a1333e6293854747c481288ea83b348226af178dd565c49b6f9495ba1966aba7",
+     "model-00002-of-00004.safetensors": "f5d25a2772cb825164a2a2c0fb6d51a87e282abf21e4dd75bc5cfb3cd0ea6185",
+     "model-00003-of-00004.safetensors": "8efdec4c1bc12317ae1a38dc42b595ce777738a64deea3fcb8a0a91381bcdfd5",
+     "model-00004-of-00004.safetensors": "1a72d403cdf0c1ec3cb7f289f17b394a01e64394c2e9b3c0f94dbce3faf879bd",
+     "model.safetensors.index.json": "624bf7c47cd12468fdc16e38a47cf4f19e0415b859a223ba3c027eed2f0e1028",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+   },
+   "m5": {
+    "caffeinate": "on",
+    "awdl": "up",
+    "vpn_state": "disconnected",
+    "engine_sha256": "18dd5c557acf8b88f7b336ecc3d4bb4ec71cf400e8726a0fd9bbecfe07c11622",
+    "model_sha256": {
+     "config.json": "7463bb0ea78315365e6c6b74de4e73bbcc8359dfb0c5a737584e077d42c0b03c",
+     "generation_config.json": "3a8f9087e486054c8a4a08dae2e5a3ba62e23da212b5b8c08bc42cb983c3459f",
+     "model-00001-of-00004.safetensors": "a1333e6293854747c481288ea83b348226af178dd565c49b6f9495ba1966aba7",
+     "model-00002-of-00004.safetensors": "f5d25a2772cb825164a2a2c0fb6d51a87e282abf21e4dd75bc5cfb3cd0ea6185",
+     "model-00003-of-00004.safetensors": "8efdec4c1bc12317ae1a38dc42b595ce777738a64deea3fcb8a0a91381bcdfd5",
+     "model-00004-of-00004.safetensors": "1a72d403cdf0c1ec3cb7f289f17b394a01e64394c2e9b3c0f94dbce3faf879bd",
+     "model.safetensors.index.json": "624bf7c47cd12468fdc16e38a47cf4f19e0415b859a223ba3c027eed2f0e1028",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+   }
+  }
+ },
+ "error": "s1a/0: BudgetExceeded: load: model.layers.12.mlp.up_proj.weight (135.8 MB) would bring tensor bytes to 0.407 GB, over the budget of 0.400 GB; s1b/0: BudgetExceeded: load: model.layers.13.mlp.up_proj.weight (135.8 MB) would bring tensor bytes to 0.407 GB, over the budget of 0.400 GB; head/0: BudgetExceeded: load: lm_head.weight (1090.0 MB) would bring tensor bytes to 1.090 GB, over the budget of 0.400 GB",
+ "commands": [
+  {
+   "host": "m5",
+   "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50071 --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --device mps --name s1a/0 --tag P7ctl_2mac_forced_qwen2.5-7b-bf16_r1"
+  },
+  {
+   "host": "m5",
+   "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1,192.168.1.242 --port 50072 --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --device mps --name s1b/0 --tag P7ctl_2mac_forced_qwen2.5-7b-bf16_r1"
+  },
+  {
+   "host": "air",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1,192.168.1.219 --port 50070 --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --device mps --name s2/0 --tag P7ctl_2mac_forced_qwen2.5-7b-bf16_r1"
+  },
+  {
+   "host": "air",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 192.168.1.219 --port 50071 --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --device mps --name head/0 --tag P7ctl_2mac_forced_qwen2.5-7b-bf16_r1"
+  },
+  {
+   "host": "air",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f '--tag P7ctl_2mac_forced_qwen2.5-7b-bf16_r1'"
+  },
+  {
+   "host": "m5",
+   "cmd": "pkill -f '--tag P7ctl_2mac_forced_qwen2.5-7b-bf16_r1'"
+  }
+ ]
+}
