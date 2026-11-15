@@ -1,0 +1,157 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "R0_qwen2.5-0.5b-bf16_mps_r1",
+ "date": "2026-11-15T19:01:00+0200",
+ "placement": {
+  "file": "experiments/session6_hybrid/placements/R0_0.5b_mps.yaml",
+  "sha256": "5070bce80115a7a8d3cdf2985ede02e4dd6140b35b464326495ddc95875b10db",
+  "yaml": "# R0: one rank reference, 0.5b on the M5 mps\nmodel: qwen2.5-0.5b-bf16\ncoordinator: {host: m5}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nstages:\n  - name: s0\n    layers: [0, 24]\n    embed: true\n    lm_head: true\n    ranks:\n      - {host: m5, device: mps, port: 50070}\n"
+ },
+ "git": {
+  "sha": "ce7363d49552d2038f0674b552131bd7e94fe6d5",
+  "dirty": true
+ },
+ "torch_coordinator": "2.14.1",
+ "args": {
+  "placement": "experiments/session6_hybrid/placements/R0_0.5b_mps.yaml",
+  "run_id": "R0_qwen2.5-0.5b-bf16_mps_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": null,
+  "save_reference": true,
+  "transformers": true,
+  "force": false,
+  "mps_fraction_cap": false
+ },
+ "outcome": "error",
+ "model": {
+  "key": "qwen2.5-0.5b-bf16",
+  "dir": "~/models/hf/Qwen2.5-0.5B-Instruct",
+  "sha256": {
+   "config.json": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+   "model.safetensors": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe"
+  }
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    24
+   ],
+   "q0": 0,
+   "q1": 14,
+   "m0": 0,
+   "m1": 4864,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": [
+    0,
+    151936
+   ],
+   "head_rows": [
+    0,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 988065536,
+    "kv": 50331648,
+    "workspace": 31811840,
+    "total": 1070209024,
+    "layer_bytes": 29824768,
+    "vocab_bytes": 272269312,
+    "kv_heads_replicated": 0
+   }
+  }
+ ],
+ "frames": {
+  "predicted": {
+   "token": 0,
+   "embed": 0,
+   "layers": 0,
+   "hops": 0,
+   "head": 0,
+   "total": 0
+  },
+  "decode_steps": 280,
+  "measured_per_step": 0.0,
+  "bytes_per_step": 0.0,
+  "per_link_per_step": {},
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "m5": {
+    "caffeinate": "on",
+    "awdl": "up",
+    "vpn_state": "disconnected",
+    "engine_sha256": "f3912e2697fb72f2ff3e8be5d07aa6ab9da67119efeca8743dfc47856d2fa01b",
+    "model_sha256": {
+     "config.json": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+     "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+     "model.safetensors": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe"
+    }
+   }
+  }
+ },
+ "load_s": 0.7188720703125,
+ "ranks": [
+  {
+   "name": "s0/0",
+   "gid": 0,
+   "host": "m5",
+   "device": "mps",
+   "pid": 70160,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 988065536,
+   "kv_bytes": 50331648,
+   "idle": {
+    "peak_rss_bytes": 320438272,
+    "phys_footprint_bytes": 229868576,
+    "lifetime_max_phys_footprint_bytes": 229868576
+   },
+   "planned": {
+    "weights": 988065536,
+    "kv": 50331648,
+    "workspace": 31811840,
+    "total": 1070209024,
+    "layer_bytes": 29824768,
+    "vocab_bytes": 272269312,
+    "kv_heads_replicated": 0
+   },
+   "budget": null,
+   "load_s": 0.46314096450805664,
+   "steps": 289,
+   "allreduce_calls": 0,
+   "current_allocated_bytes": 1057113856,
+   "driver_allocated_bytes": 1149960192,
+   "peak_rss_bytes": 472825856,
+   "phys_footprint_bytes": 1500513552,
+   "lifetime_max_phys_footprint_bytes": 1500710160
+  }
+ ],
+ "error": "KeyError: 'links'",
+ "commands": []
+}
