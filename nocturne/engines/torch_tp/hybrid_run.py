@@ -252,6 +252,12 @@ def main(argv=None) -> int:
                                                             "device": L.specs[0].device, "prompts": {p["id"]: p for p in out}}, indent=1))
         np.savez_compressed(run_dir / "first_logits.npz", **logits)
     if a.transformers:
+        import gc
+        L.coordinator.rank.model = None       # free the engine's weights before transformers loads its own copy
+        L.coordinator = co = None
+        gc.collect()
+        if torch.backends.mps.is_available():
+            torch.mps.empty_cache()
         rec["transformers"] = transformers_check(L, out, a, log)
     refs = a.reference
     if refs is None:
