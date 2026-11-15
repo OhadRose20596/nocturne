@@ -12,12 +12,22 @@ import threading
 
 HEADER = struct.Struct("<IBBHII")
 KIND_STEP, KIND_ALLREDUCE, KIND_RESET, KIND_METRICS, KIND_METRICS_REPLY, KIND_SHUTDOWN, KIND_HELLO = range(1, 8)
+# session 6 (hybrid placement): token ids to the first stage, hidden state between stages, (value, index) or local
+# logits from a head rank, the plan, readiness, and a rank's fatal error
+KIND_TOKEN, KIND_HIDDEN, KIND_HEAD, KIND_PLAN, KIND_READY, KIND_ERROR = range(8, 14)
 KIND_NAMES = {KIND_STEP: "step", KIND_ALLREDUCE: "allreduce", KIND_RESET: "reset", KIND_METRICS: "metrics",
-              KIND_METRICS_REPLY: "metrics_reply", KIND_SHUTDOWN: "shutdown", KIND_HELLO: "hello"}
+              KIND_METRICS_REPLY: "metrics_reply", KIND_SHUTDOWN: "shutdown", KIND_HELLO: "hello", KIND_TOKEN: "token",
+              KIND_HIDDEN: "hidden", KIND_HEAD: "head", KIND_PLAN: "plan", KIND_READY: "ready", KIND_ERROR: "error"}
+DATA_KINDS = (KIND_STEP, KIND_ALLREDUCE, KIND_TOKEN, KIND_HIDDEN, KIND_HEAD)
 DTYPES = {0: None, 1: "bfloat16", 2: "float32", 3: "int64", 4: "uint8"}
 DTYPE_CODES = {v: k for k, v in DTYPES.items()}
 SOCK_BUF = 8 << 20
 SMALL_FRAME = 1 << 20
+
+
+class Phase:
+    """Process wide flag: True while the current step is a decode step (one token). Set by the step's owner."""
+    decode = False
 
 
 class Counters:
@@ -31,8 +41,10 @@ class Counters:
         self.allreduce_frames = 0      # all-reduce frames sent (one per all-reduce for two ranks)
         self.step_frames = 0
         self.reconnects = 0
+        self.decode = {"sent_frames": 0, "sent_bytes": 0, "recv_frames": 0, "recv_bytes": 0}
+        self.by_kind: dict[str, int] = {}
 
-    def add(self, sent: bool, kind: int, nbytes: int):
+    def add(self, sent: bool, kind: int, nbytes: int, decode: bool = False):
         with self.lock:
             if sent:
                 self.sent_frames += 1; self.sent_bytes += nbytes
@@ -40,14 +52,20 @@ class Counters:
                     self.allreduce_frames += 1
                 elif kind == KIND_STEP:
                     self.step_frames += 1
+                k = KIND_NAMES.get(kind, str(kind))
+                self.by_kind[k] = self.by_kind.get(k, 0) + 1
             else:
                 self.recv_frames += 1; self.recv_bytes += nbytes
+            if decode and kind in DATA_KINDS:
+                d = "sent" if sent else "recv"
+                self.decode[f"{d}_frames"] += 1
+                self.decode[f"{d}_bytes"] += nbytes
 
     def snapshot(self) -> dict:
         with self.lock:
             return {"sent_frames": self.sent_frames, "recv_frames": self.recv_frames, "sent_bytes": self.sent_bytes,
                     "recv_bytes": self.recv_bytes, "allreduce_frames": self.allreduce_frames, "step_frames": self.step_frames,
-                    "reconnects": self.reconnects}
+                    "reconnects": self.reconnects, "decode": dict(self.decode), "by_kind_sent": dict(self.by_kind)}
 
 
 def _tune(sock: socket.socket) -> None:
@@ -77,10 +95,11 @@ def _recv_exact(sock: socket.socket, n: int) -> bytes:
 class Link:
     """One connected socket with framed send and receive."""
 
-    def __init__(self, sock: socket.socket, counters: Counters | None = None):
+    def __init__(self, sock: socket.socket, counters: Counters | None = None, phase: Phase | None = None):
         _tune(sock)
         self.sock = sock
         self.counters = counters or Counters()
+        self.phase = phase
         self._send_lock = threading.Lock()
 
     def send(self, kind: int, payload=b"", dtype: str | None = None, shape: tuple[int, ...] = (),
@@ -89,7 +108,7 @@ class Link:
         head = HEADER.pack(n, kind, DTYPE_CODES[dtype], len(shape), aux0, aux1) + struct.pack(f"<{len(shape)}I", *shape)
         with self._send_lock:
             self.sock.sendall(head + payload)
-        self.counters.add(True, kind, len(head) + n)
+        self.counters.add(True, kind, len(head) + n, bool(self.phase and self.phase.decode))
 
     def recv(self, into: memoryview | None = None) -> tuple[int, bytes | memoryview, str | None, tuple[int, ...], int, int]:
         """`into`: a writable buffer; when its length equals the payload length the payload is received into it and
@@ -102,7 +121,9 @@ class Link:
             payload = into
         else:
             payload = _recv_exact(self.sock, n) if n else b""
-        self.counters.add(False, kind, HEADER.size + 4 * ndim + n)
+        # a received data frame is a decode frame when it carries one token (shape[0] == 1); HEAD frames follow the phase
+        dec = (shape[0] == 1) if shape and kind != KIND_HEAD else bool(self.phase and self.phase.decode)
+        self.counters.add(False, kind, HEADER.size + 4 * ndim + n, dec)
         return kind, payload, DTYPES[dcode], shape, aux0, aux1
 
     def send_async(self, *a, **kw) -> threading.Thread:

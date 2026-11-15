@@ -291,7 +291,7 @@ class Rank0:
               "prompt_per_second": len(ids) / (t1 - t0) if t1 > t0 else None}
         frames = None
         if before and after:
-            frames = {k: after[k] - before[k] for k in after}
+            frames = {k: after[k] - before[k] for k in after if isinstance(after[k], (int, float))}
         self.log(f"[torch_tp] done {rid} n_gen={n} predicted_ms={predicted_ms:.1f} finish={finish}")
         self.log(f"[torch_tp] release {rid}")
         return {"tokens": out, "finish_reason": finish, "timings": tm, "frames": frames}
