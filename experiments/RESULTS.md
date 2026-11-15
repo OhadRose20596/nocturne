@@ -264,3 +264,41 @@ Q-C answer: no (model, context) needs TP on this pair. The deciding row is 32B Q
 | qwen2.5-7b-q4km | 32768 | TP | eval_set | yes | 1/1 | - | 3.064 | 14.7 | 3.064 | 8.78 | B1_wifi_qwen2.5-7b-q4km_m5_c32768_r1 |
 
 End of the Session 5 block. Bench rows after this line go to a new "Bench matrix, continued" table.
+
+
+## Session 6, hybrid placement, 2026-11
+
+Runs 2026-11-15. Engine B spike `nocturne/engines/torch_tp` with session 6 hybrid placement (commits `ce7363d` to `8083a9d`; each record holds the git SHA and a sha256 of the engine files, equal on both Macs). Coordinator on the M5 MMF4FWRG4R (torch 2.14.1, MPS); second host the Air "Mac" (torch 2.15.0, MPS). Home Wi-Fi, VPN off, AWDL up, caffeinate on both Macs.
+Models: Qwen2.5 Instruct bf16 safetensors from Hugging Face, 0.5B, 1.5B, 7B; same sha256 on both Macs (`experiments/session6_hybrid/model_hashes.json`).
+Analysis: experiments/session6_hybrid/REPORT.md. Generated table: experiments/session6_hybrid/HYBRID_TABLE.md. Predictions with outcomes: experiments/session6_hybrid/PREDICTIONS.md. Records and logs: experiments/session6_hybrid/runs/<run id>/.
+Criterion: greedy tokens identical to the one rank reference on at least 7 of the first 8 `eval_set` prompts (up to 32 tokens or EOS) and the same graded accuracy. References: `R0_qwen2.5-0.5b-bf16_mps_r2`, `R0_qwen2.5-1.5b-bf16_mps_r1`, `R0_qwen2.5-7b-bf16_mps_r3` (each 8/8 identical to transformers `generate`); P9 also against `R0_qwen2.5-7b-bf16_cpu_r1`.
+Answers: Q-D yes (TP groups of 2, 3, 5, unequal, larger than the number of KV heads). Q-E yes (stages of groups, 8 stages of TP pairs with 16 processes). Q-F yes on tensor bytes (0.40 GB budget, below one layer and below the head); on MPS each weak rank's real footprint is about 1.3 GB (1 GiB Metal heaps). Q-G: loaded bytes equal planned bytes on every rank (167 rank instances); measured frames per decode step equal the pre-registered formula on all 24 completed placement runs.
+Columns: stages and ranks of the placement; logit diff is the largest absolute first step logit difference against the reference; long div is the first differing token of the 256 token `eval_long` prompt (256 = none). Time per step is background only (T1) and is in HYBRID_TABLE.md, not here.
+
+| cell | model | stages | ranks | hosts | reduce | runs ok | outcome | identical | accuracy | logit diff | long div | frames formula | frames measured | run ids |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| P1_loopback | qwen2.5-7b-bf16 | 1 | 2 | m5 | float32 | 1/1 | completed | 8/8 | 1.0 | 0.5 | 49 | 116 | 116.0 | P1_loopback_qwen2.5-7b-bf16_r1 |
+| P1_loopback_bf16ctl | qwen2.5-7b-bf16 | 1 | 2 | m5 | bfloat16 | 1/1 | completed | 8/8 | 1.0 | 0.5 | 49 | 116 | 116.0 | P1_loopback_bf16ctl_qwen2.5-7b-bf16_r1 |
+| P1_2mac | qwen2.5-7b-bf16 | 1 | 2 | air+m5 | float32 | 3/3 | completed | 8/8 | 1.0 | 0.375 | 105 | 116 | 116.0 | P1_2mac_qwen2.5-7b-bf16_r1 P1_2mac_qwen2.5-7b-bf16_r2 P1_2mac_qwen2.5-7b-bf16_r3 |
+| P2_loopback | qwen2.5-7b-bf16 | 1 | 3 | m5 | float32 | 1/1 | completed | 8/8 | 1.0 | 0.375 | 72 | 346 | 346.0 | P2_loopback_qwen2.5-7b-bf16_r1 |
+| P2_2mac | qwen2.5-7b-bf16 | 1 | 3 | air+m5 | float32 | 1/1 | completed | 8/8 | 1.0 | 0.5 | 49 | 346 | 346.0 | P2_2mac_qwen2.5-7b-bf16_r1 |
+| P3_loopback | qwen2.5-1.5b-bf16 | 1 | 3 | m5 | float32 | 1/1 | completed | 8/8 | 1.0 | 0.562 | 97 | 346 | 346.0 | P3_loopback_qwen2.5-1.5b-bf16_r1 |
+| P3_2mac | qwen2.5-1.5b-bf16 | 1 | 3 | air+m5 | float32 | 1/1 | completed | 8/8 | 1.0 | 0.586 | 97 | 346 | 346.0 | P3_2mac_qwen2.5-1.5b-bf16_r1 |
+| P4_loopback | qwen2.5-7b-bf16 | 1 | 5 | m5 | float32 | 1/1 | completed | 8/8 | 1.0 | 0.5 | 127 | 1148 | 1148.0 | P4_loopback_qwen2.5-7b-bf16_r1 |
+| P5_loopback | qwen2.5-7b-bf16 | 2 | 2 | m5 | float32 | 1/1 | completed | 8/8 | 1.0 | 0.0 | 256 | 2 | 2.0 | P5_loopback_qwen2.5-7b-bf16_r1 |
+| P5_2mac | qwen2.5-7b-bf16 | 2 | 2 | air+m5 | float32 | 1/1 | completed | 8/8 | 1.0 | 0.375 | 72 | 2 | 2.0 | P5_2mac_qwen2.5-7b-bf16_r1 |
+| P6_loopback | qwen2.5-7b-bf16 | 3 | 5 | m5 | float32 | 1/1 | completed | 8/8 | 1.0 | 0.375 | 49 | 29 | 29.0 | P6_loopback_qwen2.5-7b-bf16_r1 |
+| P6_2mac | qwen2.5-7b-bf16 | 3 | 5 | air+m5 | float32 | 1/1 | completed | 8/8 | 1.0 | 0.375 | 49 | 29 | 29.0 | P6_2mac_qwen2.5-7b-bf16_r1 |
+| P7_loopback | qwen2.5-7b-bf16 | 4 | 8 | m5 | float32 | 1/1 | completed | 8/8 | 1.0 | 0.375 | 49 | 34 | 34.0 | P7_loopback_qwen2.5-7b-bf16_r1 |
+| P7_2mac | qwen2.5-7b-bf16 | 4 | 8 | air+m5 | float32 | 3/3 | completed | 8/8 | 1.0 | 0.375 | 49 | 34 | 34.0 | P7_2mac_qwen2.5-7b-bf16_r1 P7_2mac_qwen2.5-7b-bf16_r2 P7_2mac_qwen2.5-7b-bf16_r3 |
+| P7_2mac_mpscap | qwen2.5-7b-bf16 | 4 | 8 | air+m5 | float32 | 0/1 | rank_failed | - | - | - | - | 34 | - | P7_2mac_mpscap_qwen2.5-7b-bf16_r1 |
+| P7ctl_2mac | qwen2.5-7b-bf16 | - | - | m5+air | - | 0/1 | plan_rejected | - | - | - | - | - | - | P7ctl_2mac_qwen2.5-7b-bf16_r1 |
+| P7ctl_2mac_forced | qwen2.5-7b-bf16 | 5 | 5 | air+m5 | float32 | 0/1 | rank_failed | - | - | - | - | 5 | - | P7ctl_2mac_forced_qwen2.5-7b-bf16_r1 |
+| P8_loopback | qwen2.5-0.5b-bf16 | 8 | 16 | m5 | float32 | 1/1 | completed | 8/8 | 0.875 | 0.891 | 60 | 115 | 115.0 | P8_loopback_qwen2.5-0.5b-bf16_r1 |
+| P8_wifi | qwen2.5-0.5b-bf16 | 8 | 16 | air+m5 | float32 | 3/3 | completed | 8/8 | 0.875 | 0.93 | 10 | 115 | 115.0 | P8_wifi_qwen2.5-0.5b-bf16_r1 P8_wifi_qwen2.5-0.5b-bf16_r2 P8_wifi_qwen2.5-0.5b-bf16_r3 |
+| P8_local | qwen2.5-0.5b-bf16 | 8 | 16 | air+m5 | float32 | 1/1 | completed | 8/8 | 0.875 | 0.744 | 10 | 115 | 115.0 | P8_local_qwen2.5-0.5b-bf16_r1 |
+| P9_2mac | qwen2.5-7b-bf16 | 4 | 8 | air+m5 | float32 | 1/1 | completed | 8/8 | 1.0 | 0.312 | 49 | 34 | 34.0 | P9_2mac_qwen2.5-7b-bf16_r1 |
+
+Failures above are on purpose: `P7_2mac_mpscap` sets torch's MPS memory fraction to the 0.40 GB budget and every weak rank fails at load (1 GiB heap against 381 MiB); `P7ctl_2mac` is the same nodes under pure PP, rejected by the planner; `P7ctl_2mac_forced` skips the planner and fails at load on the three ranks the planner named. Harness incidents kept with notes, no data used: `R0_qwen2.5-0.5b-bf16_mps_r1`, `R0_qwen2.5-7b-bf16_mps_r1`, `R0_qwen2.5-7b-bf16_mps_r2`.
+
+End of the Session 6 block.
