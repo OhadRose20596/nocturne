@@ -320,3 +320,9 @@ CUDA reference, host pc (ThinkPad P16v, WSL2 Ubuntu 24.04, RTX 2000 Ada Laptop 8
 | R0_qwen2.5-0.5b-bf16_cuda_r1 | one rank, cuda | 8/8 | 8/8 | 0.875 (0.875, 0.875) | 1.039, 0.877 | 8.59, 6.30, 1.058 | experiments/session7_hetero/runs/R0_qwen2.5-0.5b-bf16_cuda_r1 |
 
 Long prompt first divergence: token 60 against MPS, token 10 against CPU. The comparison with the Mac references was made afterwards on the M5 with `hybrid_run.compare` on the copied `reference.json` and `first_logits.npz`; the run's own record has no comparison (no earlier CUDA reference). Preflight on Linux: caffeinate, AWDL and VPN "n/a", nvidia-smi recorded. Files copied from the PC unchanged (sha256 checked).
+
+| run | placement | identical vs MPS ref | identical vs CPU ref | accuracy (refs) | first step logit diff (MPS, CPU) | VRAM total, free at ready, peak allocated (GB) | folder |
+|---|---|---|---|---|---|---|---|
+| R0_qwen2.5-1.5b-bf16_cuda_r1 | one rank, cuda | 8/8 | 8/8 | 1.0 (1.0, 1.0) | 0.469, 0.500 | 8.59, 4.02, 3.221 | experiments/session7_hetero/runs/R0_qwen2.5-1.5b-bf16_cuda_r1 |
+
+Same host, torch, SHA and method as the 0.5B CUDA reference above; qwen2.5-1.5b-bf16 sha256 equal to the M5. References `R0_qwen2.5-1.5b-bf16_mps_r1` and `R0_qwen2.5-1.5b-bf16_cpu_r1` (session 6). Long prompt first divergence: token 97 against MPS, token 54 against CPU. nvidia-smi showed 1955 MiB in use before the run (Windows), so about 6.2 GB of the 8 GB is usable.
