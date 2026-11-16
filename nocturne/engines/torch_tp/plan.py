@@ -44,6 +44,7 @@ class Placement:
     max_seq_len: int = 4096
     prefill_max: int = 256
     granule: int = 128
+    allow_mixed_devices: bool = False
 
 
 @dataclass(frozen=True)
@@ -143,7 +144,8 @@ def placement_from_dict(y: dict) -> Placement:
     c = y.get("coordinator") or {}
     return Placement(model=y.get("model", ""), stages=tuple(stages), coordinator_host=c.get("host"),
                      reduce_dtype=y.get("reduce_dtype", "float32"), max_seq_len=int(y.get("max_seq_len", 4096)),
-                     prefill_max=int(y.get("prefill_max", 256)), granule=int(y.get("granule", 128)))
+                     prefill_max=int(y.get("prefill_max", 256)), granule=int(y.get("granule", 128)),
+                     allow_mixed_devices=bool(y.get("allow_mixed_devices", False)))
 
 
 # ---- helpers -----------------------------------------------------------------------------------------------------------
@@ -209,8 +211,9 @@ def validate(d: Dims, p: Placement) -> None:
             nxt = b
         elif not s.lm_head and not s.embed:
             raise PlanError(f"stage {s.name} holds no layers, no embedding and no head")
-        if len({r.device.split(":")[0] for r in s.ranks}) > 1:
-            raise PlanError(f"stage {s.name}: mixed device types in one group; activations would drift apart")
+        if len({r.device.split(":")[0] for r in s.ranks}) > 1 and not p.allow_mixed_devices:
+            raise PlanError(f"stage {s.name}: mixed device types in one group; activations would drift apart "
+                            f"(set allow_mixed_devices: true to accept this)")
         hs = [r.heads for r in s.ranks]
         if any(h is not None for h in hs):
             if any(h is None for h in hs) or sum(hs) != d.n_heads or min(hs) < 0:
