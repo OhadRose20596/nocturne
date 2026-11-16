@@ -302,3 +302,13 @@ Columns: stages and ranks of the placement; logit diff is the largest absolute f
 Failures above are on purpose: `P7_2mac_mpscap` sets torch's MPS memory fraction to the 0.40 GB budget and every weak rank fails at load (1 GiB heap against 381 MiB); `P7ctl_2mac` is the same nodes under pure PP, rejected by the planner; `P7ctl_2mac_forced` skips the planner and fails at load on the three ranks the planner named. Harness incidents kept with notes, no data used: `R0_qwen2.5-0.5b-bf16_mps_r1`, `R0_qwen2.5-7b-bf16_mps_r1`, `R0_qwen2.5-7b-bf16_mps_r2`.
 
 End of the Session 6 block.
+
+## Session 7a: mixed device group (2026-11-16)
+
+Host m5 (Mac M5, torch 2.14.1), repo SHA 73ad964, model qwen2.5-0.5b-bf16, reduce dtype float32, loopback. Run by Ohad.
+
+| run | placement | identical vs MPS ref | identical vs CPU ref | accuracy (refs) | first step logit diff (MPS, CPU) | frames per step (measured, predicted) | folder |
+|---|---|---|---|---|---|---|---|
+| L1_tp_mixed_0.5b_loopback_r1 | one TP group, rank 0 MPS and rank 1 CPU, `allow_mixed_devices: true` | 8/8 | 8/8 | 0.875 (0.875, 0.875) | 0.986, 0.729 | 100, 100 | experiments/session7_hetero/runs/L1_tp_mixed_0.5b_loopback_r1 |
+
+Long prompt first divergence: token 10 against MPS, token 110 against CPU. Time is background only (T1). Predictions and outcomes: experiments/session7_hetero/PREDICTIONS.md.

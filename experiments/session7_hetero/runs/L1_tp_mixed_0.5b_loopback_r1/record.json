@@ -1,0 +1,827 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "L1_tp_mixed_0.5b_loopback_r1",
+ "date": "2026-11-16T09:32:55+0200",
+ "placement": {
+  "file": "experiments/session7_hetero/placements/L1_tp_mixed_0.5b_loopback.yaml",
+  "sha256": "b0cb840de17e9e2ce998f689ac83ef72b4dbfeabedd9a78afacc01e6c6945195",
+  "yaml": "# L1: TP group of an MPS rank and a CPU rank on the M5, mixed devices, loopback\nmodel: qwen2.5-0.5b-bf16\ncoordinator: {host: m5}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nallow_mixed_devices: true\nstages:\n  - name: s0\n    layers: [0, 24]\n    embed: true\n    lm_head: true\n    ranks:\n      - {host: m5, device: mps, port: 50070}\n      - {host: m5, device: cpu, port: 50071}\n"
+ },
+ "git": {
+  "sha": "73ad964e90b5a18d08a3813775752a3d8ac22a9e",
+  "dirty": false
+ },
+ "torch_coordinator": "2.14.1",
+ "args": {
+  "placement": "experiments/session7_hetero/placements/L1_tp_mixed_0.5b_loopback.yaml",
+  "session_dir": "experiments/session7_hetero",
+  "run_id": "L1_tp_mixed_0.5b_loopback_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "R0_qwen2.5-0.5b-bf16_mps_r2",
+   "R0_qwen2.5-0.5b-bf16_cpu_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "force": false,
+  "mps_fraction_cap": false
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "qwen2.5-0.5b-bf16",
+  "dir": "~/models/hf/Qwen2.5-0.5B-Instruct",
+  "sha256": {
+   "config.json": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+   "model.safetensors": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe"
+  }
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 2,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    24
+   ],
+   "q0": 0,
+   "q1": 7,
+   "m0": 0,
+   "m1": 2432,
+   "kv0": 0,
+   "kv1": 1,
+   "embed_rows": [
+    0,
+    76032
+   ],
+   "head_rows": [
+    0,
+    76032
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 494191360,
+    "kv": 25165824,
+    "workspace": 17741312,
+    "total": 537098496,
+    "layer_bytes": 14914176,
+    "vocab_bytes": 136249344,
+    "kv_heads_replicated": 0
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s0/1",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 1,
+   "group_size": 2,
+   "host": "m5",
+   "device": "cpu",
+   "port": 50071,
+   "layers": [
+    0,
+    24
+   ],
+   "q0": 7,
+   "q1": 14,
+   "m0": 2432,
+   "m1": 4864,
+   "kv0": 1,
+   "kv1": 2,
+   "embed_rows": [
+    76032,
+    151936
+   ],
+   "head_rows": [
+    76032,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 493961984,
+    "kv": 25165824,
+    "workspace": 17740544,
+    "total": 536868352,
+    "layer_bytes": 14914176,
+    "vocab_bytes": 136019968,
+    "kv_heads_replicated": 0
+   }
+  }
+ ],
+ "frames": {
+  "predicted": {
+   "token": 1,
+   "embed": 2,
+   "layers": 96,
+   "hops": 0,
+   "head": 1,
+   "total": 100
+  },
+  "decode_steps": 280,
+  "measured_per_step": 100.0,
+  "bytes_per_step": 178012.0,
+  "per_link_per_step": {
+   "s0/0->s0/1": {
+    "sent_frames": 49.0,
+    "sent_bytes": 88984.0,
+    "recv_frames": 49.0,
+    "recv_bytes": 88984.0
+   },
+   "s0/0->ctl:s0/1": {
+    "sent_frames": 1.0,
+    "sent_bytes": 28.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s0/1->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 28.0
+   },
+   "s0/1->s0/0": {
+    "sent_frames": 49.0,
+    "sent_bytes": 88984.0,
+    "recv_frames": 49.0,
+    "recv_bytes": 88984.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "m5": {
+    "os": "Darwin",
+    "caffeinate": "on",
+    "awdl": "up",
+    "vpn_state": "disconnected",
+    "engine_sha256": "c9143ba7a8ba5746b9695034503617323f2198fd5c4b8895549e7cda3ba7baac",
+    "model_sha256": {
+     "config.json": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+     "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+     "model.safetensors": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe"
+    }
+   }
+  }
+ },
+ "load_s": 1.5209310054779053,
+ "link_counters": {
+  "s0/0": {
+   "s0/1": {
+    "sent_frames": 14161,
+    "recv_frames": 14162,
+    "sent_bytes": 68917912,
+    "recv_bytes": 68917954,
+    "allreduce_frames": 14161,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 13720,
+     "sent_bytes": 24915520,
+     "recv_frames": 13720,
+     "recv_bytes": 24915520
+    },
+    "by_kind_sent": {
+     "allreduce": 14161
+    }
+   },
+   "ctl:s0/1": {
+    "sent_frames": 293,
+    "recv_frames": 291,
+    "sent_bytes": 13248,
+    "recv_bytes": 1373379,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 280,
+     "sent_bytes": 7840,
+     "recv_frames": 280,
+     "recv_bytes": 4480
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "metrics": 2,
+     "token": 289
+    }
+   }
+  },
+  "s0/1": {
+   "ctl": {
+    "sent_frames": 291,
+    "recv_frames": 293,
+    "sent_bytes": 1373379,
+    "recv_bytes": 13248,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 280,
+     "sent_bytes": 4480,
+     "recv_frames": 280,
+     "recv_bytes": 7840
+    },
+    "by_kind_sent": {
+     "ready": 1,
+     "metrics_reply": 1,
+     "head": 289
+    }
+   },
+   "s0/0": {
+    "sent_frames": 14162,
+    "recv_frames": 14161,
+    "sent_bytes": 68917954,
+    "recv_bytes": 68917912,
+    "allreduce_frames": 14161,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 13720,
+     "sent_bytes": 24915520,
+     "recv_frames": 13720,
+     "recv_bytes": 24915520
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 14161
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "s0/0",
+   "gid": 0,
+   "host": "m5",
+   "device": "mps",
+   "pid": 12762,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 494191360,
+   "kv_bytes": 25165824,
+   "idle": {
+    "peak_rss_bytes": 359006208,
+    "phys_footprint_bytes": 230114336,
+    "lifetime_max_phys_footprint_bytes": 230114336
+   },
+   "planned": {
+    "weights": 494191360,
+    "kv": 25165824,
+    "workspace": 17741312,
+    "total": 537098496,
+    "layer_bytes": 14914176,
+    "vocab_bytes": 136249344,
+    "kv_heads_replicated": 0
+   },
+   "budget": null,
+   "load_s": 0.32038187980651855,
+   "steps": 289,
+   "allreduce_calls": 14161,
+   "current_allocated_bytes": 528613120,
+   "driver_allocated_bytes": 1149960192,
+   "peak_rss_bytes": 537853952,
+   "phys_footprint_bytes": 1511327088,
+   "lifetime_max_phys_footprint_bytes": 1511327088
+  },
+  {
+   "name": "s0/1",
+   "gid": 1,
+   "host": "m5",
+   "device": "cpu",
+   "pid": 12806,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 493961984,
+   "kv_bytes": 25165824,
+   "idle": {
+    "peak_rss_bytes": 202342400,
+    "phys_footprint_bytes": 153453288,
+    "lifetime_max_phys_footprint_bytes": 153453288
+   },
+   "planned": {
+    "weights": 493961984,
+    "kv": 25165824,
+    "workspace": 17740544,
+    "total": 536868352,
+    "layer_bytes": 14914176,
+    "vocab_bytes": 136019968,
+    "kv_heads_replicated": 0
+   },
+   "budget": null,
+   "load_s": 0.02091383934020996,
+   "steps": 289,
+   "allreduce_calls": 14161,
+   "current_allocated_bytes": null,
+   "driver_allocated_bytes": null,
+   "peak_rss_bytes": 812302336,
+   "phys_footprint_bytes": 183649672,
+   "lifetime_max_phys_footprint_bytes": 183649672
+  }
+ ],
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 40.862719217936196,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "936",
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 38.541316986083984,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "543",
+   "score": 1.0
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt_n": 44,
+   "tokens": [
+    19,
+    18,
+    22,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 36.18462880452474,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "437",
+   "score": 1.0
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt_n": 45,
+   "tokens": [
+    16,
+    17,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 49.45051670074463,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "12",
+   "score": 1.0
+  },
+  {
+   "id": "arith_05",
+   "kind": "eval",
+   "prompt_n": 58,
+   "tokens": [
+    16,
+    20,
+    15,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 63.98900349934896,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "150",
+   "score": 1.0
+  },
+  {
+   "id": "arith_06",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    18,
+    21,
+    15,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 35.033623377482094,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "360",
+   "score": 0.0
+  },
+  {
+   "id": "extract_01",
+   "kind": "eval",
+   "prompt_n": 67,
+   "tokens": [
+    35,
+    3362,
+    55041,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 37.87096341451009,
+   "category": "extraction",
+   "cap": 16,
+   "text": "Dana Levi",
+   "score": 1.0
+  },
+  {
+   "id": "extract_02",
+   "kind": "eval",
+   "prompt_n": 69,
+   "tokens": [
+    14003,
+    220,
+    18,
+    16,
+    16,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 50.09641647338867,
+   "category": "extraction",
+   "cap": 16,
+   "text": "Room 311",
+   "score": 1.0
+  },
+  {
+   "id": "longopen_01",
+   "kind": "long",
+   "prompt_n": 78,
+   "tokens": [
+    32,
+    2114,
+    17220,
+    26299,
+    3922,
+    4278,
+    553,
+    1667,
+    264,
+    9273,
+    323,
+    458,
+    2615,
+    1459,
+    311,
+    4564,
+    7611,
+    13,
+    576,
+    9273,
+    14056,
+    438,
+    279,
+    8622,
+    18719,
+    11,
+    44990,
+    678,
+    279,
+    7611,
+    311,
+    4564,
+    311,
+    432,
+    13,
+    576,
+    2615,
+    1459,
+    11,
+    892,
+    374,
+    5990,
+    264,
+    20739,
+    9273,
+    11,
+    374,
+    8433,
+    311,
+    279,
+    9273,
+    323,
+    374,
+    8480,
+    369,
+    44990,
+    279,
+    7611,
+    311,
+    4564,
+    311,
+    432,
+    382,
+    4498,
+    264,
+    3671,
+    6801,
+    311,
+    4564,
+    311,
+    279,
+    7602,
+    11,
+    432,
+    21308,
+    264,
+    8286,
+    311,
+    279,
+    2615,
+    1459,
+    13,
+    576,
+    2615,
+    1459,
+    1221,
+    5711,
+    279,
+    9273,
+    311,
+    4637,
+    279,
+    8286,
+    311,
+    279,
+    7602,
+    13,
+    576,
+    9273,
+    1221,
+    41054,
+    279,
+    8286,
+    311,
+    279,
+    7602,
+    11,
+    892,
+    374,
+    1221,
+    3208,
+    311,
+    279,
+    7611,
+    382,
+    785,
+    27035,
+    315,
+    821,
+    429,
+    525,
+    3208,
+    916,
+    279,
+    7602,
+    525,
+    2598,
+    27035,
+    13,
+    3197,
+    1378,
+    7611,
+    29282,
+    518,
+    3055,
+    11,
+    807,
+    3624,
+    27035,
+    311,
+    1817,
+    1008,
+    24303,
+    13,
+    1096,
+    6147,
+    369,
+    1931,
+    7246,
+    10535,
+    1948,
+    279,
+    7611,
+    382,
+    4498,
+    1378,
+    7611,
+    29282,
+    518,
+    3055,
+    11,
+    807,
+    3624,
+    27035,
+    311,
+    1817,
+    1008,
+    24303,
+    13,
+    1096,
+    6147,
+    369,
+    1931,
+    7246,
+    10535,
+    1948,
+    279,
+    7611,
+    13,
+    576,
+    27035,
+    525,
+    1221,
+    3208,
+    311,
+    279,
+    7602,
+    11,
+    892,
+    374,
+    1221,
+    52246,
+    311,
+    279,
+    7611,
+    13,
+    576,
+    7611,
+    1221,
+    5258,
+    279,
+    27035,
+    323,
+    646,
+    1191,
+    77668,
+    821,
+    311,
+    279,
+    7602,
+    382,
+    641,
+    12126,
+    11,
+    264,
+    2114,
+    17220,
+    26299,
+    3922,
+    4278,
+    553,
+    1667,
+    264,
+    9273,
+    323,
+    458,
+    2615,
+    1459,
+    311,
+    4564,
+    7611,
+    11,
+    44990,
+    678,
+    279,
+    7611,
+    311,
+    4564,
+    311,
+    432,
+    11,
+    323,
+    1221,
+    1667,
+    279,
+    9273,
+    311,
+    4637,
+    279,
+    8286,
+    311,
+    279,
+    7602,
+    13,
+    3197,
+    1378
+   ],
+   "finish": "length",
+   "ms_per_step": 60.12708159054027,
+   "text": "A home Wi-Fi network works by using a router and an access point to connect devices. The router acts as the central hub, directing all the devices to connect to it. The access point, which is usually a wireless router, is connected to the router and is responsible for directing the devices to connect to it.\n\nWhen a device wants to connect to the internet, it sends a signal to the access point. The access point then uses the router to forward the signal to the internet. The router then forwards the signal to the internet, which is then sent to the devices.\n\nThe packets of data that are sent over the internet are called packets. When two devices transmit at once, they send packets to each other simultaneously. This allows for real-time communication between the devices.\n\nWhen two devices transmit at once, they send packets to each other simultaneously. This allows for real-time communication between the devices. The packets are then sent to the internet, which is then forwarded to the devices. The devices then receive the packets and can start transmitting data to the internet.\n\nIn summary, a home Wi-Fi network works by using a router and an access point to connect devices, directing all the devices to connect to it, and then using the router to forward the signal to the internet. When two"
+  }
+ ],
+ "commands": [
+  {
+   "host": "m5",
+   "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50071 --model \"$HOME\"/models/hf/Qwen2.5-0.5B-Instruct --device cpu --name s0/1 --tag L1_tp_mixed_0.5b_loopback_r1"
+  },
+  {
+   "host": "m5",
+   "cmd": "pkill -f '--tag L1_tp_mixed_0.5b_loopback_r1'"
+  }
+ ],
+ "correctness": {
+  "R0_qwen2.5-0.5b-bf16_mps_r2": {
+   "reference": "R0_qwen2.5-0.5b-bf16_mps_r2",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 4,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 10
+   },
+   "accuracy": 0.875,
+   "ref_accuracy": 0.875,
+   "logit_maxdiff": 0.986328125,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.4373779296875,
+    "arith_02": 0.986328125,
+    "arith_03": 0.6513671875,
+    "arith_04": 0.54296875,
+    "arith_05": 0.5625,
+    "arith_06": 0.390625,
+    "extract_01": 0.28125,
+    "extract_02": 0.21875,
+    "longopen_01": 0.3125
+   },
+   "long_first_div": {
+    "longopen_01": 10
+   },
+   "criterion_met": true
+  },
+  "R0_qwen2.5-0.5b-bf16_cpu_r1": {
+   "reference": "R0_qwen2.5-0.5b-bf16_cpu_r1",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 4,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 110
+   },
+   "accuracy": 0.875,
+   "ref_accuracy": 0.875,
+   "logit_maxdiff": 0.728515625,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.71875,
+    "arith_02": 0.40625,
+    "arith_03": 0.703125,
+    "arith_04": 0.609375,
+    "arith_05": 0.728515625,
+    "arith_06": 0.515625,
+    "extract_01": 0.25,
+    "extract_02": 0.3125,
+    "longopen_01": 0.3125
+   },
+   "long_first_div": {
+    "longopen_01": 110
+   },
+   "criterion_met": true
+  }
+ }
+}
