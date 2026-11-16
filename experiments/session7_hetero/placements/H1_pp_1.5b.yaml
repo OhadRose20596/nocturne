@@ -1,0 +1,18 @@
+# H1: PP 1.5b, layers 0-14 on the M5 mps, layers 14-28 and the head on the PC cuda
+model: qwen2.5-1.5b-bf16
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 14]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+  - name: s1
+    layers: [14, 28]
+    lm_head: true
+    ranks:
+      - {host: pc, device: cuda, port: 50070}

@@ -1,0 +1,16 @@
+# L1: TP group of an MPS rank and a CPU rank on the M5, mixed devices, loopback
+model: qwen2.5-0.5b-bf16
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+allow_mixed_devices: true
+stages:
+  - name: s0
+    layers: [0, 24]
+    embed: true
+    lm_head: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+      - {host: m5, device: cpu, port: 50071}
