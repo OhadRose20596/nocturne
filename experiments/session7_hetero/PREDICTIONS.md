@@ -50,3 +50,20 @@ References: `R0_qwen2.5-1.5b-bf16_mps_r1` (session 6) and `R0_qwen2.5-1.5b-bf16_
 | Criterion | met against both | | Met against both. Accuracy 1.0, equal to both references. |
 | First step logit diff | between 0.3 and 1.1 against both | L1 gave 0.73 to 0.99 on 0.5B; H1 gave 0.44 on 1.5B | Held: 0.56 against MPS, 0.50 against CUDA. |
 | What would count as a failure of the reasoning | fewer than 7 identical against both, or a rank disconnect on the hotspot | | Not triggered. No disconnect: 16416 all-reduces per rank. Long prompt first divergence token 76 against both. |
+
+## H3_pp_7b_r1
+
+Written 2026-11-16 before the run, while the 7B files were copied to the PC. Placement: PP in three stages, s0 layers 0 to 22 with the embedding on the M5 (MPS), s1 layers 22 to 28 on the PC (CUDA, budget 3.5 GB), stage `head` with the output head and final norm on the M5 (MPS, port 50071). Phone hotspot, coordinator on the M5.
+References: `R0_qwen2.5-7b-bf16_mps_r3` and `R0_qwen2.5-7b-bf16_cpu_r1` (session 6). There is no CUDA reference for 7B: it does not fit the 8 GB card (about 6.2 GB usable).
+
+| item | prediction | why | outcome |
+|---|---|---|---|
+| Planner | accepts; s1 planned 2.962 GB against the 3.5 GB budget | PLANS.md | |
+| PC memory | loads within the budget; peak allocated about 3.0 GB, below the 6.2 GB usable | 6 layers of 466 MB plus KV 50 MB plus workspace | |
+| M5 memory | both M5 ranks load (11.3 GB plus 1.1 GB of tensors) | R0 7B on MPS (15.2 GB) already ran on this machine | |
+| Run outcome | completes | as H1, whole layers per device | |
+| Frame formula | holds: 3 frames per decode step (hops 2, head 1) | s0 to s1, s1 to head, the head result back | |
+| Identical vs MPS reference | 8 of 8 | 22 of 28 layers and the head are the same MPS computation | |
+| Identical vs CPU reference | 7 or 8 of 8 | the MPS and CPU 7B references are not identical to each other everywhere | |
+| Criterion | met against both | | |
+| First step logit diff | below 1.0 against both, nonzero | | |
