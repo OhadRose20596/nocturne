@@ -34,3 +34,19 @@ References: `R0_qwen2.5-1.5b-bf16_mps_r1` (session 6) and `R0_qwen2.5-1.5b-bf16_
 | Criterion | met against both | | Met against both. Accuracy 1.0, equal to both references. |
 | First step logit diff | below 1.0 against both, nonzero | the logits come from CUDA but half the residual stream was computed on MPS | Held: 0.44 against MPS, 0.45 against CUDA. |
 | Long prompt first divergence | after token 50 against both | the R0s diverge from each other at tokens 54 to 97 | Held: token 146 against MPS, token 97 against CUDA. |
+
+## H2_tp_1.5b_r1
+
+Written 2026-11-16 before the run. Placement: one TP group over all 28 layers, 6 heads each, rank 0 on the M5 (MPS), rank 1 on the PC (CUDA), embedding and head split by vocab rows, `allow_mixed_devices: true`, phone hotspot. Coordinator on the M5.
+References: `R0_qwen2.5-1.5b-bf16_mps_r1` (session 6) and `R0_qwen2.5-1.5b-bf16_cuda_r1` (session 7).
+
+| item | prediction | why | outcome |
+|---|---|---|---|
+| Planner | accepts, 4480 MLP rows each, vocab split at row 76032 | PLANS.md | Accepted as in PLANS.md. |
+| Run outcome | completes | L1 showed the mixed group works on one host; the link only adds latency | Completed. |
+| Frame formula | holds: 116 frames per decode step (token 1, embedding 2, layers 112, head 1) | 28 layers, 2 all-reduces each, 2 ranks | Held: 116 measured, 116 predicted (279 decode steps, about 353 KB per step). |
+| Identical vs MPS reference | 7 or 8 of 8, most likely 8 | as in L1, half of every layer runs on each device and the sum is the same on both ranks | 8 of 8 (`R0_qwen2.5-1.5b-bf16_mps_r1`). |
+| Identical vs CUDA reference | 7 or 8 of 8, most likely 8 | same | 8 of 8 (`R0_qwen2.5-1.5b-bf16_cuda_r1`). |
+| Criterion | met against both | | Met against both. Accuracy 1.0, equal to both references. |
+| First step logit diff | between 0.3 and 1.1 against both | L1 gave 0.73 to 0.99 on 0.5B; H1 gave 0.44 on 1.5B | Held: 0.56 against MPS, 0.50 against CUDA. |
+| What would count as a failure of the reasoning | fewer than 7 identical against both, or a rank disconnect on the hotspot | | Not triggered. No disconnect: 16416 all-reduces per rank. Long prompt first divergence token 76 against both. |

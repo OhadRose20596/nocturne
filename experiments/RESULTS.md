@@ -334,3 +334,9 @@ First Mac plus CUDA run. Coordinator on the M5 (Mac M5, MPS, torch 2.14.1), seco
 | H1_pp_1.5b_r1 | PP: s0 layers 0-14 and embedding on m5 mps; s1 layers 14-28 and head on pc cuda | 8/8 | 8/8 | 1.0 (1.0, 1.0) | 0.438, 0.453 | 2, 2 | m5 loaded 1.777 GB; pc loaded 1.777 GB, peak allocated 1.852 GB, VRAM free at ready 5.47 of 8.59 GB | experiments/session7_hetero/runs/H1_pp_1.5b_r1 |
 
 Long prompt first divergence: token 146 against MPS, token 97 against CUDA. About 3.1 KB per decode step on the link. AWDL was up on the M5 (time is background only, T1).
+
+| run | placement | identical vs MPS ref | identical vs CUDA ref | accuracy (refs) | first step logit diff (MPS, CUDA) | frames per step (measured, predicted) | memory | folder |
+|---|---|---|---|---|---|---|---|---|
+| H2_tp_1.5b_r1 | TP: one group, layers 0-28, 6 heads each; rank 0 m5 mps, rank 1 pc cuda; `allow_mixed_devices: true` | 8/8 | 8/8 | 1.0 (1.0, 1.0) | 0.560, 0.500 | 116, 116 | m5 loaded 1.544 GB; pc loaded 1.544 GB, peak allocated 1.677 GB, VRAM free at ready 5.72 of 8.59 GB | experiments/session7_hetero/runs/H2_tp_1.5b_r1 |
+
+Same hosts, torch versions, model sha256 and hotspot as H1. Repo SHA e1bd085 on the M5, 73ad964 on the PC (data commits only; engine sha256 equal). 16416 all-reduces per rank, no disconnect, about 353 KB per decode step on the link. Long prompt first divergence: token 76 against both references. AWDL was up on the M5 (time is background only, T1).
