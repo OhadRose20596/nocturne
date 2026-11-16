@@ -45,7 +45,7 @@ EOF
 build() {   # md file
   local md="$1"; local name; name="$(basename "$md" .md)"
   local title; title="$(grep -m1 '^# ' "$md" | sed 's/^# //')"
-  pandoc "$md" -f gfm -t html5 --standalone --css he.css \
+  pandoc "$md" -f gfm -t html5 --standalone --wrap=none --css he.css \
     --metadata title="$title" --metadata lang=he --metadata dir=rtl \
     -o "$OUT/$name.html"
   python3 - "$OUT/$name.html" <<'PY'
