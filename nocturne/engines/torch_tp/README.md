@@ -63,6 +63,19 @@ All ranks of one group must use the same device type. The planner rejects a mixe
 A rank with no heads, no MLP rows and no vocab rows is rejected.
 Bytes assume bf16 and the Qwen2 block. Workspace is an estimate (see `workspace_bytes`).
 
+## Mixed devices in one group (session 7)
+
+By default the planner rejects a TP group whose ranks use different device types. The placement key `allow_mixed_devices: true` lifts that rule for the whole placement.
+
+Why it is safe to allow:
+- `GroupComm` moves every partial sum to the host and adds them there, in a fixed rank order, in fp32 by default. Every rank of the group receives the same bytes.
+- The residual stream is then updated by the same elementwise add on each device, so the shared state does not depend on the device type.
+- What can differ is the arithmetic inside one rank's slice (attention and MLP matmuls). That is ordinary kernel rounding, the same class as MPS against CPU in P9.
+
+It is not proof. The check is a run against the references of every device type in the placement (`hybrid_run` does this by default). A Mac plus CUDA TP group sends the whole hidden state through the host twice per layer, so it is meant for feasibility, not for speed (T1, T4).
+
+This is an option inside engine B, not a reversal of an ADR.
+
 ## Running
 
 ```bash
@@ -76,6 +89,8 @@ python -m nocturne.engines.torch_tp.hybrid_run --placement experiments/session6_
 ```bash
 python -m nocturne.engines.torch_tp launch --placement experiments/session6_hybrid/placements/P7_2mac.yaml --port 8092
 ```
+
+`hybrid_run --session-dir DIR` writes runs and the model hash cache under DIR (default `experiments/session6_hybrid`); references are looked up in DIR first, then in session 6.
 
 `launch` starts the ranks of other hosts over ssh with the `python` of that host in peers.yaml. Each host keeps the model files locally at the same path.
 
@@ -93,8 +108,8 @@ The ports accept any peer without authentication. Security is deferred by ADR-00
 `hybrid_run` writes its own schema (`session6_hybrid/1`), not the bench schema. The bench schema has one requester and a list of workers, and a placement of many ranks per host does not fit it.
 The record holds:
 - **Run identity:** git SHA, the torch version per rank, the placement file and its sha256, the model sha256 per host.
-- **Host state:** caffeinate, AWDL and VPN state per host.
-- **Memory per rank:** planned bytes, loaded tensor bytes, KV bytes, MPS current and driver allocations, the process footprint (idle, current, lifetime maximum) and peak RSS.
+- **Host state:** OS, caffeinate, AWDL and VPN state per host ("n/a" on Linux), and `nvidia-smi` name, memory and driver for hosts with a CUDA rank.
+- **Memory per rank (CUDA ranks add `cuda_name`, `vram_total_bytes`, `vram_free_bytes`, `max_allocated_bytes`):** planned bytes, loaded tensor bytes, KV bytes, MPS current and driver allocations, the process footprint (idle, current, lifetime maximum) and peak RSS.
 - **Frames:** predicted and measured decode frames per step, per link.
 - **Correctness:** greedy tokens, graded accuracy, first-step logit differences against the R0 reference.
 - **Background only:** ms per step (T1).
