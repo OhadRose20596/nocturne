@@ -312,3 +312,11 @@ Host m5 (Mac M5, torch 2.14.1), repo SHA 73ad964, model qwen2.5-0.5b-bf16, reduc
 | L1_tp_mixed_0.5b_loopback_r1 | one TP group, rank 0 MPS and rank 1 CPU, `allow_mixed_devices: true` | 8/8 | 8/8 | 0.875 (0.875, 0.875) | 0.986, 0.729 | 100, 100 | experiments/session7_hetero/runs/L1_tp_mixed_0.5b_loopback_r1 |
 
 Long prompt first divergence: token 10 against MPS, token 110 against CPU. Time is background only (T1). Predictions and outcomes: experiments/session7_hetero/PREDICTIONS.md.
+
+CUDA reference, host pc (ThinkPad P16v, WSL2 Ubuntu 24.04, RTX 2000 Ada Laptop 8 GB, driver 596.58), torch 2.14.1+cu130, repo SHA 73ad964, qwen2.5-0.5b-bf16 (sha256 equal to the M5), coordinator on the PC, 2026-11-16.
+
+| run | placement | identical vs MPS ref | identical vs CPU ref | accuracy (refs) | first step logit diff (MPS, CPU) | VRAM total, free at ready, peak allocated (GB) | folder |
+|---|---|---|---|---|---|---|---|
+| R0_qwen2.5-0.5b-bf16_cuda_r1 | one rank, cuda | 8/8 | 8/8 | 0.875 (0.875, 0.875) | 1.039, 0.877 | 8.59, 6.30, 1.058 | experiments/session7_hetero/runs/R0_qwen2.5-0.5b-bf16_cuda_r1 |
+
+Long prompt first divergence: token 60 against MPS, token 10 against CPU. The comparison with the Mac references was made afterwards on the M5 with `hybrid_run.compare` on the copied `reference.json` and `first_logits.npz`; the run's own record has no comparison (no earlier CUDA reference). Preflight on Linux: caffeinate, AWDL and VPN "n/a", nvidia-smi recorded. Files copied from the PC unchanged (sha256 checked).
