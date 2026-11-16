@@ -1,8 +1,8 @@
 """Session 6 run driver: one recorded run of a placement.
 Usage: python -m nocturne.engines.torch_tp.hybrid_run --placement experiments/session6_hybrid/placements/P1_loopback.yaml
          --run-id P1_loopback_qwen2.5-7b-bf16_r1 [--reduce-dtype bfloat16] [--reference R0_qwen2.5-7b-bf16_mps_r1 ...]
-         [--save-reference] [--transformers] [--force] [--mps-fraction-cap]
-Writes experiments/session6_hybrid/runs/<run_id>/record.json and the launcher and rank logs next to it. R0 runs
+         [--save-reference] [--transformers] [--force] [--mps-fraction-cap] [--session-dir DIR]
+Writes <session-dir>/runs/<run_id>/record.json (default session dir experiments/session6_hybrid) and the launcher and rank logs next to it. R0 runs
 (--save-reference) also write reference.json and first_logits.npz (first step logits, fp32)."""
 import argparse
 import hashlib
@@ -17,7 +17,8 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[3]
-OUT = ROOT / "experiments" / "session6_hybrid"
+SESSION6 = ROOT / "experiments" / "session6_hybrid"
+OUT = SESSION6
 RUNS = OUT / "runs"
 HASHES = OUT / "model_hashes.json"
 ENGINE = Path(__file__).resolve().parent
@@ -43,60 +44,103 @@ ENGINE_HASH_REMOTE = ("import hashlib, pathlib, nocturne.engines.torch_tp as m; 
                       "print(h.hexdigest())")
 
 
-def model_hashes(peer: dict, host: str, mdir: str) -> dict:
+def peer_os(peer: dict, run=None) -> str:
+    """"Darwin" or "Linux": the `os` of the peers.yaml entry (macos, darwin, linux, wsl2, ubuntu), else `uname -s`."""
+    run = run or sh
+    v = str(peer.get("os") or "").lower()
+    if v:
+        return "Darwin" if v in ("macos", "darwin", "mac") else "Linux"
+    r = run(peer, "uname -s", 20)
+    return "Darwin" if r.stdout.strip() == "Darwin" else "Linux"
+
+
+def stat_cmd(osname: str, mdir: str) -> str:
+    fmt = "stat -f '%N %z %m'" if osname == "Darwin" else "stat -c '%n %s %Y'"
+    return f"cd {mdir} && {fmt} *.json *.safetensors"
+
+
+def hash_cmd(osname: str, mdir: str) -> str:
+    tool = "shasum -a 256" if osname == "Darwin" else "sha256sum"
+    return f"cd {mdir} && {tool} *.json *.safetensors"
+
+
+def model_hashes(peer: dict, host: str, mdir: str, run=None, osname: str | None = None) -> dict:
     """sha256 of every file of the model directory on one host, cached by (size, mtime)."""
+    run = run or sh
+    osname = osname or peer_os(peer, run)
     cache = json.loads(HASHES.read_text()) if HASHES.exists() else {}
-    r = sh(peer, f"cd {mdir} && stat -f '%N %z %m' *.json *.safetensors")
+    r = run(peer, stat_cmd(osname, mdir), 120)
     stat = r.stdout.strip()
     key = f"{host}:{mdir}"
-    if cache.get(key, {}).get("stat") == stat:
+    if stat and cache.get(key, {}).get("stat") == stat:
         return cache[key]["sha256"]
-    r = sh(peer, f"cd {mdir} && shasum -a 256 *.json *.safetensors", timeout=1800)
+    r = run(peer, hash_cmd(osname, mdir), 1800)
     if r.returncode:
         raise RuntimeError(f"hashing {mdir} on {host} failed: {r.stderr[-300:]}")
-    sums = {l.split()[1]: l.split()[0] for l in r.stdout.splitlines() if l.strip()}
+    sums = {l.split()[1].lstrip("*"): l.split()[0] for l in r.stdout.splitlines() if l.strip()}
     cache[key] = {"stat": stat, "sha256": sums}
+    HASHES.parent.mkdir(parents=True, exist_ok=True)
     HASHES.write_text(json.dumps(cache, indent=1, sort_keys=True))
     return sums
 
 
-def preflight(L, log) -> dict:
-    """caffeinate and ssh on every host of the placement, the same engine files, the same model files."""
+NVIDIA_SMI = "nvidia-smi --query-gpu=name,memory.total,memory.used,driver_version --format=csv,noheader"
+
+
+def host_state(peer: dict, local: bool, osname: str, has_cuda: bool, run=None, log=print) -> dict:
+    """Sleep, AWDL, VPN and GPU state of one host. Mac only items are "n/a" on Linux."""
     from ...bench.probes import net
+    run = run or sh
+    info = {"os": osname}
+    if osname == "Darwin":
+        r = run(peer, "pgrep -x caffeinate", 120)
+        if r.returncode:
+            log(f"[run] caffeinate not running on {peer.get('name')}; starting it")
+            if local:
+                subprocess.Popen(["caffeinate", "-dimsu"], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                run(peer, "nohup caffeinate -dimsu >/dev/null 2>&1 &", 120)
+            time.sleep(1)
+            r = run(peer, "pgrep -x caffeinate", 120)
+        info["caffeinate"] = "on" if r.returncode == 0 else "off"
+        if local:
+            info["awdl"], info["vpn_state"] = net.awdl_state(), net.vpn_state()
+        else:
+            r = run(peer, "ifconfig awdl0 | head -1", 120)
+            info["awdl"] = "up" if "<UP" in r.stdout or ",UP," in r.stdout else ("down" if r.stdout else "unknown")
+            r = run(peer, "scutil --nc list", 120)
+            info["vpn_state"] = "connected" if "(Connected)" in r.stdout else ("disconnected" if r.returncode == 0 else "unknown")
+    else:
+        info["caffeinate"] = info["awdl"] = info["vpn_state"] = "n/a"
+    if has_cuda:
+        r = run(peer, NVIDIA_SMI, 60)
+        info["nvidia_smi"] = r.stdout.strip() if r.returncode == 0 else f"unavailable: {r.stderr.strip()[-200:]}"
+    return info
+
+
+def preflight(L, log, run=None) -> dict:
+    """Sleep prevention (Mac) and ssh on every host of the placement, the same engine files, the same model files."""
+    run = run or sh
     out = {"hosts": {}}
     local_hash = engine_hash_local()
     sums = {}
     for host in sorted({s.host for s in L.specs}):
         peer = L._peer(host)
-        info = {}
         if peer.get("ssh"):
-            r = sh(peer, "true", timeout=20)
+            r = run(peer, "true", 20)
             if r.returncode:
                 raise RuntimeError(f"ssh to {host} failed: {r.stderr.strip()[-200:]}")
-        r = sh(peer, "pgrep -x caffeinate")
-        if r.returncode:
-            log(f"[run] caffeinate not running on {host}; starting it")
-            if peer.get("ssh"):
-                sh(peer, "nohup caffeinate -dimsu >/dev/null 2>&1 &")
-            else:
-                subprocess.Popen(["caffeinate", "-dimsu"], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            time.sleep(1)
-            r = sh(peer, "pgrep -x caffeinate")
-        info["caffeinate"] = "on" if r.returncode == 0 else "off"
+        osname = peer_os(peer, run)
+        has_cuda = any(s.host == host and s.device.split(":")[0] == "cuda" for s in L.specs)
+        info = host_state(peer, not peer.get("ssh"), osname, has_cuda, run, log)
         if peer.get("ssh"):
-            r = sh(peer, f"{peer['python']} -c \"{ENGINE_HASH_REMOTE}\"")
+            r = run(peer, f"{peer['python']} -c \"{ENGINE_HASH_REMOTE}\"")
             remote = r.stdout.strip()
             if remote != local_hash:
                 raise RuntimeError(f"engine files on {host} differ from this machine ({remote[:12]} vs {local_hash[:12]}); "
-                                   f"wait for iCloud to sync or copy them")
-            r = sh(peer, "ifconfig awdl0 | head -1")
-            info["awdl"] = "up" if "<UP" in r.stdout or ",UP," in r.stdout else ("down" if r.stdout else "unknown")
-            r = sh(peer, "scutil --nc list")
-            info["vpn_state"] = "connected" if "(Connected)" in r.stdout else ("disconnected" if r.returncode == 0 else "unknown")
-        else:
-            info["awdl"], info["vpn_state"] = net.awdl_state(), net.vpn_state()
+                                   f"git pull on {host} (same SHA) or copy them")
         info["engine_sha256"] = local_hash
-        sums[host] = model_hashes(peer, host, L.model_dir)
+        sums[host] = model_hashes(peer, host, L.model_dir, run, osname)
         info["model_sha256"] = sums[host]
         out["hosts"][host] = info
     if len({json.dumps(v, sort_keys=True) for v in sums.values()}) > 1:
@@ -104,8 +148,16 @@ def preflight(L, log) -> dict:
     return out
 
 
+def find_run(run_id: str) -> Path:
+    """The run folder of an earlier run: this session's runs first, then session 6."""
+    for base in (RUNS, SESSION6 / "runs"):
+        if (base / run_id).exists():
+            return base / run_id
+    raise FileNotFoundError(f"no run folder {run_id} in {RUNS} or {SESSION6 / 'runs'}")
+
+
 def load_reference(run_id: str) -> tuple[dict, dict]:
-    d = RUNS / run_id
+    d = find_run(run_id)
     ref = json.loads((d / "reference.json").read_text())
     lg = dict(np.load(d / "first_logits.npz"))
     return ref, lg
@@ -121,6 +173,8 @@ def first_div(a: list[int], b: list[int]) -> int:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--placement", required=True)
+    ap.add_argument("--session-dir", default=str(SESSION6), help="where runs/ and model_hashes.json live; references are also "
+                    "searched in experiments/session6_hybrid")
     ap.add_argument("--run-id", required=True)
     ap.add_argument("--peers", default="~/.nocturne/peers.yaml")
     ap.add_argument("--subset", type=int, default=8)
@@ -134,6 +188,9 @@ def main(argv=None) -> int:
     ap.add_argument("--force", action="store_true", help="skip the planner's budget check (ranks still enforce budgets)")
     ap.add_argument("--mps-fraction-cap", action="store_true", help="also set torch's MPS memory fraction to the budget")
     a = ap.parse_args(argv)
+    global OUT, RUNS, HASHES
+    OUT = Path(a.session_dir).resolve()
+    RUNS, HASHES = OUT / "runs", OUT / "model_hashes.json"
 
     import torch
     from transformers import AutoTokenizer
@@ -275,7 +332,11 @@ def main(argv=None) -> int:
 
 
 def latest_reference(model: str, device: str) -> str | None:
-    c = sorted(RUNS.glob(f"R0_{model}_{device}_r*/reference.json"), key=lambda p: p.stat().st_mtime)
+    c = []
+    for base in dict.fromkeys([RUNS, SESSION6 / "runs"]):
+        c = sorted(base.glob(f"R0_{model}_{device}_r*/reference.json"), key=lambda p: p.stat().st_mtime)
+        if c:
+            break
     return c[-1].parent.name if c else None
 
 
