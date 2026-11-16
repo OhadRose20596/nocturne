@@ -106,7 +106,11 @@ def load_slices(model_dir: str | Path, cfg: Qwen2Config, spec: LoadSpec, device:
                 if budget is not None and nbytes + n > budget:
                     raise BudgetExceeded(f"load: {out_name} ({n / 1e6:.1f} MB) would bring tensor bytes to "
                                          f"{(nbytes + n) / 1e9:.3f} GB, over the budget of {budget / 1e9:.3f} GB")
-                out[out_name] = t.to(device)
+                try:
+                    out[out_name] = t.to(device)
+                except torch.cuda.OutOfMemoryError as e:
+                    e.tensor_name = out_name
+                    raise
                 nbytes += n
     if spec.head_rows and "lm_head.weight" not in out:
         out["lm_head.weight"] = out["model.embed_tokens.weight"]

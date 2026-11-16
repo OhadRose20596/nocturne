@@ -48,9 +48,24 @@ def _flush_print(*a, **kw):
 def idle_footprint(device: str) -> dict:
     """Footprint of this process with the device initialized and nothing loaded (the runtime overhead)."""
     torch.zeros(1, device=device)
+    sync(device)
+    return footprint()
+
+
+def sync(device: str) -> None:
     if device == "mps":
         torch.mps.synchronize()
-    return footprint()
+    elif device.split(":")[0] == "cuda":
+        torch.cuda.synchronize()
+
+
+def cuda_metrics(device: str) -> dict:
+    """Name, VRAM total and free, and peak allocation of a CUDA rank (empty for other devices)."""
+    if device.split(":")[0] != "cuda" or not torch.cuda.is_available():
+        return {}
+    free, total = torch.cuda.mem_get_info()
+    return {"cuda_name": torch.cuda.get_device_name(), "vram_total_bytes": int(total), "vram_free_bytes": int(free),
+            "max_allocated_bytes": int(torch.cuda.max_memory_allocated())}
 
 
 def footprint() -> dict:
@@ -169,15 +184,20 @@ class RankRuntime:
         ls = LoadSpec(self.spec.layers, sl, self.spec.embed_rows, self.spec.head_rows, self.spec.final_norm)
         budget = self.spec.budget if self.enforce_budget else None
         t0 = time.time()
-        w, self.loaded_bytes = load_slices(self.model_dir, self.cfg, ls, self.device, dtype=self.dtype, budget=budget, log=self.log)
-        self.model = Qwen2TP(self.cfg, w, sl, self.device, self.max_seq, dtype=self.dtype, layers=self.spec.layers,
-                             embed_rows=self.spec.embed_rows, head_rows=self.spec.head_rows)
+        try:
+            w, self.loaded_bytes = load_slices(self.model_dir, self.cfg, ls, self.device, dtype=self.dtype, budget=budget, log=self.log)
+            self.model = Qwen2TP(self.cfg, w, sl, self.device, self.max_seq, dtype=self.dtype, layers=self.spec.layers,
+                                 embed_rows=self.spec.embed_rows, head_rows=self.spec.head_rows)
+        except torch.cuda.OutOfMemoryError as e:
+            free, total = torch.cuda.mem_get_info()
+            what = getattr(e, "tensor_name", None) or "weights or KV cache"
+            raise RuntimeError(f"{self.spec.name}: CUDA out of memory loading {what}, free {free / 1e9:.2f} GB of "
+                               f"{total / 1e9:.2f} GB") from e
         self.kv_bytes = sum(2 * l.k_cache.numel() * l.k_cache.element_size() for l in self.model.layers)
         if budget is not None and self.loaded_bytes + self.kv_bytes > budget:
             raise BudgetExceeded(f"weights {self.loaded_bytes / 1e9:.3f} GB plus KV {self.kv_bytes / 1e9:.3f} GB "
                                  f"over the budget of {budget / 1e9:.3f} GB")
-        if self.device == "mps":
-            torch.mps.synchronize()
+        sync(self.device)
         self.load_s = time.time() - t0
         self.log(f"[hybrid] {self.spec.name} loaded {self.loaded_bytes / 1e9:.3f} GB (+ KV {self.kv_bytes / 1e9:.3f}) "
                  f"in {self.load_s:.1f} s on {self.device}")
@@ -230,6 +250,7 @@ class RankRuntime:
              "kv_bytes": self.kv_bytes, "idle": self.idle, "planned": self.spec.planned, "budget": self.spec.budget, "load_s": self.load_s,
              "steps": self.steps, "allreduce_calls": self.comm.calls, "links": {k: l.counters.snapshot() for k, l in self.links.items()}}
         m.update(mem_metrics(self.device))
+        m.update(cuda_metrics(self.device))
         m.update(footprint())
         return m
 
