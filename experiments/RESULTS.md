@@ -326,3 +326,11 @@ Long prompt first divergence: token 60 against MPS, token 10 against CPU. The co
 | R0_qwen2.5-1.5b-bf16_cuda_r1 | one rank, cuda | 8/8 | 8/8 | 1.0 (1.0, 1.0) | 0.469, 0.500 | 8.59, 4.02, 3.221 | experiments/session7_hetero/runs/R0_qwen2.5-1.5b-bf16_cuda_r1 |
 
 Same host, torch, SHA and method as the 0.5B CUDA reference above; qwen2.5-1.5b-bf16 sha256 equal to the M5. References `R0_qwen2.5-1.5b-bf16_mps_r1` and `R0_qwen2.5-1.5b-bf16_cpu_r1` (session 6). Long prompt first divergence: token 97 against MPS, token 54 against CPU. nvidia-smi showed 1955 MiB in use before the run (Windows), so about 6.2 GB of the 8 GB is usable.
+
+First Mac plus CUDA run. Coordinator on the M5 (Mac M5, MPS, torch 2.14.1), second stage on the PC (RTX 2000 Ada Laptop, CUDA, torch 2.14.1+cu130), phone hotspot, 2026-11-16. Repo SHA e12a7e0 on the M5 and 73ad964 on the PC (they differ only in data commits; engine sha256 equal). qwen2.5-1.5b-bf16, sha256 equal on both hosts.
+
+| run | placement | identical vs MPS ref | identical vs CUDA ref | accuracy (refs) | first step logit diff (MPS, CUDA) | frames per step (measured, predicted) | memory | folder |
+|---|---|---|---|---|---|---|---|---|
+| H1_pp_1.5b_r1 | PP: s0 layers 0-14 and embedding on m5 mps; s1 layers 14-28 and head on pc cuda | 8/8 | 8/8 | 1.0 (1.0, 1.0) | 0.438, 0.453 | 2, 2 | m5 loaded 1.777 GB; pc loaded 1.777 GB, peak allocated 1.852 GB, VRAM free at ready 5.47 of 8.59 GB | experiments/session7_hetero/runs/H1_pp_1.5b_r1 |
+
+Long prompt first divergence: token 146 against MPS, token 97 against CUDA. About 3.1 KB per decode step on the link. AWDL was up on the M5 (time is background only, T1).
