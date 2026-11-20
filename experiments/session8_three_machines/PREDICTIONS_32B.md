@@ -29,15 +29,27 @@ Tensor mode was never run with three devices, and never with a CUDA device behin
 
 | item | prediction | why | outcome |
 |---|---|---|---|
-| Tool | outcome (a): a Meta device over three devices, each holding its share | it worked with two devices on 7B and on 32B Q6_K; three devices is untested, so (c) assert or crash is possible | |
-| m5 buffers | about 16.2 GiB on the GPU, headroom about 1.5 GiB | 31 of 61 shares of 31.385 GiB plus KV and compute | |
-| air buffers | about 10.5 GiB, headroom about 1.3 GiB | 20 of 61 | |
-| gtx buffers | about 5.4 GiB, headroom about 1.6 GiB | 10 of 61 | |
-| Outcome | success if the tool accepts three devices; every request finishes | memory is under each budget on paper | |
-| Accuracy | 1.0 on the 8 prompts, as in run 1 | same weights | |
-| Background | decode far slower than run 1 (session 5 Q6_K TP gave 0.27 tok/s against PP at several tok/s) | every layer crosses the links | |
+| Tool | outcome (a): a Meta device over three devices, each holding its share | it worked with two devices on 7B and on 32B Q6_K; three devices is untested, so (c) assert or crash is possible | Held. Outcome (a): Meta device from 3 devices, each holds its share. |
+| m5 buffers | about 16.2 GiB on the GPU, headroom about 1.5 GiB | 31 of 61 shares of 31.385 GiB plus KV and compute | Held: 16.450 GiB on the GPU. The policy did not hold: the M5 limit was 20480 MiB during this run (raised by Ohad just before the server started), so the headroom was 3.55 GiB. Against the default limit it would be 1.31. |
+| air buffers | about 10.5 GiB, headroom about 1.3 GiB | 20 of 61 | Held: 10.670 GiB, headroom 1.17 GiB. |
+| gtx buffers | about 5.4 GiB, headroom about 1.6 GiB | 10 of 61 | Held: 5.424 GiB, headroom 1.64 GiB. |
+| Outcome | success if the tool accepts three devices; every request finishes | memory is under each budget on paper | Held. success true, 8 of 8 requests finished with stop. |
+| Accuracy | 1.0 on the 8 prompts, as in run 1 | same weights | Held: 1.0. |
+| Background | decode far slower than run 1 (session 5 Q6_K TP gave 0.27 tok/s against PP at several tok/s) | every layer crosses the links | Held: 0.198 tok/s median against 3.79 in run 1. |
 
-## Run 2: M5 GPU limit raised
+## Run 2: PP with the M5 GPU limit raised to 20 GiB, context 4096
 
-Only after run 1. Ohad sets `sudo sysctl iogpu.wired_limit_mb=20480` on the M5 (20 GiB). This is a different memory policy and gets its own row and tag (`wl20`).
-Split and context are chosen after run 1 from the measured per layer size. Prediction to register then, before the run.
+Written 2026-11-20 after runs 1 and 1b, before this run. Record id `A1_wifi_qwen2.5-32b-q8_m5_c4096ts3mwl20_r1`. Cell A1, context 4096, 8 prompts.
+Memory policy: `iogpu.wired_limit_mb=20480` on the M5 (set by Ohad with sudo, resets at reboot). Air and gtx as before. This is a different policy from session 5 and from run 1, hence the `wl20` tag.
+`-ts 18,10,36` (air, gtx, m5). The session message proposed 37, 18, 9; 36 on the M5 leaves about 1 GiB there with the measured layer size.
+Session 5 reference at this context: every Q8 split on two Macs failed (`A1_wifi_qwen2.5-32b-q8_m5_c4096_r2` and the rows next to it).
+
+| item | prediction | why | outcome |
+|---|---|---|---|
+| Load | loads, no OOM class | measured layer 517.7 MiB; KV grows 8 times against ctx 512 (about 1.0 GiB in total) | |
+| m5 GPU buffers | about 19.0 GiB, headroom about 1.0 GiB under the 20.0 GiB limit | 36 layers 18.20, KV about 0.56, compute about 0.2 to 0.3 | |
+| air buffers | about 9.6 GiB, headroom about 2.2 GiB | 18 layers 9.10, KV about 0.28, compute about 0.2 | |
+| gtx buffers | about 5.4 GiB, headroom about 1.6 GiB | 10 layers 5.06, KV about 0.16, compute about 0.2 | |
+| Outcome | success, 8 of 8 finish | | |
+| Accuracy | 1.0 on the 8 prompts | as runs 1 and 1b | |
+| What would count as a failure of the reasoning | an allocation failure on the M5 below 20 GiB: the raised limit is then not usable in full with other applications open | | |

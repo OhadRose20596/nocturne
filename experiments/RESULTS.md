@@ -430,3 +430,17 @@ All 8 requests finished with `stop`. Task accuracy 1.0 on the 8 prompts. There i
 Background only (T1): load 521.7 s, of which 498.6 s is tensor transfer over Wi-Fi; decode 3.79 tok/s median; 7 RPC commands per step.
 The bench marked the record as a flag-override data point (`-ts`), so it is not a row of the bench matrix table. Record: nocturne/bench/results/A1_wifi_qwen2.5-32b-q8_m5_c512ts3m_r1.json. Logs: nocturne/bench/results/logs/A1_wifi_qwen2.5-32b-q8_m5_c512ts3m_r1/ (gitignored).
 
+TP on the same model and hosts (llama.cpp tensor mode, cell B1, `--split-mode tensor -fit off`), 2026-11-20, repo SHA 6fa0f1e. In session 5 `B1_wifi_qwen2.5-32b-q8_m5_c512prop_r1` loaded on the two Macs and failed with `oom_requester_compute`.
+Memory policy note: the prediction was registered for the default policy, but Ohad raised the M5 GPU limit (`iogpu.wired_limit_mb` 0 to 20480) seconds before the server started. The server log says `MTL0 : Apple M5 (20480 MiB)`. So this row ran with the M5 limit at 20.0 GiB, Air and gtx unchanged. The M5 device buffers (16.45 GiB) are below the default limit (17.76 GiB) too; that it would also load under the default is an inference, not a measurement.
+
+| model | ctx | partition | prompts | success | failure class | m5 GPU buffers GiB (limit, headroom) | air buffers GiB (budget, headroom) | gtx buffers GiB (free VRAM, headroom) | id |
+|---|---|---|---|---|---|---|---|---|---|
+| qwen2.5-32b-q8 | 512 | TP `-ts 31,20,10` (m5, air, gtx) | eval_set, 8 prompts | 1/1 | - | 16.450 (20.00 raised, 3.55; default 17.76 would leave 1.31) | 10.670 (11.84, 1.17) | 5.424 (7.06, 1.64) | B1_wifi_qwen2.5-32b-q8_m5_c512ts3m_r1 |
+
+llama.cpp created a Meta device for tensor parallelism from 3 devices (MTL0, RPC0 air, RPC1 gtx). First tensor mode run here with three devices, and the first with a CUDA device behind RPC. Outcome (a): every device holds its share.
+Model shares: m5 16.204 GiB (the log line `Meta() model buffer size = 16592.90 MiB` is the largest share), air 10.454, gtx 5.227, plus 0.791 GiB on the M5 CPU (the record's m5 total 17.241 includes it). KV 69.25 MiB and compute 182.51 MiB on the Meta device.
+Measured peaks: air rpc-server RSS 10.365 GB, gtx VRAM in use 6509 MiB (967 MiB before the run).
+All 8 requests finished with `stop`. Task accuracy 1.0 on the 8 prompts. No BASELINE exists for this model, `quality_pass` null.
+Background only (T1): load 584.9 s (520.6 s tensor transfer, 18.05 GB sent, cold), decode 0.198 tok/s median (PP on the same hosts: 3.79), time to first token 15.2 s, about 100.9 MB on the wire per token.
+Record: nocturne/bench/results/B1_wifi_qwen2.5-32b-q8_m5_c512ts3m_r1.json. Not a bench matrix row (flag override `-ts`).
+
