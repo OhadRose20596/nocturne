@@ -1,0 +1,1022 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "H3_pp_qwen2.5-7b-bf16_homewifi_gtx_r1",
+ "date": "2026-11-20T16:01:17+0200",
+ "placement": {
+  "file": "experiments/session7_hetero/placements/H3_pp_7b_gtx.yaml",
+  "sha256": "c85c6949daccdb961abab2b18e2b9417dab8a57470ce3d6882e6bd8c71a5b68f",
+  "yaml": "# H3: PP 7b, layers 0-18 and embedding on the M5 mps, layers 18-28 on gtx cuda (GTX 1070, budget 5.5 GB), head back on the M5\nmodel: qwen2.5-7b-bf16\ncoordinator: {host: m5}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nstages:\n  - name: s0\n    layers: [0, 18]\n    embed: true\n    ranks:\n      - {host: m5, device: mps, port: 50070}\n  - name: s1\n    layers: [18, 28]\n    ranks:\n      - {host: gtx, device: cuda, port: 50070, budget_gb: 5.5}\n  - name: head\n    lm_head: true\n    ranks:\n      - {host: m5, device: mps, port: 50071}\n"
+ },
+ "git": {
+  "sha": "28accc4a1af2152463cf0038cb7f36ab29e27ac9",
+  "dirty": false
+ },
+ "torch_coordinator": "2.14.1",
+ "args": {
+  "placement": "experiments/session7_hetero/placements/H3_pp_7b_gtx.yaml",
+  "session_dir": "experiments/session7_hetero",
+  "run_id": "H3_pp_qwen2.5-7b-bf16_homewifi_gtx_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "R0_qwen2.5-7b-bf16_mps_r3",
+   "R0_qwen2.5-7b-bf16_cpu_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "force": false,
+  "mps_fraction_cap": false
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "qwen2.5-7b-bf16",
+  "dir": "~/models/hf/Qwen2.5-7B-Instruct",
+  "sha256": {
+   "config.json": "7463bb0ea78315365e6c6b74de4e73bbcc8359dfb0c5a737584e077d42c0b03c",
+   "generation_config.json": "3a8f9087e486054c8a4a08dae2e5a3ba62e23da212b5b8c08bc42cb983c3459f",
+   "model.safetensors.index.json": "624bf7c47cd12468fdc16e38a47cf4f19e0415b859a223ba3c027eed2f0e1028",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+   "model-00001-of-00004.safetensors": "a1333e6293854747c481288ea83b348226af178dd565c49b6f9495ba1966aba7",
+   "model-00002-of-00004.safetensors": "f5d25a2772cb825164a2a2c0fb6d51a87e282abf21e4dd75bc5cfb3cd0ea6185",
+   "model-00003-of-00004.safetensors": "8efdec4c1bc12317ae1a38dc42b595ce777738a64deea3fcb8a0a91381bcdfd5",
+   "model-00004-of-00004.safetensors": "1a72d403cdf0c1ec3cb7f289f17b394a01e64394c2e9b3c0f94dbce3faf879bd"
+  }
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    18
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": [
+    0,
+    152064
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 9480075264,
+    "kv": 150994944,
+    "workspace": 115015680,
+    "total": 9746085888,
+    "layer_bytes": 466115584,
+    "vocab_bytes": 1089994752,
+    "kv_heads_replicated": 0
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s1/0",
+   "stage": 1,
+   "stage_name": "s1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    18,
+    28
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": null,
+   "head_rows": null,
+   "final_norm": false,
+   "budget": 5500000000,
+   "planned": {
+    "weights": 4661155840,
+    "kv": 83886080,
+    "workspace": 115015680,
+    "total": 4860057600,
+    "layer_bytes": 466115584,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0
+   }
+  },
+  {
+   "gid": 2,
+   "name": "head/0",
+   "stage": 2,
+   "stage_name": "head",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50071,
+   "layers": [
+    0,
+    0
+   ],
+   "q0": 0,
+   "q1": 0,
+   "m0": 0,
+   "m1": 0,
+   "kv0": 0,
+   "kv1": 0,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    152064
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1090001920,
+    "kv": 0,
+    "workspace": 15592448,
+    "total": 1105594368,
+    "layer_bytes": 0,
+    "vocab_bytes": 1089994752,
+    "kv_heads_replicated": 0
+   }
+  }
+ ],
+ "frames": {
+  "predicted": {
+   "token": 0,
+   "embed": 0,
+   "layers": 0,
+   "hops": 2,
+   "head": 1,
+   "total": 3
+  },
+  "decode_steps": 279,
+  "measured_per_step": 3.0,
+  "bytes_per_step": 14400.0,
+  "per_link_per_step": {
+   "s0/0->s1/0": {
+    "sent_frames": 1.0,
+    "sent_bytes": 7192.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s0/0->ctl:s1/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s0/0->ctl:head/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s1/0->ctl": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s1/0->s0/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 7192.0
+   },
+   "s1/0->head/0": {
+    "sent_frames": 1.0,
+    "sent_bytes": 7192.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "head/0->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "head/0->s1/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 7192.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "gtx": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA GeForce GTX 1070, 8192 MiB, 976 MiB, 582.78",
+    "engine_sha256": "c9143ba7a8ba5746b9695034503617323f2198fd5c4b8895549e7cda3ba7baac",
+    "model_sha256": {
+     "config.json": "7463bb0ea78315365e6c6b74de4e73bbcc8359dfb0c5a737584e077d42c0b03c",
+     "generation_config.json": "3a8f9087e486054c8a4a08dae2e5a3ba62e23da212b5b8c08bc42cb983c3459f",
+     "model.safetensors.index.json": "624bf7c47cd12468fdc16e38a47cf4f19e0415b859a223ba3c027eed2f0e1028",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+     "model-00001-of-00004.safetensors": "a1333e6293854747c481288ea83b348226af178dd565c49b6f9495ba1966aba7",
+     "model-00002-of-00004.safetensors": "f5d25a2772cb825164a2a2c0fb6d51a87e282abf21e4dd75bc5cfb3cd0ea6185",
+     "model-00003-of-00004.safetensors": "8efdec4c1bc12317ae1a38dc42b595ce777738a64deea3fcb8a0a91381bcdfd5",
+     "model-00004-of-00004.safetensors": "1a72d403cdf0c1ec3cb7f289f17b394a01e64394c2e9b3c0f94dbce3faf879bd"
+    }
+   },
+   "m5": {
+    "os": "Darwin",
+    "caffeinate": "on",
+    "awdl": "down",
+    "vpn_state": "disconnected",
+    "engine_sha256": "c9143ba7a8ba5746b9695034503617323f2198fd5c4b8895549e7cda3ba7baac",
+    "model_sha256": {
+     "config.json": "7463bb0ea78315365e6c6b74de4e73bbcc8359dfb0c5a737584e077d42c0b03c",
+     "generation_config.json": "3a8f9087e486054c8a4a08dae2e5a3ba62e23da212b5b8c08bc42cb983c3459f",
+     "model.safetensors.index.json": "624bf7c47cd12468fdc16e38a47cf4f19e0415b859a223ba3c027eed2f0e1028",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+     "model-00001-of-00004.safetensors": "a1333e6293854747c481288ea83b348226af178dd565c49b6f9495ba1966aba7",
+     "model-00002-of-00004.safetensors": "f5d25a2772cb825164a2a2c0fb6d51a87e282abf21e4dd75bc5cfb3cd0ea6185",
+     "model-00003-of-00004.safetensors": "8efdec4c1bc12317ae1a38dc42b595ce777738a64deea3fcb8a0a91381bcdfd5",
+     "model-00004-of-00004.safetensors": "1a72d403cdf0c1ec3cb7f289f17b394a01e64394c2e9b3c0f94dbce3faf879bd"
+    }
+   }
+  }
+ },
+ "load_s": 11.028801918029785,
+ "link_counters": {
+  "s0/0": {
+   "s1/0": {
+    "sent_frames": 290,
+    "recv_frames": 1,
+    "sent_bytes": 5597984,
+    "recv_bytes": 42,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 2006568,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "metrics": 2,
+     "hidden": 288
+    }
+   },
+   "ctl:s1/0": {
+    "sent_frames": 2,
+    "recv_frames": 2,
+    "sent_bytes": 1658,
+    "recv_bytes": 2935,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1
+    }
+   },
+   "ctl:head/0": {
+    "sent_frames": 2,
+    "recv_frames": 290,
+    "sent_bytes": 1658,
+    "recv_bytes": 2744242,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 4464
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1
+    }
+   }
+  },
+  "s1/0": {
+   "ctl": {
+    "sent_frames": 2,
+    "recv_frames": 2,
+    "sent_bytes": 2935,
+    "recv_bytes": 1658,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "ready": 1,
+     "metrics_reply": 1
+    }
+   },
+   "s0/0": {
+    "sent_frames": 1,
+    "recv_frames": 290,
+    "sent_bytes": 42,
+    "recv_bytes": 5597984,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 2006568
+    },
+    "by_kind_sent": {
+     "hello": 1
+    }
+   },
+   "head/0": {
+    "sent_frames": 290,
+    "recv_frames": 1,
+    "sent_bytes": 5597984,
+    "recv_bytes": 42,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 2006568,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "metrics": 2,
+     "hidden": 288
+    }
+   }
+  },
+  "head/0": {
+   "ctl": {
+    "sent_frames": 290,
+    "recv_frames": 2,
+    "sent_bytes": 2744242,
+    "recv_bytes": 1658,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 4464,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "ready": 1,
+     "metrics_reply": 1,
+     "head": 288
+    }
+   },
+   "s1/0": {
+    "sent_frames": 1,
+    "recv_frames": 290,
+    "sent_bytes": 42,
+    "recv_bytes": 5597984,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 2006568
+    },
+    "by_kind_sent": {
+     "hello": 1
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "s0/0",
+   "gid": 0,
+   "host": "m5",
+   "device": "mps",
+   "pid": 47059,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 9480075264,
+   "kv_bytes": 150994944,
+   "idle": {
+    "peak_rss_bytes": 315277312,
+    "phys_footprint_bytes": 227853272,
+    "lifetime_max_phys_footprint_bytes": 227853272
+   },
+   "planned": {
+    "weights": 9480075264,
+    "kv": 150994944,
+    "workspace": 115015680,
+    "total": 9746085888,
+    "layer_bytes": 466115584,
+    "vocab_bytes": 1089994752,
+    "kv_heads_replicated": 0
+   },
+   "budget": null,
+   "load_s": 5.480541944503784,
+   "steps": 288,
+   "allreduce_calls": 0,
+   "current_allocated_bytes": 9789934080,
+   "driver_allocated_bytes": 9848946688,
+   "peak_rss_bytes": 436371456,
+   "phys_footprint_bytes": 10203497648,
+   "lifetime_max_phys_footprint_bytes": 10214999216
+  },
+  {
+   "name": "s1/0",
+   "gid": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 8586,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 4661155840,
+   "kv_bytes": 83886080,
+   "idle": {
+    "peak_rss_bytes": 615477248
+   },
+   "planned": {
+    "weights": 4661155840,
+    "kv": 83886080,
+    "workspace": 115015680,
+    "total": 4860057600,
+    "layer_bytes": 466115584,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0
+   },
+   "budget": 5500000000,
+   "load_s": 3.0669631958007812,
+   "steps": 288,
+   "allreduce_calls": 0,
+   "current_allocated_bytes": 4769295360,
+   "driver_allocated_bytes": 4854906880,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 2675965952,
+   "max_allocated_bytes": 4788958208,
+   "peak_rss_bytes": 3081957376
+  },
+  {
+   "name": "head/0",
+   "gid": 2,
+   "host": "m5",
+   "device": "mps",
+   "pid": 47305,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 1090001920,
+   "kv_bytes": 0,
+   "idle": {
+    "peak_rss_bytes": 323829760,
+    "phys_footprint_bytes": 196314048,
+    "lifetime_max_phys_footprint_bytes": 196314048
+   },
+   "planned": {
+    "weights": 1090001920,
+    "kv": 0,
+    "workspace": 15592448,
+    "total": 1105594368,
+    "layer_bytes": 0,
+    "vocab_bytes": 1089994752,
+    "kv_heads_replicated": 0
+   },
+   "budget": null,
+   "load_s": 0.24336695671081543,
+   "steps": 288,
+   "allreduce_calls": 0,
+   "current_allocated_bytes": 1107607552,
+   "driver_allocated_bytes": 1116405760,
+   "peak_rss_bytes": 326565888,
+   "phys_footprint_bytes": 1323648032,
+   "lifetime_max_phys_footprint_bytes": 1323648032
+  }
+ ],
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 256.81209564208984,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "936",
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 138.31035296122232,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "543",
+   "score": 1.0
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt_n": 44,
+   "tokens": [
+    19,
+    18,
+    22,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 133.40298334757486,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "437",
+   "score": 1.0
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt_n": 45,
+   "tokens": [
+    16,
+    17,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 133.82792472839355,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "12",
+   "score": 1.0
+  },
+  {
+   "id": "arith_05",
+   "kind": "eval",
+   "prompt_n": 58,
+   "tokens": [
+    16,
+    20,
+    15,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 132.56327311197916,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "150",
+   "score": 1.0
+  },
+  {
+   "id": "arith_06",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 145.20001411437988,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "36",
+   "score": 1.0
+  },
+  {
+   "id": "extract_01",
+   "kind": "eval",
+   "prompt_n": 67,
+   "tokens": [
+    35,
+    3362,
+    55041,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 139.55235481262207,
+   "category": "extraction",
+   "cap": 16,
+   "text": "Dana Levi",
+   "score": 1.0
+  },
+  {
+   "id": "extract_02",
+   "kind": "eval",
+   "prompt_n": 69,
+   "tokens": [
+    14003,
+    220,
+    18,
+    16,
+    16,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 156.32224082946777,
+   "category": "extraction",
+   "cap": 16,
+   "text": "Room 311",
+   "score": 1.0
+  },
+  {
+   "id": "longopen_01",
+   "kind": "long",
+   "prompt_n": 78,
+   "tokens": [
+    32,
+    2114,
+    17220,
+    26299,
+    3922,
+    23377,
+    264,
+    2766,
+    4269,
+    504,
+    279,
+    7602,
+    311,
+    264,
+    20638,
+    1526,
+    264,
+    4013,
+    315,
+    7354,
+    15860,
+    279,
+    9273,
+    11,
+    2615,
+    3501,
+    11,
+    8887,
+    11744,
+    11,
+    323,
+    27035,
+    13,
+    3197,
+    498,
+    1191,
+    16842,
+    264,
+    2766,
+    389,
+    697,
+    20638,
+    11,
+    279,
+    1681,
+    374,
+    3208,
+    311,
+    279,
+    7602,
+    11,
+    323,
+    279,
+    2766,
+    821,
+    374,
+    10865,
+    1495,
+    1119,
+    2613,
+    27035,
+    13,
+    4220,
+    27035,
+    5821,
+    1526,
+    279,
+    7602,
+    311,
+    697,
+    2114,
+    3922,
+    11,
+    1380,
+    807,
+    525,
+    3949,
+    553,
+    697,
+    9273,
+    382,
+    785,
+    9273,
+    14056,
+    438,
+    264,
+    8622,
+    18719,
+    11,
+    44990,
+    9442,
+    311,
+    279,
+    8311,
+    7611,
+    13,
+    1084,
+    33061,
+    311,
+    697,
+    7602,
+    2473,
+    9109,
+    320,
+    55506,
+    8,
+    323,
+    95735,
+    279,
+    7602,
+    3633,
+    311,
+    1008,
+    7611,
+    304,
+    697,
+    2114,
+    11,
+    2670,
+    697,
+    20638,
+    13,
+    576,
+    9273,
+    1083,
+    28872,
+    279,
+    17220,
+    26299,
+    8286,
+    11,
+    892,
+    374,
+    33599,
+    1526,
+    458,
+    2615,
+    1459,
+    13,
+    576,
+    2615,
+    1459,
+    374,
+    15791,
+    264,
+    3671,
+    429,
+    2239,
+    279,
+    17220,
+    26299,
+    8286,
+    11,
+    10693,
+    7611,
+    311,
+    4564,
+    311,
+    279,
+    3922,
+    1496,
+    421,
+    807,
+    525,
+    537,
+    304,
+    279,
+    13922,
+    52751,
+    315,
+    279,
+    9273,
+    382,
+    785,
+    17220,
+    26299,
+    8286,
+    374,
+    33599,
+    916,
+    8887,
+    11744,
+    11,
+    892,
+    525,
+    1075,
+    29447,
+    42914,
+    304,
+    279,
+    3720,
+    13,
+    4615,
+    20638,
+    323,
+    279,
+    9273,
+    990,
+    1493,
+    11744,
+    311,
+    19032,
+    13,
+    3197,
+    498,
+    1191,
+    16842,
+    264,
+    2766,
+    11,
+    279,
+    27035,
+    315,
+    821,
+    5821,
+    1526,
+    279,
+    7602,
+    11,
+    5545,
+    697,
+    9273,
+    11,
+    323,
+    525,
+    1221,
+    3208,
+    311,
+    697,
+    20638,
+    4566,
+    279,
+    17220,
+    26299,
+    8286,
+    382,
+    7039,
+    11,
+    12793,
+    429,
+    1378,
+    7611,
+    304,
+    697,
+    2114,
+    525,
+    4460,
+    311,
+    29282,
+    821,
+    518,
+    279,
+    1852,
+    882,
+    13,
+    1096
+   ],
+   "finish": "length",
+   "ms_per_step": 131.1649958292643,
+   "text": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving the router, access points, radio channels, and packets. When you start streaming a video on your laptop, the request is sent to the internet, and the video data is broken down into small packets. These packets travel through the internet to your home network, where they are received by your router.\n\nThe router acts as a central hub, directing traffic to the appropriate devices. It connects to your internet service provider (ISP) and distributes the internet connection to other devices in your home, including your laptop. The router also manages the Wi-Fi signal, which is transmitted through an access point. The access point is essentially a device that extends the Wi-Fi signal, allowing devices to connect to the network even if they are not in the immediate vicinity of the router.\n\nThe Wi-Fi signal is transmitted over radio channels, which are like invisible pathways in the air. Your laptop and the router use these channels to communicate. When you start streaming a video, the packets of data travel through the internet, reach your router, and are then sent to your laptop via the Wi-Fi signal.\n\nNow, imagine that two devices in your home are trying to transmit data at the same time. This"
+  }
+ ],
+ "commands": [
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 192.168.1.168 --port 50070 --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --device cuda --name s1/0 --tag H3_pp_qwen2.5-7b-bf16_homewifi_gtx_r1"
+  },
+  {
+   "host": "m5",
+   "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50071 --model \"$HOME\"/models/hf/Qwen2.5-7B-Instruct --device mps --name head/0 --tag H3_pp_qwen2.5-7b-bf16_homewifi_gtx_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx pkill -f '--tag H3_pp_qwen2.5-7b-bf16_homewifi_gtx_r1'"
+  },
+  {
+   "host": "m5",
+   "cmd": "pkill -f '--tag H3_pp_qwen2.5-7b-bf16_homewifi_gtx_r1'"
+  }
+ ],
+ "correctness": {
+  "R0_qwen2.5-7b-bf16_mps_r3": {
+   "reference": "R0_qwen2.5-7b-bf16_mps_r3",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 3,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 72
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.3125,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.25,
+    "arith_02": 0.3125,
+    "arith_03": 0.1875,
+    "arith_04": 0.21875,
+    "arith_05": 0.28125,
+    "arith_06": 0.25,
+    "extract_01": 0.25,
+    "extract_02": 0.1875,
+    "longopen_01": 0.25
+   },
+   "long_first_div": {
+    "longopen_01": 72
+   },
+   "criterion_met": true
+  },
+  "R0_qwen2.5-7b-bf16_cpu_r1": {
+   "reference": "R0_qwen2.5-7b-bf16_cpu_r1",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 3,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 109
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.375,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.2750244140625,
+    "arith_02": 0.28125,
+    "arith_03": 0.25,
+    "arith_04": 0.296875,
+    "arith_05": 0.25,
+    "arith_06": 0.375,
+    "extract_01": 0.279296875,
+    "extract_02": 0.1875,
+    "longopen_01": 0.375
+   },
+   "long_first_div": {
+    "longopen_01": 109
+   },
+   "criterion_met": true
+  }
+ }
+}
