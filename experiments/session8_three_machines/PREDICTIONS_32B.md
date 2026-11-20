@@ -20,6 +20,23 @@ Memory policy as in session 5: `-ngl 99`, macOS default GPU limit on both Macs (
 | Accuracy | equal to the Q6_K rows of session 5 or better on the 8 prompts | same model family at a higher precision | Held. Task accuracy 1.0 on the 8 prompts. |
 | What would count as a failure of the reasoning | an OOM on any device although the planned buffers are under its budget, or wrong text from a CUDA 12.4 build on a Pascal card | | Not triggered. |
 
+## Run 1b: TP (llama.cpp tensor mode), default memory policy
+
+Written 2026-11-20 after run 1 and before this run. Record id `B1_wifi_qwen2.5-32b-q8_m5_c512ts3m_r1`. Cell B1: `--split-mode tensor`, `-fit off`, context 512, 8 prompts.
+`-ts 31,20,10` in the order m5, air, gtx (in tensor mode the Meta device lists the local device first). Same memory policy as run 1.
+Session 5 reference: `B1_wifi_qwen2.5-32b-q8_m5_c512prop_r1` loaded on both Macs and failed with `oom_requester_compute` (m5 model share 18.831 GiB, air 12.554 GiB, 31.385 GiB in total).
+Tensor mode was never run with three devices, and never with a CUDA device behind RPC. Upstream documents the Meta backend for CUDA only.
+
+| item | prediction | why | outcome |
+|---|---|---|---|
+| Tool | outcome (a): a Meta device over three devices, each holding its share | it worked with two devices on 7B and on 32B Q6_K; three devices is untested, so (c) assert or crash is possible | |
+| m5 buffers | about 16.2 GiB on the GPU, headroom about 1.5 GiB | 31 of 61 shares of 31.385 GiB plus KV and compute | |
+| air buffers | about 10.5 GiB, headroom about 1.3 GiB | 20 of 61 | |
+| gtx buffers | about 5.4 GiB, headroom about 1.6 GiB | 10 of 61 | |
+| Outcome | success if the tool accepts three devices; every request finishes | memory is under each budget on paper | |
+| Accuracy | 1.0 on the 8 prompts, as in run 1 | same weights | |
+| Background | decode far slower than run 1 (session 5 Q6_K TP gave 0.27 tok/s against PP at several tok/s) | every layer crosses the links | |
+
 ## Run 2: M5 GPU limit raised
 
 Only after run 1. Ohad sets `sudo sysctl iogpu.wired_limit_mb=20480` on the M5 (20 GiB). This is a different memory policy and gets its own row and tag (`wl20`).
