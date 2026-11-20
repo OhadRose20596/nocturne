@@ -46,10 +46,10 @@ Session 5 reference at this context: every Q8 split on two Macs failed (`A1_wifi
 
 | item | prediction | why | outcome |
 |---|---|---|---|
-| Load | loads, no OOM class | measured layer 517.7 MiB; KV grows 8 times against ctx 512 (about 1.0 GiB in total) | |
-| m5 GPU buffers | about 19.0 GiB, headroom about 1.0 GiB under the 20.0 GiB limit | 36 layers 18.20, KV about 0.56, compute about 0.2 to 0.3 | |
-| air buffers | about 9.6 GiB, headroom about 2.2 GiB | 18 layers 9.10, KV about 0.28, compute about 0.2 | |
-| gtx buffers | about 5.4 GiB, headroom about 1.6 GiB | 10 layers 5.06, KV about 0.16, compute about 0.2 | |
-| Outcome | success, 8 of 8 finish | | |
-| Accuracy | 1.0 on the 8 prompts | as runs 1 and 1b | |
-| What would count as a failure of the reasoning | an allocation failure on the M5 below 20 GiB: the raised limit is then not usable in full with other applications open | | |
+| Load | loads, no OOM class | measured layer 517.7 MiB; KV grows 8 times against ctx 512 (about 1.0 GiB in total) | Held. Loaded, 65 of 65 layers offloaded, no OOM. KV 1024 MiB in total. |
+| m5 GPU buffers | about 19.0 GiB, headroom about 1.0 GiB under the 20.0 GiB limit | 36 layers 18.20, KV about 0.56, compute about 0.2 to 0.3 | Wrong by 0.6 GiB. 18.389 GiB, headroom 1.61 GiB. llama.cpp placed 18083 MiB on the M5, about 35 layers, not 36. |
+| air buffers | about 9.6 GiB, headroom about 2.2 GiB | 18 layers 9.10, KV about 0.28, compute about 0.2 | Held: 9.647 GiB, headroom 2.19 GiB. |
+| gtx buffers | about 5.4 GiB, headroom about 1.6 GiB | 10 layers 5.06, KV about 0.16, compute about 0.2 | Close: 5.173 GiB, headroom 1.87 GiB. |
+| Outcome | success, 8 of 8 finish | | Held. success true, 8 of 8 finished with stop. |
+| Accuracy | 1.0 on the 8 prompts | as runs 1 and 1b | Held: 1.0. |
+| What would count as a failure of the reasoning | an allocation failure on the M5 below 20 GiB: the raised limit is then not usable in full with other applications open | | Not triggered. The M5 allocated 18.39 GiB on the GPU. |

@@ -444,3 +444,18 @@ All 8 requests finished with `stop`. Task accuracy 1.0 on the 8 prompts. No BASE
 Background only (T1): load 584.9 s (520.6 s tensor transfer, 18.05 GB sent, cold), decode 0.198 tok/s median (PP on the same hosts: 3.79), time to first token 15.2 s, about 100.9 MB on the wire per token.
 Record: nocturne/bench/results/B1_wifi_qwen2.5-32b-q8_m5_c512ts3m_r1.json. Not a bench matrix row (flag override `-ts`).
 
+Run 2, a different memory policy: the M5 GPU limit raised to 20 GiB (`sudo sysctl iogpu.wired_limit_mb=20480`, set by Ohad, resets at reboot; the server log says `MTL0 : Apple M5 (20480 MiB)`). Air and gtx unchanged. Same hosts and cell A1, context 4096, 2026-11-20, repo SHA ffc2754. In session 5 every Q8 split at context 4096 on the two Macs failed.
+
+| model | ctx | partition | prompts | success | failure class | m5 GPU buffers GiB (limit, headroom) | air buffers GiB (budget, headroom) | gtx buffers GiB (free VRAM, headroom) | id |
+|---|---|---|---|---|---|---|---|---|---|
+| qwen2.5-32b-q8 | 4096 | PP `-ts 18,10,36` (air, gtx, m5), M5 limit 20 GiB | eval_set, 8 prompts | 1/1 | - | 18.389 (20.00, 1.61) | 9.647 (11.84, 2.19) | 5.173 (7.04, 1.87) | A1_wifi_qwen2.5-32b-q8_m5_c4096ts3mwl20_r1 |
+
+Model buffers: MTL0 18083.44 MiB, RPC air 9388.45 MiB, RPC gtx 4941.29 MiB, CPU 788.91 MiB. KV 560, 304 and 160 MiB. Compute 186.0, 186.0 and 196.0 MiB. The record's m5 figure 19.183 includes 0.794 GiB on the CPU.
+The M5 held 18.39 GiB on the GPU, 0.63 GiB above the default limit of 17.76 GiB. So this placement needs the raised limit.
+All 8 requests finished with `stop`. Task accuracy 1.0. gtx VRAM in use at the peak 6236 MiB (986 MiB before the run). Air rpc-server RSS peak 9.68 GB.
+Background only (T1): load 114.6 s with a warm worker cache (1.86 GB sent), decode 3.71 tok/s median.
+After the three Q8 runs the M5 had 6.0 GB of swap in use with other applications open. Not investigated.
+Record: nocturne/bench/results/A1_wifi_qwen2.5-32b-q8_m5_c4096ts3mwl20_r1.json. Not a bench matrix row (flag override `-ts`).
+
+Limits of the three Q8 rows: one run each, 8 short prompts (32 generated tokens per run), no long context prompt, no repeat, no BASELINE to grade exact match against.
+

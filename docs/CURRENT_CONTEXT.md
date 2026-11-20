@@ -42,7 +42,11 @@ T1: latency is not a metric. T2: run a huge model over the internet on several h
 - `gtx` stands in for Lior's P16v (`pc`), which was away. The `pc` peer and the `p16v` ssh alias still hold the hotspot address. Run the join tool on it when it returns.
 - New: `scripts/15_join.sh`, `15_join.ps1`, `16_join_apply.py` prepare a machine and report to the coordinator (docs/JOIN.md). Windows works through WSL2 only. A native Windows peer needs an engine change (`import resource` in `hybrid.py`), not approved.
 - A GTX 10 card needs the `cu126` torch wheel. The CUDA 13 wheels fail on it with "no kernel image".
-- 7B was not run on three machines. Chen's asks from 16.11 (shared timeline, community prompts, prompt queue) are still open for the long session.
+- 7B on three machines with our engine (session 8b): PP in two and three stages and one TP group (heads 14, 7, 7) all gave 8 of 8 identical against the MPS and CPU references. gtx held 3.8 to 5.3 GB of the 15.2 GB model.
+- 32B Q8_0 with llama.cpp on three machines (session 8c): loads and completes, PP and TP (tensor mode over three devices), task accuracy 1.0 on 8 prompts. Session 5 failed every Q8 split on two Macs. PP at context 512 ran under the default memory policy. TP and PP at context 4096 ran with the M5 GPU limit raised to 20 GiB (`iogpu.wired_limit_mb`), recorded as a separate policy. One run each, short prompts only.
+- Our engine reads bf16 safetensors only, so it cannot load Q8. Open proposal, not decided: Q8_0 support in engine B (keep int8 on the device, expand per matrix). It is an engine change and needs review.
+- The bench live page shows one card per machine for any number of workers.
+- Not done on three machines: long context, repeats, fault recovery, internet. Chen's asks from 16.11 (shared timeline, community prompts, prompt queue) are still open for the long session.
 
 ## Documents not yet synced to v4 and T3
 
