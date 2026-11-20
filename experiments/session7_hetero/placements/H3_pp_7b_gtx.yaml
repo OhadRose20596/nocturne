@@ -1,0 +1,21 @@
+# H3: PP 7b, layers 0-18 and embedding on the M5 mps, layers 18-28 on gtx cuda (GTX 1070, budget 5.5 GB), head back on the M5
+model: qwen2.5-7b-bf16
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 18]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+  - name: s1
+    layers: [18, 28]
+    ranks:
+      - {host: gtx, device: cuda, port: 50070, budget_gb: 5.5}
+  - name: head
+    lm_head: true
+    ranks:
+      - {host: m5, device: mps, port: 50071}

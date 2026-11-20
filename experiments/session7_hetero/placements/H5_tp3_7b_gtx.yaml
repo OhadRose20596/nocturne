@@ -1,0 +1,17 @@
+# H5: TP 7b, one group of three across M5 mps (14 heads), Air mps (7) and gtx cuda (7, GTX 1070, budget 5.5 GB); KV aligned, mixed devices accepted on purpose
+model: qwen2.5-7b-bf16
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+allow_mixed_devices: true
+stages:
+  - name: s0
+    layers: [0, 28]
+    embed: true
+    lm_head: true
+    ranks:
+      - {host: m5, device: mps, port: 50070, weight: 2, heads: 14}
+      - {host: air, device: mps, port: 50070, weight: 1, heads: 7}
+      - {host: gtx, device: cuda, port: 50070, weight: 1, heads: 7, budget_gb: 5.5}

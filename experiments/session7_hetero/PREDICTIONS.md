@@ -131,3 +131,52 @@ References: the same three as H1.
 | Identical vs CUDA references | 7 or 8 of 8 against each | same | Held: 8 of 8 against Ada, 8 of 8 against gtx. |
 | Criterion | met | | Held. Met against all three. Accuracy 1.0. |
 | What would count as a failure of the reasoning | garbled text from the first token (transport or dtype, not rounding), or a rank disconnect | | Not triggered. Text is correct from the first token. First step logit diff 0.469 MPS, 0.418 Ada, 0.511 gtx. |
+
+# Session 8b (2026-11-20): 7B on three machines, CUDA peer `gtx`
+
+Same hosts and link as session 8. All blocks were written before any 7B run. References: `R0_qwen2.5-7b-bf16_mps_r3` and `R0_qwen2.5-7b-bf16_cpu_r1` (session 6).
+There is no CUDA reference for 7B: the model (15.2 GB) does not fit the 8 GB card. The criterion is at least 7 of 8 identical against at least one reference, with the same graded accuracy.
+
+## H3_pp_qwen2.5-7b-bf16_homewifi_gtx_r1
+
+Placement `H3_pp_7b_gtx.yaml`: layers 0 to 18 and the embedding on the M5 (MPS), layers 18 to 28 on gtx (CUDA, budget 5.5 GB), the head and final norm back on the M5 (port 50071).
+
+| item | prediction | why | outcome |
+|---|---|---|---|
+| Planner | accepts; gtx planned 4860 MB against the 5500 MB budget | PLANS.md | |
+| gtx memory | loads; peak allocated about 4.8 to 5.0 GB, below the free VRAM (about 7.0 GB) | 10 layers of 466 MB plus KV and workspace | |
+| Run outcome | completes | whole layers per device, as H1 on 1.5B | |
+| Frame formula | holds: 3 frames per decode step (hops 2, head 1) | s0 to s1, s1 to head, head result back | |
+| Identical vs MPS reference | 7 or 8 of 8 | 18 of 28 layers and the head are the same MPS computation; 10 layers run on a Pascal card | |
+| Identical vs CPU reference | 7 or 8 of 8 | the MPS and CPU 7B references do not agree everywhere | |
+| Criterion | met against at least one | | |
+| First step logit diff | below 1.0 against both, nonzero | | |
+
+## H4_pp3_qwen2.5-7b-bf16_homewifi_gtx_r1
+
+Placement `H4_pp3_7b_gtx.yaml`: layers 0 to 10 and the embedding on the M5, 10 to 19 on the Air (torch 2.15.0), 19 to 28 and the head on gtx (budget 6.0 GB).
+
+| item | prediction | why | outcome |
+|---|---|---|---|
+| Planner | accepts; gtx planned 5476.5 MB against 6000 MB, air 4385.6 MB, m5 5950.1 MB | PLANS.md | |
+| gtx memory | loads; this is the tightest rank of the session, peak allocated about 5.4 to 5.6 GB of about 7.0 GB free | 9 layers plus the 1.09 GB head | |
+| Run outcome | completes, no rank disconnect | | |
+| Frame formula | holds: 3 frames per decode step (2 hops and the head) | same shape as H4 on 1.5B | |
+| Identical vs MPS reference | 7 or 8 of 8 | three devices, the Air differs from the M5 at the rounding edge | |
+| Identical vs CPU reference | 7 or 8 of 8 | | |
+| Criterion | met against at least one | | |
+
+## H5_tp3_qwen2.5-7b-bf16_homewifi_gtx_r1
+
+Placement `H5_tp3_7b_gtx.yaml`: one TP group over all 28 layers, KV aligned heads 14 (M5), 7 (Air), 7 (gtx, budget 5.5 GB), `allow_mixed_devices: true`.
+
+| item | prediction | why | outcome |
+|---|---|---|---|
+| Planner | accepts; m5 7798.6 MB, air 3906.8 MB, gtx 3906.8 MB | PLANS.md | |
+| Run outcome | completes, no rank disconnect | H5 on 1.5B held 16416 all-reduces per rank | |
+| Frame formula | holds: 346 frames per decode step, about 2.46 MB per step | the `plan` line | |
+| Identical vs MPS reference | 7 or 8 of 8 | fp32 sums on the host in a fixed order; uneven shares were checked on two Macs only (session 6) | |
+| Identical vs CPU reference | 7 or 8 of 8 | | |
+| Criterion | met against at least one | | |
+| What would count as a failure of the reasoning | garbled text from the first token, a rank disconnect, or CUDA out of memory on gtx | | |
+
