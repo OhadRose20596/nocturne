@@ -67,3 +67,67 @@ References: `R0_qwen2.5-7b-bf16_mps_r3` and `R0_qwen2.5-7b-bf16_cpu_r1` (session
 | Identical vs CPU reference | 7 or 8 of 8 | the MPS and CPU 7B references are not identical to each other everywhere | |
 | Criterion | met against both | | |
 | First step logit diff | below 1.0 against both, nonzero | | |
+
+# Session 8 (2026-11-20): home Wi-Fi, CUDA peer `gtx`
+
+The CUDA machine of session 7 (`pc`, RTX 2000 Ada) was not available. The CUDA peer is `gtx`: GTX 1070 8 GB, WSL2 Ubuntu 26.04, torch 2.14.1+cu126, Python 3.14.4.
+The placements are copies with `host: gtx` (`*_gtx.yaml`). Run ids carry `homewifi_gtx`. All blocks below were written before any run of this session.
+The prompt asked for run ids without `gtx`. The suffix was added so nobody reads these as runs on the session 7 card.
+
+## R0_qwen2.5-1.5b-bf16_cuda_gtx_r1
+
+Written 2026-11-20 before the run. Placement `R0_1.5b_cuda_gtx.yaml`: one rank, all 28 layers on gtx (CUDA). Coordinator on gtx. No network.
+Compared with `R0_qwen2.5-1.5b-bf16_cuda_r1` (RTX 2000 Ada) and `R0_qwen2.5-1.5b-bf16_mps_r1`.
+
+| item | prediction | why | outcome |
+|---|---|---|---|
+| Run outcome | completes, planned 3256 MB fits the 8 GB card | PLANS.md; about 1.2 GB is in use by Windows | |
+| transformers generate | identical on every prompt | same weights, same device, same greedy decode; held for the Ada R0 | |
+| Identical vs Ada CUDA reference | 7 or 8 of 8 | same wheel family but a Pascal card has no native bf16 path, so kernels can round differently | |
+| Identical vs MPS reference | 7 or 8 of 8 | the Ada and MPS R0s agree 8 of 8 on the short prompts | |
+| First step logit diff vs Ada | nonzero, below 1.0 | different GPU generation, same arithmetic in principle | |
+
+## H1_pp_qwen2.5-1.5b-bf16_homewifi_gtx_r1
+
+Written 2026-11-20 before the run. Placement `H1_pp_1.5b_gtx.yaml`: layers 0 to 14 and the embedding on the M5 (MPS), layers 14 to 28 and the head on gtx (CUDA). Home Wi-Fi. Coordinator on the M5.
+References: `R0_qwen2.5-1.5b-bf16_mps_r1`, `R0_qwen2.5-1.5b-bf16_cuda_r1` (Ada) and `R0_qwen2.5-1.5b-bf16_cuda_gtx_r1`.
+
+| item | prediction | why | outcome |
+|---|---|---|---|
+| Planner | accepts, 1886.5 MB on m5 and 1887.4 MB on gtx | PLANS.md | |
+| Run outcome | completes | same placement shape as H1 on the hotspot, which completed | |
+| Frame formula | holds: 2 frames per decode step | one hop and the head | |
+| Identical vs MPS reference | 8 of 8 | H1 on the hotspot gave 8 of 8 | |
+| Identical vs CUDA references | 8 of 8 against the Ada reference, 7 or 8 of 8 against the gtx reference | H1 gave 8 of 8 against Ada; the gtx reference is new | |
+| Criterion | met (at least 7 of 8 against at least one reference, same graded accuracy) | | |
+| First step logit diff | below 1.0 against every reference | H1 gave 0.44 and 0.45 | |
+
+## H4_pp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1
+
+Written 2026-11-20 before the run. Placement `H4_pp3_1.5b_gtx.yaml`: layers 0 to 10 and the embedding on the M5 (MPS), 10 to 19 on the Air (MPS, torch 2.15.0), 19 to 28 and the head on gtx (CUDA). Home Wi-Fi. Coordinator on the M5.
+References: the same three as H1.
+
+| item | prediction | why | outcome |
+|---|---|---|---|
+| Planner | accepts, 1495.3 MB on m5, 930.8 MB on air, 1398.4 MB on gtx | PLANS.md | |
+| Run outcome | completes, no rank disconnect | whole layers per device, three ranks | |
+| Frame formula | holds: 3 frames per decode step (2 hops and the head) | H1 gave 2 with one hop | |
+| Identical vs MPS reference | 7 or 8 of 8 | 19 of 28 layers on MPS; the Air differs from the M5 at the rounding edge (session 6) | |
+| Identical vs CUDA references | 7 or 8 of 8 against each | 9 layers and the head on CUDA | |
+| Criterion | met | | |
+| Per rank memory | as in the planner table, within 15 percent | | |
+
+## H5_tp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1
+
+Written 2026-11-20 before the run. Placement `H5_tp3_1.5b_gtx.yaml`: one TP group over all 28 layers, 4 heads each on the M5 (MPS), the Air (MPS) and gtx (CUDA), `allow_mixed_devices: true`. Home Wi-Fi. Coordinator on the M5.
+References: the same three as H1.
+
+| item | prediction | why | outcome |
+|---|---|---|---|
+| Planner | accepts, 1105.9 MB on m5, 1186.9 MB on air, 1138.7 MB on gtx | PLANS.md | |
+| Run outcome | completes, no rank disconnect | H2 held 16416 all-reduces on the hotspot with two ranks | |
+| Frame formula | holds: 346 frames per decode step (token 2, embedding 6, layers 336, head 2) | the `plan` line for this placement | |
+| Identical vs MPS reference | 7 or 8 of 8 | partial sums are added in fp32 on the host in a fixed order; three ranks were only checked on two Macs (P3, session 6) | |
+| Identical vs CUDA references | 7 or 8 of 8 against each | same | |
+| Criterion | met | | |
+| What would count as a failure of the reasoning | garbled text from the first token (transport or dtype, not rounding), or a rank disconnect | | |

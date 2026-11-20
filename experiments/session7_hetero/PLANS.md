@@ -54,3 +54,47 @@ Frames per decode step: 116 (token 1, embedding 2, layers 112, hops 0, head 1); 
 | head/0 | m5 | mps | 0-0 | 0-0 (0) | 0-0 | 0-0 (0) | 0-152064 H | 1090.0 | 0.0 | 15.6 | 1105.6 | - |
 
 Frames per decode step: 3 (token 0, embedding 0, layers 0, hops 2, head 1); bytes per step about 0.014 MB.
+
+# Session 8 planner tables (2026-11-20)
+
+Made with `python -m nocturne.engines.torch_tp plan --placement <file>` on the M5 at 6196396, before any run.
+`H4_pp3_1.5b.yaml` and `H5_tp3_1.5b.yaml` (host `pc`) were written on 2026-11-20 and never run. The `_gtx` files are copies with `host: gtx` and a new first comment line. Nothing else changed, and the planner accepted all four without edits.
+The `pc` and `gtx` tables are equal apart from the host name, because the planner does not know the card.
+
+## R0_1.5b_cuda_gtx
+
+| rank | host | device | layers | heads | KV heads | MLP rows | vocab rows | weights MB | KV MB | workspace MB | total MB | budget MB |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| s0/0 | gtx | cuda | 0-28 | 0-12 (12) | 0-2 | 0-8960 (8960) | 0-151936 EH | 3087.4 | 117.4 | 51.6 | 3256.4 | - |
+
+Frames per decode step: 0 (token 0, embedding 0, layers 0, hops 0, head 0); bytes per step about 0.000 MB.
+
+## H1_pp_1.5b_gtx
+
+| rank | host | device | layers | heads | KV heads | MLP rows | vocab rows | weights MB | KV MB | workspace MB | total MB | budget MB |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| s0/0 | m5 | mps | 0-14 | 0-12 (12) | 0-2 | 0-8960 (8960) | 0-151936 E | 1777.1 | 58.7 | 50.7 | 1886.5 | - |
+| s1/0 | gtx | cuda | 14-28 | 0-12 (12) | 0-2 | 0-8960 (8960) | 0-151936 H | 1777.1 | 58.7 | 51.6 | 1887.4 | - |
+
+Frames per decode step: 2 (token 0, embedding 0, layers 0, hops 1, head 1); bytes per step about 0.003 MB.
+
+## H4_pp3_1.5b_gtx (and H4_pp3_1.5b with host pc)
+
+| rank | host | device | layers | heads | KV heads | MLP rows | vocab rows | weights MB | KV MB | workspace MB | total MB | budget MB |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| s0/0 | m5 | mps | 0-10 | 0-12 (12) | 0-2 | 0-8960 (8960) | 0-151936 E | 1402.7 | 41.9 | 50.7 | 1495.3 | - |
+| s1/0 | air | mps | 10-19 | 0-12 (12) | 0-2 | 0-8960 (8960) | - | 842.4 | 37.7 | 50.7 | 930.8 | - |
+| s2/0 | gtx | cuda | 19-28 | 0-12 (12) | 0-2 | 0-8960 (8960) | 0-151936 H | 1309.1 | 37.7 | 51.6 | 1398.4 | - |
+
+Frames per decode step: 3 (token 0, embedding 0, layers 0, hops 2, head 1); bytes per step about 0.006 MB.
+
+## H5_tp3_1.5b_gtx (and H5_tp3_1.5b with host pc)
+
+| rank | host | device | layers | heads | KV heads | MLP rows | vocab rows | weights MB | KV MB | workspace MB | total MB | budget MB |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| s0/0 | m5 | mps | 0-28 | 0-4 (4) | 0-1 | 0-2944 (2944) | 0-50688 EH | 1025.7 | 58.7 | 21.4 | 1105.9 | - |
+| s0/1 | air | mps | 0-28 | 4-8 (4) | 0-2 | 2944-5888 (2944) | 50688-101376 EH | 1047.8 | 117.4 | 21.7 | 1186.9 | - |
+| s0/2 | gtx | cuda | 0-28 | 8-12 (4) | 1-2 | 5888-8960 (3072) | 101376-151936 EH | 1058.4 | 58.7 | 21.6 | 1138.7 | - |
+
+Frames per decode step: 346 (token 2, embedding 6, layers 336, hops 0, head 2); bytes per step about 1.059 MB.
+

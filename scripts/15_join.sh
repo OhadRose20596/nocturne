@@ -161,6 +161,10 @@ elif have nvidia-smi && GPU="$(nvidia-smi --query-gpu=name,memory.total,memory.u
       *) TORCH_INDEX="https://download.pytorch.org/whl/cu130" ;; esac
   fi
   fact torch_index "$TORCH_INDEX"
+  if [ "$WSL" = 1 ] && [ -x /usr/lib/wsl/lib/nvidia-smi ] && ! grep -q '/usr/lib/wsl/lib' "$HOME/.bashrc" 2>/dev/null && [ "$MODE" != check ]; then
+    printf '%s\n' 'export PATH=/usr/lib/wsl/lib:$PATH' | cat - "$HOME/.bashrc" 2>/dev/null >"$TMP/bashrc" && cat "$TMP/bashrc" >"$HOME/.bashrc"
+    check nvidia_path FIXED "nvidia-smi put on the PATH of ssh commands (first line of ~/.bashrc)"
+  fi
   fact mem_gb "$(echo "$GPU" | awk -F', ' '{printf "%.1f", $2/1024}')"
   check device PASS "$GPU"
 else
