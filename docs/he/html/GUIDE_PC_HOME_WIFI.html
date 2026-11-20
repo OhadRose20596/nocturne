@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מחשב ה-NVIDIA ב-Wi-Fi הביתי ושלוש מכונות</title>
+<link rel="stylesheet" href="he.css">
+</head>
+<body>
+<h1>מחשב ה-NVIDIA חוזר ל-Wi-Fi הביתי, ומשם לשלוש מכונות</h1>
+<p class="subtitle">נכתב 20.11.2026. מכונות: M5 (מתאם, MPS), MacBook Air M3 (MPS), Lenovo P16v (WSL2, CUDA). מבוסס על סשנים 5 עד 7 וההחלטות עד T5. לא הורץ כאן כלום: בסביבה שלי אין torch ואין גישה לרשת הביתית. הפקודות הן אלה שכבר עבדו בנקודה החמה, עם כתובות ביתיות.</p>
+
+<h2>0. מה למדנו, ומה זה אומר ל-Wi-Fi הביתי</h2>
+<table>
+<thead><tr><th>מה למדנו</th><th>מה לעשות בבית</th></tr></thead>
+<tbody>
+<tr><td>בנקודה החמה כל הכתובות השתנו בכל חיבור (<code>172.20.10.x</code>). הכתובת של ה-PC נרשמת בשלושה מקומות: <code>HostName</code> של <code>p16v</code> ב-<code>~/.ssh/config</code>, ו-<code>bind</code> עם <code>networks</code> ב-<code>peers.yaml</code></td><td>בבית הכתובות יציבות יותר, אבל DHCP עדיין יכול להחליף. לשריין ל-PC כתובת קבועה בראוטר (DHCP reservation לפי ה-MAC של ה-Wi-Fi ב-Windows). המקים כבר ב-<code>192.168.1.242</code> (M5) ו-<code>192.168.1.219</code> (Air)</td></tr>
+<tr><td>WSL2 חייב <code>networkingMode=mirrored</code>, אחרת ה-rank ב-PC לא נגיש. אחרי החלפת רשת צריך לוודא ש-<code>hostname -I</code> ב-Ubuntu מראה את כתובת ה-Windows</td><td>אחרי חיבור לרשת הביתית: <code>wsl --shutdown</code>, לפתוח Ubuntu, להשוות כתובות (סעיף 2)</td></tr>
+<tr><td>Windows מסווג כל רשת חדשה בנפרד. הנקודה החמה הייתה Public ושונתה ל-Private בפקודה</td><td>ה-Wi-Fi הביתי הוא רשת אחרת מבחינת Windows. לבדוק את הסיווג שלו ולהעביר ל-Private (סעיף 1)</td></tr>
+<tr><td>חלק מהרשתות חוסמות תקשורת בין מכשירים (client isolation). ה-rank ב-PC גם מקבל חיבור וגם יוצר חיבור למתאם</td><td>לבדוק בשני הכיוונים, ועכשיו בשלושה זוגות: M5 עם PC, Air עם PC, M5 עם Air (סעיף 4). רשת אורחים או mesh עם בידוד ייכשלו כאן</td></tr>
+<tr><td>AWDL בשני המקים אחראי ל-22.5 אחוז מזמן הצעד ב-TP ול-p95 של ping מ-11 ל-83 ms. macOS מחזיר אותו לבד</td><td>לשמור אותו כבוי בשני המקים בזמן כל ריצה (סעיף 3)</td></tr>
+<tr><td>VPN דלוק על ה-M5 עיוות זמנים בעבר, ולא ידוע באילו ריצות. המחשב הוא של NVIDIA, וייתכן ש-VPN של הארגון חוסם תעבורה מקומית או שומר כללי חומת אש</td><td>VPN כבוי בשלושת המחשבים. בכל ריצה נרשם מצב ה-VPN (הכלי כבר עושה את זה ל-Mac, ב-PC "n/a")</td></tr>
+<tr><td>ה-Air נרדם ב-8.11 באמצע הניסויים, ו-12 ריצות רצו בלי עובד. WSL נכבה כשאין חלון Ubuntu פתוח</td><td>מניעת שינה בשלושה: <code>caffeinate</code> במקים, חיבור לחשמל ותוכנית צריכה ב-PC, חלון Ubuntu פתוח (סעיפים 1 ו-3)</td></tr>
+<tr><td>גרסאות torch: M5 2.14.1, Air 2.15.0, PC 2.14.1+cu130. ה-Air נפרד מה-M5 בטוקן 72 גם בלי חלוקה בתוך שכבה. ההסבר (GPU או גרסה) לא נבדק</td><td>לא משנים כלום בשקט. רושמים בכל ריצה את הגרסאות. קריטריון ההצלחה נשאר זהות ב-7 מתוך 8 לפחות לאחד הייחוסים. אם תרצה לבודד את הגרסה, יישור ה-Air ל-2.14.1 הוא ניסוי נפרד</td></tr>
+<tr><td>ה-VRAM של ה-PC: 8.59 GB, מתוכם כ-6.2 זמינים (Windows תופס כ-1.9). 7B לא נכנס, ולכן ב-PP של 7B ה-PC מחזיק 6 שכבות עם תקציב 3.5 GB</td><td>לשלוש המכונות מתחילים ב-1.5B. 7B רק אחרי שהעשן עבר</td></tr>
+<tr><td>זמן הוא רקע (T1). חן ביקש בישיבה 16.11 ציר זמן משותף של רשת, CPU ו-GPU לכל ריצה, פרומפטים מקהילה, ותור פרומפטים</td><td>בסשן הארוך שאחרי העשן, ארבעת הדברים האלה הם חלק מהפרומפט. כאן רק בודקים שהחיבור והמנוע עובדים על שלוש</td></tr>
+</tbody>
+</table>
+
+<h2>1. ה-PC: Windows</h2>
+<p>פיזית: להתחבר ל-Wi-Fi הביתי, אותו SSID ואותו פס (5 GHz) כמו המקים. לא רשת אורחים. מחובר לחשמל. לסגור VPN (GlobalProtect או דומה).</p>
+<p><strong>PC, Windows PowerShell</strong> (בלוק ראשון, בדיקה):</p>
+<pre><code>ipconfig | Select-String IPv4
+Get-NetConnectionProfile | Select-Object InterfaceAlias,Name,NetworkCategory
+Get-Content $env:USERPROFILE\.wslconfig
+wsl --version
+nvidia-smi</code></pre>
+<p>לרשום את ה-IPv4 של ה-Wi-Fi: זו <code>&lt;pc-ip&gt;</code>. אמור להיות <code>192.168.1.x</code>. אם הוא מתחיל ב-<code>172.20.10</code>, עדיין מחובר לנקודה החמה. אם ב-<code>.wslconfig</code> אין <code>networkingMode=mirrored</code>, לחזור לסעיף 2.1 במדריך <code>GUIDE_HETERO_TORCH</code>.</p>
+<p><strong>PC, PowerShell כמנהל</strong> (בלוק שני, תיקון):</p>
+<pre><code>Set-NetConnectionProfile -InterfaceAlias "Wi-Fi" -NetworkCategory Private
+Get-NetFirewallRule -DisplayName nocturne | Select-Object DisplayName,Enabled,Direction,Action
+Get-NetFirewallHyperVRule -Name nocturne-wsl
+powercfg /change standby-timeout-ac 0
+powercfg /change hibernate-timeout-ac 0
+powercfg /change monitor-timeout-ac 0
+wsl --shutdown</code></pre>
+<p>אם הכללים של <code>nocturne</code> חסרים (למשל אחרי איפוס מדיניות), ליצור אותם מחדש לפי סעיף 2.2 במדריך <code>GUIDE_HETERO_TORCH</code>. פורטים: 2222 ו-50070 עד 50079.</p>
+<p>לשריין כתובת: בממשק הראוטר, DHCP reservation ל-MAC של כרטיס ה-Wi-Fi של ה-PC (<code>ipconfig /all</code>, Physical Address), לכתובת <code>&lt;pc-ip&gt;</code> הנוכחית. אחרי זה פותחים Ubuntu וממשיכים.</p>
+
+<h2>2. ה-PC: Ubuntu</h2>
+<p><strong>PC, Ubuntu</strong> (חלון פתוח כל זמן הניסוי):</p>
+<pre><code>echo "== ip";      hostname -I
+echo "== gpu";     nvidia-smi --query-gpu=name,memory.total,memory.used,driver_version --format=csv,noheader
+echo "== sshd";    sudo ss -ltnp | grep ':2222' || echo "sshd NOT listening on 2222"
+echo "== torch";   ~/dev/nocturne-torch/bin/python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+echo "== repo";    git -C ~/dev/nocturne pull -q && git -C ~/dev/nocturne log -1 --oneline
+echo "== models";  ls ~/models/hf</code></pre>
+<table>
+<thead><tr><th>שורה</th><th>תקין</th><th>אם לא</th></tr></thead>
+<tbody>
+<tr><td>ip</td><td>אותה כתובת כמו ה-IPv4 ב-Windows</td><td>mirrored לא פעיל. <code>wsl --shutdown</code> ופתיחה מחדש. אם עדיין, לבדוק <code>.wslconfig</code></td></tr>
+<tr><td>sshd</td><td>שורה עם <code>:2222</code></td><td><code>sudo systemctl restart ssh.socket ssh</code></td></tr>
+<tr><td>torch</td><td><code>2.14.1+cu130 True</code> ושם הכרטיס</td><td>לא לעדכן torch. לבדוק דרייבר ב-Windows (<code>nvidia-smi</code>)</td></tr>
+<tr><td>repo</td><td>commit חדש מ-<code>b0de078</code> אחרי ה-pull, בלי שגיאה</td><td>אם ה-pull נכשל: <code>git status</code> ולטפל לפני שממשיכים</td></tr>
+<tr><td>models</td><td><code>Qwen2.5-0.5B-Instruct</code> ו-<code>Qwen2.5-1.5B-Instruct</code> (ו-7B אם הועתק)</td><td>להעתיק מה-M5 (סעיף 4.2 במדריך ההטרוגני)</td></tr>
+</tbody>
+</table>
+
+<h2>3. שני המקים</h2>
+<p><strong>M5 ו-Air, כל אחד בטרמינל משלו</strong>, לפני כל ריצה:</p>
+<pre><code>ipconfig getifaddr en0
+scutil --nc list
+caffeinate -dimsu &amp;
+sudo sh -c 'while true; do ifconfig awdl0 down; sleep 5; done'</code></pre>
+<p>השורה האחרונה רצה בלי הפסקה ולכן תופסת טרמינל. לפתוח לה חלון נפרד בכל מק. הכתובת הצפויה: M5 <code>192.168.1.242</code>, Air <code>192.168.1.219</code>. אם אחת השתנתה, לעדכן ב-<code>~/.nocturne/peers.yaml</code> (<code>bind</code> ו-<code>networks</code>) של ה-M5. <code>scutil --nc list</code> לא אמור להראות חיבור VPN במצב Connected.</p>
+<p>בריצה ראשונה עם ה-Air כ-rank, macOS עשוי לשאול אם לאשר חיבורים נכנסים ל-python. לאשר.</p>
+
+<h2>4. ה-M5: חיבור ל-PC ו-peers.yaml</h2>
+<p><strong>M5</strong>: לעדכן את הכתובת בשני קבצים.</p>
+<pre><code>open -e ~/.ssh/config
+open -e ~/.nocturne/peers.yaml</code></pre>
+<p>ב-<code>~/.ssh/config</code>, תחת <code>Host p16v</code>: <code>HostName &lt;pc-ip&gt;</code>. ב-<code>peers.yaml</code> תחת <code>pc</code>: <code>bind: &lt;pc-ip&gt;</code> ו-<code>networks: {wifi: &lt;pc-ip&gt;}</code>. תחת <code>m5</code> ו-<code>air</code>: ה-<code>bind</code> הוא הכתובת הביתית (לא <code>172.20.10.x</code>). ה-<code>ssh</code> של <code>air</code> צריך להצביע על <code>192.168.1.219</code>.</p>
+<p>ואז בדיקה:</p>
+<pre><code>ping -c 20 &lt;pc-ip&gt; | tail -2
+ssh -o BatchMode=yes p16v 'hostname -s; nvidia-smi -L; ~/dev/nocturne-torch/bin/python -c "import torch; print(torch.cuda.is_available())"'
+grep -A12 '^  air:' ~/.nocturne/peers.yaml</code></pre>
+<p>שלוש שורות בלי סיסמה, האחרונה <code>True</code>. ה-ping אמור לתת חציון של כמה ms וללא איבוד. אם יש איבוד או זנב של מאות ms, לבדוק AWDL (סעיף 3) לפני כל דבר אחר. את התוצאה רושמים כמדידת הרשת של הריצה.</p>
+<p>את הנתיב של הריפו ב-Air רואים בשורת <code>python</code> של <code>air</code> בפלט האחרון. לוודא שה-Air על אותו commit:</p>
+<pre><code>git rev-parse --short HEAD
+ssh p16v 'git -C ~/dev/nocturne rev-parse --short HEAD'
+ssh ohadrosentswaig@192.168.1.219 'cd "$(/Users/ohadrosentswaig/dev/nocturne-torch/bin/python -c "import nocturne,pathlib;print(pathlib.Path(nocturne.__file__).parents[1])")" &amp;&amp; git rev-parse --short HEAD'</code></pre>
+<p>ההבדלים המותרים הם commits של נתונים בלבד. הכלי בודק בעצמו שקבצי המנוע זהים ב-sha256 ונכשל עם <code>engine files on ... differ</code> אם לא.</p>
+
+<h2>5. בדיקת חיבור בשלושה זוגות</h2>
+<p>ה-ranks מתחברים זה לזה, והמתאם מתחבר לכולם. לכן כל הזוגות. בכל סבב מכונה אחת מארחת, והשתיים האחרות בודקות.</p>
+<table>
+<thead><tr><th>סבב</th><th>מארחת (להשאיר רץ)</th><th>בודקות</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>PC</td><td>M5, Air</td></tr>
+<tr><td>2</td><td>M5</td><td>PC, Air</td></tr>
+<tr><td>3</td><td>Air</td><td>PC, M5</td></tr>
+</tbody>
+</table>
+<p>המארחת:</p>
+<pre><code>python3 -m http.server 50079 --bind &lt;host-ip&gt;</code></pre>
+<p>כל בודקת:</p>
+<pre><code>curl -s -o /dev/null -w "%{http_code}\n" --max-time 5 http://&lt;host-ip&gt;:50079/</code></pre>
+<p>צפוי <code>200</code> בכל שש הבדיקות. Ctrl-C בין סבבים. אם משהו נכשל בכיוון אחד בלבד: חומת האש של המכונה המארחת (Windows סעיף 1, או macOS). אם נכשל בכל הכיוונים מול ה-PC: סיווג הרשת, או VPN, או בידוד בראוטר.</p>
+
+<h2>6. מדרגות הריצה</h2>
+<p>עוצרים בכל מדרגה שנכשלת ולא ממשיכים. כל ריצה מתועדת עם <code>hybrid_run</code>, מה-M5, מתוך הריפו (שורת ה-<code>cd</code> מסעיף 1א במדריך ההטרוגני). <code>PY=/Users/orosentswaig/dev/nocturne-torch/bin/python</code>. לפני כל מדרגה, לרשום תחזית ב-<code>PREDICTIONS.md</code>. המזהים מסומנים <code>homewifi</code> כדי לא להתבלבל עם ריצות הנקודה החמה.</p>
+
+<h3>מדרגה 1: חזרה על H1 בבית (PC עם M5, כמו בנקודה החמה)</h3>
+<pre><code>$PY -m nocturne.engines.torch_tp plan --placement experiments/session7_hetero/placements/H1_pp_1.5b.yaml
+$PY -m nocturne.engines.torch_tp.hybrid_run --placement experiments/session7_hetero/placements/H1_pp_1.5b.yaml --session-dir experiments/session7_hetero --run-id H1_pp_qwen2.5-1.5b-bf16_homewifi_r1 --reference R0_qwen2.5-1.5b-bf16_mps_r1 R0_qwen2.5-1.5b-bf16_cuda_r1</code></pre>
+<p>צפוי כמו בנקודה החמה: 8 מתוך 8 מול שני הייחוסים, 2 הודעות לצעד. זו בדיקת הרשת החדשה: אם זה עובר, ה-PC חזר.</p>
+
+<h3>מדרגה 2: PP בשלוש מכונות (קובץ חדש, H4)</h3>
+<p>שלב 0 בשכבות 0 עד 10 ב-M5, שלב 1 בשכבות 10 עד 19 ב-Air, שלב 2 בשכבות 19 עד 28 וראש הפלט ב-PC.</p>
+<pre><code>$PY -m nocturne.engines.torch_tp plan --placement experiments/session7_hetero/placements/H4_pp3_1.5b.yaml
+$PY -m nocturne.engines.torch_tp launch --placement experiments/session7_hetero/placements/H4_pp3_1.5b.yaml --port 8092 --log-dir /tmp/h4</code></pre>
+<p>לחכות ל-<code>all 3 ranks ready</code>, ובטרמינל שני את פקודת ה-curl מסעיף 7.1 במדריך ההטרוגני. תשובה קריאה = עובד. Ctrl-C, ואז:</p>
+<pre><code>$PY -m nocturne.engines.torch_tp.hybrid_run --placement experiments/session7_hetero/placements/H4_pp3_1.5b.yaml --session-dir experiments/session7_hetero --run-id H4_pp3_qwen2.5-1.5b-bf16_homewifi_r1 --reference R0_qwen2.5-1.5b-bf16_mps_r1 R0_qwen2.5-1.5b-bf16_cuda_r1</code></pre>
+<table>
+<thead><tr><th>פריט</th><th>תחזית לרשום לפני</th><th>למה</th></tr></thead>
+<tbody>
+<tr><td>הודעות לצעד</td><td>3 (שני hops וראש)</td><td>H1 נתן 2 עם hop אחד. עכשיו hop נוסף</td></tr>
+<tr><td>זהות מול ייחוס MPS</td><td>7 או 8 מתוך 8</td><td>20 מתוך 28 שכבות ב-MPS. ה-Air שונה מה-M5 בגבולות העיגול</td></tr>
+<tr><td>זהות מול ייחוס CUDA</td><td>7 או 8 מתוך 8</td><td>9 שכבות והראש ב-CUDA</td></tr>
+<tr><td>ריצה נגמרת, בלי ניתוק rank</td><td>כן</td><td>הנקודה החמה החזיקה 16416 all-reduces ב-H2</td></tr>
+<tr><td>זיכרון</td><td>בין 0.8 ל-1.4 GB לכל מכונה (M5 עם ה-embedding והראש הכי כבדים)</td><td>שכבה ב-1.5B היא כ-95 MB, וטבלת ה-embedding כ-470 MB. המספרים המדויקים בטבלה ש-<code>plan</code> מדפיס</td></tr>
+</tbody>
+</table>
+
+<h3>מדרגה 3: TP בשלוש מכונות (H5)</h3>
+<p>קבוצה אחת, 4 ראשים לכל מכונה, <code>allow_mixed_devices</code> פעיל (שני MPS ו-CUDA אחד).</p>
+<pre><code>$PY -m nocturne.engines.torch_tp plan --placement experiments/session7_hetero/placements/H5_tp3_1.5b.yaml
+$PY -m nocturne.engines.torch_tp.hybrid_run --placement experiments/session7_hetero/placements/H5_tp3_1.5b.yaml --session-dir experiments/session7_hetero --run-id H5_tp3_qwen2.5-1.5b-bf16_homewifi_r1 --reference R0_qwen2.5-1.5b-bf16_mps_r1 R0_qwen2.5-1.5b-bf16_cuda_r1</code></pre>
+<p>מספר ההודעות לצעד: לקחת מה-<code>plan</code> ("Frames per decode step"), לא להמציא. סכום החלקים ב-fp32 על ה-CPU בשלושה ranks עדיין בדוק רק על שני מקים (P3 בסשן 6). הסכנה היחידה החדשה: גם ה-CUDA בקבוצה של שלושה. טקסט שבור מהטוקן הראשון = בעיה בתעבורה או ב-dtype, לא עיגול. זה גם הסימן לעצור.</p>
+
+<h3>מדרגה 4 (רשות): 7B על שלוש</h3>
+<p>רק אחרי שמדרגות 1 עד 3 עברו, ואחרי שהעתקת 7B ל-PC ולוודא <code>ls ~/models/hf</code> בכל המכונות. צריך קובץ placement חדש: M5 ו-Air מחזיקים את רוב השכבות, ה-PC רק כ-6 שכבות עם תקציב 3.5 GB, כמו H3. את זה אכין אחרי התוצאות של מדרגה 2.</p>
+
+<h2>7. תקלות נפוצות</h2>
+<table>
+<thead><tr><th>סימפטום</th><th>סיבה סבירה</th></tr></thead>
+<tbody>
+<tr><td><code>Connection refused</code> או timeout מה-M5 אל <code>p16v:2222</code></td><td>חלון Ubuntu סגור (WSL כבוי), או <code>HostName</code> ב-ssh config עדיין על כתובת הנקודה החמה</td></tr>
+<tr><td>ה-ranks נטענים ונתקעים לפני ready</td><td>ה-PC לא מצליח להתחבר למתאם או ל-Air. לחזור על סעיף 5</td></tr>
+<tr><td><code>the coordinator host is m5 ...</code></td><td><code>host</code> ב-peers.yaml לא תואם ל-<code>hostname -s</code></td></tr>
+<tr><td>ping עם זנב ארוך או הפסקות תקופתיות</td><td>AWDL חזר. להפעיל מחדש את הלולאה בסעיף 3</td></tr>
+<tr><td>ה-Air לא עונה באמצע ריצה</td><td>נרדם. <code>caffeinate</code> חייב לרוץ, והמכסה פתוח או מחובר לחשמל</td></tr>
+<tr><td>ה-PC פתאום ללא ssh אחרי כמה דקות</td><td>Windows נרדם או Wi-Fi power saving. בדיקת <code>powercfg</code> בסעיף 1</td></tr>
+<tr><td><code>CUDA out of memory</code></td><td>Windows או דפדפן תופסים VRAM. לסגור, ולבדוק <code>nvidia-smi</code>. ב-1.5B לא אמור לקרות</td></tr>
+</tbody>
+</table>
+
+<h2>8. מה לשלוח אחרי</h2>
+<p>ה-IPv4 של ה-PC, חציון ה-ping מה-M5 ל-PC ולכל מכונה, תוצאות ששת בדיקות סעיף 5, ושני שורות ההכרעה (<code>identical</code> ו-<code>frames</code>) של מדרגות 1 עד 3. עם זה כותבים את הפרומפט לסשן הארוך: שלוש מכונות עם ציר זמן לכל ריצה, פרומפטים מקהילה, ותור פרומפטים.</p>
+
+<h2>9. מה נמצא בפועל (20.11.2026, סשן 8)</h2>
+<p>הסשן רץ. המחשב של ליאור (P16v) לא היה בבית, ולכן מכונת ה-CUDA הייתה מחשב אחר: Windows 11 Home עם GTX 1070, שנקרא <code>gtx</code> ב-<code>peers.yaml</code>. הכתובת <code>&lt;pc-ip&gt;</code> במדריך נשארת פתוחה עד שה-P16v יחזור. כל המספרים כאן נמדדו, והמקור הוא <code>experiments/session8_three_machines/connectivity.md</code> ו-<code>experiments/RESULTS.md</code>.</p>
+<p><b>סעיפים 1 עד 5 הוחלפו בכלי.</b> במקום להעתיק פקודות, מריצים פקודה אחת בכל מכונה, והיא שולחת דוח ל-M5. ההסבר ב-<code>docs/JOIN.md</code>.</p>
+<p>ב-M5:</p>
+<pre><code>python3 scripts/16_join_apply.py invite
+python3 scripts/16_join_apply.py listen</code></pre>
+<p>הפקודה הראשונה מדפיסה את השורה להדבקה בכל מכונה (Mac, Linux, Windows). אחרי שהדוח מגיע:</p>
+<pre><code>python3 scripts/16_join_apply.py apply &lt;report&gt; --peer &lt;name&gt;</code></pre>
+<table>
+<tr><th>מכונה</th><th>כתובת</th><th>ssh</th><th>torch</th><th>הערות</th></tr>
+<tr><td>M5</td><td>192.168.1.242</td><td>מתאם</td><td>2.14.1</td><td>GlobalProtect היה מחובר ונותק ביד</td></tr>
+<tr><td>Air</td><td>192.168.1.219</td><td><code>ohadrosentswaig@192.168.1.219</code></td><td>2.15.0</td><td>הריפו בתיקיית iCloud משותפת עם ה-M5</td></tr>
+<tr><td>gtx</td><td>192.168.1.168</td><td><code>gtx</code>, פורט 2222, משתמש <code>ohadr</code></td><td>2.14.1+cu126</td><td>Ubuntu 26.04, Python 3.14.4, MAC של ה-Wi-Fi לשריון בראוטר: 30-24-32-4A-72-84</td></tr>
+</table>
+<p><b>תיקונים למה שכתוב למעלה:</b></p>
+<table>
+<tr><th>במדריך</th><th>מה נמצא</th></tr>
+<tr><td><code>scutil --nc list</code> כבדיקת VPN (סעיף 3)</td><td>לא מראה את GlobalProtect. הבדיקה הנכונה: <code>route -n get default</code>. אם הממשק הוא <code>utun</code>, ה-VPN מחובר</td></tr>
+<tr><td><code>ping</code> אל ה-PC ואל ה-M5 (סעיף 4)</td><td>Windows וה-M5 לא עונים ל-ping. מודדים זמן חיבור TCP לפורט ה-ssh. gtx: חציון 7.6 ms, 60 מתוך 60</td></tr>
+<tr><td><code>python3 -m http.server</code> כמארחת ב-PC (סעיף 5)</td><td>ב-Ubuntu 26.04 תחת WSL הוא לא מתחיל להאזין בזמן: <code>socket.getfqdn</code> לוקח 10 שניות. הבדיקה נעשתה עם listener של socket רגיל. שש מתוך שש עברו</td></tr>
+<tr><td>זנב ארוך ב-ping = AWDL (סעיף 4)</td><td>לא רק. עם AWDL כבוי בשני המקים, ה-Air נתן חציון 62.8 ms בדגימה כל שנייה, ו-8.4 ms בדגימה כל 0.2 שניות. כנראה חיסכון בחשמל של ה-Wi-Fi בקישור לא פעיל. לא הוכח</td></tr>
+<tr><td>torch ל-CUDA מ-<code>cu130</code></td><td>לא עובד על GTX 10: <code>no kernel image is available</code>. צריך <code>cu126</code>. הכלי בוחר לבד לפי שם הכרטיס</td></tr>
+<tr><td><code>nvidia-smi</code> דרך ssh</td><td>לא ב-PATH. הכלי מוסיף שורה בראש <code>~/.bashrc</code></td></tr>
+<tr><td>מזהי הריצות וקבצי ה-placement</td><td>נוספה הסיומת <code>gtx</code>: <code>H1_pp_1.5b_gtx.yaml</code>, <code>H4_pp3_1.5b_gtx.yaml</code>, <code>H5_tp3_1.5b_gtx.yaml</code>, ומזהים עם <code>homewifi_gtx</code>. נוסף ייחוס CUDA על הכרטיס הזה</td></tr>
+</table>
+<p><b>תוצאות המדרגות</b> (1.5B, שלושה ייחוסים: MPS, CUDA של ה-P16v, CUDA של gtx):</p>
+<table>
+<tr><th>מדרגה</th><th>זהות</th><th>הודעות לצעד (נמדד, נחזה)</th><th>הערה</th></tr>
+<tr><td>ייחוס CUDA על gtx</td><td>8 מתוך 8 מול MPS ומול ה-P16v</td><td>0, 0</td><td>שיא זיכרון 3.223 GB</td></tr>
+<tr><td>1: PP, M5 ו-gtx</td><td>8 מתוך 8 מול שלושתם</td><td>2, 2</td><td></td></tr>
+<tr><td>2: PP בשלוש מכונות</td><td>8 מתוך 8 מול שלושתם</td><td>3, 3</td><td>בלי ניתוק</td></tr>
+<tr><td>3: TP בשלוש מכונות</td><td>8 מתוך 8 מול שלושתם</td><td>346, 346</td><td>16416 all-reduces לכל rank, בלי ניתוק</td></tr>
+</table>
+<p>מדרגה 4 (7B על שלוש) לא הורצה, לפי ההנחיה של הסשן. הנקודה הבאה: הסשן הארוך על שלוש המכונות, עם ציר זמן לכל ריצה, פרומפטים מקהילה ותור פרומפטים.</p>
+</body>
+</html>
