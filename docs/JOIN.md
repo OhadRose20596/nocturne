@@ -51,6 +51,7 @@ Then it pings the peer, opens an ssh session without a password, and lists the m
 Windows adds: network profile set to Private, `networkingMode=mirrored` in `.wslconfig`, the two firewall rules, no sleep on AC power, the NVIDIA driver, and a hidden `sleep infinity` that keeps WSL up without an Ubuntu window.
 
 Flags: `--self` is for the coordinator itself: it skips the ssh server, since nobody logs in to it. `--check` applies no fix. It still runs `git fetch` and writes the report. `--install` also builds the venv and clones the repo. `--stop` ends the AWDL loop and caffeinate.
+On Linux with an NVIDIA card the wheel index is `cu130`, or `cu126` for cards older than the RTX 20 series (GTX 10, Pascal and earlier), which CUDA 13 no longer supports. This rule has not been confirmed on a real card yet.
 The torch version is not pinned by default. Set `NOCTURNE_TORCH_VERSION` and `NOCTURNE_TORCH_INDEX` to pin it.
 A venv where torch already imports is never changed. `--install` repairs a venv where it does not.
 

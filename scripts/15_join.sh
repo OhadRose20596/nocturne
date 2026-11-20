@@ -4,7 +4,7 @@
 
 set -u
 MODE=fix; INSTALL=0; SELF=0; KEY=""; COORD=""; EXTRA=""; STOP=0
-TORCH_VERSION="${NOCTURNE_TORCH_VERSION:-}"; TORCH_INDEX="${NOCTURNE_TORCH_INDEX:-https://download.pytorch.org/whl/cu130}"
+TORCH_VERSION="${NOCTURNE_TORCH_VERSION:-}"; TORCH_INDEX="${NOCTURNE_TORCH_INDEX:-}"
 REPO_URL="${NOCTURNE_REPO_URL:-https://github.com/OhadRose20596/nocturne.git}"
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -155,6 +155,11 @@ if [ "$OS" = macos ]; then
   check device PASS "$(sysctl -n machdep.cpu.brand_string), ${MEM_GB} GB unified memory"
 elif have nvidia-smi && GPU="$(nvidia-smi --query-gpu=name,memory.total,memory.used,driver_version --format=csv,noheader 2>/dev/null | head -1)" && [ -n "$GPU" ]; then
   DEVICE=cuda; fact device cuda; fact gpu "$GPU"
+  if [ -z "$TORCH_INDEX" ]; then
+    case "$GPU" in *"GTX 9"*|*"GTX 10"*|*"TITAN X"*|*"TITAN V"*|*"Quadro P"*|*"Quadro M"*|*"Tesla P"*|*"Tesla M"*|*"Tesla V"*) TORCH_INDEX="https://download.pytorch.org/whl/cu126" ;;
+      *) TORCH_INDEX="https://download.pytorch.org/whl/cu130" ;; esac
+  fi
+  fact torch_index "$TORCH_INDEX"
   fact mem_gb "$(echo "$GPU" | awk -F', ' '{printf "%.1f", $2/1024}')"
   check device PASS "$GPU"
 else
