@@ -27,6 +27,7 @@ WSL=0; [ "$OS" = linux ] && grep -qi microsoft /proc/version 2>/dev/null && WSL=
 HOST="$(hostname -s 2>/dev/null || hostname)"
 STATE="$HOME/.nocturne"; mkdir -p "$STATE"
 REPORT="$HOME/nocturne_join_${HOST}.txt"
+if [ "$INSTALL" = 1 ]; then export TMPDIR="$HOME/.cache/nocturne-join-tmp"; mkdir -p "$TMPDIR"; fi
 TMP="$(mktemp -d)"; FACTS="$TMP/facts"; CHECKS="$TMP/checks"; LOGS="$TMP/logs"; : >"$FACTS"; : >"$CHECKS"; : >"$LOGS"
 KEEP=""
 trap 'rm -rf "$TMP"; [ -n "$KEEP" ] && kill "$KEEP" 2>/dev/null' EXIT
@@ -224,7 +225,7 @@ if [ "$INSTALL" = 1 ] && [ -x "$PY" ]; then
     echo "  cloning the repo to $HOME/dev/nocturne"
     GIT_TERMINAL_PROMPT=0 git clone -q "$REPO_URL" "$HOME/dev/nocturne" >>"$LOGS" 2>&1 && REPO="$HOME/dev/nocturne"
   fi
-  if [ -n "$REPO" ] && [ "$NOC_OK" = 0 ]; then
+  if [ -n "$REPO" ] && [ "$NOC_OK" = 0 ] && torch_ok; then
     "$PY" -m pip install -q -e "$REPO[bench-torch,dev]" >>"$LOGS" 2>&1 && NOC_OK=1
   fi
 fi
