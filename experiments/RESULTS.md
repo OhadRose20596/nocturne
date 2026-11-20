@@ -340,3 +340,48 @@ Long prompt first divergence: token 146 against MPS, token 97 against CUDA. Abou
 | H2_tp_1.5b_r1 | TP: one group, layers 0-28, 6 heads each; rank 0 m5 mps, rank 1 pc cuda; `allow_mixed_devices: true` | 8/8 | 8/8 | 1.0 (1.0, 1.0) | 0.560, 0.500 | 116, 116 | m5 loaded 1.544 GB; pc loaded 1.544 GB, peak allocated 1.677 GB, VRAM free at ready 5.72 of 8.59 GB | experiments/session7_hetero/runs/H2_tp_1.5b_r1 |
 
 Same hosts, torch versions, model sha256 and hotspot as H1. Repo SHA e1bd085 on the M5, 73ad964 on the PC (data commits only; engine sha256 equal). 16416 all-reduces per rank, no disconnect, about 353 KB per decode step on the link. Long prompt first divergence: token 76 against both references. AWDL was up on the M5 (time is background only, T1).
+
+## Session 8: home Wi-Fi, three machines (2026-11-20)
+
+The CUDA peer of this session is `gtx` (GTX 1070), not the session 7 machine `pc` (RTX 2000 Ada), which was away. Run by Claude Code on the M5, with Ohad at the human steps.
+Phase A record: experiments/session8_three_machines/connectivity.md (`PHASE_A_VERDICT: pass`). Predictions and outcomes: experiments/session7_hetero/PREDICTIONS.md, "Session 8". Planner tables: experiments/session7_hetero/PLANS.md.
+
+Hosts, the same for every run below (values from each run's `record.json`, preflight and ranks):
+
+- m5: Mac M5 24 GB, MPS, torch 2.14.1, repo SHA 47222fe, coordinator. Home Wi-Fi (en0, 802.11ax, channel 64, 5 GHz). AWDL down (hold-down loop). VPN disconnected (GlobalProtect was up before Phase A and was disconnected by hand). caffeinate on.
+- air: MacBook Air M3 16 GB, MPS, torch 2.15.0, repo SHA 47222fe (the repo folder is shared with the M5 through iCloud). Home Wi-Fi, same access point and channel. AWDL down. VPN disconnected. caffeinate on.
+- gtx: Windows 11 Home build 26300, WSL2 Ubuntu 26.04.1, Python 3.14.4, GTX 1070 8192 MiB, driver 582.78, CUDA, torch 2.14.1+cu126, repo SHA 47222fe. Home Wi-Fi (Windows adapter "Wi-Fi", mirrored networking). AWDL and VPN "n/a" in the record; no VPN adapter was up on Windows.
+- Engine sha256 equal on the three hosts (c9143ba7 in every preflight). qwen2.5-1.5b-bf16 sha256 equal on the three hosts (model.safetensors dd924a11). Reduce dtype float32.
+- torch differs on the Air (2.15.0) and Python differs on gtx (3.14.4 against 3.12 on the Macs). Nothing was installed or upgraded on the Macs.
+
+CUDA reference on gtx, coordinator on gtx, no network:
+
+| run | placement | identical vs MPS ref | identical vs CUDA ref (Ada) | accuracy (refs) | first step logit diff (MPS, Ada) | VRAM total, free at ready, peak allocated (GB) | folder |
+|---|---|---|---|---|---|---|---|
+| R0_qwen2.5-1.5b-bf16_cuda_gtx_r1 | one rank, cuda (`R0_1.5b_cuda_gtx.yaml`) | 8/8 | 8/8 | 1.0 (1.0, 1.0) | 0.500, 0.531 | 8.59, 4.14, 3.223 | experiments/session7_hetero/runs/R0_qwen2.5-1.5b-bf16_cuda_gtx_r1 |
+
+References: `R0_qwen2.5-1.5b-bf16_mps_r1` (session 6) and `R0_qwen2.5-1.5b-bf16_cuda_r1` (session 7, RTX 2000 Ada). Long prompt first divergence: token 21 against both. transformers generate on the same card: 8 of 8 short prompts identical, the long prompt differs at token 5. The session 7 Ada reference has no transformers comparison in its record, so the two cards cannot be compared on that item. nvidia-smi showed 1206 MiB in use before the run. The run folder was copied from gtx with `scp`.
+
+Ladder, coordinator on the M5, home Wi-Fi. "CUDA refs" are the Ada reference and the gtx reference, in that order:
+
+| run | placement | identical vs MPS ref | identical vs CUDA refs (Ada, gtx) | accuracy (refs) | first step logit diff (MPS, Ada, gtx) | frames per step (measured, predicted) | memory | folder |
+|---|---|---|---|---|---|---|---|---|
+| H1_pp_qwen2.5-1.5b-bf16_homewifi_gtx_r1 | PP: s0 layers 0-14 and embedding on m5 mps; s1 layers 14-28 and head on gtx cuda | 8/8 | 8/8, 8/8 | 1.0 (1.0, 1.0, 1.0) | 0.375, 0.500, 0.508 | 2, 2 | m5 loaded 1.777 GB; gtx loaded 1.777 GB, peak allocated 1.854 GB, VRAM free at ready 5.59 of 8.59 GB | experiments/session7_hetero/runs/H1_pp_qwen2.5-1.5b-bf16_homewifi_gtx_r1 |
+| H4_pp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1 | PP over three machines: s0 layers 0-10 and embedding on m5 mps; s1 layers 10-19 on air mps; s2 layers 19-28 and head on gtx cuda | 8/8 | 8/8, 8/8 | 1.0 (1.0, 1.0, 1.0) | 0.516, 0.465, 0.594 | 3, 3 | m5 loaded 1.403 GB; air loaded 0.842 GB; gtx loaded 1.309 GB, peak allocated 1.366 GB, VRAM free at ready 6.10 of 8.59 GB | experiments/session7_hetero/runs/H4_pp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1 |
+| H5_tp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1 | TP over three machines: one group, layers 0-28, 4 heads each; rank 0 m5 mps, rank 1 air mps, rank 2 gtx cuda; `allow_mixed_devices: true` | 8/8 | 8/8, 8/8 | 1.0 (1.0, 1.0, 1.0) | 0.469, 0.418, 0.511 | 346, 346 | m5 loaded 1.026 GB; air loaded 1.048 GB; gtx loaded 1.058 GB, peak allocated 1.151 GB, VRAM free at ready 6.36 of 8.59 GB | experiments/session7_hetero/runs/H5_tp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1 |
+
+All three rungs passed: the run finished, the frame formula held, and the criterion was met against every reference. No retry was needed. 279 decode steps in each run.
+Long prompt first divergence (token, MPS / Ada / gtx): H1 none in 256 / 97 / 21; H4 97 / 105 / 21; H5 none in 256 / 97 / 21.
+Bytes per decode step on the links: H1 3112, H4 6208, H5 1058920. H5: 16416 all-reduces per rank, 0 reconnects on every link.
+This is the first three machine run of the engine, the first run with the Air and a CUDA card in one TP group, and the first run on a Pascal card.
+
+Link measured just before each rung, from the M5 (TCP connect time, 20 samples 0.3 s apart; ICMP only works toward the Air, the M5 and Windows drop it):
+
+| before | gtx TCP :2222 min, median, max (ms) | air TCP :22 min, median, max (ms) | air ping -c 20 -i 0.3 loss, min/avg/max (ms) |
+|---|---|---|---|
+| H1 | 4.9, 7.7, 45.1 | not used by H1 | not measured |
+| H4 | 5.3, 11.7, 140.7 | 7.8, 104.9, 112.2 | 0%, 6.5/23.9/109.6 |
+| H5 | 5.1, 6.5, 157.1 | 9.1, 100.0, 110.3 | 0%, 6.9/78.5/193.1 |
+
+The Air link is slow when idle and fast when busy (Phase A: median 8.4 ms at 0.2 s spacing). AWDL was down on both Macs, so the idle delay has another cause, probably Wi-Fi power save. Not proven. Time is background only (T1).
+

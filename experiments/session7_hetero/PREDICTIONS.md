@@ -81,11 +81,11 @@ Compared with `R0_qwen2.5-1.5b-bf16_cuda_r1` (RTX 2000 Ada) and `R0_qwen2.5-1.5b
 
 | item | prediction | why | outcome |
 |---|---|---|---|
-| Run outcome | completes, planned 3256 MB fits the 8 GB card | PLANS.md; about 1.2 GB is in use by Windows | |
-| transformers generate | identical on every prompt | same weights, same device, same greedy decode; held for the Ada R0 | |
-| Identical vs Ada CUDA reference | 7 or 8 of 8 | same wheel family but a Pascal card has no native bf16 path, so kernels can round differently | |
-| Identical vs MPS reference | 7 or 8 of 8 | the Ada and MPS R0s agree 8 of 8 on the short prompts | |
-| First step logit diff vs Ada | nonzero, below 1.0 | different GPU generation, same arithmetic in principle | |
+| Run outcome | completes, planned 3256 MB fits the 8 GB card | PLANS.md; about 1.2 GB is in use by Windows | Held. Completed. Peak allocated 3.223 GB, VRAM free at ready 4.14 of 8.59 GB. |
+| transformers generate | identical on every prompt | same weights, same device, same greedy decode; held for the Ada R0 | Wrong in part. 8 of 8 short prompts identical. The long prompt differs at token 5. |
+| Identical vs Ada CUDA reference | 7 or 8 of 8 | same wheel family but a Pascal card has no native bf16 path, so kernels can round differently | Held: 8 of 8. |
+| Identical vs MPS reference | 7 or 8 of 8 | the Ada and MPS R0s agree 8 of 8 on the short prompts | Held: 8 of 8. |
+| First step logit diff vs Ada | nonzero, below 1.0 | different GPU generation, same arithmetic in principle | Held: 0.531 (0.500 against MPS). Long prompt first divergence token 21 against both. |
 
 ## H1_pp_qwen2.5-1.5b-bf16_homewifi_gtx_r1
 
@@ -94,13 +94,13 @@ References: `R0_qwen2.5-1.5b-bf16_mps_r1`, `R0_qwen2.5-1.5b-bf16_cuda_r1` (Ada) 
 
 | item | prediction | why | outcome |
 |---|---|---|---|
-| Planner | accepts, 1886.5 MB on m5 and 1887.4 MB on gtx | PLANS.md | |
-| Run outcome | completes | same placement shape as H1 on the hotspot, which completed | |
-| Frame formula | holds: 2 frames per decode step | one hop and the head | |
-| Identical vs MPS reference | 8 of 8 | H1 on the hotspot gave 8 of 8 | |
-| Identical vs CUDA references | 8 of 8 against the Ada reference, 7 or 8 of 8 against the gtx reference | H1 gave 8 of 8 against Ada; the gtx reference is new | |
-| Criterion | met (at least 7 of 8 against at least one reference, same graded accuracy) | | |
-| First step logit diff | below 1.0 against every reference | H1 gave 0.44 and 0.45 | |
+| Planner | accepts, 1886.5 MB on m5 and 1887.4 MB on gtx | PLANS.md | Held. Accepted as in PLANS.md. |
+| Run outcome | completes | same placement shape as H1 on the hotspot, which completed | Held. Completed, first attempt. |
+| Frame formula | holds: 2 frames per decode step | one hop and the head | Held: 2 measured, 2 predicted (279 decode steps, 3112 bytes per step). |
+| Identical vs MPS reference | 8 of 8 | H1 on the hotspot gave 8 of 8 | Held: 8 of 8. |
+| Identical vs CUDA references | 8 of 8 against the Ada reference, 7 or 8 of 8 against the gtx reference | H1 gave 8 of 8 against Ada; the gtx reference is new | Held: 8 of 8 against Ada, 8 of 8 against gtx. |
+| Criterion | met (at least 7 of 8 against at least one reference, same graded accuracy) | | Held. Met against all three. Accuracy 1.0, equal to every reference. |
+| First step logit diff | below 1.0 against every reference | H1 gave 0.44 and 0.45 | Held: 0.375 MPS, 0.500 Ada, 0.508 gtx. |
 
 ## H4_pp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1
 
@@ -109,13 +109,13 @@ References: the same three as H1.
 
 | item | prediction | why | outcome |
 |---|---|---|---|
-| Planner | accepts, 1495.3 MB on m5, 930.8 MB on air, 1398.4 MB on gtx | PLANS.md | |
-| Run outcome | completes, no rank disconnect | whole layers per device, three ranks | |
-| Frame formula | holds: 3 frames per decode step (2 hops and the head) | H1 gave 2 with one hop | |
-| Identical vs MPS reference | 7 or 8 of 8 | 19 of 28 layers on MPS; the Air differs from the M5 at the rounding edge (session 6) | |
-| Identical vs CUDA references | 7 or 8 of 8 against each | 9 layers and the head on CUDA | |
-| Criterion | met | | |
-| Per rank memory | as in the planner table, within 15 percent | | |
+| Planner | accepts, 1495.3 MB on m5, 930.8 MB on air, 1398.4 MB on gtx | PLANS.md | Held. Accepted without edits. |
+| Run outcome | completes, no rank disconnect | whole layers per device, three ranks | Held. Completed, first attempt, 0 reconnects. |
+| Frame formula | holds: 3 frames per decode step (2 hops and the head) | H1 gave 2 with one hop | Held: 3 measured, 3 predicted (279 decode steps, 6208 bytes per step). |
+| Identical vs MPS reference | 7 or 8 of 8 | 19 of 28 layers on MPS; the Air differs from the M5 at the rounding edge (session 6) | Held: 8 of 8. |
+| Identical vs CUDA references | 7 or 8 of 8 against each | 9 layers and the head on CUDA | Held: 8 of 8 against Ada, 8 of 8 against gtx. |
+| Criterion | met | | Held. Met against all three. Accuracy 1.0. |
+| Per rank memory | as in the planner table, within 15 percent | | Held. Allocated after the run: m5 1456 MB (planned 1495), air 887 MB (planned 931), gtx 1358 MB (planned 1398), peak on gtx 1366 MB. |
 
 ## H5_tp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1
 
@@ -124,10 +124,10 @@ References: the same three as H1.
 
 | item | prediction | why | outcome |
 |---|---|---|---|
-| Planner | accepts, 1105.9 MB on m5, 1186.9 MB on air, 1138.7 MB on gtx | PLANS.md | |
-| Run outcome | completes, no rank disconnect | H2 held 16416 all-reduces on the hotspot with two ranks | |
-| Frame formula | holds: 346 frames per decode step (token 2, embedding 6, layers 336, head 2) | the `plan` line for this placement | |
-| Identical vs MPS reference | 7 or 8 of 8 | partial sums are added in fp32 on the host in a fixed order; three ranks were only checked on two Macs (P3, session 6) | |
-| Identical vs CUDA references | 7 or 8 of 8 against each | same | |
-| Criterion | met | | |
-| What would count as a failure of the reasoning | garbled text from the first token (transport or dtype, not rounding), or a rank disconnect | | |
+| Planner | accepts, 1105.9 MB on m5, 1186.9 MB on air, 1138.7 MB on gtx | PLANS.md | Held. Accepted without edits. |
+| Run outcome | completes, no rank disconnect | H2 held 16416 all-reduces on the hotspot with two ranks | Held. Completed, first attempt. 16416 all-reduces per rank, 0 reconnects. |
+| Frame formula | holds: 346 frames per decode step (token 2, embedding 6, layers 336, head 2) | the `plan` line for this placement | Held: 346 measured, 346 predicted (279 decode steps, 1058920 bytes per step). |
+| Identical vs MPS reference | 7 or 8 of 8 | partial sums are added in fp32 on the host in a fixed order; three ranks were only checked on two Macs (P3, session 6) | Held: 8 of 8. The long prompt is identical for all 256 tokens. |
+| Identical vs CUDA references | 7 or 8 of 8 against each | same | Held: 8 of 8 against Ada, 8 of 8 against gtx. |
+| Criterion | met | | Held. Met against all three. Accuracy 1.0. |
+| What would count as a failure of the reasoning | garbled text from the first token (transport or dtype, not rounding), or a rank disconnect | | Not triggered. Text is correct from the first token. First step logit diff 0.469 MPS, 0.418 Ada, 0.511 gtx. |
