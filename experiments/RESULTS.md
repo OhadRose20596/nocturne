@@ -385,3 +385,30 @@ Link measured just before each rung, from the M5 (TCP connect time, 20 samples 0
 
 The Air link is slow when idle and fast when busy (Phase A: median 8.4 ms at 0.2 s spacing). AWDL was down on both Macs, so the idle delay has another cause, probably Wi-Fi power save. Not proven. Time is background only (T1).
 
+## Session 8b: 7B on three machines, home Wi-Fi (2026-11-20)
+
+Same three hosts, link and method as "Session 8" above (m5 MPS torch 2.14.1 coordinator, air MPS torch 2.15.0, gtx GTX 1070 CUDA torch 2.14.1+cu126). Repo SHA 28accc4 on the three hosts, engine sha256 equal. qwen2.5-7b-bf16, sha256 equal on the three hosts (copied to gtx with `scp`, hash over all files 8afc5b73 on both ends). Reduce dtype float32. AWDL down and VPN disconnected on both Macs, caffeinate on.
+References: `R0_qwen2.5-7b-bf16_mps_r3` and `R0_qwen2.5-7b-bf16_cpu_r1` (session 6). There is no CUDA reference for 7B, the model does not fit the 8 GB card. Predictions and outcomes: experiments/session7_hetero/PREDICTIONS.md, "Session 8b".
+
+| run | placement | identical vs MPS ref | identical vs CPU ref | accuracy (refs) | first step logit diff (MPS, CPU) | frames per step (measured, predicted) | memory | folder |
+|---|---|---|---|---|---|---|---|---|
+| H3_pp_qwen2.5-7b-bf16_homewifi_gtx_r1 | PP: s0 layers 0-18 and embedding on m5 mps; s1 layers 18-28 on gtx cuda (budget 5.5 GB); head on m5 mps | 8/8 | 8/8 | 1.0 (1.0, 1.0) | 0.312, 0.375 | 3, 3 | m5 loaded 9.480 + 1.090 GB; gtx loaded 4.661 GB, peak allocated 4.789 GB, VRAM free at ready 2.68 of 8.59 GB | experiments/session7_hetero/runs/H3_pp_qwen2.5-7b-bf16_homewifi_gtx_r1 |
+| H4_pp3_qwen2.5-7b-bf16_homewifi_gtx_r1 | PP over three machines: s0 layers 0-10 and embedding on m5 mps; s1 layers 10-19 on air mps; s2 layers 19-28 and head on gtx cuda (budget 6.0 GB) | 8/8 | 8/8 | 1.0 (1.0, 1.0) | 0.406, 0.500 | 3, 3 | m5 loaded 5.751 GB; air loaded 4.195 GB; gtx loaded 5.285 GB, peak allocated 5.404 GB, VRAM free at ready 1.41 of 8.59 GB | experiments/session7_hetero/runs/H4_pp3_qwen2.5-7b-bf16_homewifi_gtx_r1 |
+| H5_tp3_qwen2.5-7b-bf16_homewifi_gtx_r1 | TP over three machines: one group, layers 0-28, heads 14 (m5 mps), 7 (air mps), 7 (gtx cuda, budget 5.5 GB), KV aligned; `allow_mixed_devices: true` | 8/8 | 8/8 | 1.0 (1.0, 1.0) | 0.438, 0.406 | 346, 346 | m5 loaded 7.616 GB; air loaded 3.808 GB; gtx loaded 3.808 GB, peak allocated 3.882 GB, VRAM free at ready 3.45 of 8.59 GB | experiments/session7_hetero/runs/H5_tp3_qwen2.5-7b-bf16_homewifi_gtx_r1 |
+
+All three rungs passed on the first attempt: the run finished, the frame formula held, the criterion was met against both references. 279 decode steps each, 0 reconnects on every link.
+Long prompt first divergence (token, MPS / CPU): H3 72 / 109; H4 173 / 72; H5 72 / 109.
+Bytes per decode step: H3 14400, H4 14400, H5 2459752. H5: 16416 all-reduces per rank.
+7B (15.2 GB in bf16) does not fit gtx alone (8 GB card) and was run with gtx holding 3.8 to 5.3 GB of it. H4 left 1.41 GB of VRAM free on gtx, the tightest rank of the session.
+First 7B run of the engine on three machines, and the first with uneven TP shares across MPS and CUDA.
+
+Link measured just before each rung, from the M5 (TCP connect time, 20 samples 0.3 s apart):
+
+| before | gtx TCP :2222 min, median, max (ms) | air TCP :22 min, median, max (ms) |
+|---|---|---|
+| H3 | 5.0, 7.9, 37.4 | 7.2, 101.8, 111.3 (the Air is not in H3) |
+| H4 | 4.9, 11.4, 81.8 | 7.7, 100.5, 108.2 |
+| H5 | 5.4, 10.6, 28.7 | 8.1, 104.9, 116.0 |
+
+The Air figures are idle-link figures (see Session 8). Time is background only (T1).
+
