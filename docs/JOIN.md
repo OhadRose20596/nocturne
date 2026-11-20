@@ -4,7 +4,7 @@ One script runs on the new machine. It checks the machine, fixes what is safe to
 The coordinator (the M5) reads that report and updates its own configuration. Nobody copies commands from a guide.
 
 Status on 2026-11-20: `15_join.sh` ran on the M5 in check mode. `16_join_apply.py` ran in dry-run mode and on synthetic files.
-`15_join.ps1` has not run on a Windows machine yet. The fix paths that need `sudo`, and `--install`, have not run yet.
+`15_join.sh` ran in fix mode on the Air and delivered its report. The Windows half of `15_join.ps1` ran on one Windows 11 machine with no WSL distro and stopped there, as designed. The fix paths that need `sudo`, and `--install`, have not run yet.
 A code review found 27 issues on 2026-11-20. The confirmed ones are fixed, by reading and local tests only.
 
 Windows is supported through WSL2 only. A Windows machine without WSL cannot be a peer today.
@@ -46,11 +46,11 @@ Then it pings the peer, opens an ssh session without a password, and lists the m
 | repo | fast-forward pull. With `--install`: clone and `pip install -e` | diverged history |
 | models | none. The coordinator copies models | |
 | firewall | macOS: allows the venv python. Linux: opens the ports in ufw or firewalld | other firewalls |
-| coordinator | none, pings the coordinator | |
+| coordinator | none, opens a TCP connection to the receiver on port 50079 | receiver not running |
 
 Windows adds: network profile set to Private, `networkingMode=mirrored` in `.wslconfig`, the two firewall rules, no sleep on AC power, the NVIDIA driver, and a hidden `sleep infinity` that keeps WSL up without an Ubuntu window.
 
-Flags: `--check` applies no fix. It still runs `git fetch` and writes the report. `--install` also builds the venv and clones the repo. `--stop` ends the AWDL loop and caffeinate.
+Flags: `--self` is for the coordinator itself: it skips the ssh server, since nobody logs in to it. `--check` applies no fix. It still runs `git fetch` and writes the report. `--install` also builds the venv and clones the repo. `--stop` ends the AWDL loop and caffeinate.
 The torch version is not pinned by default. Set `NOCTURNE_TORCH_VERSION` and `NOCTURNE_TORCH_INDEX` to pin it.
 A venv where torch already imports is never changed. `--install` repairs a venv where it does not.
 

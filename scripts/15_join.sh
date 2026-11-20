@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Join this machine (macOS, Linux, WSL2) to a nocturne run: check, fix what is safe, write one report file.
-# Usage: bash 15_join.sh [--check] [--install] [--key "<pubkey>" | --key-file F] [--coordinator <ip>] [--stop]   (docs/JOIN.md)
+# Usage: bash 15_join.sh [--check] [--install] [--self] [--key "<pubkey>" | --key-file F] [--coordinator <ip>] [--stop]   (docs/JOIN.md)
 
 set -u
-MODE=fix; INSTALL=0; KEY=""; COORD=""; EXTRA=""; STOP=0
+MODE=fix; INSTALL=0; SELF=0; KEY=""; COORD=""; EXTRA=""; STOP=0
 TORCH_VERSION="${NOCTURNE_TORCH_VERSION:-}"; TORCH_INDEX="${NOCTURNE_TORCH_INDEX:-https://download.pytorch.org/whl/cu130}"
 REPO_URL="${NOCTURNE_REPO_URL:-https://github.com/OhadRose20596/nocturne.git}"
 while [ $# -gt 0 ]; do
@@ -15,6 +15,7 @@ while [ $# -gt 0 ]; do
     --coordinator) COORD="$2"; shift ;;
     --extra) EXTRA="$2"; shift ;;
     --stop) STOP=1 ;;
+    --self) SELF=1 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
   shift
@@ -119,7 +120,8 @@ listening() {
   if [ "$OS" = macos ]; then nc -z 127.0.0.1 "$1" >/dev/null 2>&1
   else (ss -ltn 2>/dev/null || netstat -ltn 2>/dev/null) | grep -q ":$1 "; fi
 }
-if listening "$SSH_PORT"; then check ssh_server PASS "listening on port $SSH_PORT"
+if [ "$SELF" = 1 ]; then check ssh_server SKIP "this machine is the coordinator, nobody logs in to it"
+elif listening "$SSH_PORT"; then check ssh_server PASS "listening on port $SSH_PORT"
 elif [ "$OS" = macos ]; then
   if need_sudo "turning on Remote Login (ssh server)"; then
     sudo launchctl load -w /System/Library/LaunchDaemons/ssh.plist 2>>"$LOGS"; sleep 1
@@ -266,11 +268,13 @@ elif have firewall-cmd && firewall-cmd --state 2>/dev/null | grep -q running; th
   else check firewall FAIL "firewalld is running and the ports are not opened"; fi
 else check firewall PASS "no enabled Linux firewall seen (ufw, firewalld)"; fi
 
-# ---- reach the coordinator
+# ---- reach the coordinator (TCP to the receiver; ping is only logged, some hosts drop ICMP)
 if [ -n "$COORD" ]; then
-  P="$(ping -c 5 "$COORD" 2>&1 | tail -2 | tr '\n' ' ')"
   log ping_coordinator "ping -c 10 $COORD | tail -3"
-  case "$P" in *" 0.0% packet loss"*|*" 0% packet loss"*) check coordinator PASS "$P" ;; *) check coordinator FAIL "$P" ;; esac
+  if have curl; then C="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://$COORD:50079/" 2>/dev/null)"
+  else C="$(python3 -c 'import sys,socket;socket.create_connection((sys.argv[1],50079),5);print("tcp")' "$COORD" 2>/dev/null)"; fi
+  case "$C" in ""|000) check coordinator FAIL "no answer from $COORD:50079. Is '16_join_apply.py listen' running there, and its firewall open?" ;;
+    *) check coordinator PASS "receiver at $COORD:50079 answers" ;; esac
 fi
 
 # ---- report
@@ -284,7 +288,7 @@ echo "Report: $REPORT  ($NFAIL failed)"
 SENT=0
 if [ -n "$COORD" ]; then
   URL="http://$COORD:50079/join"
-  if have curl; then R="$(curl -s --max-time 10 -X POST --data-binary @"$REPORT" "$URL" 2>/dev/null)"
+  if have curl; then R="$(curl -s --max-time 20 --retry 1 -H 'Expect:' -X POST --data-binary @"$REPORT" "$URL" 2>/dev/null)"
   else R="$(python3 -c 'import sys,urllib.request;print(urllib.request.urlopen(sys.argv[1],open(sys.argv[2],"rb").read(),timeout=10).read().decode())' "$URL" "$REPORT" 2>/dev/null)"; fi
   case "$R" in saved*) SENT=1; echo "Sent to the coordinator at $COORD. Nothing more to do here." ;; esac
 fi

@@ -93,11 +93,14 @@ def cmd_listen(args):
             host = re.sub(r"[^A-Za-z0-9_.-]", "_", m.group(1))[:40] if m else "unknown"
             out = INBOX / ("%s_%s.txt" % (host, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")))
             out.write_text(body)
-            self.send_response(200); self.end_headers(); self.wfile.write(b"saved\n")
+            self.send_response(200); self.send_header("Content-Length", "6"); self.end_headers(); self.wfile.write(b"saved\n")
             print("\nreport from %s (%s) saved: %s" % (host, self.client_address[0], out))
             summarize(out)
             print("next: python3 scripts/16_join_apply.py apply '%s' --peer <name>" % out)
             got.append(out)
+
+        def do_GET(self):
+            self.send_response(200); self.send_header("Content-Length", "8"); self.end_headers(); self.wfile.write(b"nocturne")
 
         def log_message(self, *a):
             pass
