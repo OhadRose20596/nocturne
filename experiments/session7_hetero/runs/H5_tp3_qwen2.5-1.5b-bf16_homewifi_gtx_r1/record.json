@@ -1,0 +1,1126 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "H5_tp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1",
+ "date": "2026-11-20T15:36:37+0200",
+ "placement": {
+  "file": "experiments/session7_hetero/placements/H5_tp3_1.5b_gtx.yaml",
+  "sha256": "82717a87553b07047dc14234344e1a81136ddd4ad928f6aadb6fe9f0b4e6cff2",
+  "yaml": "# H5: TP 1.5b, one group of three across M5 mps, Air mps and gtx cuda (GTX 1070, session 8), 4 heads each (mixed devices accepted on purpose)\nmodel: qwen2.5-1.5b-bf16\ncoordinator: {host: m5}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nallow_mixed_devices: true\nstages:\n  - name: s0\n    layers: [0, 28]\n    embed: true\n    lm_head: true\n    ranks:\n      - {host: m5, device: mps, port: 50070, heads: 4}\n      - {host: air, device: mps, port: 50070, heads: 4}\n      - {host: gtx, device: cuda, port: 50070, heads: 4}\n"
+ },
+ "git": {
+  "sha": "47222febfe5d6f1f457cf08016914d238c555918",
+  "dirty": false
+ },
+ "torch_coordinator": "2.14.1",
+ "args": {
+  "placement": "experiments/session7_hetero/placements/H5_tp3_1.5b_gtx.yaml",
+  "session_dir": "experiments/session7_hetero",
+  "run_id": "H5_tp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "R0_qwen2.5-1.5b-bf16_mps_r1",
+   "R0_qwen2.5-1.5b-bf16_cuda_r1",
+   "R0_qwen2.5-1.5b-bf16_cuda_gtx_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "force": false,
+  "mps_fraction_cap": false
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "qwen2.5-1.5b-bf16",
+  "dir": "~/models/hf/Qwen2.5-1.5B-Instruct",
+  "sha256": {
+   "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  }
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 3,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 0,
+   "q1": 4,
+   "m0": 0,
+   "m1": 2944,
+   "kv0": 0,
+   "kv1": 1,
+   "embed_rows": [
+    0,
+    50688
+   ],
+   "head_rows": [
+    0,
+    50688
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1025725440,
+    "kv": 58720256,
+    "workspace": 21406720,
+    "total": 1105852416,
+    "layer_bytes": 31071744,
+    "vocab_bytes": 155713536,
+    "kv_heads_replicated": 2
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s0/1",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 1,
+   "group_size": 3,
+   "host": "air",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 4,
+   "q1": 8,
+   "m0": 2944,
+   "m1": 5888,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": [
+    50688,
+    101376
+   ],
+   "head_rows": [
+    50688,
+    101376
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1047759872,
+    "kv": 117440512,
+    "workspace": 21668864,
+    "total": 1186869248,
+    "layer_bytes": 31858688,
+    "vocab_bytes": 155713536,
+    "kv_heads_replicated": 2
+   }
+  },
+  {
+   "gid": 2,
+   "name": "s0/2",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 2,
+   "group_size": 3,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 8,
+   "q1": 12,
+   "m0": 5888,
+   "m1": 8960,
+   "kv0": 1,
+   "kv1": 2,
+   "embed_rows": [
+    101376,
+    151936
+   ],
+   "head_rows": [
+    101376,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1058362368,
+    "kv": 58720256,
+    "workspace": 21602560,
+    "total": 1138685184,
+    "layer_bytes": 32251392,
+    "vocab_bytes": 155320320,
+    "kv_heads_replicated": 2
+   }
+  }
+ ],
+ "frames": {
+  "predicted": {
+   "token": 2,
+   "embed": 6,
+   "layers": 336,
+   "hops": 0,
+   "head": 2,
+   "total": 346
+  },
+  "decode_steps": 279,
+  "measured_per_step": 346.0,
+  "bytes_per_step": 1058920.0,
+  "per_link_per_step": {
+   "s0/0->s0/1": {
+    "sent_frames": 57.0,
+    "sent_bytes": 176472.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 176472.0
+   },
+   "s0/0->s0/2": {
+    "sent_frames": 57.0,
+    "sent_bytes": 176472.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 176472.0
+   },
+   "s0/0->ctl:s0/1": {
+    "sent_frames": 1.0,
+    "sent_bytes": 28.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s0/0->ctl:s0/2": {
+    "sent_frames": 1.0,
+    "sent_bytes": 28.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s0/1->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 28.0
+   },
+   "s0/1->s0/0": {
+    "sent_frames": 57.0,
+    "sent_bytes": 176472.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 176472.0
+   },
+   "s0/1->s0/2": {
+    "sent_frames": 57.0,
+    "sent_bytes": 176472.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 176472.0
+   },
+   "s0/2->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 28.0
+   },
+   "s0/2->s0/0": {
+    "sent_frames": 57.0,
+    "sent_bytes": 176472.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 176472.0
+   },
+   "s0/2->s0/1": {
+    "sent_frames": 57.0,
+    "sent_bytes": 176472.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 176472.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "air": {
+    "os": "Darwin",
+    "caffeinate": "on",
+    "awdl": "down",
+    "vpn_state": "disconnected",
+    "engine_sha256": "c9143ba7a8ba5746b9695034503617323f2198fd5c4b8895549e7cda3ba7baac",
+    "model_sha256": {
+     "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+     "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+     "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+   },
+   "gtx": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA GeForce GTX 1070, 8192 MiB, 1206 MiB, 582.78",
+    "engine_sha256": "c9143ba7a8ba5746b9695034503617323f2198fd5c4b8895549e7cda3ba7baac",
+    "model_sha256": {
+     "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+     "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+     "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+   },
+   "m5": {
+    "os": "Darwin",
+    "caffeinate": "on",
+    "awdl": "down",
+    "vpn_state": "disconnected",
+    "engine_sha256": "c9143ba7a8ba5746b9695034503617323f2198fd5c4b8895549e7cda3ba7baac",
+    "model_sha256": {
+     "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+     "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+     "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+   }
+  }
+ },
+ "load_s": 3.2830557823181152,
+ "link_counters": {
+  "s0/0": {
+   "s0/1": {
+    "sent_frames": 16416,
+    "recv_frames": 16417,
+    "sent_bytes": 136975104,
+    "recv_bytes": 136975146,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 49235688,
+     "recv_frames": 15903,
+     "recv_bytes": 49235688
+    },
+    "by_kind_sent": {
+     "allreduce": 16416
+    }
+   },
+   "s0/2": {
+    "sent_frames": 16416,
+    "recv_frames": 16417,
+    "sent_bytes": 136975104,
+    "recv_bytes": 136975146,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 49235688,
+     "recv_frames": 15903,
+     "recv_bytes": 49235688
+    },
+    "by_kind_sent": {
+     "allreduce": 16416
+    }
+   },
+   "ctl:s0/1": {
+    "sent_frames": 292,
+    "recv_frames": 290,
+    "sent_bytes": 13769,
+    "recv_bytes": 919995,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 7812,
+     "recv_frames": 279,
+     "recv_bytes": 4464
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "metrics": 2,
+     "token": 288
+    }
+   },
+   "ctl:s0/2": {
+    "sent_frames": 292,
+    "recv_frames": 290,
+    "sent_bytes": 13769,
+    "recv_bytes": 917661,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 7812,
+     "recv_frames": 279,
+     "recv_bytes": 4464
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "metrics": 2,
+     "token": 288
+    }
+   }
+  },
+  "s0/1": {
+   "ctl": {
+    "sent_frames": 290,
+    "recv_frames": 292,
+    "sent_bytes": 919995,
+    "recv_bytes": 13769,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 4464,
+     "recv_frames": 279,
+     "recv_bytes": 7812
+    },
+    "by_kind_sent": {
+     "ready": 1,
+     "metrics_reply": 1,
+     "head": 288
+    }
+   },
+   "s0/0": {
+    "sent_frames": 16417,
+    "recv_frames": 16416,
+    "sent_bytes": 136975146,
+    "recv_bytes": 136975104,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 49235688,
+     "recv_frames": 15903,
+     "recv_bytes": 49235688
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 16416
+    }
+   },
+   "s0/2": {
+    "sent_frames": 16416,
+    "recv_frames": 16417,
+    "sent_bytes": 136975104,
+    "recv_bytes": 136975146,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 49235688,
+     "recv_frames": 15903,
+     "recv_bytes": 49235688
+    },
+    "by_kind_sent": {
+     "allreduce": 16416
+    }
+   }
+  },
+  "s0/2": {
+   "ctl": {
+    "sent_frames": 290,
+    "recv_frames": 292,
+    "sent_bytes": 917661,
+    "recv_bytes": 13769,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 4464,
+     "recv_frames": 279,
+     "recv_bytes": 7812
+    },
+    "by_kind_sent": {
+     "ready": 1,
+     "metrics_reply": 1,
+     "head": 288
+    }
+   },
+   "s0/0": {
+    "sent_frames": 16417,
+    "recv_frames": 16416,
+    "sent_bytes": 136975146,
+    "recv_bytes": 136975104,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 49235688,
+     "recv_frames": 15903,
+     "recv_bytes": 49235688
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 16416
+    }
+   },
+   "s0/1": {
+    "sent_frames": 16417,
+    "recv_frames": 16416,
+    "sent_bytes": 136975146,
+    "recv_bytes": 136975104,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 49235688,
+     "recv_frames": 15903,
+     "recv_bytes": 49235688
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 16416
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "s0/0",
+   "gid": 0,
+   "host": "m5",
+   "device": "mps",
+   "pid": 43839,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 1025725440,
+   "kv_bytes": 58720256,
+   "idle": {
+    "peak_rss_bytes": 357007360,
+    "phys_footprint_bytes": 228049928,
+    "lifetime_max_phys_footprint_bytes": 228049928
+   },
+   "planned": {
+    "weights": 1025725440,
+    "kv": 58720256,
+    "workspace": 21406720,
+    "total": 1105852416,
+    "layer_bytes": 31071744,
+    "vocab_bytes": 155713536,
+    "kv_heads_replicated": 2
+   },
+   "budget": null,
+   "load_s": 0.4569551944732666,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "current_allocated_bytes": 1099132928,
+   "driver_allocated_bytes": 1166737408,
+   "peak_rss_bytes": 1273856000,
+   "phys_footprint_bytes": 1531217120,
+   "lifetime_max_phys_footprint_bytes": 1539048672
+  },
+  {
+   "name": "s0/1",
+   "gid": 1,
+   "host": "air",
+   "device": "mps",
+   "pid": 8724,
+   "torch": "2.15.0",
+   "loaded_tensor_bytes": 1047759872,
+   "kv_bytes": 117440512,
+   "idle": {
+    "peak_rss_bytes": 344555520,
+    "phys_footprint_bytes": 211780640,
+    "lifetime_max_phys_footprint_bytes": 211780640
+   },
+   "planned": {
+    "weights": 1047759872,
+    "kv": 117440512,
+    "workspace": 21668864,
+    "total": 1186869248,
+    "layer_bytes": 31858688,
+    "vocab_bytes": 155713536,
+    "kv_heads_replicated": 2
+   },
+   "budget": null,
+   "load_s": 0.3440418243408203,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "current_allocated_bytes": 1179988992,
+   "driver_allocated_bytes": 1200308224,
+   "peak_rss_bytes": 1264386048,
+   "phys_footprint_bytes": 1430209688,
+   "lifetime_max_phys_footprint_bytes": 1430242456
+  },
+  {
+   "name": "s0/2",
+   "gid": 2,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 4366,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 1058362368,
+   "kv_bytes": 58720256,
+   "idle": {
+    "peak_rss_bytes": 617369600
+   },
+   "planned": {
+    "weights": 1058362368,
+    "kv": 58720256,
+    "workspace": 21602560,
+    "total": 1138685184,
+    "layer_bytes": 32251392,
+    "vocab_bytes": 155320320,
+    "kv_heads_replicated": 2
+   },
+   "budget": null,
+   "load_s": 0.6487994194030762,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "current_allocated_bytes": 1148669952,
+   "driver_allocated_bytes": 1166016512,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 6364856320,
+   "max_allocated_bytes": 1151420416,
+   "peak_rss_bytes": 2302717952
+  }
+ ],
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 988.6409441630045,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "936",
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1019.3069775899252,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "543",
+   "score": 1.0
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt_n": 44,
+   "tokens": [
+    19,
+    18,
+    22,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1082.9862753550212,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "437",
+   "score": 1.0
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt_n": 45,
+   "tokens": [
+    16,
+    17,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1062.848448753357,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "12",
+   "score": 1.0
+  },
+  {
+   "id": "arith_05",
+   "kind": "eval",
+   "prompt_n": 58,
+   "tokens": [
+    16,
+    20,
+    15,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1031.678040822347,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "150",
+   "score": 1.0
+  },
+  {
+   "id": "arith_06",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 877.7285814285278,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "36",
+   "score": 1.0
+  },
+  {
+   "id": "extract_01",
+   "kind": "eval",
+   "prompt_n": 67,
+   "tokens": [
+    35,
+    3362,
+    55041,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1095.4949855804443,
+   "category": "extraction",
+   "cap": 16,
+   "text": "Dana Levi",
+   "score": 1.0
+  },
+  {
+   "id": "extract_02",
+   "kind": "eval",
+   "prompt_n": 69,
+   "tokens": [
+    14003,
+    220,
+    18,
+    16,
+    16,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 982.2897911071777,
+   "category": "extraction",
+   "cap": 16,
+   "text": "Room 311",
+   "score": 1.0
+  },
+  {
+   "id": "longopen_01",
+   "kind": "long",
+   "prompt_n": 78,
+   "tokens": [
+    32,
+    2114,
+    17220,
+    26299,
+    3922,
+    23377,
+    264,
+    2766,
+    4269,
+    504,
+    279,
+    7602,
+    311,
+    264,
+    20638,
+    1526,
+    264,
+    4013,
+    315,
+    7354,
+    15860,
+    264,
+    9273,
+    11,
+    2615,
+    1459,
+    11,
+    8887,
+    11744,
+    11,
+    323,
+    10151,
+    18368,
+    13,
+    5692,
+    594,
+    264,
+    43799,
+    16148,
+    1447,
+    16,
+    13,
+    3070,
+    9523,
+    323,
+    9549,
+    5126,
+    95518,
+    576,
+    9273,
+    374,
+    279,
+    8622,
+    18719,
+    315,
+    697,
+    17220,
+    26299,
+    3922,
+    13,
+    1084,
+    33061,
+    311,
+    279,
+    7602,
+    323,
+    65098,
+    264,
+    20739,
+    8286,
+    429,
+    1008,
+    7611,
+    646,
+    5258,
+    13,
+    1527,
+    2615,
+    1459,
+    374,
+    264,
+    943,
+    315,
+    9273,
+    429,
+    374,
+    11689,
+    6188,
+    311,
+    3410,
+    264,
+    20739,
+    3922,
+    369,
+    264,
+    3175,
+    3671,
+    476,
+    264,
+    2613,
+    1874,
+    315,
+    7611,
+    13,
+    11733,
+    59175,
+    323,
+    2615,
+    3501,
+    990,
+    8887,
+    16876,
+    311,
+    29282,
+    323,
+    5258,
+    821,
+    382,
+    17,
+    13,
+    3070,
+    28203,
+    62900,
+    95518,
+    17220,
+    26299,
+    26057,
+    389,
+    8887,
+    33773,
+    11,
+    892,
+    525,
+    17779,
+    1119,
+    11744,
+    13,
+    8886,
+    5496,
+    646,
+    6777,
+    821,
+    518,
+    264,
+    2155,
+    4628,
+    323,
+    374,
+    1483,
+    553,
+    2155,
+    7611,
+    13,
+    576,
+    9273,
+    323,
+    2615,
+    1459,
+    990,
+    1493,
+    11744,
+    311,
+    29282,
+    821,
+    311,
+    323,
+    504,
+    279,
+    7602,
+    323,
+    311,
+    1008,
+    7611,
+    389,
+    279,
+    3922,
+    382,
+    18,
+    13,
+    3070,
+    16679,
+    47025,
+    95518,
+    3197,
+    498,
+    3624,
+    264,
+    2766,
+    4269,
+    11,
+    432,
+    374,
+    10865,
+    1495,
+    1119,
+    9155,
+    8153,
+    2598,
+    27035,
+    13,
+    8886,
+    10151,
+    5610,
+    264,
+    2613,
+    949,
+    315,
+    279,
+    2766,
+    821,
+    323,
+    374,
+    3208,
+    916,
+    279,
+    3922,
+    13,
+    576,
+    9273,
+    323,
+    2615,
+    1459,
+    5258,
+    1493,
+    27035,
+    323,
+    312,
+    69108,
+    1105,
+    1119,
+    279,
+    4583,
+    2766,
+    4269,
+    979,
+    807,
+    5545,
+    279,
+    20638,
+    382,
+    19,
+    13,
+    3070,
+    91201,
+    6065,
+    13484,
+    80458,
+    95518,
+    576,
+    9273,
+    323,
+    2615,
+    1459,
+    990,
+    8887,
+    16876
+   ],
+   "finish": "length",
+   "ms_per_step": 1121.6925368589514,
+   "text": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving a router, access point, radio channels, and packet transmission. Here's a simplified explanation:\n\n1. **Router and Access Point**: The router is the central hub of your Wi-Fi network. It connects to the internet and broadcasts a wireless signal that other devices can receive. An access point is a type of router that is specifically designed to provide a wireless network for a single device or a small group of devices. Both routers and access points use radio waves to transmit and receive data.\n\n2. **Radio Channels**: Wi-Fi operates on radio frequencies, which are divided into channels. Each channel can carry data at a different speed and is used by different devices. The router and access point use these channels to transmit data to and from the internet and to other devices on the network.\n\n3. **Packet Transmission**: When you send a video stream, it is broken down into smaller units called packets. Each packet contains a small part of the video data and is sent over the network. The router and access point receive these packets and reassemble them into the complete video stream when they reach the laptop.\n\n4. **Transmission Over Radio Waves**: The router and access point use radio waves"
+  }
+ ],
+ "commands": [
+  {
+   "host": "air",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 192.168.1.219 --port 50070 --model \"$HOME\"/models/hf/Qwen2.5-1.5B-Instruct --device mps --name s0/1 --tag H5_tp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 192.168.1.168 --port 50070 --model \"$HOME\"/models/hf/Qwen2.5-1.5B-Instruct --device cuda --name s0/2 --tag H5_tp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1"
+  },
+  {
+   "host": "air",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f '--tag H5_tp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1'"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx pkill -f '--tag H5_tp3_qwen2.5-1.5b-bf16_homewifi_gtx_r1'"
+  }
+ ],
+ "correctness": {
+  "R0_qwen2.5-1.5b-bf16_mps_r1": {
+   "reference": "R0_qwen2.5-1.5b-bf16_mps_r1",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 3,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 256
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.46875,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.314453125,
+    "arith_02": 0.375,
+    "arith_03": 0.46875,
+    "arith_04": 0.421875,
+    "arith_05": 0.4375,
+    "arith_06": 0.328125,
+    "extract_01": 0.3125,
+    "extract_02": 0.296875,
+    "longopen_01": 0.203125
+   },
+   "long_first_div": {
+    "longopen_01": 256
+   },
+   "criterion_met": true
+  },
+  "R0_qwen2.5-1.5b-bf16_cuda_r1": {
+   "reference": "R0_qwen2.5-1.5b-bf16_cuda_r1",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 3,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 97
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.41796875,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.29296875,
+    "arith_02": 0.3125,
+    "arith_03": 0.375,
+    "arith_04": 0.3125,
+    "arith_05": 0.41796875,
+    "arith_06": 0.40625,
+    "extract_01": 0.375,
+    "extract_02": 0.3125,
+    "longopen_01": 0.3125
+   },
+   "long_first_div": {
+    "longopen_01": 97
+   },
+   "criterion_met": true
+  },
+  "R0_qwen2.5-1.5b-bf16_cuda_gtx_r1": {
+   "reference": "R0_qwen2.5-1.5b-bf16_cuda_gtx_r1",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 3,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 21
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.5107421875,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.33203125,
+    "arith_02": 0.31640625,
+    "arith_03": 0.36328125,
+    "arith_04": 0.5107421875,
+    "arith_05": 0.4375,
+    "arith_06": 0.40625,
+    "extract_01": 0.40625,
+    "extract_02": 0.25390625,
+    "longopen_01": 0.25
+   },
+   "long_first_div": {
+    "longopen_01": 21
+   },
+   "criterion_met": true
+  }
+ }
+}
