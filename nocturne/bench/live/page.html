@@ -21,8 +21,12 @@ h1 small { color:var(--muted); font-weight:400; }
 .phase.past { color:var(--fg); }
 .phase b { display:block; font-weight:600; }
 .phase span { font-family:var(--mono); font-size:12px; }
-.grid { display:grid; grid-template-columns:minmax(220px,1fr) minmax(320px,2fr) minmax(220px,1fr); gap:12px; }
-@media (max-width:900px) { .grid { grid-template-columns:1fr; } }
+.machines { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin-bottom:12px; }
+.split { display:flex; height:22px; border-radius:6px; overflow:hidden; border:1px solid var(--line); margin-bottom:12px; background:var(--bar); }
+.split div { display:flex; align-items:center; justify-content:center; font-size:11px; font-family:var(--mono); color:#fff; white-space:nowrap; overflow:hidden; min-width:0; }
+.split .requester { background:var(--req); } .split .worker { background:var(--wrk); } .split .worker.alt { background:var(--accent); }
+.peer .sub { font-size:11px; color:var(--muted); margin-top:8px; }
+.bar.mem i { background:var(--req); } .peer.worker .bar.mem i { background:var(--wrk); } .bar.mem i.over { background:#c0392b; }
 .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; }
 .peer h2 { margin:0 0 4px; font-size:15px; display:flex; justify-content:space-between; align-items:center; }
 .peer .role { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
@@ -56,19 +60,19 @@ h1 small { color:var(--muted); font-weight:400; }
 <body>
 <h1>Nocturne bench <small id="run">connecting</small> <small id="mode"></small></h1>
 <div class="phases" id="phases"></div>
-<div class="grid">
-  <div id="left"></div>
+<div class="split" id="split" title="share of the model's device buffers on each machine"></div>
+<div class="machines" id="machines"></div>
+<div>
   <div class="card stream">
     <div class="counters">
       <span>step <b id="c_step">0</b></span>
       <span>commands this step <b id="c_cur">0</b></span>
       <span>commands total <b id="c_tot">0</b></span>
       <span>bytes total <b id="c_bytes">0</b></span>
-      <span>median per step <b id="c_med">-</b></span>
+      <span>median per step, all workers <b id="c_med">-</b></span>
     </div>
     <div id="msgs"></div>
   </div>
-  <div id="right"></div>
 </div>
 <div class="ticker">
   <div class="tile"><div class="l">tokens generated</div><div class="v" id="t_gen">0</div></div>
@@ -87,25 +91,53 @@ h1 small { color:var(--muted); font-weight:400; }
   const peerEls = {};
   let lastStep = -1;
 
-  function peerCard(p) {
+  const gib = mib => (mib / 1024).toFixed(2) + " GiB";
+
+  function peerCard(p, total) {
     let el = peerEls[p.name];
     if (!el) {
-      el = document.createElement("div"); el.className = "card peer";
+      el = document.createElement("div"); el.className = "card peer " + p.role;
       el.innerHTML = '<h2><span><span class="role"></span><br><span class="nm_"></span></span><span class="state"></span></h2>' +
         '<div class="kv"><div>backend</div><div class="be"></div><div>device</div><div class="dv"></div>' +
-        '<div>device buffers</div><div class="bf"></div><div>GPU busy</div><div class="ut"></div></div><div class="bar"><i></i></div>';
+        '<div>model on device</div><div class="bf"></div><div>share of model</div><div class="sh"></div>' +
+        '<div>received</div><div class="rx"></div><div>commands</div><div class="cm"></div></div>' +
+        '<div class="sub">device memory used by the model</div><div class="bar mem"><i></i></div>' +
+        '<div class="sub">GPU busy <span class="ut"></span></div><div class="bar util"><i></i></div>';
       peerEls[p.name] = el;
-      (p.role === "requester" ? $("left") : $("right")).appendChild(el);
+      $("machines").appendChild(el);
     }
-    el.querySelector(".role").textContent = p.role;
+    el.querySelector(".role").textContent = p.role + (p.ip ? "  " + p.ip : "");
     el.querySelector(".nm_").textContent = p.name;
     const st = el.querySelector(".state"); st.textContent = p.state; st.className = "state " + p.state;
     el.querySelector(".be").textContent = p.backend || "?";
-    el.querySelector(".dv").textContent = (p.device || (p.role === "worker" ? "RPC" : "?")) + (p.mem_mib ? " (" + (p.mem_mib / 1024).toFixed(1) + " GiB)" : "");
-    el.querySelector(".bf").textContent = p.buffers_gb ? p.buffers_gb.toFixed(2) + " GB" : "-";
-    const ut = el.querySelector(".ut"), bar = el.querySelector(".bar i");
+    el.querySelector(".dv").textContent = (p.device || (p.role === "worker" ? "RPC" : "?")) + (p.mem_mib ? " (" + gib(p.mem_mib) + ")" : "");
+    const buf = p.buffers_gb ? p.buffers_gb * 1024 : 0;
+    const frac = p.mem_mib && buf ? buf / p.mem_mib : null;
+    el.querySelector(".bf").textContent = buf ? gib(buf) + (frac != null ? "  (" + (frac * 100).toFixed(0) + "% of the device)" : "") : "-";
+    el.querySelector(".sh").textContent = buf && total ? (buf / total * 100).toFixed(1) + " %" : "-";
+    const mem = el.querySelector(".bar.mem i");
+    mem.style.width = frac != null ? Math.min(100, frac * 100) + "%" : "0"; mem.className = frac != null && frac > 1 ? "over" : "";
+    const c = p.counters;
+    el.querySelector(".rx").textContent = c ? fmtB(c.bytes_total) + (c.cache_hits ? " + " + fmtB(c.cache_bytes) + " from cache" : "") +
+      (buf && p.state === "loading" ? "  (" + Math.min(100, (c.bytes_total + (c.cache_bytes || 0)) / (buf * 1048576) * 100).toFixed(0) + "% loaded)" : "") : (p.role === "requester" ? "local file" : "-");
+    el.querySelector(".cm").textContent = c ? c.cmds_total + " total, step " + c.step + (c.cmds_per_step_recent != null ? ", " + c.cmds_per_step_recent + " per step" : "") : "-";
+    const ut = el.querySelector(".ut"), bar = el.querySelector(".bar.util i");
     if (p.util_measured && p.util != null) { ut.textContent = p.util.toFixed(0) + " %"; bar.style.width = p.util + "%"; }
     else { ut.innerHTML = '<span class="nm">not measured</span>'; bar.style.width = "0"; }
+  }
+
+  function splitBar(peers, total) {
+    const box = $("split"); box.innerHTML = "";
+    if (!total) return;
+    let wi = 0;
+    peers.forEach(p => {
+      const buf = (p.buffers_gb || 0) * 1024; if (!buf) return;
+      const d = document.createElement("div");
+      d.className = p.role + (p.role === "worker" && wi++ % 2 ? " alt" : "");
+      d.style.width = (buf / total * 100) + "%";
+      d.textContent = p.name + "  " + gib(buf) + "  " + (buf / total * 100).toFixed(0) + "%";
+      box.appendChild(d);
+    });
   }
 
   function phases(s) {
@@ -128,13 +160,18 @@ h1 small { color:var(--muted); font-weight:400; }
     $("run").textContent = s.run_id;
     $("mode").textContent = s.mode === "replay" ? "replay" : "live";
     phases(s);
-    s.peers.forEach(peerCard);
-    const w = s.peers.find(p => p.role === "worker" && p.counters);
-    if (w) {
-      const c = w.counters;
-      $("c_step").textContent = c.step; $("c_cur").textContent = c.cmds_this_step; $("c_tot").textContent = c.cmds_total;
-      $("c_bytes").textContent = fmtB(c.bytes_total) + (c.cache_hits ? " + " + fmtB(c.cache_bytes) + " cached" : "");
-      $("c_med").textContent = c.cmds_per_step_recent == null ? "-" : c.cmds_per_step_recent;
+    const order = s.peers.filter(p => p.role === "requester").concat(s.peers.filter(p => p.role !== "requester"));
+    const total = order.reduce((a, p) => a + (p.buffers_gb || 0) * 1024, 0);
+    Object.keys(peerEls).forEach(n => { if (!order.some(p => p.name === n)) { peerEls[n].remove(); delete peerEls[n]; } });
+    order.forEach(p => peerCard(p, total));
+    splitBar(order, total);
+    const ws = s.peers.filter(p => p.role === "worker" && p.counters).map(p => p.counters);
+    if (ws.length) {
+      const sum = k => ws.reduce((a, c) => a + (c[k] || 0), 0);
+      const meds = ws.map(c => c.cmds_per_step_recent).filter(v => v != null);
+      $("c_step").textContent = Math.max.apply(null, ws.map(c => c.step)); $("c_cur").textContent = sum("cmds_this_step"); $("c_tot").textContent = sum("cmds_total");
+      $("c_bytes").textContent = fmtB(sum("bytes_total")) + (sum("cache_hits") ? " + " + fmtB(sum("cache_bytes")) + " cached" : "");
+      $("c_med").textContent = meds.length ? meds.reduce((a, v) => a + v, 0) : "-";
     }
     const t = s.tokens;
     $("t_gen").textContent = t.generated; $("t_tps").textContent = t.tps_current == null ? "-" : t.tps_current.toFixed(1);

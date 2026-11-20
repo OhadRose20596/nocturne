@@ -50,6 +50,15 @@ class RunState:
             if role == "worker":
                 self.trackers[name] = parsers.StepTracker()
         if role == "requester":
+            # a placeholder made before the peers event named the requester: fold it into the real one
+            ph = self.peers.get("requester")
+            if name != "requester" and ph is not None and ph["role"] == "requester":
+                del self.peers["requester"]
+                for k in ("buffers_mib", "mem_mib", "device", "last_t"):
+                    if ph.get(k) and not self.peers[name].get(k):
+                        self.peers[name][k] = ph[k]
+                if ph["state"] != "idle" and self.peers[name]["state"] == "idle":
+                    self.peers[name]["state"] = ph["state"]
             self.requester = name
         if backend and not self.peers[name]["backend"]:
             self.peers[name]["backend"] = backend
