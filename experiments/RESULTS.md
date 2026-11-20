@@ -412,3 +412,21 @@ Link measured just before each rung, from the M5 (TCP connect time, 20 samples 0
 
 The Air figures are idle-link figures (see Session 8). Time is background only (T1).
 
+## Session 8c: 32B Q8_0 with llama.cpp on three machines (2026-11-20)
+
+First run of Qwen2.5-32B Q8_0 (34.8 GB file, sha256 fc510333) that loads and completes. In session 5 every split on the two Macs failed with an OOM class (rows `A1_wifi_qwen2.5-32b-q8_m5_c512_r1` to `B1_wifi_qwen2.5-32b-q8_m5_c4096prop_r2` above).
+The only change is a third machine. Same bench cell (A1, PP layer split over RPC), same memory policy: `-ngl 99`, macOS default GPU limit on both Macs (`iogpu.wired_limit_mb` 0).
+Hosts: requester m5 (Mac M5 24 GB, Metal), workers air (MacBook Air M3 16 GB, Metal) and gtx (GTX 1070 8 GB, CUDA 12.4 build, WSL2 Ubuntu 26.04). llama.cpp 1e7bcf3 on the three hosts. Home Wi-Fi, RTT median 7.8 ms to the Air, AWDL down, VPN disconnected. Repo SHA 9d678e3. Prediction registered before the run: experiments/session8_three_machines/PREDICTIONS_32B.md.
+Workers on port 50071 (the Windows firewall rule of gtx covers 50070 to 50079). The worker never reads the model file: 17.11 GB of tensors were sent at load (cold cache).
+
+| model | ctx | partition | prompts | success | failure class | m5 buffers GiB (budget, headroom) | air buffers GiB (budget, headroom) | gtx buffers GiB (free VRAM, headroom) | id |
+|---|---|---|---|---|---|---|---|---|---|
+| qwen2.5-32b-q8 | 512 | PP `-ts 21,11,32` (air, gtx, m5) | eval_set, 8 prompts | 1/1 | - | 16.759 (17.76, 1.00) | 10.837 (11.84, 1.00) | 5.518 (7.06, 1.54) | A1_wifi_qwen2.5-32b-q8_m5_c512ts3m_r1 |
+
+Buffers from the llama.cpp load log, in GiB as in the session 5 table. Model buffers: MTL0 16106.92 MiB, RPC air 10870.84 MiB, RPC gtx 5435.42 MiB, CPU 788.91 MiB (token embedding, not counted in the m5 device figure of 15.729 + KV 0.061 + compute 0.178; the record's 16.759 includes the 0.791 on the CPU).
+One layer is 517.7 MiB. 65 of 65 layers offloaded. KV 62, 44 and 22 MiB; compute 182.5, 182.5 and 192.5 MiB.
+gtx: 8191 MiB VRAM, 965 MiB in use before the run, 6553 MiB in use at the peak (nvidia-smi).
+All 8 requests finished with `stop`. Task accuracy 1.0 on the 8 prompts. There is no BASELINE for this model (it fits no single machine here), so `quality_pass` is null.
+Background only (T1): load 521.7 s, of which 498.6 s is tensor transfer over Wi-Fi; decode 3.79 tok/s median; 7 RPC commands per step.
+The bench marked the record as a flag-override data point (`-ts`), so it is not a row of the bench matrix table. Record: nocturne/bench/results/A1_wifi_qwen2.5-32b-q8_m5_c512ts3m_r1.json. Logs: nocturne/bench/results/logs/A1_wifi_qwen2.5-32b-q8_m5_c512ts3m_r1/ (gitignored).
+

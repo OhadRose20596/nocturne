@@ -12,13 +12,13 @@ Memory policy as in session 5: `-ngl 99`, macOS default GPU limit on both Macs (
 
 | item | prediction | why | outcome |
 |---|---|---|---|
-| Load | loads on the three devices, no OOM class | session 5 needed 32.1 GiB of device buffers at ctx 512; the three budgets sum to about 36.6 GiB | |
-| m5 buffers | about 16.4 GiB, headroom about 1.3 GiB | 32 layers at about 0.484 GiB, the output layer 0.73 GiB, compute and KV | |
-| air buffers | about 10.3 GiB, headroom about 1.5 GiB | 21 layers | |
-| gtx buffers | about 5.45 GiB, headroom about 1.6 GiB | 11 layers | |
-| Outcome | success: every request finishes with stop or length | | |
-| Accuracy | equal to the Q6_K rows of session 5 or better on the 8 prompts | same model family at a higher precision | |
-| What would count as a failure of the reasoning | an OOM on any device although the planned buffers are under its budget, or wrong text from a CUDA 12.4 build on a Pascal card | | |
+| Load | loads on the three devices, no OOM class | session 5 needed 32.1 GiB of device buffers at ctx 512; the three budgets sum to about 36.6 GiB | Held. Loaded on the three devices, 65 of 65 layers offloaded, no OOM. |
+| m5 buffers | about 16.4 GiB, headroom about 1.3 GiB | 32 layers at about 0.484 GiB, the output layer 0.73 GiB, compute and KV | Wrong by 0.3 GiB. 16.759 GiB, headroom 1.00 GiB. A layer is 0.5055 GiB, not 0.484. |
+| air buffers | about 10.3 GiB, headroom about 1.5 GiB | 21 layers | Wrong by 0.5 GiB. 10.837 GiB, headroom 1.00 GiB. |
+| gtx buffers | about 5.45 GiB, headroom about 1.6 GiB | 11 layers | Held. 5.518 GiB, headroom 1.54 GiB (7.06 GiB free before the run). |
+| Outcome | success: every request finishes with stop or length | | Held. success true, 8 of 8 requests finished with stop. |
+| Accuracy | equal to the Q6_K rows of session 5 or better on the 8 prompts | same model family at a higher precision | Held. Task accuracy 1.0 on the 8 prompts. |
+| What would count as a failure of the reasoning | an OOM on any device although the planned buffers are under its budget, or wrong text from a CUDA 12.4 build on a Pascal card | | Not triggered. |
 
 ## Run 2: M5 GPU limit raised
 
