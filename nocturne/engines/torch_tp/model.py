@@ -13,7 +13,8 @@ import math
 import torch
 import torch.nn.functional as F
 
-from .config import Qwen2Config
+from .config import ModelConfig as Qwen2Config
+from .quant import QuantLinear, linear
 from .shard import Shard
 
 
@@ -29,9 +30,13 @@ def rms_norm(x: torch.Tensor, w: torch.Tensor, eps: float) -> torch.Tensor:
     return w * xf.to(dt)
 
 
-def rotary(positions: torch.Tensor, head_dim: int, theta: float, dtype: torch.dtype, device) -> tuple[torch.Tensor, torch.Tensor]:
-    """cos, sin of shape [T, head_dim], as transformers computes them (fp32, duplicated halves, cast to dtype)."""
+def rotary(positions: torch.Tensor, head_dim: int, theta: float, dtype: torch.dtype, device, factors=None
+           ) -> tuple[torch.Tensor, torch.Tensor]:
+    """cos, sin of shape [T, head_dim], as transformers computes them (fp32, duplicated halves, cast to dtype).
+    `factors` (Llama 3 scaling) divide the frequencies, as ggml's freq_factors do."""
     inv = 1.0 / (theta ** (torch.arange(0, head_dim, 2, dtype=torch.float32, device=device) / head_dim))
+    if factors is not None:
+        inv = inv / torch.tensor(factors, dtype=torch.float32, device=device)
     freqs = positions.to(torch.float32)[:, None] * inv[None, :]
     emb = torch.cat([freqs, freqs], dim=-1)
     return emb.cos().to(dtype), emb.sin().to(dtype)
@@ -47,9 +52,15 @@ class Layer:
         p = f"model.layers.{i}."
         g = lambda n: w[p + n]
         self.ln1, self.ln2 = g("input_layernorm.weight"), g("post_attention_layernorm.weight")
-        self.wq, self.bq = g("self_attn.q_proj.weight"), g("self_attn.q_proj.bias")
-        self.wk, self.bk = g("self_attn.k_proj.weight"), g("self_attn.k_proj.bias")
-        self.wv, self.bv = g("self_attn.v_proj.weight"), g("self_attn.v_proj.bias")
+        opt = lambda n: w.get(p + n)
+        self.wq, self.bq = g("self_attn.q_proj.weight"), opt("self_attn.q_proj.bias")
+        self.wk, self.bk = g("self_attn.k_proj.weight"), opt("self_attn.k_proj.bias")
+        self.wv, self.bv = g("self_attn.v_proj.weight"), opt("self_attn.v_proj.bias")
+        self.q_norm, self.k_norm = opt("self_attn.q_norm.weight"), opt("self_attn.k_norm.weight")
+        if cfg.arch.qkv_bias and self.bq is None:
+            raise KeyError(f"{cfg.arch_name} expects q, k, v bias in layer {i}")
+        if cfg.arch.qk_norm and self.q_norm is None:
+            raise KeyError(f"{cfg.arch_name} expects q_norm and k_norm in layer {i}")
         self.wo = g("self_attn.o_proj.weight")
         self.wg, self.wu, self.wd = g("mlp.gate_proj.weight"), g("mlp.up_proj.weight"), g("mlp.down_proj.weight")
         self.cfg, self.shard = cfg, shard
@@ -67,16 +78,19 @@ class Layer:
         h = h + comm.all_reduce(o)
         x = rms_norm(h, self.ln2, self.cfg.rms_norm_eps)
         if self.wg.shape[0]:
-            m = F.linear(F.silu(F.linear(x, self.wg)) * F.linear(x, self.wu), self.wd)     # partial over this rank's slice
+            m = linear(F.silu(linear(x, self.wg)) * linear(x, self.wu), self.wd)     # partial over this rank's slice
         else:
             m = torch.zeros_like(h)
         return h + comm.all_reduce(m)
 
     def _attention(self, x: torch.Tensor, pos0: int, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
         T = x.shape[0]
-        q = F.linear(x, self.wq, self.bq).view(T, self.nh, self.hd).transpose(0, 1)      # [nh, T, hd]
-        k = F.linear(x, self.wk, self.bk).view(T, self.nkv, self.hd).transpose(0, 1)
-        v = F.linear(x, self.wv, self.bv).view(T, self.nkv, self.hd).transpose(0, 1)
+        q = linear(x, self.wq, self.bq).view(T, self.nh, self.hd).transpose(0, 1)      # [nh, T, hd]
+        k = linear(x, self.wk, self.bk).view(T, self.nkv, self.hd).transpose(0, 1)
+        v = linear(x, self.wv, self.bv).view(T, self.nkv, self.hd).transpose(0, 1)
+        if self.q_norm is not None:                    # Qwen3: per head RMSNorm before rope
+            q = rms_norm(q, self.q_norm, self.cfg.rms_norm_eps)
+            k = rms_norm(k, self.k_norm, self.cfg.rms_norm_eps)
         q = q * cos[None] + rotate_half(q) * sin[None]
         k = k * cos[None] + rotate_half(k) * sin[None]
         self.k_cache[0, :, pos0:pos0 + T] = k
@@ -93,7 +107,7 @@ class Layer:
         else:
             a = F.scaled_dot_product_attention(q[None], K[None], V[None], scale=1.0 / math.sqrt(self.hd))
         a = a[0].transpose(0, 1).reshape(T, self.nh * self.hd)
-        return F.linear(a, self.wo)                    # partial sum over this rank's heads
+        return linear(a, self.wo)                      # partial sum over this rank's heads
 
     def reset(self):
         pass        # the cache is overwritten from position 0 on the next prompt; nothing to clear
@@ -116,10 +130,14 @@ class Qwen2TP:
         """Embedding of `ids`. With a vocab slice, rows outside it are exact zeros; the group's all-reduce completes it."""
         t = torch.tensor(ids, device=self.device)
         v0, v1 = self.embed_rows
+        if isinstance(self.embed, QuantLinear):
+            lookup = lambda ix: self.embed.rows(ix, self.dtype)
+        else:
+            lookup = lambda ix: F.embedding(ix, self.embed)
         if (v0, v1) == (0, self.cfg.vocab_size):
-            return F.embedding(t, self.embed)
+            return lookup(t)
         inside = (t >= v0) & (t < v1)
-        e = F.embedding((t - v0).clamp(0, max(0, v1 - v0 - 1)), self.embed)
+        e = lookup((t - v0).clamp(0, max(0, v1 - v0 - 1)))
         return torch.where(inside[:, None], e, torch.zeros_like(e))
 
     @torch.inference_mode()
@@ -128,7 +146,7 @@ class Qwen2TP:
         if pos0 + T > self.max_seq:
             raise ValueError(f"sequence {pos0 + T} exceeds max_seq_len {self.max_seq}")
         pos = torch.arange(pos0, pos0 + T, device=self.device)
-        cos, sin = rotary(pos, self.cfg.head_dim, self.cfg.rope_theta, h.dtype, self.device)
+        cos, sin = rotary(pos, self.cfg.head_dim, self.cfg.rope_theta, h.dtype, self.device, self.cfg.rope_factors)
         for layer in self.layers:
             h = layer.forward(h, pos0, cos, sin, comm)
         return h
@@ -137,7 +155,7 @@ class Qwen2TP:
     def logits_last(self, h: torch.Tensor) -> torch.Tensor:
         """Logits of the last position over this rank's head rows (all rows for a whole head)."""
         x = rms_norm(h[-1:], self.norm, self.cfg.rms_norm_eps)
-        return F.linear(x, self.lm_head)[0]
+        return linear(x, self.lm_head)[0]
 
     def head_argmax(self, h: torch.Tensor) -> tuple[float, int, torch.Tensor]:
         """(max logit, global index of its first occurrence, local logits). Greedy over this rank's vocab rows."""

@@ -90,6 +90,7 @@ Format: `- [tag] Title — why it matters for us. URL`
 - [must] **safetensors, `safe_open` and tensor slicing** — load one shard of a weight without materializing the whole file; each rank reads only its slice. https://huggingface.co/docs/safetensors/en/api/torch
 - [must] **matplotlib, stacked bar charts** (`bar(..., bottom=)`) — the session 5 memory edge figures (per node model, KV and compute against the capacity line). https://matplotlib.org/stable/gallery/lines_bars_and_markers/bar_stacked.html
 - [must] **PyTorch, `torch.mps.set_per_process_memory_fraction`**: caps one process's MPS allocations; session 6 uses it to enforce a rank's memory budget (checked first by a probe that allocates above the cap). https://docs.pytorch.org/docs/stable/generated/torch.mps.set_per_process_memory_fraction.html
+- [must] **gguf-py (llama.cpp `gguf-py`, pinned at 1e7bcf3)**: `GGUFReader` for the header and tensor table, `gguf.quants.dequantize` as the independent reference our own torch dequant is tested against. https://github.com/ggml-org/llama.cpp/tree/master/gguf-py
 
 ---
 

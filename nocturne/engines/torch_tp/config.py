@@ -1,11 +1,15 @@
-"""Qwen2 config from the Hugging Face config.json. Only the fields the engine needs."""
+"""Model config for the torch engine, from a Hugging Face config.json or from GGUF metadata (gguf_source.py).
+One dataclass for every architecture in arch.py. Only the fields the engine needs."""
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
+from .arch import Arch, get_arch
+
 
 @dataclass(frozen=True)
-class Qwen2Config:
+class ModelConfig:
     hidden_size: int
     intermediate_size: int
     num_hidden_layers: int
@@ -18,10 +22,18 @@ class Qwen2Config:
     max_position_embeddings: int
     eos_token_ids: tuple[int, ...]
     torch_dtype: str = "bfloat16"
+    arch_name: str = "qwen2"
+    head_dim: int = 0                          # 0 means hidden_size // num_attention_heads
+    rope_factors: tuple[float, ...] | None = None    # per frequency divisors (Llama 3 scaling), None for plain rope
+
+    def __post_init__(self):
+        if not self.head_dim:
+            object.__setattr__(self, "head_dim", self.hidden_size // self.num_attention_heads)
+        get_arch(self.arch_name)
 
     @property
-    def head_dim(self) -> int:
-        return self.hidden_size // self.num_attention_heads
+    def arch(self) -> Arch:
+        return get_arch(self.arch_name)
 
     def shard_ok(self, world: int) -> None:
         for name, n in (("num_attention_heads", self.num_attention_heads), ("num_key_value_heads", self.num_key_value_heads),
@@ -30,19 +42,56 @@ class Qwen2Config:
                 raise ValueError(f"{name}={n} not divisible by world size {world}")
 
 
-def load_config(model_dir: str | Path) -> Qwen2Config:
-    d = json.loads((Path(model_dir) / "config.json").read_text())
-    if d.get("model_type") != "qwen2":
-        raise ValueError(f"model_type {d.get('model_type')!r} is not qwen2; this engine implements Qwen2 only")
+Qwen2Config = ModelConfig       # name kept for old imports
+
+
+def llama3_factors(head_dim: int, theta: float, rs: dict) -> tuple[float, ...]:
+    """Per frequency divisors, the formula of convert_hf_to_gguf (conversion/llama.py, generate_extra_tensors)."""
+    freqs = [1.0 / (theta ** (i / head_dim)) for i in range(0, head_dim, 2)]
+    factor = rs.get("factor", 8.0)
+    low, high = rs.get("low_freq_factor", 1.0), rs.get("high_freq_factor", 4.0)
+    old = rs.get("original_max_position_embeddings", 8192)
+    out = []
+    for f in freqs:
+        wl = 2 * math.pi / f
+        if wl < old / high:
+            out.append(1.0)
+        elif wl > old / low:
+            out.append(float(factor))
+        else:
+            smooth = (old / wl - low) / (high - low)
+            out.append(1 / ((1 - smooth) / factor + smooth))
+    return tuple(out)
+
+
+def load_config(model_dir: str | Path) -> ModelConfig:
+    """A safetensors directory (config.json) or a .gguf file."""
+    p = Path(model_dir)
+    if p.suffix == ".gguf":
+        from .gguf_source import GgufSource
+        return GgufSource(p).config()
+    d = json.loads((p / "config.json").read_text())
+    arch = d.get("model_type")
+    get_arch(arch)
     eos = d.get("eos_token_id", [])
     eos = tuple(eos) if isinstance(eos, list) else (eos,)
-    gen = Path(model_dir) / "generation_config.json"
+    gen = p / "generation_config.json"
     if gen.exists():
         g = json.loads(gen.read_text()).get("eos_token_id", [])
         eos = tuple(sorted(set(eos) | set(g if isinstance(g, list) else [g])))
-    return Qwen2Config(
+    rp = d.get("rope_parameters") or {}
+    theta = d.get("rope_theta", rp.get("rope_theta", 1e6 if arch != "llama" else 10000.0))
+    hd = d.get("head_dim") or d["hidden_size"] // d["num_attention_heads"]
+    rs = d.get("rope_scaling") or (rp if rp.get("rope_type") else None)
+    factors = None
+    if rs and rs.get("rope_type", rs.get("type")) == "llama3":
+        factors = llama3_factors(hd, theta, rs)
+    elif rs and rs.get("rope_type", rs.get("type")) not in (None, "default"):
+        raise ValueError(f"rope scaling {rs.get('rope_type', rs.get('type'))!r} is not supported")
+    return ModelConfig(
         hidden_size=d["hidden_size"], intermediate_size=d["intermediate_size"], num_hidden_layers=d["num_hidden_layers"],
         num_attention_heads=d["num_attention_heads"], num_key_value_heads=d["num_key_value_heads"], vocab_size=d["vocab_size"],
-        rms_norm_eps=d.get("rms_norm_eps", 1e-6), rope_theta=d.get("rope_theta", 1e6),
+        rms_norm_eps=d.get("rms_norm_eps", 1e-6), rope_theta=theta,
         tie_word_embeddings=d.get("tie_word_embeddings", False), max_position_embeddings=d.get("max_position_embeddings", 32768),
-        eos_token_ids=eos, torch_dtype=d.get("torch_dtype", "bfloat16"))
+        eos_token_ids=eos, torch_dtype=d.get("torch_dtype", d.get("dtype", "bfloat16")), arch_name=arch, head_dim=hd,
+        rope_factors=factors)
