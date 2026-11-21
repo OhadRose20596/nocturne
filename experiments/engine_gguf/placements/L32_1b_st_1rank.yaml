@@ -1,0 +1,14 @@
+# E1: Llama 3.2 1B Instruct safetensors, one rank
+model: ~/models/hf/Llama-3.2-1B-Instruct
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 16]
+    embed: true
+    lm_head: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}

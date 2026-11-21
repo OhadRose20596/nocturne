@@ -1,0 +1,14 @@
+# B4: 7B Q4_K_M (A1 file), one rank on the M5 (MPS)
+model: ~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 28]
+    embed: true
+    lm_head: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}

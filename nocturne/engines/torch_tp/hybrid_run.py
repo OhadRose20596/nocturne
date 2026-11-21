@@ -195,6 +195,10 @@ def main(argv=None) -> int:
     ap.add_argument("--reference", nargs="*", default=None, help="R0 run ids to compare with (default: by model and device)")
     ap.add_argument("--save-reference", action="store_true")
     ap.add_argument("--transformers", action="store_true", help="R0: compare with transformers generate after the run")
+    ap.add_argument("--transformers-dir", default=None, help="safetensors directory for --transformers (default: the placement's model; "
+                    "needed when the placement reads a GGUF file)")
+    ap.add_argument("--tokenizer-dir", default=None, help="tokenizer directory for the prompts (default: the placement's model; the "
+                    "tokenizer of the GGUF file is built by transformers from its metadata)")
     ap.add_argument("--force", action="store_true", help="skip the planner's budget check (ranks still enforce budgets)")
     ap.add_argument("--mps-fraction-cap", action="store_true", help="also set torch's MPS memory fraction to the budget")
     a = ap.parse_args(argv)
@@ -262,7 +266,7 @@ def main(argv=None) -> int:
         t0 = time.time()
         co = L.start()
         rec["load_s"] = time.time() - t0
-        tok = load_tokenizer(L.local_model_dir)
+        tok = load_tokenizer(os.path.expanduser(a.tokenizer_dir) if a.tokenizer_dir else L.local_model_dir)
         rows = [json.loads(l) for l in (PROMPTS / "eval_set.jsonl").read_text().splitlines() if l.strip()][:a.subset]
         longs = [json.loads(l) for l in (PROMPTS / "eval_long.jsonl").read_text().splitlines() if l.strip()]
         longs = [r for r in longs if "id" in r][:a.long]
@@ -373,8 +377,9 @@ def transformers_check(L, out: list[dict], a, log) -> dict:
     from transformers import AutoModelForCausalLM, AutoTokenizer
     from .engine import chat_ids
     dev = L.specs[0].device
-    tok = AutoTokenizer.from_pretrained(L.local_model_dir)
-    model = AutoModelForCausalLM.from_pretrained(L.local_model_dir, torch_dtype=torch.bfloat16).to(dev).eval()
+    tdir = os.path.expanduser(a.transformers_dir) if a.transformers_dir else L.local_model_dir
+    tok = AutoTokenizer.from_pretrained(os.path.expanduser(a.tokenizer_dir) if a.tokenizer_dir else tdir)
+    model = AutoModelForCausalLM.from_pretrained(tdir, torch_dtype=torch.bfloat16).to(dev).eval()
     rows = {json.loads(l)["id"]: json.loads(l) for l in (PROMPTS / "eval_set.jsonl").read_text().splitlines() if l.strip()}
     longs = {r["id"]: r for r in (json.loads(l) for l in (PROMPTS / "eval_long.jsonl").read_text().splitlines() if l.strip()) if "id" in r}
     res = {}
