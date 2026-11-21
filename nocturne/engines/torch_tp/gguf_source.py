@@ -118,7 +118,9 @@ class GgufSource:
         qtype = m.qtype
         cfg = self.config() if self.arch.gguf_rope_permuted else None
         data = np.asarray(t.data)
-        if qtype in DENSE:
+        if qtype == "BF16":                      # gguf-py hands BF16 over as raw bytes
+            data = np.ascontiguousarray(data).reshape(-1).view(np.int16).reshape(m.shape)
+        elif qtype in DENSE:
             data = data.reshape(m.shape)
         else:
             bs, ts = BLOCK[qtype]
@@ -149,7 +151,7 @@ class GgufSource:
                 data = data[:, c0 // bs:c1 // bs]
         data = np.ascontiguousarray(data)
         if qtype == "BF16":
-            return torch.from_numpy(data.view(np.int16)).view(torch.bfloat16), qtype
+            return torch.from_numpy(data).view(torch.bfloat16), qtype
         return torch.from_numpy(data), qtype
 
 
