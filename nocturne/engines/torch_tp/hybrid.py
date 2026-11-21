@@ -179,7 +179,7 @@ class RankRuntime:
         return needed_peers(self.spec, self.specs)
 
     def load(self) -> None:
-        d = Dims.of(self.cfg)
+        d = Dims.of(self.cfg)         # slice_spec needs no byte info
         sl = self.spec.slice_spec(d)
         ls = LoadSpec(self.spec.layers, sl, self.spec.embed_rows, self.spec.head_rows, self.spec.final_norm)
         budget = self.spec.budget if self.enforce_budget else None

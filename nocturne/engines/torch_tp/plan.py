@@ -3,13 +3,19 @@ A placement is a list of PP stages; each stage is a TP group. Inside a group eve
 heads, a contiguous range of MLP rows (in granules) and, where the stage holds the embedding or the output head, a
 contiguous range of vocab rows (in granules). Shares follow `weight`, else `budget_gb`, else equal. The planner
 balances total bytes per rank: heads first, then vocab rows by share, then MLP granules fill each rank up to its share.
-Bytes assume bf16 and the Qwen2 block (q, k, v with bias; o, gate, up, down without). Workspace is an estimate.
+Bytes assume bf16 unless the model carries quantization info (GGUF): then the stored block bytes of every tensor type are
+counted, per layer, and the workspace adds the largest transient dequantized chunk. Row split layers (o_proj, down_proj)
+may be cut only at block boundaries; heads and MLP rows are allocated in units that respect it. Workspace is an estimate.
 Global rank order is stage order, then rank order; gid 0 (stage 0, rank 0) is also the coordinator."""
+import math
 from dataclasses import asdict, dataclass, field
 
+from .quant import BLOCK, CHUNK_ELEMS, CHUNK_WORKING_BYTES_PER_ELEM, DENSE
 from .shard import SliceSpec, kv_range
 
 BF16 = 2
+MPS_HEAP = 1 << 30           # session 6: any tensor of 10 MiB or more on MPS lands in a 1 GiB resident heap
+MPS_BIG_TENSOR = 10 << 20
 
 
 class PlanError(ValueError):
@@ -48,8 +54,50 @@ class Placement:
 
 
 @dataclass(frozen=True)
+class QuantInfo:
+    """Quantization type per layer and role (names of gguf quant types), and of the embedding and the output head."""
+    q: tuple
+    k: tuple
+    v: tuple
+    o: tuple
+    gate: tuple
+    up: tuple
+    down: tuple
+    embed: str
+    head: str
+
+    @classmethod
+    def from_meta(cls, meta: dict, n_layers: int) -> "QuantInfo":
+        def role(suffix):
+            return tuple(meta[f"model.layers.{i}.{suffix}.weight"].qtype for i in range(n_layers))
+        emb = meta["model.embed_tokens.weight"].qtype
+        return cls(role("self_attn.q_proj"), role("self_attn.k_proj"), role("self_attn.v_proj"), role("self_attn.o_proj"),
+                   role("mlp.gate_proj"), role("mlp.up_proj"), role("mlp.down_proj"), emb,
+                   meta["lm_head.weight"].qtype if "lm_head.weight" in meta else emb)
+
+
+def _bpe(qtype: str) -> float:
+    """Stored bytes per weight element."""
+    bs, ts = BLOCK[qtype]
+    return ts / bs
+
+
+@dataclass(frozen=True)
+class Units:
+    """Bytes of one unit, averaged over the layers of a stage (so that layers * unit is the exact stage total)."""
+    q_head: float
+    kv_head: float
+    mlp_row: float
+    embed_row: float
+    head_row: float
+    norms: float
+    o_block: int            # input columns per block of o_proj (largest over the layers); 1 for dense types
+    down_block: int
+
+
+@dataclass(frozen=True)
 class Dims:
-    """The model numbers the planner needs (from Qwen2Config)."""
+    """The model numbers the planner needs (from ModelConfig)."""
     hidden: int
     intermediate: int
     n_layers: int
@@ -57,34 +105,62 @@ class Dims:
     n_kv_heads: int
     vocab: int
     tied: bool
+    hd: int = 0                      # head size; 0 means hidden // n_heads
+    qkv_bias: bool = True
+    qk_norm: bool = False
+    quant: QuantInfo | None = None
 
     @property
     def head_dim(self) -> int:
-        return self.hidden // self.n_heads
+        return self.hd or self.hidden // self.n_heads
 
     @classmethod
-    def of(cls, cfg) -> "Dims":
+    def of(cls, cfg, meta: dict | None = None) -> "Dims":
         return cls(cfg.hidden_size, cfg.intermediate_size, cfg.num_hidden_layers, cfg.num_attention_heads,
-                   cfg.num_key_value_heads, cfg.vocab_size, cfg.tie_word_embeddings)
+                   cfg.num_key_value_heads, cfg.vocab_size, cfg.tie_word_embeddings, hd=cfg.head_dim,
+                   qkv_bias=cfg.arch.qkv_bias, qk_norm=cfg.arch.qk_norm,
+                   quant=QuantInfo.from_meta(meta, cfg.num_hidden_layers) if meta else None)
 
-    # bytes of one unit, bf16
+    def units(self, l0: int, l1: int) -> Units:
+        hd, H = self.head_dim, self.hidden
+        bias = hd if self.qkv_bias else 0
+        norms = BF16 * (2 * H + (2 * hd if self.qk_norm else 0))
+        if self.quant is None:
+            return Units(BF16 * (2 * hd * H + bias), BF16 * 2 * (hd * H + bias), BF16 * 3 * H, BF16 * H, BF16 * H, norms, 1, 1)
+        q = self.quant
+        L = max(1, l1 - l0)
+        rng = range(l0, l1) if l1 > l0 else range(0, 1)
+        mean = lambda f: sum(f(i) for i in rng) / len(rng)
+        row = lambda t: H * _bpe(t)                      # bytes of one weight row with `hidden` input columns
+        q_head = mean(lambda i: hd * row(q.q[i]) + H * hd * _bpe(q.o[i])) + BF16 * bias
+        kv_head = mean(lambda i: hd * (row(q.k[i]) + row(q.v[i]))) + BF16 * 2 * bias
+        mlp_row = mean(lambda i: 2 * row(q.gate[i]) + H * _bpe(q.down[i]))
+        blk = lambda roles: max(BLOCK[roles[i]][0] if roles[i] not in DENSE else 1 for i in rng)
+        return Units(q_head, kv_head, mlp_row, row(q.embed), row(q.head), norms, blk(q.o), blk(q.down))
+
+    # bytes of one unit, bf16 (the unquantized default); kept for callers that ask a Dims directly
     def q_head(self) -> int:
-        return BF16 * (2 * self.head_dim * self.hidden + self.head_dim)
+        return int(self.units(0, self.n_layers).q_head)
 
     def kv_head(self) -> int:
-        return BF16 * 2 * (self.head_dim * self.hidden + self.head_dim)
+        return int(self.units(0, self.n_layers).kv_head)
 
     def mlp_row(self) -> int:
-        return BF16 * 3 * self.hidden
+        return int(self.units(0, self.n_layers).mlp_row)
 
     def layer_norms(self) -> int:
-        return BF16 * 2 * self.hidden
+        return int(self.units(0, self.n_layers).norms)
 
     def vocab_row(self) -> int:
         return BF16 * self.hidden
 
     def kv_cache_per_head(self, max_seq: int) -> int:
         return 2 * max_seq * self.head_dim * BF16
+
+    def matrix_elems(self, nh: int, nkv: int, rows: int, vocab_rows: int) -> int:
+        """Elements of the largest dense matrix a rank expands in one go (the dequant chunk caps it)."""
+        hd, H = self.head_dim, self.hidden
+        return max(nh * hd * H, nkv * hd * H, rows * H, vocab_rows * H, 1)
 
 
 @dataclass(frozen=True)
@@ -191,6 +267,8 @@ def workspace_bytes(d: Dims, n_layers: int, nh: int, nkv: int, rows: int, vocab_
         ws += 2 * T * (nh + 2 * nkv) * hd * BF16 + 2 * nh * max_seq * hd * BF16 + nh * (T * T + max_seq) * 4 + 3 * T * rows * BF16
     if head:
         ws += vocab_rows * (BF16 + 4)
+    if d.quant is not None:                 # one dequantized chunk at a time: bf16 result plus fp32 working copies
+        ws += min(d.matrix_elems(nh, nkv, rows, vocab_rows), CHUNK_ELEMS) * CHUNK_WORKING_BYTES_PER_ELEM
     return ws
 
 
@@ -251,43 +329,57 @@ def plan(cfg, p: Placement, check_budget: bool = True) -> list[RankSpec]:
         n, sh = len(s.ranks), _shares(s.ranks)
         l0, l1 = s.layers if s.layers else (0, 0)
         L = l1 - l0
-        heads = [r.heads for r in s.ranks] if s.ranks[0].heads is not None else largest_remainder(sh, d.n_heads)
+        u = d.units(l0, l1)
+        hu = u.o_block // math.gcd(u.o_block, d.head_dim)         # heads per o_proj block boundary
+        Gm = G * u.down_block // math.gcd(G, u.down_block)          # MLP granule, multiple of the down_proj block
+        if s.ranks[0].heads is not None:
+            heads, hu_ = [r.heads for r in s.ranks], 1
+        elif L:
+            heads, hu_ = largest_remainder(sh, -(-d.n_heads // hu)), hu
+        else:
+            heads, hu_ = [0] * n, 1
         if not L:
             heads = [0] * n
-        qr = _ranges(heads, 1, d.n_heads)
+        qr = _ranges(heads, hu_, d.n_heads)
+        for a_, b_ in qr:
+            for hb in (a_, b_):
+                if L and 0 < hb < d.n_heads and (hb * d.head_dim) % u.o_block:
+                    raise PlanError(f"stage {s.name}: a head boundary at head {hb} is column {hb * d.head_dim} of o_proj, not a "
+                                    f"multiple of its block of {u.o_block} columns. Row split layers (o_proj, down_proj) can be "
+                                    f"cut only at block boundaries (32 for Q8_0, Q4_0, Q5_0; 256 for K quants)")
         kvr = [kv_range(a, b, d.n_heads, d.n_kv_heads) for a, b in qr]
         emb, hd_ = has_embed[si], has_head[si]
         if emb or hd_:
             vr = _ranges(largest_remainder(sh, -(-d.vocab // G)), G, d.vocab)
         else:
             vr = [(0, 0)] * n
-        vocab_bytes = [(b - a) * d.vocab_row() for a, b in vr]
         # a rank holding both with the same tied rows loads one tensor: count it once
-        vocab_cnt = (1 if emb else 0) + (1 if hd_ else 0)
-        if emb and hd_ and d.tied:
-            vocab_cnt = 1
-        vb = [vocab_cnt * x for x in vocab_bytes]
+        row_b = (u.embed_row if emb else 0) + (u.head_row if hd_ and not (emb and d.tied) else 0)
+        vb = [(b - a) * row_b for a, b in vr]
         fn = d.hidden * BF16 if hd_ else 0
-        attn = [(b - a) * d.q_head() + (kb - ka) * d.kv_head() for (a, b), (ka, kb) in zip(qr, kvr)]
+        attn = [(b - a) * u.q_head + (kb - ka) * u.kv_head for (a, b), (ka, kb) in zip(qr, kvr)]
         if L:
-            ng = -(-d.intermediate // G)
-            total = L * (sum(attn) + d.intermediate * d.mlp_row() + n * d.layer_norms()) + sum(vb) + n * fn
-            raw = [max(0.0, (sh[i] / sum(sh) * total - L * (attn[i] + d.layer_norms()) - vb[i] - fn) / (L * G * d.mlp_row()))
+            ng = -(-d.intermediate // Gm)
+            total = L * (sum(attn) + d.intermediate * u.mlp_row + n * u.norms) + sum(vb) + n * fn
+            raw = [max(0.0, (sh[i] / sum(sh) * total - L * (attn[i] + u.norms) - vb[i] - fn) / (L * Gm * u.mlp_row))
                    for i in range(n)]
-            mr = _ranges(largest_remainder(raw if sum(raw) > 0 else sh, ng), G, d.intermediate)
+            mr = _ranges(largest_remainder(raw if sum(raw) > 0 else sh, ng), Gm, d.intermediate)
         else:
             mr = [(0, 0)] * n
         for i, r in enumerate(s.ranks):
             (q0, q1), (kv0, kv1), (m0, m1), (v0, v1) = qr[i], kvr[i], mr[i], vr[i]
             if L and q0 == q1 and m0 == m1 and v0 == v1:
                 raise PlanError(f"rank {s.name}/{i} on {r.host} holds no heads, no MLP rows and no vocab rows")
-            w = L * (attn[i] + (m1 - m0) * d.mlp_row() + d.layer_norms()) + vb[i] + fn
+            w = int(L * (attn[i] + (m1 - m0) * u.mlp_row + u.norms) + vb[i] + fn)
             kv = L * (kv1 - kv0) * d.kv_cache_per_head(p.max_seq_len)
             ws = workspace_bytes(d, L, q1 - q0, kv1 - kv0, m1 - m0, v1 - v0, hd_, p.prefill_max, p.max_seq_len)
             budget = int(r.budget_gb * 1e9) if r.budget_gb is not None else None
+            big = d.quant is not None or d.matrix_elems(q1 - q0, kv1 - kv0, m1 - m0, v1 - v0) * BF16 >= MPS_BIG_TENSOR
             planned = {"weights": w, "kv": kv, "workspace": ws, "total": w + kv + ws,
-                       "layer_bytes": attn[i] + (m1 - m0) * d.mlp_row() + d.layer_norms() if L else 0,
-                       "vocab_bytes": vb[i], "kv_heads_replicated": 0}
+                       "layer_bytes": int(attn[i] + (m1 - m0) * u.mlp_row + u.norms) if L else 0,
+                       "vocab_bytes": int(vb[i]), "kv_heads_replicated": 0}
+            planned["mps_floor"] = MPS_HEAP if r.device.startswith("mps") and big else 0     # informational, not in total
+            planned["footprint"] = max(planned["total"], planned["mps_floor"])
             spec = RankSpec(gid=gid, name=f"{s.name}/{i}", stage=si, stage_name=s.name, group_rank=i, group_size=n,
                             host=r.host, device=r.device, port=r.port, layers=(l0, l1), q0=q0, q1=q1, m0=m0, m1=m1,
                             kv0=kv0, kv1=kv1, embed_rows=(v0, v1) if emb else None, head_rows=(v0, v1) if hd_ else None,

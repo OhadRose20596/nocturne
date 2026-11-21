@@ -153,6 +153,11 @@ class GgufSource:
         return torch.from_numpy(data), qtype
 
 
+def weight_meta(path: str) -> dict | None:
+    """Tensor metadata of a .gguf file (for the planner's byte accounting); None for a safetensors directory."""
+    return GgufSource(path).meta() if str(path).endswith(".gguf") else None
+
+
 def load_tokenizer(path: str):
     """Tokenizer for a safetensors directory or a .gguf file (built by transformers from the GGUF metadata)."""
     from transformers import AutoTokenizer

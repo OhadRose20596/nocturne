@@ -15,6 +15,7 @@ import yaml
 from ...bench.runner import Runner
 from .config import load_config
 from .hybrid import Coordinator
+from .gguf_source import weight_meta
 from .plan import Dims, Placement, listen_addrs, placement_from_dict, plan
 
 PEERS = "~/.nocturne/peers.yaml"
@@ -25,12 +26,15 @@ def load_peers(path: str = PEERS) -> dict:
 
 
 def model_dir_of(model: str, peers: dict) -> str:
-    """The safetensors directory: a model key of peers.yaml (`torch_model`), or a path. Unexpanded (~ stays for ssh)."""
+    """The weights of a model key of peers.yaml, or a path: a safetensors directory or a .gguf file. `torch_model` wins;
+    else `path` when it is a .gguf (the llama.cpp file works for the torch engine too). Unexpanded (~ stays for ssh)."""
     m = (peers.get("models") or {}).get(model)
     if m:
-        if not m.get("torch_model"):
-            raise ValueError(f"model {model} has no torch_model in peers.yaml")
-        return m["torch_model"]
+        if m.get("torch_model"):
+            return m["torch_model"]
+        if str(m.get("path", "")).endswith(".gguf"):
+            return m["path"]
+        raise ValueError(f"model {model} has no torch_model and no .gguf path in peers.yaml")
     return model
 
 
@@ -59,9 +63,9 @@ class Launch:
         self.model_dir = model_dir_of(self.placement.model, self.peers)
         self.local_model_dir = os.path.expanduser(self.model_dir)
         self.cfg = load_config(self.local_model_dir)
-        self.dims = Dims.of(self.cfg)
+        self.dims = Dims.of(self.cfg, weight_meta(self.local_model_dir))
         self.force = force
-        self.specs = plan(self.cfg, self.placement, check_budget=not force)
+        self.specs = plan(self.dims, self.placement, check_budget=not force)
         self.hosts = host_addrs(self.peers, sorted({s.host for s in self.specs}))
         self.listen = listen_addrs(self.specs, self.hosts)
         self.mps_fraction_cap = mps_fraction_cap

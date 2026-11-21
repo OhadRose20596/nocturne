@@ -54,14 +54,24 @@ def peer_os(peer: dict, run=None) -> str:
     return "Darwin" if r.stdout.strip() == "Darwin" else "Linux"
 
 
+def _model_files(mdir: str) -> tuple[str, str]:
+    """(directory, file glob): the weight files of a safetensors directory, or the one .gguf file."""
+    if mdir.endswith(".gguf"):
+        d, _, f = mdir.rpartition("/")
+        return d or ".", f
+    return mdir, "*.json *.safetensors"
+
+
 def stat_cmd(osname: str, mdir: str) -> str:
     fmt = "stat -f '%N %z %m'" if osname == "Darwin" else "stat -c '%n %s %Y'"
-    return f"cd {mdir} && {fmt} *.json *.safetensors"
+    d, files = _model_files(mdir)
+    return f"cd {d} && {fmt} {files}"
 
 
 def hash_cmd(osname: str, mdir: str) -> str:
     tool = "shasum -a 256" if osname == "Darwin" else "sha256sum"
-    return f"cd {mdir} && {tool} *.json *.safetensors"
+    d, files = _model_files(mdir)
+    return f"cd {d} && {tool} {files}"
 
 
 def model_hashes(peer: dict, host: str, mdir: str, run=None, osname: str | None = None) -> dict:
@@ -193,7 +203,7 @@ def main(argv=None) -> int:
     RUNS, HASHES = OUT / "runs", OUT / "model_hashes.json"
 
     import torch
-    from transformers import AutoTokenizer
+    from .gguf_source import load_tokenizer
     from ...bench.check.graders import grade
     from .engine import chat_ids
     from .hybrid import RankFailed, decode_frames
@@ -252,7 +262,7 @@ def main(argv=None) -> int:
         t0 = time.time()
         co = L.start()
         rec["load_s"] = time.time() - t0
-        tok = AutoTokenizer.from_pretrained(L.local_model_dir)
+        tok = load_tokenizer(L.local_model_dir)
         rows = [json.loads(l) for l in (PROMPTS / "eval_set.jsonl").read_text().splitlines() if l.strip()][:a.subset]
         longs = [json.loads(l) for l in (PROMPTS / "eval_long.jsonl").read_text().splitlines() if l.strip()]
         longs = [r for r in longs if "id" in r][:a.long]

@@ -65,12 +65,12 @@ def main(argv=None):
         print(format_plan(specs, Dims.of(cfg)))
         return 0
     if a.cmd == "launch":
-        from transformers import AutoTokenizer
+        from .gguf_source import load_tokenizer
         from .launch import Launch
         from .server import serve
         L = Launch(a.placement, a.peers, a.log_dir, force=a.force)
         eng = L.start()
-        tok = AutoTokenizer.from_pretrained(L.local_model_dir)
+        tok = load_tokenizer(L.local_model_dir)
         srv = serve(eng, tok, "127.0.0.1", a.port, model_name=L.placement.model)
         try:
             srv.serve_forever()
@@ -84,12 +84,12 @@ def main(argv=None):
         serve_rank(a.model, a.rank, a.world, a.bind, a.port, a.device)
         return 0
     if a.cmd == "serve":
-        from transformers import AutoTokenizer
+        from .gguf_source import load_tokenizer
         from .engine import Rank0
         from .server import serve
         eng = Rank0(a.model, a.world, a.max_seq_len, a.device, a.peer, trace_allreduce=a.trace_allreduce,
                     reduce_dtype=a.reduce_dtype, progress_every=a.progress_every)
-        tok = AutoTokenizer.from_pretrained(a.model)
+        tok = load_tokenizer(a.model)
         srv = serve(eng, tok, a.host, a.port, model_name=a.model.rstrip("/").rsplit("/", 1)[-1])
         try:
             srv.serve_forever()
