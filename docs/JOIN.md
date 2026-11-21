@@ -7,6 +7,8 @@ Status on 2026-11-20: `15_join.sh` ran on the M5 in check mode. `16_join_apply.p
 `15_join.sh` ran in fix mode on the Air and delivered its report. The Windows half of `15_join.ps1` ran on one Windows 11 machine with no WSL distro and stopped there, as designed. The fix paths that need `sudo`, and `--install`, have not run yet.
 A code review found 27 issues on 2026-11-20. The confirmed ones are fixed, by reading and local tests only.
 
+Engine GGUF, part 1 (2026-11-21) added three things, tested on the M5 only: the llama.cpp check, GGUF files in the models check, and the network link type. The Air and the gtx have not run the new version yet.
+
 Windows is supported through WSL2 only. A Windows machine without WSL cannot be a peer today.
 The engine imports a Unix-only module (`resource` in `hybrid.py`), so a native Windows peer needs an engine change first.
 
@@ -30,6 +32,10 @@ The engine imports a Unix-only module (`resource` in `hybrid.py`), so a native W
 Backups go to `~/.nocturne/join/backups/`. It rewrites whole lines, so a trailing comment on a changed line is lost.
 `apply` refuses a report whose network, mirrored networking or ssh server check failed, unless `--force` is given.
 Then it pings the peer, opens an ssh session without a password, and lists the models the peer still lacks with the `scp` commands.
+For a GGUF file the peer lacks, or holds with another size, it also prints a check command and the sha256 of the file on the coordinator (computed once, cached in `~/.nocturne/join/sha256_cache.json`). Run the check on the peer after the copy and compare. `--no-hash` skips the hashing.
+
+Networks are stored by link type. A report from a wired interface sets `networks.wired` and leaves `wifi` and every other type alone, and the other way round. When the report says `unknown` and the peer already has a `networks` entry, nothing changes and a warning is printed. `bind` still follows the reported address.
+On Linux and WSL2 the coordinator address (`lan_ip()`) is read from `ip route` and `ip addr`.
 
 ## What the join script checks
 
@@ -44,7 +50,9 @@ Then it pings the peer, opens an ssh session without a password, and lists the m
 | device | none, reports memory or the NVIDIA card | |
 | torch | with `--install`: creates `~/dev/nocturne-torch` and installs torch. Fails if torch does not see the GPU | no Python 3.11+ |
 | repo | fast-forward pull. With `--install`: clone and `pip install -e` | diverged history |
-| models | none. The coordinator copies models | |
+| link | none. Reports the type of the LAN interface: `wifi`, `wired` or `unknown` | `unknown` when the OS does not say (the check is then SKIP) |
+| llama_cpp | none, nothing is built. Looks for `llama-server` and `ggml-rpc-server` in `$LLAMA_DIR/build/bin` (default `~/dev/llama.cpp`) or on the PATH. Reports the commit from `llama-server --version` and the backend (Metal, CUDA or CPU) | binaries missing: FAIL, build with `scripts/00_build_llamacpp.sh`. A commit that differs from the pinned `1e7bcf3` still passes and says so in the message |
+| models | none. The coordinator copies models. Lists `~/models/hf/*` and the GGUF files `~/models/*.gguf` and `~/models/gguf/*.gguf` with their sizes | nothing found in either place |
 | firewall | macOS: allows the venv python. Linux: opens the ports in ufw or firewalld | other firewalls |
 | coordinator | none, opens a TCP connection to the receiver on port 50079 | receiver not running |
 
@@ -59,6 +67,7 @@ A venv where torch already imports is never changed. `--install` repairs a venv 
 ## Report format
 
 Plain text. `fact key=value` lines, then `check <name> <PASS|FIXED|FAIL|SKIP> <message>` lines, then raw command logs.
+New facts: `link_type` (`wifi`, `wired`, `unknown`; on WSL2 it comes from the Windows adapter media type, `win_link_type`), `llama_dir`, `llama_commit`, `llama_backend`, `ggml_rpc_server`, `gguf_models` (`name:bytes,...`, names relative to `~/models`).
 A report holds the user name, addresses and hostnames of the machine. Received reports are kept in `~/.nocturne/join/`, outside the repo.
 
 ## Security
