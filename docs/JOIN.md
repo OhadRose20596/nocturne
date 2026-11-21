@@ -34,7 +34,7 @@ Backups go to `~/.nocturne/join/backups/`. It rewrites whole lines, so a trailin
 Then it pings the peer, opens an ssh session without a password, and lists the models the peer still lacks with the `scp` commands.
 For a GGUF file the peer lacks, or holds with another size, it also prints a check command and the sha256 of the file on the coordinator (computed once, cached in `~/.nocturne/join/sha256_cache.json`). Run the check on the peer after the copy and compare. `--no-hash` skips the hashing.
 
-Networks are stored by link type. A report from a wired interface sets `networks.wired` and leaves `wifi` and every other type alone, and the other way round. When the report says `unknown` and the peer already has a `networks` entry, nothing changes and a warning is printed. `bind` still follows the reported address.
+Networks are stored by link type. A report from a wired interface sets `networks.wired` and leaves `wifi` and every other type alone, and the other way round. When the report says `unknown`, a peer that already has `networks` keeps them, and a new peer gets an empty `networks` mapping; both print a warning. `bind` still follows the reported address.
 On Linux and WSL2 the coordinator address (`lan_ip()`) is read from `ip route` and `ip addr`.
 
 ## What the join script checks
