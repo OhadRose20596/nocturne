@@ -1,6 +1,6 @@
 # torch_tp: the engine B spike (ADR-007, amendment 2)
 
-Our own PyTorch tensor parallel engine for Qwen2 in bf16, with our own TCP transport.
+Our own PyTorch tensor parallel engine for Qwen2, Llama and Qwen3 (bf16 safetensors, or quantized GGUF kept quantized on the device), with our own TCP transport.
 Session 3 built the two rank engine (`serve`, `worker`, cell B1t of the bench).
 Session 6 added hybrid placement: PP stages, each a TP group of any size with uneven shares.
 Nothing here is evidence about llama.cpp, and nothing here picks the product engine (ADR-007 symmetric rule).
@@ -9,6 +9,10 @@ Nothing here is evidence about llama.cpp, and nothing here picks the product eng
 
 | file | what |
 |---|---|
+| `arch.py` | The architecture table (qwen2, llama, qwen3) and the GGUF to engine tensor name map. One table, not one class per model. |
+| `config.py` | `ModelConfig` from a Hugging Face `config.json` or from GGUF metadata. Llama 3 rope factors. |
+| `gguf_source.py` | GGUF as a weight source: header, name map, raw quantized blocks of a slice, un-permute of llama Q and K. `TensorSource` is the interface the loader uses. |
+| `quant.py` | `QuantLinear`: raw blocks on the device, expanded to bf16 in row chunks just before the matmul. Torch ops only. |
 | `shard.py` | `SliceSpec`: a contiguous range of query heads and of MLP rows. KV heads follow from GQA; a KV head used by two ranks is held by both. `Shard` is the even special case (session 3). |
 | `plan.py` | `plan(cfg, placement) -> list[RankSpec]`, pure. The frame formula `frames_per_step`. |
 | `loader.py` | Loads one rank's slice with safetensors slicing; enforces a byte budget tensor by tensor. |
@@ -18,6 +22,29 @@ Nothing here is evidence about llama.cpp, and nothing here picks the product eng
 | `launch.py` | Starts every rank (local or over ssh), runs the coordinator, stops everything. |
 | `hybrid_run.py` | One recorded run: preflight, prompts, correctness against the R0 reference, frames, memory. |
 | `engine.py`, `server.py`, `compare.py` | Session 3 two rank engine and the HTTP server (shared by `launch`). |
+
+## Weight sources and architectures (engine GGUF, 2026-11-21)
+
+`model:` in a placement resolves to a safetensors directory or to a `.gguf` file. A key of `peers.yaml` uses `torch_model`, or its `path` when that is a `.gguf` (the llama.cpp file works for this engine too). A bare path works as well. The model hash in a record is the sha256 of the weight files of a directory, or of the one GGUF file.
+
+| | qwen2 | llama | qwen3 |
+|---|---|---|---|
+| q, k, v bias | yes | no | no |
+| per head q_norm, k_norm | no | no | yes |
+| rope | plain | plain, or Llama 3 scaling (per frequency factors) | plain |
+| head size | hidden / heads | `head_dim` of the config, else hidden / heads | `attention.key_length`, not hidden / heads |
+| GGUF Q and K rows | as in HF | permuted by the converter, the loader puts them back | as in HF |
+
+Quantization types: F32, F16, BF16, Q8_0, Q4_0, Q5_0, Q4_K, Q5_K, Q6_K. Any other type is refused with a message that lists the supported ones. 1-D tensors (norms, biases) are held in bf16.
+`QuantLinear` keeps the stored blocks. The matmul expands `CHUNK_ELEMS` (16 M) elements at a time to bf16, so only a chunk is dense. This costs time per token (every step expands every matrix), which is background (T1), and it costs transient memory, which the planner counts.
+
+**Block alignment rule.** A row split layer (`o_proj`, `down_proj`, cut by input columns) may be cut only at block boundaries: 32 columns for Q8_0, Q4_0, Q5_0 and 256 for the K quants. Column split layers (q, k, v, gate, up) can be cut at any row, because a block lies inside one row. The planner moves heads in units that respect the rule (for head size 128 and a 256 block: two heads), uses an MLP granule that is a multiple of the `down_proj` block, and rejects a `heads:` override that breaks it, naming the rule. Layers of one file may mix types (Q4_K_M uses Q6_K for half of `ffn_down`); the planner counts each layer with its own type.
+
+**Byte accounting.** Planned weights are the stored block bytes (equal to the loaded bytes on every rank in the tests). The workspace adds one dequantized chunk (bf16 result plus fp32 working copies). On MPS a tensor of 10 MiB or more lands in a 1 GiB heap: the plan reports `mps_floor` (1 GiB) and `footprint` (the larger of total and the floor), not added to `total`.
+
+**Tokenizer and EOS** come from the GGUF (transformers builds the tokenizer from the file; `AutoTokenizer.from_pretrained(dir, gguf_file=...)`). On the four models checked the ids equal those of the Hugging Face tokenizer on all 43 eval prompts. The EOS set from the GGUF is smaller than the one of the HF `generation_config.json` (Qwen: only `<|im_end|>`; Llama 3.2: only `<|eot_id|>`).
+
+**Tests** compare against implementations we did not write: gguf-py's numpy dequantizer, transformers' GGUF loader and its own rotary embedding, and files made by llama.cpp's converter and quantizer. See `experiments/engine_gguf/VERIFY.md`.
 
 ## Placement file
 
@@ -61,7 +88,7 @@ All ranks of one group must use the same device type. The planner rejects a mixe
 3. MLP granules fill each rank up to its share of the group's total bytes. So a rank with more attention gets fewer MLP rows.
 
 A rank with no heads, no MLP rows and no vocab rows is rejected.
-Bytes assume bf16 and the Qwen2 block. Workspace is an estimate (see `workspace_bytes`).
+Bytes assume bf16 for safetensors and the stored block bytes for GGUF. Workspace is an estimate (see `workspace_bytes`).
 
 ## Mixed devices in one group (session 7)
 
