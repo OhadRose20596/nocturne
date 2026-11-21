@@ -247,7 +247,7 @@ def update_peers(text, peer, f, ssh_target, main=True):
             "    mem_gb: %s" % f.get("mem_gb", "0"),
             '    python: "%s"' % f.get("python", ""),
             "    bind: %s" % ip,
-            "    networks: {%s: %s}" % (link_key(f) or "wifi", ip),
+            "    networks: {%s}" % ("%s: %s" % (link_key(f), ip) if link_key(f) else ""),
         ]
         lines[at:at] = block
         return "\n".join(lines) + "\n"
@@ -263,13 +263,14 @@ def update_peers(text, peer, f, ssh_target, main=True):
                 if items:
                     print("warning: the report does not say whether %s is Wi-Fi or wired; networks of '%s' left as they are" % (ip, peer))
                     break
-                key = "wifi"
+                print("warning: the report does not say whether %s is Wi-Fi or wired; networks of '%s' left empty" % (ip, peer))
+                break
             lines[i] = "%s{%s}%s" % (m.group(1), ", ".join(merge_networks(items, key, ip)), m.group(3))
             break
         if re.match(r"^    networks:\s*(#.*)?$", lines[i]):
             sys.exit("peer '%s' has a block-style 'networks:' mapping. Set %s: %s there by hand, or rewrite it as {%s: ...}" % (peer, key or "wifi", ip, key or "wifi"))
     else:
-        set_key(lines, start, end, "networks", "{%s: %s}" % (key or "wifi", ip))
+        set_key(lines, start, end, "networks", "{%s}" % ("%s: %s" % (key, ip) if key else ""))
         start, end = peer_block(lines, peer)
     if not is_self and (main or "@" in (get_key(lines, start, end, "ssh") or "")):
         set_key(lines, start, end, "ssh", ssh_target)

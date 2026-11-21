@@ -113,10 +113,14 @@ def _load_gguf(source, cfg: Qwen2Config, spec: LoadSpec, device: str, dtype: tor
         if budget is not None and nbytes + n > budget:
             raise BudgetExceeded(f"load: {out_name} ({n / 1e6:.1f} MB) would bring tensor bytes to "
                                  f"{(nbytes + n) / 1e9:.3f} GB, over the budget of {budget / 1e9:.3f} GB")
-        if isinstance(val, QuantLinear):
-            val.data = val.data.to(device)
-        else:
-            val = val.to(device)
+        try:
+            if isinstance(val, QuantLinear):
+                val.data = val.data.to(device)
+            else:
+                val = val.to(device)
+        except torch.cuda.OutOfMemoryError as e:
+            e.tensor_name = out_name
+            raise
         out[out_name] = val
         nbytes += n
     if spec.head_rows and "lm_head.weight" not in out:

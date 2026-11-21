@@ -12,7 +12,7 @@ BLOCK = {"F32": (1, 4), "F16": (1, 2), "BF16": (1, 2), "Q8_0": (32, 34), "Q4_0":
          "Q4_K": (QK_K, 144), "Q5_K": (QK_K, 176), "Q6_K": (QK_K, 210)}
 DENSE = {"F32": torch.float32, "F16": torch.float16, "BF16": torch.bfloat16}
 CHUNK_ELEMS = 1 << 24              # dense elements expanded at once (bf16 chunk 32 MiB); the planner uses the same number
-CHUNK_WORKING_BYTES_PER_ELEM = 2 + 12      # bf16 result plus fp32 intermediates of the widest dequant (Q6_K, Q5_K)
+CHUNK_WORKING_BYTES_PER_ELEM = 24           # measured peak per element incl. the bf16 result: Q8_0 10, Q6_K 12, Q4_K 14, Q5_K 15, Q5_0 22
 
 
 class UnsupportedQuant(ValueError):
@@ -120,13 +120,15 @@ class QuantLinear:
 
     def linear(self, x: torch.Tensor, bias: torch.Tensor | None = None) -> torch.Tensor:
         out_f, in_f = self.shape
-        if self.qtype in DENSE or out_f * in_f <= CHUNK_ELEMS:
+        if self.data.dtype == x.dtype and self.qtype in DENSE:
+            return F.linear(x, self.data, bias)
+        if out_f * in_f <= CHUNK_ELEMS:
             return F.linear(x, self.weight(x.dtype), bias)
         step = max(1, CHUNK_ELEMS // in_f)
         parts = []
         for r0 in range(0, out_f, step):
             r1 = min(out_f, r0 + step)
-            w = dequant(self.data[r0:r1], self.qtype, x.dtype)
+            w = self.data[r0:r1].to(x.dtype) if self.qtype in DENSE else dequant(self.data[r0:r1], self.qtype, x.dtype)
             parts.append(F.linear(x, w, None if bias is None else bias[r0:r1]))
         return torch.cat(parts, dim=-1)
 

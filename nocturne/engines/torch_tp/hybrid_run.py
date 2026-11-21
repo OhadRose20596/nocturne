@@ -378,7 +378,8 @@ def transformers_check(L, out: list[dict], a, log) -> dict:
     from .engine import chat_ids
     dev = L.specs[0].device
     tdir = os.path.expanduser(a.transformers_dir) if a.transformers_dir else L.local_model_dir
-    tok = AutoTokenizer.from_pretrained(os.path.expanduser(a.tokenizer_dir) if a.tokenizer_dir else tdir)
+    from .gguf_source import load_tokenizer
+    tok = load_tokenizer(os.path.expanduser(a.tokenizer_dir) if a.tokenizer_dir else tdir)
     model = AutoModelForCausalLM.from_pretrained(tdir, torch_dtype=torch.bfloat16).to(dev).eval()
     rows = {json.loads(l)["id"]: json.loads(l) for l in (PROMPTS / "eval_set.jsonl").read_text().splitlines() if l.strip()}
     longs = {r["id"]: r for r in (json.loads(l) for l in (PROMPTS / "eval_long.jsonl").read_text().splitlines() if l.strip()) if "id" in r}

@@ -134,7 +134,7 @@ class Dims:
         row = lambda t: H * _bpe(t)                      # bytes of one weight row with `hidden` input columns
         q_head = mean(lambda i: hd * row(q.q[i]) + H * hd * _bpe(q.o[i])) + BF16 * bias
         kv_head = mean(lambda i: hd * (row(q.k[i]) + row(q.v[i]))) + BF16 * 2 * bias
-        mlp_row = mean(lambda i: 2 * row(q.gate[i]) + H * _bpe(q.down[i]))
+        mlp_row = mean(lambda i: row(q.gate[i]) + row(q.up[i]) + H * _bpe(q.down[i]))
         blk = lambda roles: max(BLOCK[roles[i]][0] if roles[i] not in DENSE else 1 for i in rng)
         return Units(q_head, kv_head, mlp_row, row(q.embed), row(q.head), norms, blk(q.o), blk(q.down))
 
@@ -370,14 +370,14 @@ def plan(cfg, p: Placement, check_budget: bool = True) -> list[RankSpec]:
             (q0, q1), (kv0, kv1), (m0, m1), (v0, v1) = qr[i], kvr[i], mr[i], vr[i]
             if L and q0 == q1 and m0 == m1 and v0 == v1:
                 raise PlanError(f"rank {s.name}/{i} on {r.host} holds no heads, no MLP rows and no vocab rows")
-            w = int(L * (attn[i] + (m1 - m0) * u.mlp_row + u.norms) + vb[i] + fn)
+            w = round(L * (attn[i] + (m1 - m0) * u.mlp_row + u.norms) + vb[i] + fn)
             kv = L * (kv1 - kv0) * d.kv_cache_per_head(p.max_seq_len)
             ws = workspace_bytes(d, L, q1 - q0, kv1 - kv0, m1 - m0, v1 - v0, hd_, p.prefill_max, p.max_seq_len)
             budget = int(r.budget_gb * 1e9) if r.budget_gb is not None else None
             big = d.quant is not None or d.matrix_elems(q1 - q0, kv1 - kv0, m1 - m0, v1 - v0) * BF16 >= MPS_BIG_TENSOR
             planned = {"weights": w, "kv": kv, "workspace": ws, "total": w + kv + ws,
-                       "layer_bytes": int(attn[i] + (m1 - m0) * u.mlp_row + u.norms) if L else 0,
-                       "vocab_bytes": int(vb[i]), "kv_heads_replicated": 0}
+                       "layer_bytes": round(attn[i] + (m1 - m0) * u.mlp_row + u.norms) if L else 0,
+                       "vocab_bytes": round(vb[i]), "kv_heads_replicated": 0}
             planned["mps_floor"] = MPS_HEAP if r.device.startswith("mps") and big else 0     # informational, not in total
             planned["footprint"] = max(planned["total"], planned["mps_floor"])
             spec = RankSpec(gid=gid, name=f"{s.name}/{i}", stage=si, stage_name=s.name, group_rank=i, group_size=n,

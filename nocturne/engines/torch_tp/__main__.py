@@ -54,7 +54,10 @@ def main(argv=None):
         from .plan import Dims, PlanError, format_plan, placement_from_dict, plan
         import yaml
         p = placement_from_dict(yaml.safe_load(open(a.placement)))
-        cfg = load_config(os.path.expanduser(model_dir_of(p.model, load_peers(a.peers))))
+        path = os.path.expanduser(model_dir_of(p.model, load_peers(a.peers)))
+        cfg = load_config(path)
+        from .gguf_source import weight_meta
+        cfg = Dims.of(cfg, weight_meta(path))
         try:
             specs = plan(cfg, p)
         except PlanError as e:
@@ -62,7 +65,7 @@ def main(argv=None):
             if not a.force:
                 return 2
             specs = plan(cfg, p, check_budget=False)
-        print(format_plan(specs, Dims.of(cfg)))
+        print(format_plan(specs, cfg))
         return 0
     if a.cmd == "launch":
         from .gguf_source import load_tokenizer

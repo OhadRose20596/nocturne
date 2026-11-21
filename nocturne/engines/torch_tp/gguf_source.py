@@ -18,6 +18,9 @@ from .quant import BLOCK, DENSE, UnsupportedQuant, check_supported
 warnings.filterwarnings("ignore", message="The given NumPy array is not writable")     # memmap views are copied by .to(device)
 
 
+EOG_TEXTS = ("<|im_end|>", "<|endoftext|>", "<|eot_id|>", "<|eom_id|>", "<|end_of_text|>")
+
+
 @dataclass(frozen=True)
 class TensorMeta:
     gguf_name: str
@@ -96,6 +99,11 @@ class GgufSource:
             v = self._field(k)
             if v is not None and int(v) not in eos:
                 eos.append(int(v))
+        toks = self._field("tokenizer.ggml.tokens")
+        if toks is not None:                    # end of generation tokens by their text, as llama.cpp does
+            for i, t in enumerate(toks):
+                if str(t) in EOG_TEXTS and i not in eos:
+                    eos.append(i)
         return ModelConfig(
             hidden_size=hidden, intermediate_size=int(self._num("feed_forward_length")), num_hidden_layers=int(self._num("block_count")),
             num_attention_heads=n_heads, num_key_value_heads=int(self._num("attention.head_count_kv", n_heads)),

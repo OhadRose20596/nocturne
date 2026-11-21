@@ -71,9 +71,9 @@ def test_unknown_link_leaves_networks_alone(capsys):
     assert "does not say" in capsys.readouterr().out
 
 
-def test_unknown_link_on_empty_networks_falls_back_to_wifi():
+def test_unknown_link_on_empty_networks_stays_empty(capsys):
     out = ja.update_peers(PEERS, "bare", facts("192.168.9.9", "unknown", "bare"), "bare")
-    assert networks(out, "bare") == "{wifi: 192.168.9.9}"
+    assert networks(out, "bare") == "{}" and "left empty" in capsys.readouterr().out
 
 
 def test_new_peer_gets_its_link_type():

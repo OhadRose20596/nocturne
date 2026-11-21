@@ -290,3 +290,29 @@ def test_transient_and_mps_floor_in_the_plan(models):
     biggest = d.matrix_elems(cfg.num_attention_heads, cfg.num_key_value_heads, cfg.intermediate_size, cfg.vocab_size)
     assert s.planned["workspace"] - dense.planned["workspace"] == min(biggest, quant.CHUNK_ELEMS) * quant.CHUNK_WORKING_BYTES_PER_ELEM
     assert s.planned["mps_floor"] == 1 << 30 and s.planned["footprint"] >= 1 << 30
+
+
+def test_eos_ids_include_end_of_generation_tokens_found_by_text(models):
+    """Review F1: the GGUF eos key alone is one id; llama.cpp also stops on the other end tokens of the vocabulary."""
+    from pathlib import Path
+    q = Path.home() / "models" / "gguf" / "Qwen2.5-1.5B-Instruct-Q8_0.gguf"
+    if q.exists():
+        assert {151643, 151645} <= set(load_config(q).eos_token_ids)
+    cfg = load_config(models["qwen3"]["bf16"])
+    assert 151645 in cfg.eos_token_ids
+
+
+def test_planned_bytes_exact_for_mixed_layer_types_and_independent_gate_up():
+    """Review F5 and F6: per layer sums, up and gate may differ, no off by one from float means."""
+    import random
+    from nocturne.engines.torch_tp.plan import QuantInfo
+    rnd = random.Random(7)
+    bpe = lambda t: quant.BLOCK[t][1] / quant.BLOCK[t][0]
+    for L in (7, 13, 28, 36):
+        qi = QuantInfo(*[tuple(rnd.choice(("Q4_K", "Q6_K", "Q5_K")) for _ in range(L)) for _ in range(7)], "Q4_K", "Q6_K")
+        d = Dims(hidden=512, intermediate=1536, n_layers=L, n_heads=8, n_kv_heads=2, vocab=1024, tied=False, hd=64, qkv_bias=False, quant=qi)
+        sp = plan(d, P(st("s", (0, L), [dict(host="h", port=1)])), check_budget=False)[0]
+        per_layer = sum(8 * 64 * 512 * (bpe(qi.q[i]) + bpe(qi.o[i])) + 2 * 64 * 512 * (bpe(qi.k[i]) + bpe(qi.v[i]))
+                        + 1536 * 512 * (bpe(qi.gate[i]) + bpe(qi.up[i]) + bpe(qi.down[i])) + 2 * 512 * 2 for i in range(L))
+        want = per_layer + sp.planned["vocab_bytes"] + 512 * 2           # plus the final norm
+        assert abs(sp.planned["weights"] - want) <= 0.5, (L, sp.planned["weights"], want)
