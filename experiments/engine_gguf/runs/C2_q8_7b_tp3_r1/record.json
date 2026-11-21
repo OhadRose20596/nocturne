@@ -1,0 +1,1025 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "C2_q8_7b_tp3_r1",
+ "date": "2026-11-21T18:11:43+0200",
+ "placement": {
+  "file": "experiments/engine_gguf/placements/Q8_7b_tp3.yaml",
+  "sha256": "db49b7056152c9ec6f37031f6431ad0ffe8a8e80909d807824cbd24c1f44f1f8",
+  "yaml": "# C2: 7B Q8_0, tensor parallel over three ranks (10, 9, 9 heads), all on the M5 loopback\nmodel: ~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf\ncoordinator: {host: m5}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nstages:\n  - name: s0\n    layers: [0, 28]\n    embed: true\n    lm_head: true\n    ranks:\n      - {host: m5, device: mps, port: 50070}\n      - {host: m5, device: mps, port: 50071}\n      - {host: m5, device: mps, port: 50072}\n"
+ },
+ "git": {
+  "sha": "0f66a18c831b441ff8c2d1967ffff0ca8b188225",
+  "dirty": false
+ },
+ "torch_coordinator": "2.14.1",
+ "args": {
+  "placement": "experiments/engine_gguf/placements/Q8_7b_tp3.yaml",
+  "session_dir": "experiments/engine_gguf",
+  "run_id": "C2_q8_7b_tp3_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "B2_q8_7b_1rank_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "transformers_dir": null,
+  "tokenizer_dir": null,
+  "force": false,
+  "mps_fraction_cap": false
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf",
+  "dir": "~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf",
+  "sha256": {
+   "Qwen2.5-7B-Instruct-Q8_0.gguf": "862574978752413e9d54e4d104c455797f9c7e477ee256a46e2d8a31f9242cd9"
+  }
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 3,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 0,
+   "q1": 10,
+   "m0": 0,
+   "m1": 6272,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": [
+    0,
+    50688
+   ],
+   "head_rows": [
+    0,
+    50688
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 2720334848,
+    "kv": 117440512,
+    "workspace": 285090816,
+    "total": 3122866176,
+    "layer_bytes": 83367424,
+    "vocab_bytes": 386039808,
+    "kv_heads_replicated": 2,
+    "mps_floor": 1073741824,
+    "footprint": 3122866176
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s0/1",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 1,
+   "group_size": 3,
+   "host": "m5",
+   "device": "mps",
+   "port": 50071,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 10,
+   "q1": 19,
+   "m0": 6272,
+   "m1": 12672,
+   "kv0": 1,
+   "kv1": 3,
+   "embed_rows": [
+    50688,
+    101376
+   ],
+   "head_rows": [
+    50688,
+    101376
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 2733975552,
+    "kv": 117440512,
+    "workspace": 282780672,
+    "total": 3134196736,
+    "layer_bytes": 83854592,
+    "vocab_bytes": 386039808,
+    "kv_heads_replicated": 2,
+    "mps_floor": 1073741824,
+    "footprint": 3134196736
+   }
+  },
+  {
+   "gid": 2,
+   "name": "s0/2",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 2,
+   "group_size": 3,
+   "host": "m5",
+   "device": "mps",
+   "port": 50072,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 19,
+   "q1": 28,
+   "m0": 12672,
+   "m1": 18944,
+   "kv0": 2,
+   "kv1": 4,
+   "embed_rows": [
+    101376,
+    152064
+   ],
+   "head_rows": [
+    101376,
+    152064
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 2693031936,
+    "kv": 117440512,
+    "workspace": 282584064,
+    "total": 3093056512,
+    "layer_bytes": 82392320,
+    "vocab_bytes": 386039808,
+    "kv_heads_replicated": 2,
+    "mps_floor": 1073741824,
+    "footprint": 3093056512
+   }
+  }
+ ],
+ "frames": {
+  "predicted": {
+   "token": 2,
+   "embed": 6,
+   "layers": 336,
+   "hops": 0,
+   "head": 2,
+   "total": 346
+  },
+  "decode_steps": 279,
+  "measured_per_step": 346.0,
+  "bytes_per_step": 2459752.0,
+  "per_link_per_step": {
+   "s0/0->s0/1": {
+    "sent_frames": 57.0,
+    "sent_bytes": 409944.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 409944.0
+   },
+   "s0/0->s0/2": {
+    "sent_frames": 57.0,
+    "sent_bytes": 409944.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 409944.0
+   },
+   "s0/0->ctl:s0/1": {
+    "sent_frames": 1.0,
+    "sent_bytes": 28.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s0/0->ctl:s0/2": {
+    "sent_frames": 1.0,
+    "sent_bytes": 28.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s0/1->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 28.0
+   },
+   "s0/1->s0/0": {
+    "sent_frames": 57.0,
+    "sent_bytes": 409944.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 409944.0
+   },
+   "s0/1->s0/2": {
+    "sent_frames": 57.0,
+    "sent_bytes": 409944.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 409944.0
+   },
+   "s0/2->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 28.0
+   },
+   "s0/2->s0/0": {
+    "sent_frames": 57.0,
+    "sent_bytes": 409944.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 409944.0
+   },
+   "s0/2->s0/1": {
+    "sent_frames": 57.0,
+    "sent_bytes": 409944.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 409944.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "m5": {
+    "os": "Darwin",
+    "caffeinate": "on",
+    "awdl": "up",
+    "vpn_state": "disconnected",
+    "engine_sha256": "742ade29554895cf30a8ce3172b4303c37ee45868adfaa46fdf787bd5da42c8b",
+    "model_sha256": {
+     "Qwen2.5-7B-Instruct-Q8_0.gguf": "862574978752413e9d54e4d104c455797f9c7e477ee256a46e2d8a31f9242cd9"
+    }
+   }
+  }
+ },
+ "load_s": 13.176110982894897,
+ "link_counters": {
+  "s0/0": {
+   "s0/1": {
+    "sent_frames": 16416,
+    "recv_frames": 16417,
+    "sent_bytes": 319083264,
+    "recv_bytes": 319083306,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 114374376,
+     "recv_frames": 15903,
+     "recv_bytes": 114374376
+    },
+    "by_kind_sent": {
+     "allreduce": 16416
+    }
+   },
+   "s0/2": {
+    "sent_frames": 16416,
+    "recv_frames": 16417,
+    "sent_bytes": 319083264,
+    "recv_bytes": 319083306,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 114374376,
+     "recv_frames": 15903,
+     "recv_bytes": 114374376
+    },
+    "by_kind_sent": {
+     "allreduce": 16416
+    }
+   },
+   "ctl:s0/1": {
+    "sent_frames": 292,
+    "recv_frames": 290,
+    "sent_bytes": 13880,
+    "recv_bytes": 920095,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 7812,
+     "recv_frames": 279,
+     "recv_bytes": 4464
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "metrics": 2,
+     "token": 288
+    }
+   },
+   "ctl:s0/2": {
+    "sent_frames": 292,
+    "recv_frames": 290,
+    "sent_bytes": 13880,
+    "recv_bytes": 920115,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 7812,
+     "recv_frames": 279,
+     "recv_bytes": 4464
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "metrics": 2,
+     "token": 288
+    }
+   }
+  },
+  "s0/1": {
+   "ctl": {
+    "sent_frames": 290,
+    "recv_frames": 292,
+    "sent_bytes": 920095,
+    "recv_bytes": 13880,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 4464,
+     "recv_frames": 279,
+     "recv_bytes": 7812
+    },
+    "by_kind_sent": {
+     "ready": 1,
+     "metrics_reply": 1,
+     "head": 288
+    }
+   },
+   "s0/0": {
+    "sent_frames": 16417,
+    "recv_frames": 16416,
+    "sent_bytes": 319083306,
+    "recv_bytes": 319083264,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 114374376,
+     "recv_frames": 15903,
+     "recv_bytes": 114374376
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 16416
+    }
+   },
+   "s0/2": {
+    "sent_frames": 16416,
+    "recv_frames": 16417,
+    "sent_bytes": 319083264,
+    "recv_bytes": 319083306,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 114374376,
+     "recv_frames": 15903,
+     "recv_bytes": 114374376
+    },
+    "by_kind_sent": {
+     "allreduce": 16416
+    }
+   }
+  },
+  "s0/2": {
+   "ctl": {
+    "sent_frames": 290,
+    "recv_frames": 292,
+    "sent_bytes": 920115,
+    "recv_bytes": 13880,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 4464,
+     "recv_frames": 279,
+     "recv_bytes": 7812
+    },
+    "by_kind_sent": {
+     "ready": 1,
+     "metrics_reply": 1,
+     "head": 288
+    }
+   },
+   "s0/0": {
+    "sent_frames": 16417,
+    "recv_frames": 16416,
+    "sent_bytes": 319083306,
+    "recv_bytes": 319083264,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 114374376,
+     "recv_frames": 15903,
+     "recv_bytes": 114374376
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 16416
+    }
+   },
+   "s0/1": {
+    "sent_frames": 16417,
+    "recv_frames": 16416,
+    "sent_bytes": 319083306,
+    "recv_bytes": 319083264,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 114374376,
+     "recv_frames": 15903,
+     "recv_bytes": 114374376
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 16416
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "s0/0",
+   "gid": 0,
+   "host": "m5",
+   "device": "mps",
+   "pid": 32371,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 2720334848,
+   "kv_bytes": 117440512,
+   "idle": {
+    "peak_rss_bytes": 723025920,
+    "phys_footprint_bytes": 255755344,
+    "lifetime_max_phys_footprint_bytes": 669090920
+   },
+   "planned": {
+    "weights": 2720334848,
+    "kv": 117440512,
+    "workspace": 285090816,
+    "total": 3122866176,
+    "layer_bytes": 83367424,
+    "vocab_bytes": 386039808,
+    "kv_heads_replicated": 2,
+    "mps_floor": 1073741824,
+    "footprint": 3122866176
+   },
+   "budget": null,
+   "load_s": 7.496136903762817,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "current_allocated_bytes": 2871582720,
+   "driver_allocated_bytes": 4379574272,
+   "peak_rss_bytes": 2308014080,
+   "phys_footprint_bytes": 4779902320,
+   "lifetime_max_phys_footprint_bytes": 4787750256
+  },
+  {
+   "name": "s0/1",
+   "gid": 1,
+   "host": "m5",
+   "device": "mps",
+   "pid": 32392,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 2733975552,
+   "kv_bytes": 117440512,
+   "idle": {
+    "peak_rss_bytes": 722206720,
+    "phys_footprint_bytes": 248022048,
+    "lifetime_max_phys_footprint_bytes": 668304464
+   },
+   "planned": {
+    "weights": 2733975552,
+    "kv": 117440512,
+    "workspace": 282780672,
+    "total": 3134196736,
+    "layer_bytes": 83854592,
+    "vocab_bytes": 386039808,
+    "kv_heads_replicated": 2,
+    "mps_floor": 1073741824,
+    "footprint": 3134196736
+   },
+   "budget": null,
+   "load_s": 7.577891111373901,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "current_allocated_bytes": 2886356992,
+   "driver_allocated_bytes": 4371185664,
+   "peak_rss_bytes": 2308096000,
+   "phys_footprint_bytes": 4683039944,
+   "lifetime_max_phys_footprint_bytes": 4690838728
+  },
+  {
+   "name": "s0/2",
+   "gid": 2,
+   "host": "m5",
+   "device": "mps",
+   "pid": 32393,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 2693031936,
+   "kv_bytes": 117440512,
+   "idle": {
+    "peak_rss_bytes": 721666048,
+    "phys_footprint_bytes": 247366712,
+    "lifetime_max_phys_footprint_bytes": 667763792
+   },
+   "planned": {
+    "weights": 2693031936,
+    "kv": 117440512,
+    "workspace": 282584064,
+    "total": 3093056512,
+    "layer_bytes": 82392320,
+    "vocab_bytes": 386039808,
+    "kv_heads_replicated": 2,
+    "mps_floor": 1073741824,
+    "footprint": 3093056512
+   },
+   "budget": null,
+   "load_s": 7.507613897323608,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "current_allocated_bytes": 2843103232,
+   "driver_allocated_bytes": 4379574272,
+   "peak_rss_bytes": 2247671808,
+   "phys_footprint_bytes": 4690707560,
+   "lifetime_max_phys_footprint_bytes": 4698473576
+  }
+ ],
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1876.5849272410076,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "936",
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1800.2023696899414,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "543",
+   "score": 1.0
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt_n": 44,
+   "tokens": [
+    19,
+    18,
+    22,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1793.1733131408691,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "437",
+   "score": 1.0
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt_n": 45,
+   "tokens": [
+    16,
+    17,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1793.2641506195068,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "12",
+   "score": 1.0
+  },
+  {
+   "id": "arith_05",
+   "kind": "eval",
+   "prompt_n": 58,
+   "tokens": [
+    16,
+    20,
+    15,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1794.2989667256672,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "150",
+   "score": 1.0
+  },
+  {
+   "id": "arith_06",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1789.6599769592285,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "36",
+   "score": 1.0
+  },
+  {
+   "id": "extract_01",
+   "kind": "eval",
+   "prompt_n": 67,
+   "tokens": [
+    35,
+    3362,
+    55041,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1797.9360421498616,
+   "category": "extraction",
+   "cap": 16,
+   "text": "Dana Levi",
+   "score": 1.0
+  },
+  {
+   "id": "extract_02",
+   "kind": "eval",
+   "prompt_n": 69,
+   "tokens": [
+    14003,
+    220,
+    18,
+    16,
+    16,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1791.9880390167236,
+   "category": "extraction",
+   "cap": 16,
+   "text": "Room 311",
+   "score": 1.0
+  },
+  {
+   "id": "longopen_01",
+   "kind": "long",
+   "prompt_n": 78,
+   "tokens": [
+    32,
+    2114,
+    17220,
+    26299,
+    3922,
+    23377,
+    264,
+    2766,
+    4269,
+    504,
+    279,
+    7602,
+    311,
+    264,
+    20638,
+    1526,
+    264,
+    4013,
+    315,
+    7354,
+    15860,
+    279,
+    9273,
+    11,
+    2615,
+    3501,
+    11,
+    8887,
+    11744,
+    11,
+    323,
+    27035,
+    13,
+    3197,
+    498,
+    1191,
+    16842,
+    264,
+    2766,
+    389,
+    697,
+    20638,
+    11,
+    279,
+    1681,
+    374,
+    3208,
+    311,
+    279,
+    9273,
+    11,
+    892,
+    14056,
+    438,
+    279,
+    8622,
+    18719,
+    369,
+    678,
+    7602,
+    9442,
+    304,
+    697,
+    2114,
+    13,
+    576,
+    9273,
+    1221,
+    41054,
+    419,
+    1681,
+    311,
+    279,
+    7602,
+    11,
+    1380,
+    432,
+    374,
+    15540,
+    311,
+    279,
+    3538,
+    19678,
+    279,
+    2766,
+    2213,
+    382,
+    785,
+    2766,
+    2213,
+    374,
+    10865,
+    1495,
+    1119,
+    2613,
+    8153,
+    2598,
+    27035,
+    11,
+    892,
+    525,
+    1221,
+    3208,
+    1526,
+    279,
+    7602,
+    311,
+    697,
+    9273,
+    13,
+    8886,
+    10151,
+    5610,
+    264,
+    13348,
+    315,
+    279,
+    2766,
+    821,
+    323,
+    374,
+    72217,
+    28135,
+    1526,
+    279,
+    3922,
+    13,
+    1634,
+    1493,
+    27035,
+    5821,
+    1526,
+    279,
+    7602,
+    11,
+    807,
+    1231,
+    1896,
+    2155,
+    12716,
+    311,
+    5545,
+    697,
+    9273,
+    11,
+    11649,
+    389,
+    279,
+    1482,
+    3922,
+    4682,
+    323,
+    279,
+    18048,
+    315,
+    279,
+    1850,
+    11291,
+    382,
+    12522,
+    279,
+    27035,
+    17331,
+    518,
+    697,
+    9273,
+    11,
+    807,
+    525,
+    312,
+    300,
+    25905,
+    304,
+    279,
+    4396,
+    1973,
+    323,
+    3208,
+    311,
+    279,
+    2615,
+    1459,
+    11,
+    892,
+    374,
+    11136,
+    264,
+    20739,
+    9273,
+    476,
+    264,
+    8651,
+    3671,
+    8433,
+    311,
+    279,
+    9273,
+    13,
+    576,
+    2615,
+    1459,
+    1221,
+    65098,
+    279,
+    2766,
+    821,
+    916,
+    279,
+    3720,
+    1667,
+    8887,
+    16876,
+    389,
+    264,
+    3151,
+    11639,
+    11,
+    476,
+    5496,
+    13,
+    4615,
+    20638,
+    11,
+    18650,
+    448,
+    264,
+    17220,
+    26299,
+    12956,
+    11,
+    21189,
+    1493,
+    8887,
+    16876,
+    323,
+    1622,
+    2539,
+    279,
+    27035,
+    311,
+    43828,
+    279,
+    2766,
+    4269,
+    382,
+    7039,
+    11,
+    12793,
+    429,
+    1393,
+    498,
+    525,
+    16842,
+    264,
+    2766,
+    11
+   ],
+   "finish": "length",
+   "ms_per_step": 1890.9572423673144,
+   "text": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving the router, access points, radio channels, and packets. When you start streaming a video on your laptop, the request is sent to the router, which acts as the central hub for all internet traffic in your home. The router then forwards this request to the internet, where it is directed to the server hosting the video content.\n\nThe video content is broken down into small units called packets, which are then sent through the internet to your router. Each packet contains a portion of the video data and is routed independently through the network. As these packets travel through the internet, they may take different paths to reach your router, depending on the current network conditions and the availability of the best routes.\n\nOnce the packets arrive at your router, they are reassembled in the correct order and sent to the access point, which is typically a wireless router or a separate device connected to the router. The access point then broadcasts the video data over the air using radio waves on a specific frequency, or channel. Your laptop, equipped with a Wi-Fi adapter, receives these radio waves and decodes the packets to reconstruct the video stream.\n\nNow, imagine that while you are streaming a video,"
+  }
+ ],
+ "commands": [
+  {
+   "host": "m5",
+   "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50071 --model \"$HOME\"/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf --device mps --name s0/1 --tag C2_q8_7b_tp3_r1"
+  },
+  {
+   "host": "m5",
+   "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50072 --model \"$HOME\"/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf --device mps --name s0/2 --tag C2_q8_7b_tp3_r1"
+  },
+  {
+   "host": "m5",
+   "cmd": "pkill -f '--tag C2_q8_7b_tp3_r1'"
+  }
+ ],
+ "correctness": {
+  "B2_q8_7b_1rank_r1": {
+   "reference": "B2_q8_7b_1rank_r1",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 3,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 162
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.375,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.318359375,
+    "arith_02": 0.3125,
+    "arith_03": 0.25,
+    "arith_04": 0.25,
+    "arith_05": 0.2578125,
+    "arith_06": 0.3125,
+    "extract_01": 0.375,
+    "extract_02": 0.21875,
+    "longopen_01": 0.3125
+   },
+   "long_first_div": {
+    "longopen_01": 162
+   },
+   "criterion_met": true
+  }
+ }
+}

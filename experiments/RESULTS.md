@@ -459,3 +459,24 @@ Record: nocturne/bench/results/A1_wifi_qwen2.5-32b-q8_m5_c4096ts3mwl20_r1.json. 
 
 Limits of the three Q8 rows: one run each, 8 short prompts (32 generated tokens per run), no long context prompt, no repeat, no BASELINE to grade exact match against.
 
+
+
+## Engine GGUF, part 1 (M5 only) (2026-11-21)
+
+Engine B (`nocturne/engines/torch_tp`) now reads GGUF (kept quantized on the device) and qwen2, llama and qwen3. All runs on the M5 alone (MPS, torch 2.14.1), loopback placements, repo SHA 5f3f255 plus the commits listed in `experiments/engine_gguf/VERIFY.md`, llama.cpp 1e7bcf3da (pinned). Predictions: `experiments/engine_gguf/PREDICTIONS.md` (committed before the runs). Run folders: `experiments/engine_gguf/runs/`. Time per token is background (T1): the quantized path expands every matrix at every step (7B Q8_0 about 1.9 s per token, 1.5B Q8_0 about 0.41 s).
+
+| run | placement | quant | file sha256 | tokens (eval prompts, 8; long prompt) | frames per step measured / predicted | loaded bytes vs planned weights | process footprint / planned footprint per rank |
+|---|---|---|---|---|---|---|---|
+| A1_P3_loopback_qwen2.5-1.5b-bf16_r1 | 1.5B TP3 loopback | bf16 safetensors | - | 8/8 vs recorded P3_loopback r1; long: identical | 346.0 / 346 | equal | 1.38, 1.21, 1.23 |
+| A2_P1_loopback_qwen2.5-7b-bf16_r1 | 7B TP2 3:2 loopback | bf16 safetensors | - | 8/8 vs recorded P1_loopback r1; long: identical | 116.0 / 116 | equal | 1.09, 1.07 |
+| B1_q8_1.5b_1rank_r1 | 1.5B, one rank | Q8_0 | 5926a692 | 8/8 vs bf16 R0; long: diverges at 54 | 0.0 / 0 | equal | 1.76 |
+| B2_q8_7b_1rank_r1 | 7B, one rank | Q8_0 | 86257497 | 8/8 vs bf16 R0; long: diverges at 49 | 0.0 / 0 | equal | 1.17 |
+| B4_q4km_7b_1rank_r1 | 7B, one rank | Q4_K_M | 65b8fcd9 (full 65b8fcd92af6b4fe...) | 8/8 vs bf16 R0; long: diverges at 5 | 0.0 / 0 | equal | 1.30 |
+| C1_q8_7b_pp3_r1 | 7B PP 3 stages | Q8_0 | 86257497 | 8/8 vs one rank run B2; long: identical | 3.0 / 3 | equal | 1.28, 1.21, 1.27 |
+| C2_q8_7b_tp3_r1 | 7B TP 3 ranks | Q8_0 | 86257497 | 8/8 vs one rank run B2; long: diverges at 162 | 346.0 / 346 | equal | 1.53, 1.49, 1.52 |
+| C3_q8_7b_hybrid_r1 | 7B hybrid TP2 + 1 | Q8_0 | 86257497 | 8/8 vs one rank run B2; long: diverges at 49 | 61.0 / 61 | equal | 1.55, 1.51, 1.15 |
+
+Engine against llama.cpp on the same file, eval prompts identical (long prompt first divergence): 1.5B Q8_0 8/8 (54), 7B Q8_0 8/8 (49), 7B Q4_K_M 8/8 (5).
+Perplexity, 252 tokens of wikitext-2 test, engine against llama-perplexity: 7B Q8_0 10.869 against 10.939, 7B Q4_K_M 11.383 against 11.505.
+Architectures against transformers `generate`: Llama 3.2 1B safetensors 8/8, Llama 3.2 1B Q8_0 8/8, Qwen3 0.6B safetensors 7/8, Qwen3 0.6B Q8_0 6/8.
+Unit tests, mutation check (17 of 17 caught after two rounds), and the independent review: `experiments/engine_gguf/VERIFY.md`, `REVIEW.md`.

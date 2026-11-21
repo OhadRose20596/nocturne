@@ -1,0 +1,964 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "C3_q8_7b_hybrid_r1",
+ "date": "2026-11-21T18:21:11+0200",
+ "placement": {
+  "file": "experiments/engine_gguf/placements/Q8_7b_hybrid.yaml",
+  "sha256": "e7d7b55215344cb0f124e516216425c9c51c7b5a0a6fcdc6075e68d796a81851",
+  "yaml": "# C3: 7B Q8_0, hybrid: a TP pair for layers 0 to 13, one rank for layers 14 to 27 and the head, all on the M5 loopback\nmodel: ~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf\ncoordinator: {host: m5}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nstages:\n  - name: s0\n    layers: [0, 14]\n    embed: true\n    ranks:\n      - {host: m5, device: mps, port: 50070}\n      - {host: m5, device: mps, port: 50071}\n  - name: s1\n    layers: [14, 28]\n    lm_head: true\n    ranks:\n      - {host: m5, device: mps, port: 50072}\n"
+ },
+ "git": {
+  "sha": "0f66a18c831b441ff8c2d1967ffff0ca8b188225",
+  "dirty": false
+ },
+ "torch_coordinator": "2.14.1",
+ "args": {
+  "placement": "experiments/engine_gguf/placements/Q8_7b_hybrid.yaml",
+  "session_dir": "experiments/engine_gguf",
+  "run_id": "C3_q8_7b_hybrid_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "B2_q8_7b_1rank_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "transformers_dir": null,
+  "tokenizer_dir": null,
+  "force": false,
+  "mps_fraction_cap": false
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf",
+  "dir": "~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf",
+  "sha256": {
+   "Qwen2.5-7B-Instruct-Q8_0.gguf": "862574978752413e9d54e4d104c455797f9c7e477ee256a46e2d8a31f9242cd9"
+  }
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 2,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    14
+   ],
+   "q0": 0,
+   "q1": 14,
+   "m0": 0,
+   "m1": 9472,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": [
+    0,
+    76032
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 2023074816,
+    "kv": 58720256,
+    "workspace": 299728896,
+    "total": 2381523968,
+    "layer_bytes": 123824640,
+    "vocab_bytes": 289529856,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 2381523968
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s0/1",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 1,
+   "group_size": 2,
+   "host": "m5",
+   "device": "mps",
+   "port": 50071,
+   "layers": [
+    0,
+    14
+   ],
+   "q0": 14,
+   "q1": 28,
+   "m0": 9472,
+   "m1": 18944,
+   "kv0": 2,
+   "kv1": 4,
+   "embed_rows": [
+    76032,
+    152064
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 2023074816,
+    "kv": 58720256,
+    "workspace": 299728896,
+    "total": 2381523968,
+    "layer_bytes": 123824640,
+    "vocab_bytes": 289529856,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 2381523968
+   }
+  },
+  {
+   "gid": 2,
+   "name": "s1/0",
+   "stage": 1,
+   "stage_name": "s1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50072,
+   "layers": [
+    14,
+    28
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    152064
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 4045956096,
+    "kv": 117440512,
+    "workspace": 350809088,
+    "total": 4514205696,
+    "layer_bytes": 247634944,
+    "vocab_bytes": 579059712,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 4514205696
+   }
+  }
+ ],
+ "frames": {
+  "predicted": {
+   "token": 1,
+   "embed": 2,
+   "layers": 56,
+   "hops": 1,
+   "head": 1,
+   "total": 61
+  },
+  "decode_steps": 279,
+  "measured_per_step": 61.0,
+  "bytes_per_step": 424372.0,
+  "per_link_per_step": {
+   "s0/0->s0/1": {
+    "sent_frames": 29.0,
+    "sent_bytes": 208568.0,
+    "recv_frames": 29.0,
+    "recv_bytes": 208568.0
+   },
+   "s0/0->s1/0": {
+    "sent_frames": 1.0,
+    "sent_bytes": 7192.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s0/0->ctl:s0/1": {
+    "sent_frames": 1.0,
+    "sent_bytes": 28.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s0/0->ctl:s1/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s0/1->ctl": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 28.0
+   },
+   "s0/1->s0/0": {
+    "sent_frames": 29.0,
+    "sent_bytes": 208568.0,
+    "recv_frames": 29.0,
+    "recv_bytes": 208568.0
+   },
+   "s1/0->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s1/0->s0/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 7192.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "m5": {
+    "os": "Darwin",
+    "caffeinate": "on",
+    "awdl": "up",
+    "vpn_state": "disconnected",
+    "engine_sha256": "742ade29554895cf30a8ce3172b4303c37ee45868adfaa46fdf787bd5da42c8b",
+    "model_sha256": {
+     "Qwen2.5-7B-Instruct-Q8_0.gguf": "862574978752413e9d54e4d104c455797f9c7e477ee256a46e2d8a31f9242cd9"
+    }
+   }
+  }
+ },
+ "load_s": 11.27382493019104,
+ "link_counters": {
+  "s0/0": {
+   "s0/1": {
+    "sent_frames": 8352,
+    "recv_frames": 8353,
+    "sent_bytes": 162340608,
+    "recv_bytes": 162340650,
+    "allreduce_frames": 8352,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 8091,
+     "sent_bytes": 58190472,
+     "recv_frames": 8091,
+     "recv_bytes": 58190472
+    },
+    "by_kind_sent": {
+     "allreduce": 8352
+    }
+   },
+   "s1/0": {
+    "sent_frames": 290,
+    "recv_frames": 1,
+    "sent_bytes": 5597984,
+    "recv_bytes": 42,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 2006568,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "metrics": 2,
+     "hidden": 288
+    }
+   },
+   "ctl:s0/1": {
+    "sent_frames": 292,
+    "recv_frames": 2,
+    "sent_bytes": 13845,
+    "recv_bytes": 2583,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 7812,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "metrics": 2,
+     "token": 288
+    }
+   },
+   "ctl:s1/0": {
+    "sent_frames": 2,
+    "recv_frames": 290,
+    "sent_bytes": 1813,
+    "recv_bytes": 2744384,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 4464
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1
+    }
+   }
+  },
+  "s0/1": {
+   "ctl": {
+    "sent_frames": 2,
+    "recv_frames": 292,
+    "sent_bytes": 2583,
+    "recv_bytes": 13845,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 7812
+    },
+    "by_kind_sent": {
+     "ready": 1,
+     "metrics_reply": 1
+    }
+   },
+   "s0/0": {
+    "sent_frames": 8353,
+    "recv_frames": 8352,
+    "sent_bytes": 162340650,
+    "recv_bytes": 162340608,
+    "allreduce_frames": 8352,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 8091,
+     "sent_bytes": 58190472,
+     "recv_frames": 8091,
+     "recv_bytes": 58190472
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 8352
+    }
+   }
+  },
+  "s1/0": {
+   "ctl": {
+    "sent_frames": 290,
+    "recv_frames": 2,
+    "sent_bytes": 2744384,
+    "recv_bytes": 1813,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 4464,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "ready": 1,
+     "metrics_reply": 1,
+     "head": 288
+    }
+   },
+   "s0/0": {
+    "sent_frames": 1,
+    "recv_frames": 290,
+    "sent_bytes": 42,
+    "recv_bytes": 5597984,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 2006568
+    },
+    "by_kind_sent": {
+     "hello": 1
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "s0/0",
+   "gid": 0,
+   "host": "m5",
+   "device": "mps",
+   "pid": 33871,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 2023074816,
+   "kv_bytes": 58720256,
+   "idle": {
+    "peak_rss_bytes": 727564288,
+    "phys_footprint_bytes": 260359248,
+    "lifetime_max_phys_footprint_bytes": 673678416
+   },
+   "planned": {
+    "weights": 2023074816,
+    "kv": 58720256,
+    "workspace": 299728896,
+    "total": 2381523968,
+    "layer_bytes": 123824640,
+    "vocab_bytes": 289529856,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 2381523968
+   },
+   "budget": null,
+   "load_s": 5.509283065795898,
+   "steps": 288,
+   "allreduce_calls": 8352,
+   "current_allocated_bytes": 2115803648,
+   "driver_allocated_bytes": 3272278016,
+   "peak_rss_bytes": 1370456064,
+   "phys_footprint_bytes": 3680929136,
+   "lifetime_max_phys_footprint_bytes": 3693053296
+  },
+  {
+   "name": "s0/1",
+   "gid": 1,
+   "host": "m5",
+   "device": "mps",
+   "pid": 33914,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 2023074816,
+   "kv_bytes": 58720256,
+   "idle": {
+    "peak_rss_bytes": 722386944,
+    "phys_footprint_bytes": 248022048,
+    "lifetime_max_phys_footprint_bytes": 668484688
+   },
+   "planned": {
+    "weights": 2023074816,
+    "kv": 58720256,
+    "workspace": 299728896,
+    "total": 2381523968,
+    "layer_bytes": 123824640,
+    "vocab_bytes": 289529856,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 2381523968
+   },
+   "budget": null,
+   "load_s": 5.524101972579956,
+   "steps": 288,
+   "allreduce_calls": 8352,
+   "current_allocated_bytes": 2115803648,
+   "driver_allocated_bytes": 3272278016,
+   "peak_rss_bytes": 1384742912,
+   "phys_footprint_bytes": 3587572984,
+   "lifetime_max_phys_footprint_bytes": 3599549688
+  },
+  {
+   "name": "s1/0",
+   "gid": 2,
+   "host": "m5",
+   "device": "mps",
+   "pid": 33915,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 4045956096,
+   "kv_bytes": 117440512,
+   "idle": {
+    "peak_rss_bytes": 722468864,
+    "phys_footprint_bytes": 248202296,
+    "lifetime_max_phys_footprint_bytes": 668550200
+   },
+   "planned": {
+    "weights": 4045956096,
+    "kv": 117440512,
+    "workspace": 350809088,
+    "total": 4514205696,
+    "layer_bytes": 247634944,
+    "vocab_bytes": 579059712,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 4514205696
+   },
+   "budget": null,
+   "load_s": 4.2974889278411865,
+   "steps": 288,
+   "allreduce_calls": 0,
+   "current_allocated_bytes": 4234008064,
+   "driver_allocated_bytes": 4908056576,
+   "peak_rss_bytes": 846757888,
+   "phys_footprint_bytes": 5193532592,
+   "lifetime_max_phys_footprint_bytes": 5594941408
+  }
+ ],
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1995.2176411946614,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "936",
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1958.1373532613118,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "543",
+   "score": 1.0
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt_n": 44,
+   "tokens": [
+    19,
+    18,
+    22,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1970.0172742207844,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "437",
+   "score": 1.0
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt_n": 45,
+   "tokens": [
+    16,
+    17,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1941.3180351257324,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "12",
+   "score": 1.0
+  },
+  {
+   "id": "arith_05",
+   "kind": "eval",
+   "prompt_n": 58,
+   "tokens": [
+    16,
+    20,
+    15,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1976.4347076416016,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "150",
+   "score": 1.0
+  },
+  {
+   "id": "arith_06",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1976.2496948242188,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "36",
+   "score": 1.0
+  },
+  {
+   "id": "extract_01",
+   "kind": "eval",
+   "prompt_n": 67,
+   "tokens": [
+    35,
+    3362,
+    55041,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1947.7890332539876,
+   "category": "extraction",
+   "cap": 16,
+   "text": "Dana Levi",
+   "score": 1.0
+  },
+  {
+   "id": "extract_02",
+   "kind": "eval",
+   "prompt_n": 69,
+   "tokens": [
+    14003,
+    220,
+    18,
+    16,
+    16,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1958.7361812591553,
+   "category": "extraction",
+   "cap": 16,
+   "text": "Room 311",
+   "score": 1.0
+  },
+  {
+   "id": "longopen_01",
+   "kind": "long",
+   "prompt_n": 78,
+   "tokens": [
+    32,
+    2114,
+    17220,
+    26299,
+    3922,
+    23377,
+    264,
+    2766,
+    4269,
+    504,
+    279,
+    7602,
+    311,
+    264,
+    20638,
+    1526,
+    264,
+    4013,
+    315,
+    7354,
+    15860,
+    279,
+    9273,
+    11,
+    2615,
+    3501,
+    11,
+    8887,
+    11744,
+    11,
+    323,
+    27035,
+    13,
+    3197,
+    498,
+    1191,
+    16842,
+    264,
+    2766,
+    389,
+    697,
+    20638,
+    11,
+    279,
+    1681,
+    374,
+    3208,
+    311,
+    279,
+    7602,
+    11,
+    323,
+    279,
+    2766,
+    821,
+    374,
+    10865,
+    1495,
+    1119,
+    2613,
+    27035,
+    13,
+    4220,
+    27035,
+    5821,
+    1526,
+    279,
+    7602,
+    311,
+    697,
+    2114,
+    3922,
+    11,
+    1380,
+    807,
+    525,
+    3949,
+    553,
+    697,
+    9273,
+    382,
+    785,
+    9273,
+    14056,
+    438,
+    264,
+    8622,
+    18719,
+    11,
+    44990,
+    9442,
+    311,
+    279,
+    8311,
+    7611,
+    13,
+    1084,
+    33061,
+    311,
+    697,
+    7602,
+    2473,
+    9109,
+    320,
+    55506,
+    8,
+    323,
+    28872,
+    279,
+    6396,
+    315,
+    821,
+    311,
+    323,
+    504,
+    697,
+    7611,
+    13,
+    9646,
+    279,
+    2766,
+    27035,
+    5545,
+    697,
+    9273,
+    11,
+    279,
+    9273,
+    41054,
+    1105,
+    311,
+    279,
+    2615,
+    1459,
+    11,
+    892,
+    374,
+    3545,
+    279,
+    1852,
+    3671,
+    438,
+    279,
+    9273,
+    5086,
+    476,
+    264,
+    8651,
+    17220,
+    26299,
+    2615,
+    1459,
+    13,
+    576,
+    2615,
+    1459,
+    1221,
+    65098,
+    279,
+    8286,
+    916,
+    825,
+    315,
+    279,
+    2500,
+    8887,
+    11744,
+    11,
+    11136,
+    1667,
+    2987,
+    220,
+    17,
+    13,
+    19,
+    51305,
+    476,
+    220,
+    20,
+    51305,
+    33773,
+    382,
+    785,
+    20638,
+    21189,
+    279,
+    2766,
+    27035,
+    1526,
+    1181,
+    17220,
+    26299,
+    12956,
+    11,
+    892,
+    1622,
+    2539,
+    279,
+    8286,
+    323,
+    312,
+    300,
+    40694,
+    279,
+    27035,
+    1119,
+    279,
+    4024,
+    2766,
+    4269,
+    13,
+    1096,
+    1882,
+    374,
+    8975,
+    553,
+    279,
+    17220,
+    26299,
+    11507,
+    11,
+    892,
+    25351,
+    429,
+    279,
+    27035,
+    525,
+    12600,
+    304,
+    279,
+    4396,
+    1973,
+    323,
+    2041,
+    5975,
+    382,
+    4498,
+    1378,
+    7611,
+    29282,
+    518,
+    3055,
+    11,
+    264,
+    24844,
+    3881,
+    438,
+    264,
+    18752,
+    646,
+    12170,
+    13,
+    758,
+    264,
+    17220,
+    26299
+   ],
+   "finish": "length",
+   "ms_per_step": 2006.5470433702656,
+   "text": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving the router, access points, radio channels, and packets. When you start streaming a video on your laptop, the request is sent to the internet, and the video data is broken down into small packets. These packets travel through the internet to your home network, where they are received by your router.\n\nThe router acts as a central hub, directing traffic to the appropriate devices. It connects to your internet service provider (ISP) and manages the flow of data to and from your devices. Once the video packets reach your router, the router forwards them to the access point, which is often the same device as the router itself or a separate Wi-Fi access point. The access point then broadcasts the signal over one of the available radio channels, typically using either 2.4 GHz or 5 GHz frequencies.\n\nThe laptop receives the video packets through its Wi-Fi adapter, which decodes the signal and reassembles the packets into the original video stream. This process is managed by the Wi-Fi protocol, which ensures that the packets are delivered in the correct order and without errors.\n\nWhen two devices transmit at once, a phenomenon known as a collision can occur. In a Wi-Fi"
+  }
+ ],
+ "commands": [
+  {
+   "host": "m5",
+   "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50071 --model \"$HOME\"/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf --device mps --name s0/1 --tag C3_q8_7b_hybrid_r1"
+  },
+  {
+   "host": "m5",
+   "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50072 --model \"$HOME\"/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf --device mps --name s1/0 --tag C3_q8_7b_hybrid_r1"
+  },
+  {
+   "host": "m5",
+   "cmd": "pkill -f '--tag C3_q8_7b_hybrid_r1'"
+  }
+ ],
+ "correctness": {
+  "B2_q8_7b_1rank_r1": {
+   "reference": "B2_q8_7b_1rank_r1",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 3,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 49
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.33203125,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.33203125,
+    "arith_02": 0.28125,
+    "arith_03": 0.3125,
+    "arith_04": 0.203125,
+    "arith_05": 0.2578125,
+    "arith_06": 0.25,
+    "extract_01": 0.296875,
+    "extract_02": 0.203125,
+    "longopen_01": 0.25
+   },
+   "long_first_div": {
+    "longopen_01": 49
+   },
+   "criterion_met": true
+  }
+ }
+}
