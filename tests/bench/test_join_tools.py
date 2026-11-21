@@ -150,8 +150,19 @@ def test_gguf_commands_carry_sha256_and_dirs():
     lines = ja.gguf_commands("air", ["a.gguf", "gguf/b.gguf"], {"a.gguf": 2_000_000_000, "gguf/b.gguf": 1}, {"a.gguf": "abc"})
     text = "\n".join(lines)
     assert "mkdir -p ~/models ~/models/gguf" in text
-    assert "scp ~/models/a.gguf air:~/models/ " in text and "scp ~/models/gguf/b.gguf air:~/models/gguf/ " in text
+    assert "/models/a.gguf air:models/ " in text and "/models/gguf/b.gguf air:models/gguf/ " in text
     assert "expect abc" in text and "(not computed)" in text
+
+
+def test_gguf_commands_quote_hostile_file_names(tmp_path):
+    """Codex finding 1: a file name is data, never shell syntax. Run the generated lines with ssh and scp as stubs."""
+    import subprocess
+    evil = "model; printf CODEX_REPRO; #.gguf"
+    lines = ja.gguf_commands("air", [evil, "sp ace.gguf"], {evil: 1, "sp ace.gguf": 1}, {})
+    script = "ssh() { printf 'SSH<%s>\\n' \"$2\"; }\nscp() { printf 'SCP<%s><%s>\\n' \"$1\" \"$2\"; }\n" + "\n".join(l.split("     #")[0] for l in lines)
+    out = subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+    assert "CODEX_REPRO" not in out.stdout.replace(evil, "") and out.returncode == 0
+    assert "SCP<" in out.stdout and evil in out.stdout and "sp ace.gguf" in out.stdout
 
 
 def test_file_sha256_cached(tmp_path):

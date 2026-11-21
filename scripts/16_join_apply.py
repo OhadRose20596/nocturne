@@ -418,12 +418,14 @@ def gguf_commands(target, rels, sizes, hashes):
     """Lines to copy missing GGUF files and to check them after the copy (sha256 of the file on this machine)."""
     out = []
     dirs = sorted({r.rsplit("/", 1)[0] for r in rels if "/" in r})
-    out.append("  ssh %s 'mkdir -p ~/models%s'" % (target, "".join(" ~/models/" + d for d in dirs)))
+    q = shlex.quote
+    remote = lambda r: "~/models/" + q(r)               # for the remote shell, tilde kept expandable
+    out.append("  ssh %s %s" % (q(target), q("mkdir -p ~/models" + "".join(" " + remote(d) for d in dirs))))
     for r in rels:
         d = r.rsplit("/", 1)[0] + "/" if "/" in r else ""
-        out.append("  scp ~/models/%s %s:~/models/%s     # %.1f GB" % (r, target, d, sizes[r] / 1e9))
-        out.append("  ssh %s 'sha256sum ~/models/%s 2>/dev/null || shasum -a 256 ~/models/%s'     # expect %s" % (
-            target, r, r, hashes.get(r, "(not computed)")))
+        out.append("  scp %s %s     # %.1f GB" % (q(str(HOME / "models" / r)), q("%s:models/%s" % (target, d)), sizes[r] / 1e9))
+        out.append("  ssh %s %s     # expect %s" % (q(target), q("sha256sum %s 2>/dev/null || shasum -a 256 %s" % (remote(r), remote(r))),
+                                                hashes.get(r, "(not computed)")))
     return out
 
 

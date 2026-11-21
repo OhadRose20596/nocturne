@@ -79,6 +79,8 @@ def load_config(model_dir: str | Path) -> ModelConfig:
     if gen.exists():
         g = json.loads(gen.read_text()).get("eos_token_id", [])
         eos = tuple(sorted(set(eos) | set(g if isinstance(g, list) else [g])))
+    if d.get("attention_bias") or d.get("mlp_bias"):
+        raise ValueError(f"{arch} with attention_bias or mlp_bias is not supported: the engine applies only the q, k, v bias of qwen2")
     rp = d.get("rope_parameters") or {}
     theta = d.get("rope_theta", rp.get("rope_theta", 1e6 if arch != "llama" else 10000.0))
     hd = d.get("head_dim") or d["hidden_size"] // d["num_attention_heads"]

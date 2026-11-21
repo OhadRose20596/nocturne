@@ -138,3 +138,12 @@ def test_name_map_agrees_with_gguf_py_tensor_name_map():
 def test_unknown_gguf_tensor_raises():
     with pytest.raises(KeyError, match="no engine name"):
         engine_name("blk.0.attn_qkv.weight")
+
+
+@pytest.mark.parametrize("qtype", QTYPES)
+@pytest.mark.parametrize("n", (1, 2, 3))
+def test_dequant_one_two_three_blocks(qtype, n):
+    """Codex finding 2: a single block slice keeps its byte offset; the int32 and fp16 views must not depend on it."""
+    b = random_blocks(qtype, n, seed=5)
+    ref = ref_dequantize(b, getattr(gguf.GGMLQuantizationType, qtype)).reshape(n, -1)
+    assert np.array_equal(quant.dequant_blocks(torch.from_numpy(b), qtype).numpy(), ref)

@@ -374,7 +374,8 @@ def plan(cfg, p: Placement, check_budget: bool = True) -> list[RankSpec]:
             kv = L * (kv1 - kv0) * d.kv_cache_per_head(p.max_seq_len)
             ws = workspace_bytes(d, L, q1 - q0, kv1 - kv0, m1 - m0, v1 - v0, hd_, p.prefill_max, p.max_seq_len)
             budget = int(r.budget_gb * 1e9) if r.budget_gb is not None else None
-            big = d.quant is not None or d.matrix_elems(q1 - q0, kv1 - kv0, m1 - m0, v1 - v0) * BF16 >= MPS_BIG_TENSOR
+            biggest = d.matrix_elems(q1 - q0, kv1 - kv0, m1 - m0, v1 - v0)         # elements of the largest matrix
+            big = (min(biggest, CHUNK_ELEMS) if d.quant is not None else biggest) * BF16 >= MPS_BIG_TENSOR     # a tensor of 10 MiB or more
             planned = {"weights": w, "kv": kv, "workspace": ws, "total": w + kv + ws,
                        "layer_bytes": round(attn[i] + (m1 - m0) * u.mlp_row + u.norms) if L else 0,
                        "vocab_bytes": round(vb[i]), "kv_heads_replicated": 0}

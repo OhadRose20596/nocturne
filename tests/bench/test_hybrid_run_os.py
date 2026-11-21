@@ -106,3 +106,19 @@ def test_find_run_falls_back_to_session6(tmp_path, monkeypatch):
     assert hr.find_run("R0_x") == tmp_path / "s7" / "runs" / "R0_x"
     with pytest.raises(FileNotFoundError):
         hr.find_run("nope")
+
+
+def test_gguf_hash_and_stat_commands_quote_file_names(tmp_path):
+    """Codex finding 1: the weight file name is a literal for the shell, a directory glob stays a glob."""
+    import subprocess
+    from nocturne.engines.torch_tp import hybrid_run as H
+    f = tmp_path / "model; printf CODEX_REPRO; #.gguf"
+    f.write_bytes(b"x")
+    g = tmp_path / "sp ace.gguf"
+    g.write_bytes(b"y")
+    for name in (f, g):
+        r = subprocess.run(["bash", "-c", H.hash_cmd("Linux", str(name)).replace("sha256sum", "shasum -a 256")], capture_output=True, text=True)
+        assert r.returncode == 0 and "CODEX_REPRO" not in r.stdout.replace(str(name.name), ""), r.stderr
+        assert name.name in r.stdout
+    assert H.hash_cmd("Linux", "~/models/hf/Qwen").endswith("*.json *.safetensors")
+    assert H.hash_cmd("Linux", "~/models/hf/Qwen").startswith("cd ~/models/hf/Qwen")

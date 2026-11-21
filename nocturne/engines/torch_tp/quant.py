@@ -26,7 +26,7 @@ def check_supported(qtype: str) -> None:
 
 def _f16(b: torch.Tensor) -> torch.Tensor:
     """[..., 2] uint8 -> [..., 1] float32 (little endian float16)."""
-    return b.contiguous().view(torch.float16).to(torch.float32)
+    return b.clone(memory_format=torch.contiguous_format).view(torch.float16).to(torch.float32)
 
 
 def _nibbles(qs: torch.Tensor, groups: int, width: int) -> torch.Tensor:
@@ -56,7 +56,7 @@ def dequant_blocks(blocks: torch.Tensor, qtype: str) -> torch.Tensor:
         q = _nibbles(blocks[:, 2:], 1, 16).reshape(n, 32).to(torch.int8) - 8
         return q.to(torch.float32) * _f16(blocks[:, :2])
     if qtype == "Q5_0":
-        qh = blocks[:, 2:6].contiguous().view(torch.int32).reshape(n, 1)
+        qh = blocks[:, 2:6].clone(memory_format=torch.contiguous_format).view(torch.int32).reshape(n, 1)       # clone: a one block slice keeps its byte offset
         bits = ((qh >> torch.arange(32, device=blocks.device, dtype=torch.int32).reshape(1, 32)) & 1)
         ql = _nibbles(blocks[:, 6:], 1, 16).reshape(n, 32).to(torch.int32)
         q = (ql | (bits << 4)) - 16

@@ -54,12 +54,20 @@ def peer_os(peer: dict, run=None) -> str:
     return "Darwin" if r.stdout.strip() == "Darwin" else "Linux"
 
 
+def shell_path(p: str) -> str:
+    """Quote a path for a remote shell, keeping a leading ~/ expandable."""
+    import shlex
+    return "~/" + shlex.quote(p[2:]) if p.startswith("~/") else shlex.quote(p)
+
+
 def _model_files(mdir: str) -> tuple[str, str]:
-    """(directory, file glob): the weight files of a safetensors directory, or the one .gguf file."""
+    """(quoted directory, file list): the weight files of a safetensors directory (a glob, left unquoted), or the one
+    .gguf file as a quoted literal name."""
+    import shlex
     if mdir.endswith(".gguf"):
         d, _, f = mdir.rpartition("/")
-        return d or ".", f
-    return mdir, "*.json *.safetensors"
+        return shell_path(d or "."), "-- " + shlex.quote(f)
+    return shell_path(mdir), "*.json *.safetensors"
 
 
 def stat_cmd(osname: str, mdir: str) -> str:
@@ -87,7 +95,7 @@ def model_hashes(peer: dict, host: str, mdir: str, run=None, osname: str | None 
     r = run(peer, hash_cmd(osname, mdir), 1800)
     if r.returncode:
         raise RuntimeError(f"hashing {mdir} on {host} failed: {r.stderr[-300:]}")
-    sums = {l.split()[1].lstrip("*"): l.split()[0] for l in r.stdout.splitlines() if l.strip()}
+    sums = {l.split(None, 1)[1].lstrip("*"): l.split(None, 1)[0] for l in r.stdout.splitlines() if l.strip()}
     cache[key] = {"stat": stat, "sha256": sums}
     HASHES.parent.mkdir(parents=True, exist_ok=True)
     HASHES.write_text(json.dumps(cache, indent=1, sort_keys=True))

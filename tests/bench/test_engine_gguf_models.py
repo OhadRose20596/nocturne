@@ -316,3 +316,26 @@ def test_planned_bytes_exact_for_mixed_layer_types_and_independent_gate_up():
                         + 1536 * 512 * (bpe(qi.gate[i]) + bpe(qi.up[i]) + bpe(qi.down[i])) + 2 * 512 * 2 for i in range(L))
         want = per_layer + sp.planned["vocab_bytes"] + 512 * 2           # plus the final norm
         assert abs(sp.planned["weights"] - want) <= 0.5, (L, sp.planned["weights"], want)
+
+
+def test_llama_with_attention_bias_is_rejected_not_silently_wrong(tmp_path):
+    """Codex finding 3: the engine applies only the qwen2 q, k, v bias, so other bias settings must fail loudly."""
+    import json
+    (tmp_path / "config.json").write_text(json.dumps({"model_type": "llama", "attention_bias": True, "hidden_size": 32,
+        "intermediate_size": 64, "num_hidden_layers": 1, "num_attention_heads": 2, "num_key_value_heads": 1, "vocab_size": 64}))
+    with pytest.raises(ValueError, match="attention_bias"):
+        load_config(tmp_path)
+
+
+def test_mps_floor_only_when_a_tensor_reaches_10_mib():
+    """Codex finding 4: tiny ranks get no 1 GiB floor, big ones do."""
+    from nocturne.engines.torch_tp.plan import QuantInfo
+    QI = lambda L: QuantInfo(*[("Q8_0",) * L] * 7, "Q8_0", "Q8_0")
+    tiny = Dims(hidden=32, intermediate=64, n_layers=1, n_heads=2, n_kv_heads=1, vocab=64, tied=False, hd=16, qkv_bias=False,
+                quant=QI(1))
+    pl = lambda d: plan(d, P(st("s", (0, d.n_layers), [dict(host="h", port=1, device="mps")], embed=True, lm_head=True), prefill_max=4, max_seq_len=16),
+                        check_budget=False)[0].planned
+    assert pl(tiny)["mps_floor"] == 0 and pl(tiny)["footprint"] == pl(tiny)["total"]
+    big = Dims(hidden=4096, intermediate=11008, n_layers=2, n_heads=32, n_kv_heads=8, vocab=32000, tied=False, hd=128, qkv_bias=False,
+               quant=QI(2))
+    assert pl(big)["mps_floor"] == 1 << 30
