@@ -1,0 +1,121 @@
+[
+ {
+  "mutation": "Q4_K: swap the two halves of the scale and min unpacking",
+  "file": "nocturne/engines/torch_tp/quant.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf.py::test_dequant_random_blocks_exact[Q4_K]",
+  "summary": "1 failed, 3 passed, 15 deselected in 0.57s"
+ },
+ {
+  "mutation": "Q8_0: drop the block scale",
+  "file": "nocturne/engines/torch_tp/quant.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf.py::test_dequant_random_blocks_exact[Q8_0]",
+  "summary": "1 failed, 15 deselected in 0.55s"
+ },
+ {
+  "mutation": "Q4_0: offset 7 instead of 8",
+  "file": "nocturne/engines/torch_tp/quant.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf.py::test_dequant_random_blocks_exact[Q4_0]",
+  "summary": "1 failed, 1 passed, 15 deselected in 0.55s"
+ },
+ {
+  "mutation": "Q5_0: high bit shifted by 3",
+  "file": "nocturne/engines/torch_tp/quant.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf.py::test_dequant_random_blocks_exact[Q5_0]",
+  "summary": "1 failed, 2 passed, 15 deselected in 0.56s"
+ },
+ {
+  "mutation": "Q5_K: high bit shifted by 3",
+  "file": "nocturne/engines/torch_tp/quant.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf.py::test_dequant_random_blocks_exact[Q5_K]",
+  "summary": "1 failed, 4 passed, 15 deselected in 0.56s"
+ },
+ {
+  "mutation": "Q4_K: add the min instead of subtracting it",
+  "file": "nocturne/engines/torch_tp/quant.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf.py::test_dequant_random_blocks_exact[Q4_K]",
+  "summary": "1 failed, 3 passed, 15 deselected in 0.57s"
+ },
+ {
+  "mutation": "Q6_K: bias 31 instead of 32",
+  "file": "nocturne/engines/torch_tp/quant.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf.py::test_dequant_random_blocks_exact[Q6_K]",
+  "summary": "1 failed, 5 passed, 15 deselected in 0.58s"
+ },
+ {
+  "mutation": "llama: skip the Q and K un-permute",
+  "file": "nocturne/engines/torch_tp/gguf_source.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf_models.py::test_bf16_gguf_weights_equal_safetensors_exactly[llama]",
+  "summary": "1 failed, 1 passed, 28 deselected, 1 warning in 9.96s"
+ },
+ {
+  "mutation": "column slice of a row split layer: one block too many",
+  "file": "nocturne/engines/torch_tp/gguf_source.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf_models.py::test_sharded_reads_equal_slices_of_the_full_read[qwen2]",
+  "summary": "1 failed, 31 deselected, 1 warning in 3.53s"
+ },
+ {
+  "mutation": "planner: block alignment check off by one head",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf_models.py::test_planner_rejects_unaligned_head_split_and_names_the_rule",
+  "summary": "1 failed, 1 passed, 32 deselected in 9.79s"
+ },
+ {
+  "mutation": "planner: MLP granule ignores the down_proj block",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf_models.py::test_planner_aligns_head_splits_to_k_quant_blocks",
+  "summary": "1 failed, 33 deselected in 5.67s"
+ },
+ {
+  "mutation": "planner: no transient dequant buffer in the workspace",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": false,
+  "first_failure": "",
+  "summary": "1 passed, 33 deselected in 7.75s"
+ },
+ {
+  "mutation": "planner: count every layer at layer 0 quant type",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf_models.py::test_planned_weight_bytes_equal_loaded_bytes_for_every_rank",
+  "summary": "1 failed, 33 deselected, 1 warning in 18.57s"
+ },
+ {
+  "mutation": "qwen3: skip the per head q_norm and k_norm",
+  "file": "nocturne/engines/torch_tp/model.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf_models.py::test_engine_on_safetensors_matches_transformers[qwen3]",
+  "summary": "1 failed, 33 deselected in 3.92s"
+ },
+ {
+  "mutation": "llama: ignore the Llama 3 rope factors",
+  "file": "nocturne/engines/torch_tp/model.py",
+  "caught": false,
+  "first_failure": "",
+  "summary": "1 passed, 33 deselected in 3.61s"
+ },
+ {
+  "mutation": "qwen2: drop the q, k, v bias",
+  "file": "nocturne/engines/torch_tp/model.py",
+  "caught": true,
+  "first_failure": "FAILED tests/bench/test_engine_gguf_models.py::test_engine_on_safetensors_matches_transformers[qwen2]",
+  "summary": "1 failed, 33 deselected in 3.54s"
+ },
+ {
+  "mutation": "GGUF config: head size from hidden // heads, ignoring attention.key_length",
+  "file": "nocturne/engines/torch_tp/gguf_source.py",
+  "caught": false,
+  "first_failure": "",
+  "summary": "10 passed, 20 deselected in 23.18s"
+ }
+]

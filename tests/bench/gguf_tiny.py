@@ -12,7 +12,7 @@ LLAMA = Path(os.path.expanduser("~/dev/llama.cpp"))
 CONVERT = LLAMA / "convert_hf_to_gguf.py"
 QUANTIZE = LLAMA / "build" / "bin" / "llama-quantize"
 TOK_SRC = Path(os.path.expanduser("~/models/hf/Qwen2.5-0.5B-Instruct"))
-CACHE = Path(os.path.expanduser("~/.cache/nocturne-tests/tiny_gguf_v1"))
+CACHE = Path(os.path.expanduser("~/.cache/nocturne-tests/tiny_gguf_v2"))
 ARCHS = ("qwen2", "llama", "qwen3")
 
 
@@ -31,7 +31,8 @@ def _config(arch: str):
     if arch == "qwen2":
         c = {k: v for k, v in common.items() if k != "head_dim"}
         return Qwen2Config(**c, rope_theta=1000000.0, rms_norm_eps=1e-6, tie_word_embeddings=False)
-    return Qwen3Config(**common, rope_theta=1000000.0, rms_norm_eps=1e-6, tie_word_embeddings=True)
+    # head size 64 with hidden 256 and 8 heads: head_dim is not hidden // heads, as in the real Qwen3 0.6B and 4B
+    return Qwen3Config(**{**common, "num_attention_heads": 8}, rope_theta=1000000.0, rms_norm_eps=1e-6, tie_word_embeddings=True)
 
 
 def _run(cmd, env=None):

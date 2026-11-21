@@ -59,6 +59,29 @@ def test_llama3_factors_equal_the_converters_rope_freqs(models):
                                          "original_max_position_embeddings": 2048}) == f
 
 
+@pytest.mark.parametrize("source", ("hf", "bf16"))
+def test_llama3_rotary_matches_transformers_at_long_positions(models, source):
+    """Independent check of rope scaling: transformers' own LlamaRotaryEmbedding, positions where the scaling matters."""
+    from transformers import AutoConfig
+    from transformers.models.llama.modeling_llama import LlamaRotaryEmbedding
+    from nocturne.engines.torch_tp.model import rotary
+    hf = LlamaRotaryEmbedding(AutoConfig.from_pretrained(str(models["llama"]["hf"])))
+    pos = torch.tensor([0, 1, 100, 2047, 5000, 8000])
+    cos_ref, sin_ref = hf(torch.zeros(1, 1, 64, dtype=torch.bfloat16), pos[None])
+    cfg = load_config(models["llama"][source])
+    cos, sin = rotary(pos, cfg.head_dim, cfg.rope_theta, torch.bfloat16, "cpu", cfg.rope_factors)
+    assert (cos.float() - cos_ref[0].float()).abs().max() <= 2 ** -7 * 2          # at most 2 bf16 ulps at |x| near 1
+    assert (sin.float() - sin_ref[0].float()).abs().max() <= 2 ** -7 * 2
+    plain, _ = rotary(pos, cfg.head_dim, cfg.rope_theta, torch.bfloat16, "cpu", None)
+    assert (plain.float() - cos_ref[0].float()).abs().max() > 0.05                    # the scaling is not a no-op on this config
+
+
+def test_qwen3_head_size_comes_from_key_length_not_hidden_over_heads(models):
+    for kind in ("hf", "bf16"):
+        cfg = load_config(models["qwen3"][kind])
+        assert cfg.hidden_size // cfg.num_attention_heads == 32 and cfg.head_dim == 64
+
+
 @pytest.mark.parametrize("arch", ARCHS)
 def test_bf16_gguf_weights_equal_safetensors_exactly(models, arch):
     """Includes the llama Q and K un-permutation: the converter permuted them, the loader must put them back."""
@@ -260,8 +283,10 @@ def test_q8_0_allows_any_head_split_that_is_a_multiple_of_the_block(models):
 
 def test_transient_and_mps_floor_in_the_plan(models):
     path = models["llama"]["q8_0"]
-    d = Dims.of(load_config(path), GgufSource(path).meta())
-    s = plan(d, P(st("s", (0, 2), [dict(host="h", port=1, device="mps")], embed=True, lm_head=True)), check_budget=False)[0]
-    assert s.planned["workspace"] > plan(Dims.of(load_config(path)), P(st("s", (0, 2), [dict(host="h", port=1)], embed=True,
-                                                                     lm_head=True)), check_budget=False)[0].planned["workspace"] - 1
+    cfg = load_config(path)
+    d = Dims.of(cfg, GgufSource(path).meta())
+    pl = lambda dims: plan(dims, P(st("s", (0, 2), [dict(host="h", port=1, device="mps")], embed=True, lm_head=True)), check_budget=False)[0]
+    s, dense = pl(d), pl(Dims.of(cfg))
+    biggest = d.matrix_elems(cfg.num_attention_heads, cfg.num_key_value_heads, cfg.intermediate_size, cfg.vocab_size)
+    assert s.planned["workspace"] - dense.planned["workspace"] == min(biggest, quant.CHUNK_ELEMS) * quant.CHUNK_WORKING_BYTES_PER_ELEM
     assert s.planned["mps_floor"] == 1 << 30 and s.planned["footprint"] >= 1 << 30

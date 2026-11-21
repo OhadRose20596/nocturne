@@ -1,5 +1,5 @@
 """Mutation check (V2): break the engine code on purpose, one change at a time, and see which test fails first.
-Usage (on a scratch branch, then throw the branch away): python mutate.py <out.json>
+Usage (on a scratch branch, then throw the branch away): python mutate.py <out.json> [name substring ...]
 Each mutation edits one file, runs a pytest selection, records the first failing test, and restores the file from git."""
 import json
 import subprocess
@@ -44,12 +44,12 @@ MUTATIONS = [
     ("qwen3: skip the per head q_norm and k_norm", E + "model.py", "if self.q_norm is not None:", "if False and self.q_norm is not None:",
      [MODELS, "-k", "matches_transformers and qwen3"]),
     ("llama: ignore the Llama 3 rope factors", E + "model.py", "if factors is not None:", "if False and factors is not None:",
-     [MODELS, "-k", "matches_transformers and llama"]),
+     [MODELS, "-k", "rotary_matches_transformers"]),
     ("qwen2: drop the q, k, v bias", E + "model.py", "self.wq, self.bq = g(\"self_attn.q_proj.weight\"), opt(\"self_attn.q_proj.bias\")",
      "self.wq, self.bq = g(\"self_attn.q_proj.weight\"), None", [MODELS, "-k", "matches_transformers and qwen2"]),
     ("GGUF config: head size from hidden // heads, ignoring attention.key_length", E + "gguf_source.py",
      'hd = int(self._num("attention.key_length", hidden // n_heads))', "hd = hidden // n_heads",
-     ["tests/bench/test_engine_gguf.py", "-k", "name_map_covers"]),
+     [MODELS, "-k", "key_length"]),
 ]
 
 
@@ -61,7 +61,10 @@ def run(args):
 
 def main():
     out = []
+    only = sys.argv[2:]
     for name, rel, old, new, args in MUTATIONS:
+        if only and not any(o in name for o in only):
+            continue
         p = REPO / rel
         src = p.read_text()
         assert src.count(old) == 1, f"{name}: pattern found {src.count(old)} times in {rel}"
@@ -73,7 +76,7 @@ def main():
         out.append({"mutation": name, "file": rel, "caught": rc != 0, "first_failure": first, "summary": tail})
         print(("CAUGHT " if rc else "MISSED ") + name + " -> " + first, flush=True)
     Path(sys.argv[1]).write_text(json.dumps(out, indent=1))
-    assert not subprocess.run(["git", "diff", "--quiet", "--", "nocturne"], cwd=REPO).returncode == 1, "tree not restored"
+    assert not subprocess.run(["git", "diff", "--quiet", "--", "nocturne/engines"], cwd=REPO).returncode == 1, "tree not restored"
 
 
 if __name__ == "__main__":
