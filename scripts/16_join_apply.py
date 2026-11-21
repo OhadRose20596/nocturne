@@ -5,10 +5,13 @@ Usage: python3 scripts/16_join_apply.py invite | listen [--once] | apply <report
 import argparse
 import datetime
 import difflib
+import hashlib
 import http.server
 import ipaddress
+import json
 import pathlib
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -30,9 +33,37 @@ def sh(cmd, timeout=60):
         return 124, "timeout"
 
 
+VPN_IF = re.compile(r"^(utun|ppp|ipsec|tun|tap|wg)")
+
+
+def linux_default_dev(route_text):
+    """Interface of the first IPv4 default route that is not a VPN, from `ip -4 route show default`."""
+    for line in route_text.splitlines():
+        m = re.search(r"\bdev\s+(\S+)", line)
+        if line.startswith("default") and m and not VPN_IF.match(m.group(1)):
+            return m.group(1)
+    return ""
+
+
+def linux_addr(addr_text):
+    """First IPv4 address from `ip -4 -o addr show dev X`."""
+    m = re.search(r"\binet\s+(\d+\.\d+\.\d+\.\d+)", addr_text)
+    return m.group(1) if m else ""
+
+
 def lan_ip():
-    rc, out = sh("netstat -rn -f inet | awk '$1==\"default\" && $NF !~ /^(utun|ppp|ipsec)/ {print $NF; exit}'")
-    rc, ip = sh("ipconfig getifaddr %s" % out) if out else (1, "")
+    if sys.platform == "darwin":
+        rc, out = sh("netstat -rn -f inet | awk '$1==\"default\" && $NF !~ /^(utun|ppp|ipsec)/ {print $NF; exit}'")
+        rc, ip = sh("ipconfig getifaddr %s" % out) if out else (1, "")
+    else:
+        rc, out = sh("ip -4 route show default")
+        dev = linux_default_dev(out) if rc == 0 else ""
+        rc, ip = (0, "")
+        if dev:
+            rc, addr = sh(["ip", "-4", "-o", "addr", "show", "dev", dev])
+            ip = linux_addr(addr) if rc == 0 else ""
+        if not ip:
+            rc, ip = sh("hostname -I | awk '{print $1}'")
     if rc != 0 or not ip:
         sys.exit("no LAN address on this machine")
     return ip
@@ -117,9 +148,11 @@ def cmd_listen(args):
 
 def summarize(path):
     facts, checks = parse_report(path)
-    print("  host %s  os %s%s  ip %s  device %s  torch %s  sha %s" % (
+    print("  host %s  os %s%s  ip %s (%s)  device %s  torch %s  sha %s" % (
         facts.get("host"), facts.get("os"), " (WSL2)" if facts.get("wsl") == "1" else "",
-        facts.get("ip"), facts.get("device"), facts.get("torch"), facts.get("sha")))
+        facts.get("ip"), facts.get("link_type", "link unknown"), facts.get("device"), facts.get("torch"), facts.get("sha")))
+    if "llama_commit" in facts:
+        print("  llama.cpp %s, backend %s" % (facts.get("llama_commit") or "not found", facts.get("llama_backend") or "-"))
     for name, status, msg in checks:
         if status in ("FAIL", "FIXED"):
             print("  [%s] %s: %s" % (status, name, msg))
@@ -172,6 +205,27 @@ def get_key(lines, start, end, key):
     return None
 
 
+def link_key(f):
+    """Network type of the report's LAN interface: wifi or wired, None when the script could not tell."""
+    t = f.get("link_type", "")
+    return t if t in ("wifi", "wired") else None
+
+
+def merge_networks(items, key, ip):
+    """items: ['wifi: 1.2.3.4', ...]. Sets `key` to ip, in place if present; never touches the other types."""
+    out, done = [], False
+    for x in items:
+        if x.split(":", 1)[0].strip() == key:
+            out.append("%s: %s" % (key, ip)); done = True
+        else:
+            out.append(x)
+    if not done:
+        first_wifi = next((i for i, x in enumerate(out) if x.startswith("wifi:")), None)
+        at = 0 if key == "wifi" or first_wifi is None else first_wifi + 1
+        out.insert(at, "%s: %s" % (key, ip))
+    return out
+
+
 def update_peers(text, peer, f, ssh_target, main=True):
     """main=True: the coordinator's own file, peers may be added. main=False: only addresses of an existing peer."""
     lines = text.splitlines()
@@ -193,23 +247,29 @@ def update_peers(text, peer, f, ssh_target, main=True):
             "    mem_gb: %s" % f.get("mem_gb", "0"),
             '    python: "%s"' % f.get("python", ""),
             "    bind: %s" % ip,
-            "    networks: {wifi: %s}" % ip,
+            "    networks: {%s: %s}" % (link_key(f) or "wifi", ip),
         ]
         lines[at:at] = block
         return "\n".join(lines) + "\n"
     is_self = get_key(lines, start, end, "ssh") in ("null", None, "")
     set_key(lines, start, end, "bind", ip)
     start, end = peer_block(lines, peer)
+    key = link_key(f)
     for i in range(start + 1, end):
         m = re.match(r"^(    networks:\s*)\{(.*)\}(.*)$", lines[i])
         if m:
-            items = [x.strip() for x in m.group(2).split(",") if x.strip() and not x.strip().startswith("wifi:")]
-            lines[i] = "%s{%s}%s" % (m.group(1), ", ".join(["wifi: %s" % ip] + items), m.group(3))
+            items = [x.strip() for x in m.group(2).split(",") if x.strip()]
+            if key is None:
+                if items:
+                    print("warning: the report does not say whether %s is Wi-Fi or wired; networks of '%s' left as they are" % (ip, peer))
+                    break
+                key = "wifi"
+            lines[i] = "%s{%s}%s" % (m.group(1), ", ".join(merge_networks(items, key, ip)), m.group(3))
             break
         if re.match(r"^    networks:\s*(#.*)?$", lines[i]):
-            sys.exit("peer '%s' has a block-style 'networks:' mapping. Set wifi: %s there by hand, or rewrite it as {wifi: ...}" % (peer, ip))
+            sys.exit("peer '%s' has a block-style 'networks:' mapping. Set %s: %s there by hand, or rewrite it as {%s: ...}" % (peer, key or "wifi", ip, key or "wifi"))
     else:
-        set_key(lines, start, end, "networks", "{wifi: %s}" % ip)
+        set_key(lines, start, end, "networks", "{%s: %s}" % (key or "wifi", ip))
         start, end = peer_block(lines, peer)
     if not is_self and (main or "@" in (get_key(lines, start, end, "ssh") or "")):
         set_key(lines, start, end, "ssh", ssh_target)
@@ -296,6 +356,76 @@ def write_with_diff(path, new, stamp, dry):
     path.write_text(new)
 
 
+REMOTE_LIST = ('hostname -s; ls ~/models/hf 2>/dev/null; echo @@gguf; '
+               'for f in ~/models/*.gguf ~/models/gguf/*.gguf; do [ -f "$f" ] && echo "${f#$HOME/models/} $(wc -c <"$f" | tr -d \' \')"; done; true')
+
+
+def local_models(root=None):
+    """(hf directory names, {gguf path relative to ~/models: size})."""
+    root = pathlib.Path(root) if root else HOME / "models"
+    hf = sorted(p.name for p in (root / "hf").glob("*") if p.is_dir())
+    gg = {}
+    for pat in ("*.gguf", "gguf/*.gguf"):
+        for p in sorted(root.glob(pat)):
+            gg[str(p.relative_to(root))] = p.stat().st_size
+    return hf, gg
+
+
+def parse_remote_listing(out):
+    """Output of REMOTE_LIST: (host, hf directory names, {gguf relative path: size})."""
+    lines = out.splitlines()
+    hf, gg, in_gguf = [], {}, False
+    for line in lines[1:]:
+        if line.strip() == "@@gguf":
+            in_gguf = True
+        elif not in_gguf:
+            hf.append(line.strip())
+        else:
+            name, _, size = line.strip().rpartition(" ")
+            if name and size.isdigit():
+                gg[name] = int(size)
+    return (lines[0].strip() if lines else "?"), hf, gg
+
+
+def models_missing(mine_hf, mine_gg, peer_hf, peer_gg):
+    """Hugging Face directories the peer lacks, and GGUF files it lacks or holds with another size."""
+    miss_hf = [m for m in mine_hf if m not in peer_hf]
+    miss_gg = [n for n in mine_gg if peer_gg.get(n) != mine_gg[n]]
+    return miss_hf, miss_gg
+
+
+def file_sha256(path, cache_file=None):
+    """sha256 of a file, cached by (size, mtime) so a 30 GB model is hashed once."""
+    path = pathlib.Path(path)
+    cache_file = pathlib.Path(cache_file) if cache_file else INBOX / "sha256_cache.json"
+    st = path.stat()
+    cache = json.loads(cache_file.read_text()) if cache_file.exists() else {}
+    hit = cache.get(str(path))
+    if hit and hit["size"] == st.st_size and hit["mtime"] == st.st_mtime:
+        return hit["sha256"]
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(8 << 20), b""):
+            h.update(chunk)
+    cache[str(path)] = {"size": st.st_size, "mtime": st.st_mtime, "sha256": h.hexdigest()}
+    cache_file.parent.mkdir(parents=True, exist_ok=True)
+    cache_file.write_text(json.dumps(cache, indent=1))
+    return h.hexdigest()
+
+
+def gguf_commands(target, rels, sizes, hashes):
+    """Lines to copy missing GGUF files and to check them after the copy (sha256 of the file on this machine)."""
+    out = []
+    dirs = sorted({r.rsplit("/", 1)[0] for r in rels if "/" in r})
+    out.append("  ssh %s 'mkdir -p ~/models%s'" % (target, "".join(" ~/models/" + d for d in dirs)))
+    for r in rels:
+        d = r.rsplit("/", 1)[0] + "/" if "/" in r else ""
+        out.append("  scp ~/models/%s %s:~/models/%s     # %.1f GB" % (r, target, d, sizes[r] / 1e9))
+        out.append("  ssh %s 'sha256sum ~/models/%s 2>/dev/null || shasum -a 256 ~/models/%s'     # expect %s" % (
+            target, r, r, hashes.get(r, "(not computed)")))
+    return out
+
+
 def cmd_apply(args):
     facts, checks = summarize(args.report)
     validate(facts, checks, args.force)
@@ -323,19 +453,28 @@ def cmd_apply(args):
     rc, out = sh(["ping", "-c", "10", "-i", "0.3", facts["ip"]], 30)
     print("  ping: " + " | ".join(out.splitlines()[-2:]))
     rc, out = sh(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "StrictHostKeyChecking=accept-new",
-                  ssh_target, "hostname -s; ls ~/models/hf 2>/dev/null; true"], 30)
+                  ssh_target, "bash -c " + shlex.quote(REMOTE_LIST)], 30)
     if rc != 0:
         print("  ssh %s: FAILED\n  %s" % (ssh_target, out.replace("\n", "\n  ")))
         sys.exit(1)
-    got = out.splitlines()
-    print("  ssh %s: ok (%s)" % (ssh_target, got[0] if got else "?"))
-    mine = sorted(p.name for p in (HOME / "models" / "hf").glob("*") if p.is_dir())
-    missing = [m for m in mine if m not in got[1:]]
-    if missing:
-        print("\nmodels on this machine that the peer does not have. Copy the ones you need:")
+    peer_host, peer_hf, peer_gg = parse_remote_listing(out)
+    print("  ssh %s: ok (%s)" % (ssh_target, peer_host))
+    mine_hf, mine_gg = local_models()
+    miss_hf, miss_gg = models_missing(mine_hf, mine_gg, peer_hf, peer_gg)
+    if miss_hf:
+        print("\nHugging Face models on this machine that the peer does not have. Copy the ones you need:")
         print("  ssh %s 'mkdir -p ~/models/hf'" % ssh_target)
-        for m in missing:
+        for m in miss_hf:
             print("  scp -r ~/models/hf/%s %s:~/models/hf/" % (m, ssh_target))
+    if miss_gg:
+        print("\nGGUF files on this machine that the peer lacks or holds with another size. Copy the ones you need,"
+              "\nthen check the sha256 on the peer against the value below:")
+        hashes = {}
+        if not args.no_hash:
+            for r in miss_gg:
+                print("  hashing %s (%.1f GB, cached after the first time)..." % (r, mine_gg[r] / 1e9), flush=True)
+                hashes[r] = file_sha256(HOME / "models" / r)
+        print("\n".join(gguf_commands(ssh_target, miss_gg, mine_gg, hashes)))
     fails = [c for c in checks if c[1] == "FAIL"]
     print("\npeer '%s' applied. %d failed check(s) in its report." % (args.peer, len(fails)))
 
@@ -346,7 +485,8 @@ def main():
     sub.add_parser("invite").set_defaults(fn=cmd_invite)
     p = sub.add_parser("listen"); p.add_argument("--once", action="store_true"); p.set_defaults(fn=cmd_listen)
     p = sub.add_parser("apply"); p.add_argument("report"); p.add_argument("--peer", required=True)
-    p.add_argument("--dry-run", action="store_true"); p.add_argument("--force", action="store_true"); p.set_defaults(fn=cmd_apply)
+    p.add_argument("--dry-run", action="store_true"); p.add_argument("--force", action="store_true")
+    p.add_argument("--no-hash", action="store_true", help="do not compute sha256 of missing GGUF files"); p.set_defaults(fn=cmd_apply)
     args = ap.parse_args()
     args.fn(args)
 

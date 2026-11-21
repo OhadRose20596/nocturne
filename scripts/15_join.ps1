@@ -49,6 +49,9 @@ if ($cfg) {
   $winIp = $cfg.IPv4Address[0].IPAddress
   $alias = $cfg.InterfaceAlias
   Fact win_ip $winIp; Fact win_if $alias; Fact win_mac $cfg.NetAdapter.MacAddress
+  $media = "$($cfg.NetAdapter.PhysicalMediaType) $($cfg.NetAdapter.InterfaceDescription)"
+  $link = if ($media -match '802\.11|Wireless|Wi-?Fi|WLAN') { 'wifi' } elseif ($media -match '802\.3|Ethernet|GbE|LAN') { 'wired' } else { 'unknown' }
+  Fact win_link_type $link
   Chk win_network PASS "address $winIp on $alias (MAC $($cfg.NetAdapter.MacAddress), use it for a DHCP reservation)"
   $prof = Get-NetConnectionProfile -InterfaceAlias $alias
   Fact win_ssid $prof.Name

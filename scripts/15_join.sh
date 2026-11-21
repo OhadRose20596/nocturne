@@ -93,6 +93,19 @@ else
   log routes 'ip -4 route show; hostname -I'
 fi
 fact lan_if "$LANIF"; fact ip "$IP"; fact vpn "$VPN"
+# link type of the LAN interface: wifi, wired or unknown (WSL2: the Windows adapter, passed in the --extra facts)
+LINK=unknown
+if [ "$WSL" = 1 ]; then
+  WL=""; [ -n "$EXTRA" ] && [ -f "$EXTRA" ] && WL="$(tr -d '\r' <"$EXTRA" | sed -n 's/^fact win_link_type=//p' | head -1)"
+  [ -n "$WL" ] && LINK="$WL"
+elif [ "$OS" = macos ]; then
+  HWPORT="$(networksetup -listallhardwareports 2>/dev/null | awk -v d="$LANIF" '/^Hardware Port:/{p=substr($0,16)} $1=="Device:" && $2==d {print p; exit}')"
+  case "$HWPORT" in *Wi-Fi*|*AirPort*|*WLAN*) LINK=wifi ;; "") ;; *) LINK=wired ;; esac
+elif [ -n "$LANIF" ] && [ -e "/sys/class/net/$LANIF" ]; then
+  if [ -d "/sys/class/net/$LANIF/wireless" ] || [ -d "/sys/class/net/$LANIF/phy80211" ]; then LINK=wifi; else LINK=wired; fi
+fi
+fact link_type "$LINK"
+if [ "$LINK" = unknown ]; then check link SKIP "could not tell whether $LANIF is Wi-Fi or wired"; else check link PASS "$LINK on $LANIF"; fi
 if [ -n "$IP" ]; then check network PASS "address $IP on $LANIF"; else check network FAIL "no LAN address found"; fi
 if [ "$VPN" = on ]; then check vpn FAIL "default route goes through $DEFIF. Disconnect the VPN by hand, then run again"
 else check vpn PASS "no VPN on the default route"; fi
@@ -250,10 +263,44 @@ else
   fact repo ""; check repo FAIL "repo not found. Run again with --install (needs git)"
 fi
 
-# ---- models
+# ---- llama.cpp: report only, nothing is built here
+LLAMA_PIN="${NOCTURNE_LLAMA_PIN:-1e7bcf3}"
+LDIR="${LLAMA_DIR:-$HOME/dev/llama.cpp}"; LBIN=""
+for d in "$LDIR/build/bin" "$LDIR/build/Release/bin"; do [ -x "$d/llama-server" ] && { LBIN="$d"; break; }; done
+[ -z "$LBIN" ] && have llama-server && LBIN="$(dirname "$(command -v llama-server)")"
+if [ -n "$LBIN" ]; then
+  RPCBIN=""; [ -x "$LBIN/ggml-rpc-server" ] && RPCBIN="$LBIN/ggml-rpc-server"
+  LCOMMIT="$("$LBIN/llama-server" --version 2>&1 | sed -n 's/.*commit \([0-9a-f]*\)).*/\1/p' | head -1)"
+  BK=cpu
+  ls "$LBIN" 2>/dev/null | grep -qi 'ggml-metal' && BK=metal
+  ls "$LBIN" 2>/dev/null | grep -qi 'ggml-cuda' && BK=cuda
+  if [ "$BK" = cpu ]; then
+    DEVS="$("$LBIN/llama-server" --list-devices 2>&1 | head -20)"
+    echo "$DEVS" | grep -qi 'metal' && BK=metal
+    echo "$DEVS" | grep -qi 'cuda' && BK=cuda
+  fi
+  fact llama_dir "$LBIN"; fact llama_commit "$LCOMMIT"; fact llama_backend "$BK"; fact ggml_rpc_server "$RPCBIN"
+  if [ -z "$RPCBIN" ]; then check llama_cpp FAIL "llama-server found in $LBIN, but ggml-rpc-server is missing (build with -DGGML_RPC=ON)"
+  elif [ -z "$LCOMMIT" ]; then check llama_cpp FAIL "llama-server --version printed no commit"
+  else
+    case "$LCOMMIT" in "$LLAMA_PIN"*) PINNOTE="same as the pinned $LLAMA_PIN" ;; *) PINNOTE="differs from the pinned $LLAMA_PIN" ;; esac
+    check llama_cpp PASS "commit $LCOMMIT ($PINNOTE), backend $BK, both binaries in $LBIN"
+  fi
+else
+  fact llama_dir ""; fact llama_commit ""; fact llama_backend ""; fact ggml_rpc_server ""
+  check llama_cpp FAIL "llama-server not found under $LDIR/build/bin or on the PATH. Build it with scripts/00_build_llamacpp.sh (not done by this script)"
+fi
+
+# ---- models: Hugging Face directories and GGUF files
 MODELS="$(ls "$HOME/models/hf" 2>/dev/null | tr '\n' ',' | sed 's/,$//')"
-fact models "$MODELS"
-if [ -n "$MODELS" ]; then check models PASS "$MODELS"; else check models FAIL "none under ~/models/hf. The coordinator copies them (16_join_apply.py prints the commands)"; fi
+GGUFS=""
+for f in "$HOME"/models/*.gguf "$HOME"/models/gguf/*.gguf; do
+  [ -f "$f" ] || continue
+  GGUFS="$GGUFS${GGUFS:+,}${f#$HOME/models/}:$(wc -c <"$f" | tr -d ' ')"
+done
+fact models "$MODELS"; fact gguf_models "$GGUFS"
+if [ -n "$MODELS$GGUFS" ]; then check models PASS "hf: ${MODELS:-none}; gguf: $(printf '%s' "$GGUFS" | tr ',' '\n' | grep -c .) file(s)"
+else check models FAIL "none under ~/models/hf or ~/models/*.gguf. The coordinator copies them (16_join_apply.py prints the commands)"; fi
 log disk 'df -h "$HOME" | tail -1'
 
 # ---- firewall
