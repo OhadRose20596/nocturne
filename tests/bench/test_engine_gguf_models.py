@@ -19,6 +19,7 @@ from nocturne.engines.torch_tp.plan import Dims, Placement, PlanError, RankIn, S
 from nocturne.engines.torch_tp.shard import Shard  # noqa: E402
 
 ARCHS = gguf_tiny.ARCHS
+DEV = __import__("os").environ.get("NOCTURNE_TEST_DEVICE", "cpu")
 
 
 @pytest.fixture(scope="module")
@@ -28,7 +29,7 @@ def models():
 
 def load_all(path, cfg, dtype=torch.bfloat16):
     sh = Shard(0, 1, cfg.num_attention_heads, cfg.num_key_value_heads, cfg.head_dim, cfg.intermediate_size)
-    w, nbytes = load_slices(path, cfg, LoadSpec.from_shard(cfg, sh), "cpu", dtype=dtype, log=lambda *a: None)
+    w, nbytes = load_slices(path, cfg, LoadSpec.from_shard(cfg, sh), DEV, dtype=dtype, log=lambda *a: None)
     return w, sh, nbytes
 
 
@@ -153,9 +154,9 @@ def hf_logits(hf_dir, ids):
 def engine_logits(path, ids):
     cfg = load_config(path)
     w, sh, _ = load_all(path, cfg)
-    m = Qwen2TP(cfg, w, sh, "cpu", 64, dtype=torch.bfloat16)
+    m = Qwen2TP(cfg, w, sh, DEV, 64, dtype=torch.bfloat16)
     h = m.layers_forward(m.embed_tokens(ids), 0, Comm())
-    return m.logits_last(h).float()
+    return m.logits_last(h).float().cpu()
 
 
 IDS = [5, 17, 99, 3, 42, 8, 1000, 77]
@@ -185,15 +186,15 @@ def reference_dense_weights(path, cfg):
     for name, t in list(w.items()):
         if isinstance(t, quant.QuantLinear) and t.qtype not in quant.DENSE:
             rows = t.data.shape[0]
-            flat = t.data.reshape(rows, -1).numpy()
+            flat = t.data.reshape(rows, -1).cpu().numpy()
             w[name] = gguf.quants.dequantize(flat, getattr(gguf.GGMLQuantizationType, t.qtype)).reshape(rows, -1)
-            w[name] = torch.from_numpy(np.ascontiguousarray(w[name])).to(torch.bfloat16)
+            w[name] = torch.from_numpy(np.ascontiguousarray(w[name])).to(torch.bfloat16).to(DEV)
     return w, sh
 
 
 def logits_of(cfg, w, sh):
-    m = Qwen2TP(cfg, w, sh, "cpu", 64, dtype=torch.bfloat16)
-    return m.logits_last(m.layers_forward(m.embed_tokens(IDS), 0, Comm())).float()
+    m = Qwen2TP(cfg, w, sh, DEV, 64, dtype=torch.bfloat16)
+    return m.logits_last(m.layers_forward(m.embed_tokens(IDS), 0, Comm())).float().cpu()
 
 
 @pytest.mark.parametrize("arch", ARCHS)
@@ -245,7 +246,7 @@ def test_planned_weight_bytes_equal_loaded_bytes_for_every_rank(models):
                          check_budget=False)
             for s in specs:
                 sl = s.slice_spec(d)
-                _, nbytes = load_slices(path, cfg, LoadSpec(s.layers, sl, s.embed_rows, s.head_rows, s.final_norm), "cpu",
+                _, nbytes = load_slices(path, cfg, LoadSpec(s.layers, sl, s.embed_rows, s.head_rows, s.final_norm), DEV,
                                         log=lambda *a: None)
                 assert abs(nbytes - s.planned["weights"]) <= 0.001 * nbytes + 64, f"{arch} {kind} {s.name}: loaded {nbytes} planned {s.planned['weights']}"
 

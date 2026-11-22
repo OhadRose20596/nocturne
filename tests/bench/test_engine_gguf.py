@@ -14,6 +14,7 @@ from nocturne.engines.torch_tp import quant  # noqa: E402
 from nocturne.engines.torch_tp.arch import engine_name  # noqa: E402
 
 MODELS = Path(os.path.expanduser("~/models"))
+DEV = os.environ.get("NOCTURNE_TEST_DEVICE", "cpu")      # cpu, mps or cuda: where the torch dequant runs
 QTYPES = ["Q8_0", "Q4_0", "Q5_0", "Q4_K", "Q5_K", "Q6_K"]
 SCALE_FIELDS = {"Q8_0": [(0, 2)], "Q4_0": [(0, 2)], "Q5_0": [(0, 2)], "Q4_K": [(0, 2), (2, 4)], "Q5_K": [(0, 2), (2, 4)], "Q6_K": [(208, 210)]}
 
@@ -32,7 +33,7 @@ def random_blocks(qtype: str, n: int, seed: int) -> np.ndarray:
 def test_dequant_random_blocks_exact(qtype):
     b = random_blocks(qtype, 300, seed=1)
     ref = ref_dequantize(b, getattr(gguf.GGMLQuantizationType, qtype)).reshape(300, -1)
-    ours = quant.dequant_blocks(torch.from_numpy(b), qtype).numpy()
+    ours = quant.dequant_blocks(torch.from_numpy(b).to(DEV), qtype).cpu().numpy()
     assert ours.shape == ref.shape
     assert np.array_equal(ours, ref), f"max abs diff {np.abs(ours - ref).max()}"
 
@@ -40,7 +41,7 @@ def test_dequant_random_blocks_exact(qtype):
 @pytest.mark.parametrize("qtype", QTYPES)
 def test_dequant_chunked_matches_unchunked(qtype, monkeypatch):
     bs, ts = quant.BLOCK[qtype]
-    raw = torch.from_numpy(random_blocks(qtype, 24, 2)).reshape(6, 4, ts)
+    raw = torch.from_numpy(random_blocks(qtype, 24, 2)).reshape(6, 4, ts).to(DEV)
     full = quant.dequant(raw, qtype, torch.float32)
     monkeypatch.setattr(quant, "CHUNK_ELEMS", 2 * 4 * bs)       # two rows per chunk
     assert torch.equal(quant.dequant(raw, qtype, torch.float32), full)
@@ -73,7 +74,7 @@ def test_real_tensors_match_gguf_py(path):
         en = engine_name(t.name)
         raw, qt = src.read(en, rows=slice(0, 4))
         ref = ref_dequantize(np.asarray(t.data)[:4], t.tensor_type)
-        ours = quant.dequant(raw, qt, torch.float32).numpy()
+        ours = quant.dequant(raw.to(DEV), qt, torch.float32).cpu().numpy()
         assert np.array_equal(ours, ref), f"{path.name} {t.name} {qt}: max abs diff {np.abs(ours - ref).max()}"
 
 
@@ -146,4 +147,4 @@ def test_dequant_one_two_three_blocks(qtype, n):
     """Codex finding 2: a single block slice keeps its byte offset; the int32 and fp16 views must not depend on it."""
     b = random_blocks(qtype, n, seed=5)
     ref = ref_dequantize(b, getattr(gguf.GGMLQuantizationType, qtype)).reshape(n, -1)
-    assert np.array_equal(quant.dequant_blocks(torch.from_numpy(b), qtype).numpy(), ref)
+    assert np.array_equal(quant.dequant_blocks(torch.from_numpy(b).to(DEV), qtype).cpu().numpy(), ref)
