@@ -1,0 +1,17 @@
+# R4c: 7B Q4_K_M, TP over m5, air, gtx with planner chosen heads (shares 2, 1, 1)
+model: ~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+allow_mixed_devices: true
+stages:
+  - name: s0
+    layers: [0, 28]
+    embed: true
+    lm_head: true
+    ranks:
+      - {host: m5, device: mps, port: 50070, weight: 2}
+      - {host: air, device: mps, port: 50070, weight: 1}
+      - {host: gtx, device: cuda, port: 50070, weight: 1, budget_gb: 5.5}

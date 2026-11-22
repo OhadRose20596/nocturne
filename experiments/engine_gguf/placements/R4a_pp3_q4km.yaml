@@ -1,0 +1,22 @@
+# R4a: 7B Q4_K_M, PP over m5, air, gtx
+model: ~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 10]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+  - name: s1
+    layers: [10, 19]
+    ranks:
+      - {host: air, device: mps, port: 50070}
+  - name: s2
+    layers: [19, 28]
+    lm_head: true
+    ranks:
+      - {host: gtx, device: cuda, port: 50070, budget_gb: 6.0}
