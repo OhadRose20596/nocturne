@@ -498,3 +498,15 @@ Criterion of every row: at least 7 of 8 eval prompts identical against the one r
 
 Loaded bytes equal planned weight bytes on every rank (ratio 1.0000). 0 reconnects. The Air link numbers are TCP connect medians (min about 7 ms, max about 105 ms, the idle link as in session 8).
 R5 (32B Q8_0 over three machines) and R6 were not run: see below.
+
+### Engine GGUF, part 2: 32B rungs R5 and R6 (2026-11-22 and 23)
+
+Qwen2.5-32B-Instruct Q8_0 (34.8 GB, sha256 fc5103335689b33d), equal on the three hosts. Context 512. Same hosts and SHA as above. Reference: the llama.cpp row `A1_wifi_qwen2.5-32b-q8_m5_c512ts3m_r1` of session 8c (task accuracy 1.0). No one rank token reference exists for 32B. Memory policy per row: M5 `iogpu.wired_limit_mb` 0 is the macOS default (about 17.76 GiB of Metal working set); 20480 is the raised limit set with sudo for R5b and R6 (a separate policy, as in session 8c).
+
+| run | placement | M5 GPU limit | outcome | task accuracy, answer text vs llama.cpp | frames per step (measured / predicted) | loaded GB per rank (equal to plan) | memory measured: MPS footprint peak / CUDA peak allocated | link (air / gtx) | time per token (background) |
+|---|---|---|---|---|---|---|---|---|---|
+| R5_gguf_pp3_q8_32b_c512_r1 | PP: m5 0-31 and embedding, air 31-53, gtx 53-64 and head | default | failed in the first prefill: Air `MPS command buffer execution failed: Insufficient Memory`, LinkLost | - | - | m5 16.89, air 11.40, gtx 6.53 | Air needed about 13.2 GB against about 12.1 GB of Metal working set (plan 11.94 GB plus the MPS gap) | 101.8 ms, 8.3 ms | - |
+| R5b_gguf_pp3_q8_32b_c512_m5raised_r1 | PP: m5 0-34 and embedding, air 34-53, gtx 53-64 and head | 20480 MB | completed, 0 reconnects | 1.0, 8 of 8 identical text | 3 / 3 over 279 steps | m5 18.44, air 9.84, gtx 6.53 | m5 20.67 (plan 19.01), air 11.46 (plan 10.38), gtx 6.79 (plan 7.04, VRAM free 0.36) | 12.6 ms, 8.9 ms | about 45 s; M5 swap 9 to 10 GB |
+| R6_gguf_hybrid_q8_32b_c512_m5raised_r1 | hybrid: TP pair m5 (heads 0-26, MLP rows 0-18176) and air (heads 26-40, rows 18176-27648) for layers 0-53 with the embedding, gtx 53-64 and head | 20480 MB | failed in the long prompt: gtx left the network at 00:06 (ssh "Operation timed out", no ping after), coordinator LinkLost at 00:36 | 8 eval prompts finished with the same token counts as R5b; their text is not in the record (the record keeps prompts only on success) | not recorded (predicted 217) | m5 18.63, air 9.73, gtx 6.53 | not recorded | 9.2 ms, 7.5 ms | about 50 s; M5 swap 8 GB |
+
+R6 is not a result about the hybrid split: the 8 eval prompts ran (22:18 to 22:45) and the long prompt ran 80 minutes before gtx dropped. No retry tonight: gtx stays unreachable.

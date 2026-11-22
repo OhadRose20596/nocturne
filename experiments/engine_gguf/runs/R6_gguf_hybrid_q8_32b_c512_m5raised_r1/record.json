@@ -1,0 +1,226 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "R6_gguf_hybrid_q8_32b_c512_m5raised_r1",
+ "date": "2026-11-22T22:17:34+0200",
+ "placement": {
+  "file": "experiments/engine_gguf/placements/R6_hybrid_q8_32b_m5raised.yaml",
+  "sha256": "6d034cc2fcd8cec64abfa775c1e1a02b670ba61d14863c632e801ecb46a71bc4",
+  "yaml": "# R6: 32B Q8_0 hybrid: TP pair m5 and air for layers 0 to 53 with the embedding (shares 19:10), gtx stage for layers 53 to 64 and the head.\n# Context 512, M5 GPU limit raised to 20 GiB (same policy as R5b). Budgets leave room for about 1.3 to 1.5 GB of MPS overhead above the plan.\nmodel: ~/models/Qwen2.5-32B-Instruct-Q8_0.gguf\ncoordinator: {host: m5}\nreduce_dtype: float32\nmax_seq_len: 512\nprefill_max: 256\ngranule: 128\nstages:\n  - name: s0\n    layers: [0, 53]\n    embed: true\n    ranks:\n      - {host: m5, device: mps, port: 50070, weight: 19, budget_gb: 19.5}\n      - {host: air, device: mps, port: 50070, weight: 10, budget_gb: 10.5}\n  - name: s1\n    layers: [53, 64]\n    lm_head: true\n    ranks:\n      - {host: gtx, device: cuda, port: 50070, budget_gb: 7.2}\n"
+ },
+ "git": {
+  "sha": "dcfcb642f5b92263b263610ec948b7957349676a",
+  "dirty": false
+ },
+ "torch_coordinator": "2.14.1",
+ "args": {
+  "placement": "experiments/engine_gguf/placements/R6_hybrid_q8_32b_m5raised.yaml",
+  "session_dir": "experiments/engine_gguf",
+  "run_id": "R6_gguf_hybrid_q8_32b_c512_m5raised_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": null,
+  "save_reference": false,
+  "transformers": false,
+  "transformers_dir": null,
+  "tokenizer_dir": null,
+  "force": false,
+  "mps_fraction_cap": false
+ },
+ "outcome": "error",
+ "model": {
+  "key": "~/models/Qwen2.5-32B-Instruct-Q8_0.gguf",
+  "dir": "~/models/Qwen2.5-32B-Instruct-Q8_0.gguf",
+  "sha256": {
+   "Qwen2.5-32B-Instruct-Q8_0.gguf": "fc5103335689b33d576ebe8bf50b35a5e04ca6f7cf0753c2f2df1079dabbb78f"
+  }
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 2,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    53
+   ],
+   "q0": 0,
+   "q1": 26,
+   "m0": 0,
+   "m1": 18176,
+   "kv0": 0,
+   "kv1": 6,
+   "embed_rows": [
+    0,
+    99584
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": 19500000000,
+   "planned": {
+    "weights": 18626768384,
+    "kv": 83361792,
+    "workspace": 470208512,
+    "total": 19180338688,
+    "layer_bytes": 341227008,
+    "vocab_bytes": 541736960,
+    "kv_heads_replicated": 1,
+    "mps_floor": 1073741824,
+    "footprint": 19180338688
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s0/1",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 1,
+   "group_size": 2,
+   "host": "air",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    53
+   ],
+   "q0": 26,
+   "q1": 40,
+   "m0": 18176,
+   "m1": 27648,
+   "kv0": 5,
+   "kv1": 8,
+   "embed_rows": [
+    99584,
+    152064
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": 10500000000,
+   "planned": {
+    "weights": 9734517760,
+    "kv": 41680896,
+    "workspace": 448163840,
+    "total": 10224362496,
+    "layer_bytes": 178283520,
+    "vocab_bytes": 285491200,
+    "kv_heads_replicated": 1,
+    "mps_floor": 1073741824,
+    "footprint": 10224362496
+   }
+  },
+  {
+   "gid": 2,
+   "name": "s1/0",
+   "stage": 1,
+   "stage_name": "s1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    53,
+    64
+   ],
+   "q0": 0,
+   "q1": 40,
+   "m0": 0,
+   "m1": 27648,
+   "kv0": 0,
+   "kv1": 8,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    152064
+   ],
+   "final_norm": true,
+   "budget": 7200000000,
+   "planned": {
+    "weights": 6526304256,
+    "kv": 23068672,
+    "workspace": 495397888,
+    "total": 7044770816,
+    "layer_bytes": 518096896,
+    "vocab_bytes": 827228160,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 7044770816
+   }
+  }
+ ],
+ "frames": {
+  "predicted": {
+   "token": 1,
+   "embed": 2,
+   "layers": 212,
+   "hops": 1,
+   "head": 1,
+   "total": 217
+  }
+ },
+ "preflight": {
+  "hosts": {
+   "air": {
+    "os": "Darwin",
+    "caffeinate": "on",
+    "awdl": "down",
+    "vpn_state": "disconnected",
+    "engine_sha256": "ed26c0474fc969b11ecf0a965c130b6600169e72f2c33727dd3ea36263fb34fc",
+    "model_sha256": {
+     "Qwen2.5-32B-Instruct-Q8_0.gguf": "fc5103335689b33d576ebe8bf50b35a5e04ca6f7cf0753c2f2df1079dabbb78f"
+    }
+   },
+   "gtx": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA GeForce GTX 1070, 8192 MiB, 889 MiB, 582.78",
+    "engine_sha256": "ed26c0474fc969b11ecf0a965c130b6600169e72f2c33727dd3ea36263fb34fc",
+    "model_sha256": {
+     "Qwen2.5-32B-Instruct-Q8_0.gguf": "fc5103335689b33d576ebe8bf50b35a5e04ca6f7cf0753c2f2df1079dabbb78f"
+    }
+   },
+   "m5": {
+    "os": "Darwin",
+    "caffeinate": "on",
+    "awdl": "down",
+    "vpn_state": "disconnected",
+    "engine_sha256": "ed26c0474fc969b11ecf0a965c130b6600169e72f2c33727dd3ea36263fb34fc",
+    "model_sha256": {
+     "Qwen2.5-32B-Instruct-Q8_0.gguf": "fc5103335689b33d576ebe8bf50b35a5e04ca6f7cf0753c2f2df1079dabbb78f"
+    }
+   }
+  }
+ },
+ "load_s": 36.95746898651123,
+ "error": "LinkLost: timed out",
+ "commands": [
+  {
+   "host": "air",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 192.168.1.219 --port 50070 --model \"$HOME\"/models/Qwen2.5-32B-Instruct-Q8_0.gguf --device mps --name s0/1 --tag R6_gguf_hybrid_q8_32b_c512_m5raised_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 192.168.1.168 --port 50070 --model \"$HOME\"/models/Qwen2.5-32B-Instruct-Q8_0.gguf --device cuda --name s1/0 --tag R6_gguf_hybrid_q8_32b_c512_m5raised_r1"
+  },
+  {
+   "host": "air",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f '--tag R6_gguf_hybrid_q8_32b_c512_m5raised_r1'"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx pkill -f '--tag R6_gguf_hybrid_q8_32b_c512_m5raised_r1'"
+  }
+ ]
+}

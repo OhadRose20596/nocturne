@@ -124,3 +124,25 @@ One diagnosed retry, registered before it runs: `R5b_pp3_q8_32b_m5raised.yaml`, 
 
 Placement `R6_hybrid_q8_32b_m5raised.yaml`, M5 GPU limit 20 GiB. Planner: m5 heads 0 to 26 and MLP rows 0 to 18176 of layers 0 to 53 with the embedding (planned 19.18 GB), air heads 26 to 40 and rows 18176 to 27648 (10.22 GB), gtx layers 53 to 64 and the head (7.04 GB). Frames per step 217. Q8_0 blocks of 32: every boundary aligned.
 R6 runs only if R5b completes. Prediction: loads and completes (medium, the M5 is at about 20.7 of 21.47 GB with overhead and swaps), frames 217, loaded bytes equal planned, task accuracy equal to R5b and to the llama.cpp row (1.0), eval prompts identical to R5b in at least 6 of 8 (the TP pair changes one sum order per layer). Time per token is background (T1), but I expect it to be slower than R5b: 106 all-reduces per token cross the Wi-Fi to the Air.
+
+## R5 outcome, retry (2026-11-22)
+
+`R5b_gguf_pp3_q8_32b_c512_m5raised_r1` completed. 32B Q8_0 runs on three machines with the engine reading GGUF.
+
+| id | outcome | met |
+|---|---|---|
+| R5a | planner accepted (retry plan: m5 19.01 GB, air 10.38 GB, gtx 7.04 GB) | yes |
+| R5b | all three ranks loaded on the retry. Run 1 failed on the Air (MPS out of memory), not on gtx | no on run 1, yes on the retry |
+| R5c | frames 3.0 of 3 over 279 decode steps. Task accuracy 1.0 (8 of 8), the same as the llama.cpp row `A1_wifi_qwen2.5-32b-q8_m5_c512ts3m_r1`. Answer text identical to llama.cpp in 8 of 8 (predicted at least 6). Loaded bytes equal planned on every rank (m5 18.443 GB, air 9.844 GB, gtx 6.526 GB) | yes |
+| R5d | the M5 swapped (about 9 to 10 GB during the eval prompts, 4.1 GB at the end) and the run completed | yes |
+
+Memory, planned total against measured: m5 19.01 GB planned, MPS footprint peak 20.67 GB (gap 1.66 GB). air 10.38 GB planned, footprint peak 11.46 GB (gap 1.08 GB). gtx 7.04 GB planned, CUDA peak allocated 6.79 GB, VRAM free at the end 0.36 GB. The MPS gap is the same 1 to 1.7 GB seen in part 1 and in R5 run 1.
+Time per token (background, T1): about 45 s per decode step against 0.35 s for llama.cpp on the same split. Not diagnosed. The likely cause is M5 swap: the rank footprint (20.7 GB) plus the coordinator on a 24 GB machine. This is a measurement for session 9, not a result about PP.
+Note on L: the Air link median depends on load. 102 ms on an idle link, 9 to 12 ms while copies or runs were active. Both figures were seen today.
+
+## R6 outcome (2026-11-23)
+
+`R6_gguf_hybrid_q8_32b_c512_m5raised_r1`: the planner's split loaded exactly (m5 18.627 GB, air 9.735 GB, gtx 6.526 GB, equal to planned weights). The 8 eval prompts finished between 22:18 and 22:45 with the same token counts as R5b (4, 4, 4, 3, 4, 3, 4, 6). The long prompt then ran for 80 minutes until gtx left the network at 00:06 (its ssh session reported "Operation timed out" and the host answers no ping). The coordinator raised LinkLost at 00:36. The record keeps prompts and frames only on success, so the answer text and the 217 frames are not measured.
+Prediction "loads": met. "Completes", "frames 217", "accuracy 1.0", "at least 6 of 8 identical to R5b": not tested. The failure is the host, not the engine or the plan.
+Time per token (background): about 50 s, close to R5b's 45 s. The 106 all-reduces per token to the Air did not dominate; the M5 swap is the likely common cost in both.
+Two engine changes for a separate approved step: write the finished prompts into the record when a later prompt fails, and log the frame counters per prompt.
