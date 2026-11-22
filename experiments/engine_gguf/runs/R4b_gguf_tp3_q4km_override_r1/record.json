@@ -1,0 +1,35 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "R4b_gguf_tp3_q4km_override_r1",
+ "date": "2026-11-22T17:06:57+0200",
+ "placement": {
+  "file": "experiments/engine_gguf/placements/R4b_tp3_q4km_override.yaml",
+  "sha256": "8d4f96734ea11d3a65e839b28d6a34aad5d19f16cec2192637c03cfc69e5833f",
+  "yaml": "# R4b: 7B Q4_K_M, TP with heads 14, 7, 7: the planner must reject it (K quant block of 256 columns)\nmodel: ~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf\ncoordinator: {host: m5}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nallow_mixed_devices: true\nstages:\n  - name: s0\n    layers: [0, 28]\n    embed: true\n    lm_head: true\n    ranks:\n      - {host: m5, device: mps, port: 50070, weight: 2, heads: 14}\n      - {host: air, device: mps, port: 50070, weight: 1, heads: 7}\n      - {host: gtx, device: cuda, port: 50070, weight: 1, heads: 7, budget_gb: 5.5}\n"
+ },
+ "git": {
+  "sha": "2308dafc3780a1cb13f62b89fcfb629419802845",
+  "dirty": false
+ },
+ "torch_coordinator": "2.14.1",
+ "args": {
+  "placement": "experiments/engine_gguf/placements/R4b_tp3_q4km_override.yaml",
+  "session_dir": "experiments/engine_gguf",
+  "run_id": "R4b_gguf_tp3_q4km_override_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": null,
+  "save_reference": false,
+  "transformers": false,
+  "transformers_dir": null,
+  "tokenizer_dir": null,
+  "force": false,
+  "mps_fraction_cap": false
+ },
+ "outcome": "plan_rejected",
+ "error": "stage s0: a head boundary at head 21 is column 2688 of o_proj, not a multiple of its block of 256 columns. Row split layers (o_proj, down_proj) can be cut only at block boundaries (32 for Q8_0, Q4_0, Q5_0; 256 for K quants)"
+}

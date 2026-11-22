@@ -480,3 +480,21 @@ Engine against llama.cpp on the same file, eval prompts identical (long prompt f
 Perplexity, 252 tokens of wikitext-2 test, engine against llama-perplexity: 7B Q8_0 10.869 against 10.939, 7B Q4_K_M 11.383 against 11.505.
 Architectures against transformers `generate`: Llama 3.2 1B safetensors 8/8, Llama 3.2 1B Q8_0 8/8, Qwen3 0.6B safetensors 7/8, Qwen3 0.6B Q8_0 6/8.
 Unit tests, mutation check (17 of 17 caught after two rounds), and the independent review: `experiments/engine_gguf/VERIFY.md`, `REVIEW.md`.
+
+
+## Engine GGUF, part 2 (three machines) (2026-11-22)
+
+Same three hosts as session 8: m5 (MPS, torch 2.14.1, coordinator), air (MPS, torch 2.15.0, `gguf` 0.19.0 added with uv), gtx (GTX 1070, CUDA, torch 2.14.1+cu126, WSL2). Home Wi-Fi. Repo SHA bbbfd94 plus the run commits (the Air's repo is the iCloud copy of the M5 folder). Engine B reading GGUF, one process per rank, loopback excluded: every rank on its own machine. llama.cpp 1e7bcf3da for the llama.cpp token comparison (references from part 1, run on the M5). Predictions and outcomes: `experiments/engine_gguf/PREDICTIONS.md`, "Part 2". Connectivity and the join reports: `experiments/engine_gguf/connectivity.md`. File sha256: Qwen2.5-7B Q8_0 862574978752413e, Q4_K_M 65b8fcd92af6b4fe, equal on the three hosts.
+Criterion of every row: at least 7 of 8 eval prompts identical against the one rank run of the same file (part 1: B2 for Q8_0, B4 for Q4_K_M). Time per token is background (T1).
+
+| run | placement | quant | identical vs one rank run (long prompt) | identical vs llama.cpp (long prompt) | frames per step (measured / predicted) | TP heads | loaded GB per rank (equal to plan) and memory | link before the run (TCP connect median, air / gtx) |
+|---|---|---|---|---|---|---|---|---|
+| R1_gguf_pp3_q8_7b_r1 | PP: m5 layers 0-10 and embedding, air 10-19, gtx 19-28 and head (gtx budget 6.0 GB) | Q8_0 | 8/8 (first divergence 103) | 8/8 (49) | 3 / 3 | - | m5 3.06 (footprint 4.17), air 2.23 (3.52), gtx 2.81 (peak allocated 3.12, VRAM free 4.25) | 9.6 ms, 7.4 ms |
+| R2_gguf_tp3_q8_7b_r1 | TP: heads 14 (m5), 7 (air), 7 (gtx, budget 5.5 GB), mixed devices | Q8_0 | 8/8 (49) | 8/8 (72) | 346 / 346 | 14, 7, 7 | m5 4.05 (5.89), air 2.02 (3.64), gtx 2.02 (peak 2.37, free 5.07) | 9.8 ms, 7.8 ms |
+| R3_gguf_hybrid_q8_7b_r1 | hybrid: TP pair m5 and air for layers 0-13 with the embedding, gtx stage for layers 14-27 and head (budget 6.0 GB) | Q8_0 | 8/8 (49) | 8/8 (72) | 61 / 61 | pair 14, 14 | m5 2.02 (3.62), air 2.02 (3.59), gtx 4.05 (peak 4.40, free 2.94) | 8.8 ms, 7.7 ms |
+| R4b_gguf_tp3_q4km_override_r1 | TP with heads 14, 7, 7 | Q4_K_M | plan_rejected: "a head boundary at head 21 is column 2688 of o_proj, not a multiple of its block of 256 columns" | - | - | 14, 7, 7 | not loaded | - |
+| R4a_gguf_pp3_q4km_7b_r1 | PP as R1 | Q4_K_M | 8/8 (5) | 8/8 (103) | 3 / 3 | - | m5 1.71 (3.58), air 1.23 (2.47), gtx 1.73 (peak 2.11, free 5.23) | 8.8 ms, 8.0 ms |
+| R4c_gguf_tp3_q4km_7b_r1 | TP, planner chosen heads (shares 2, 1, 1) | Q4_K_M | 8/8 (44) | 8/8 (5) | 346 / 346 | 14, 8, 6 | m5 2.34 (3.64), air 1.18 (2.73), gtx 1.18 (peak 1.50, free 5.92) | 8.2 ms, 8.5 ms |
+
+Loaded bytes equal planned weight bytes on every rank (ratio 1.0000). 0 reconnects. The Air link numbers are TCP connect medians (min about 7 ms, max about 105 ms, the idle link as in session 8).
+R5 (32B Q8_0 over three machines) and R6 were not run: see below.

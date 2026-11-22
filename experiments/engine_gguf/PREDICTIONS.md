@@ -87,3 +87,17 @@ Criterion of every row: at least 7 of 8 eval prompts identical against the one r
 | L | link record before each run | Air TCP connect median near 100 ms on an idle link (session 8), gtx near 10 ms. Both on Wi-Fi | high |
 
 Possible causes of a miss, written now: one or two prompts differing is a near tie moved by cross device rounding (check the logit gap in the first logits file); a rank failing to load is memory (gtx VRAM already holds 0.9 GB for Windows); a plan rejection is the alignment rule working, not a bug.
+
+## Part 2 outcomes (filled 2026-11-22)
+
+| id | outcome | met |
+|---|---|---|
+| R1 | 8 of 8 against `B2`. Frames 3 of 3. Loaded bytes equal planned. gtx loaded 2.81 GB, peak 3.12 GB, VRAM free 4.25 GB (I predicted about 3.5 GB loaded: the 9 layers and the head are smaller than my estimate) | yes |
+| R2 | 8 of 8. Frames 346 of 346. gtx loaded 2.02 GB (predicted about 3.9 GB: I forgot that 7 of 28 heads is a quarter of the attention, and a quarter of the MLP) | yes (number miss on gtx bytes) |
+| R3 | 8 of 8. Frames 61 of 61. gtx loaded 4.05 GB (predicted about 4.7), tightest rank with 2.94 GB VRAM free | yes |
+| R4a | 8 of 8 against `B4` | yes |
+| R4b | plan_rejected with the predicted rule message | yes |
+| R4c | planner chose heads 14, 8, 6 (all boundaries even); 8 of 8 against `B4`; frames 346 | yes |
+| R4d | against llama.cpp: R4a 8 of 8, R4c 8 of 8, the same count as against `B4` | yes |
+| M | loaded bytes equal planned on every rank (1.0000). MPS footprints 1.4 to 2.0 times the planned weights (the plan footprint is the larger of total and 1 GiB); gtx peak allocated within its budget everywhere | yes |
+| L | Air TCP connect median 8.2 to 9.8 ms (min about 7, max about 105), gtx 7.4 to 8.5 ms. I predicted about 100 ms for the Air median: that was the session 8 idle link figure, taken while the Air was asleep-prone; with caffeinate and the AWDL hold-down on, the median is about 9 ms | no (Air median), the link was better than predicted |

@@ -1,0 +1,1050 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "R4c_gguf_tp3_q4km_7b_r1",
+ "date": "2026-11-22T17:28:17+0200",
+ "placement": {
+  "file": "experiments/engine_gguf/placements/R4c_tp3_q4km.yaml",
+  "sha256": "5c7326c3816f43816dc07ed469c3bf589a6bceee1dc56da7b29bc12b78afa1d8",
+  "yaml": "# R4c: 7B Q4_K_M, TP over m5, air, gtx with planner chosen heads (shares 2, 1, 1)\nmodel: ~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf\ncoordinator: {host: m5}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nallow_mixed_devices: true\nstages:\n  - name: s0\n    layers: [0, 28]\n    embed: true\n    lm_head: true\n    ranks:\n      - {host: m5, device: mps, port: 50070, weight: 2}\n      - {host: air, device: mps, port: 50070, weight: 1}\n      - {host: gtx, device: cuda, port: 50070, weight: 1, budget_gb: 5.5}\n"
+ },
+ "git": {
+  "sha": "2308dafc3780a1cb13f62b89fcfb629419802845",
+  "dirty": false
+ },
+ "torch_coordinator": "2.14.1",
+ "args": {
+  "placement": "experiments/engine_gguf/placements/R4c_tp3_q4km.yaml",
+  "session_dir": "experiments/engine_gguf",
+  "run_id": "R4c_gguf_tp3_q4km_7b_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "B4_q4km_7b_1rank_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "transformers_dir": null,
+  "tokenizer_dir": null,
+  "force": false,
+  "mps_fraction_cap": false
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+  "dir": "~/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+  "sha256": {
+   "Qwen2.5-7B-Instruct-Q4_K_M.gguf": "65b8fcd92af6b4fefa935c625d1ac27ea29dcb6ee14589c55a8f115ceaaa1423"
+  }
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 3,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 0,
+   "q1": 14,
+   "m0": 0,
+   "m1": 9472,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": [
+    0,
+    76032
+   ],
+   "head_rows": [
+    0,
+    76032
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 2338430976,
+    "kv": 117440512,
+    "workspace": 467957248,
+    "total": 2923828736,
+    "layer_bytes": 70057472,
+    "vocab_bytes": 376814592,
+    "kv_heads_replicated": 1,
+    "mps_floor": 1073741824,
+    "footprint": 2923828736
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s0/1",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 1,
+   "group_size": 3,
+   "host": "air",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 14,
+   "q1": 22,
+   "m0": 9472,
+   "m1": 14080,
+   "kv0": 2,
+   "kv1": 4,
+   "embed_rows": [
+    76032,
+    114048
+   ],
+   "head_rows": [
+    76032,
+    114048
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1176666624,
+    "kv": 117440512,
+    "workspace": 445217536,
+    "total": 1739324672,
+    "layer_bytes": 35294720,
+    "vocab_bytes": 188407296,
+    "kv_heads_replicated": 1,
+    "mps_floor": 1073741824,
+    "footprint": 1739324672
+   }
+  },
+  {
+   "gid": 2,
+   "name": "s0/2",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 2,
+   "group_size": 3,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 22,
+   "q1": 28,
+   "m0": 14080,
+   "m1": 18944,
+   "kv0": 3,
+   "kv1": 4,
+   "embed_rows": [
+    114048,
+    152064
+   ],
+   "head_rows": [
+    114048,
+    152064
+   ],
+   "final_norm": true,
+   "budget": 5500000000,
+   "planned": {
+    "weights": 1178293760,
+    "kv": 58720256,
+    "workspace": 440335104,
+    "total": 1677349120,
+    "layer_bytes": 35352832,
+    "vocab_bytes": 188407296,
+    "kv_heads_replicated": 1,
+    "mps_floor": 0,
+    "footprint": 1677349120
+   }
+  }
+ ],
+ "frames": {
+  "predicted": {
+   "token": 2,
+   "embed": 6,
+   "layers": 336,
+   "hops": 0,
+   "head": 2,
+   "total": 346
+  },
+  "decode_steps": 279,
+  "measured_per_step": 346.0,
+  "bytes_per_step": 2459752.0,
+  "per_link_per_step": {
+   "s0/0->s0/1": {
+    "sent_frames": 57.0,
+    "sent_bytes": 409944.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 409944.0
+   },
+   "s0/0->s0/2": {
+    "sent_frames": 57.0,
+    "sent_bytes": 409944.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 409944.0
+   },
+   "s0/0->ctl:s0/1": {
+    "sent_frames": 1.0,
+    "sent_bytes": 28.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s0/0->ctl:s0/2": {
+    "sent_frames": 1.0,
+    "sent_bytes": 28.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s0/1->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 28.0
+   },
+   "s0/1->s0/0": {
+    "sent_frames": 57.0,
+    "sent_bytes": 409944.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 409944.0
+   },
+   "s0/1->s0/2": {
+    "sent_frames": 57.0,
+    "sent_bytes": 409944.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 409944.0
+   },
+   "s0/2->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 28.0
+   },
+   "s0/2->s0/0": {
+    "sent_frames": 57.0,
+    "sent_bytes": 409944.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 409944.0
+   },
+   "s0/2->s0/1": {
+    "sent_frames": 57.0,
+    "sent_bytes": 409944.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 409944.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "air": {
+    "os": "Darwin",
+    "caffeinate": "on",
+    "awdl": "down",
+    "vpn_state": "disconnected",
+    "engine_sha256": "ed26c0474fc969b11ecf0a965c130b6600169e72f2c33727dd3ea36263fb34fc",
+    "model_sha256": {
+     "Qwen2.5-7B-Instruct-Q4_K_M.gguf": "65b8fcd92af6b4fefa935c625d1ac27ea29dcb6ee14589c55a8f115ceaaa1423"
+    }
+   },
+   "gtx": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA GeForce GTX 1070, 8192 MiB, 957 MiB, 582.78",
+    "engine_sha256": "ed26c0474fc969b11ecf0a965c130b6600169e72f2c33727dd3ea36263fb34fc",
+    "model_sha256": {
+     "Qwen2.5-7B-Instruct-Q4_K_M.gguf": "65b8fcd92af6b4fefa935c625d1ac27ea29dcb6ee14589c55a8f115ceaaa1423"
+    }
+   },
+   "m5": {
+    "os": "Darwin",
+    "caffeinate": "on",
+    "awdl": "down",
+    "vpn_state": "disconnected",
+    "engine_sha256": "ed26c0474fc969b11ecf0a965c130b6600169e72f2c33727dd3ea36263fb34fc",
+    "model_sha256": {
+     "Qwen2.5-7B-Instruct-Q4_K_M.gguf": "65b8fcd92af6b4fefa935c625d1ac27ea29dcb6ee14589c55a8f115ceaaa1423"
+    }
+   }
+  }
+ },
+ "load_s": 21.695106744766235,
+ "link_counters": {
+  "s0/0": {
+   "s0/1": {
+    "sent_frames": 16416,
+    "recv_frames": 16417,
+    "sent_bytes": 319083264,
+    "recv_bytes": 319083306,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 114374376,
+     "recv_frames": 15903,
+     "recv_bytes": 114374376
+    },
+    "by_kind_sent": {
+     "allreduce": 16416
+    }
+   },
+   "s0/2": {
+    "sent_frames": 16416,
+    "recv_frames": 16417,
+    "sent_bytes": 319083264,
+    "recv_bytes": 319083306,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 114374376,
+     "recv_frames": 15903,
+     "recv_bytes": 114374376
+    },
+    "by_kind_sent": {
+     "allreduce": 16416
+    }
+   },
+   "ctl:s0/1": {
+    "sent_frames": 292,
+    "recv_frames": 290,
+    "sent_bytes": 13927,
+    "recv_bytes": 692001,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 7812,
+     "recv_frames": 279,
+     "recv_bytes": 4464
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "metrics": 2,
+     "token": 288
+    }
+   },
+   "ctl:s0/2": {
+    "sent_frames": 292,
+    "recv_frames": 290,
+    "sent_bytes": 13927,
+    "recv_bytes": 691967,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 7812,
+     "recv_frames": 279,
+     "recv_bytes": 4464
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "metrics": 2,
+     "token": 288
+    }
+   }
+  },
+  "s0/1": {
+   "ctl": {
+    "sent_frames": 290,
+    "recv_frames": 292,
+    "sent_bytes": 692001,
+    "recv_bytes": 13927,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 4464,
+     "recv_frames": 279,
+     "recv_bytes": 7812
+    },
+    "by_kind_sent": {
+     "ready": 1,
+     "metrics_reply": 1,
+     "head": 288
+    }
+   },
+   "s0/0": {
+    "sent_frames": 16417,
+    "recv_frames": 16416,
+    "sent_bytes": 319083306,
+    "recv_bytes": 319083264,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 114374376,
+     "recv_frames": 15903,
+     "recv_bytes": 114374376
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 16416
+    }
+   },
+   "s0/2": {
+    "sent_frames": 16416,
+    "recv_frames": 16417,
+    "sent_bytes": 319083264,
+    "recv_bytes": 319083306,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 114374376,
+     "recv_frames": 15903,
+     "recv_bytes": 114374376
+    },
+    "by_kind_sent": {
+     "allreduce": 16416
+    }
+   }
+  },
+  "s0/2": {
+   "ctl": {
+    "sent_frames": 290,
+    "recv_frames": 292,
+    "sent_bytes": 691967,
+    "recv_bytes": 13927,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 4464,
+     "recv_frames": 279,
+     "recv_bytes": 7812
+    },
+    "by_kind_sent": {
+     "ready": 1,
+     "metrics_reply": 1,
+     "head": 288
+    }
+   },
+   "s0/0": {
+    "sent_frames": 16417,
+    "recv_frames": 16416,
+    "sent_bytes": 319083306,
+    "recv_bytes": 319083264,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 114374376,
+     "recv_frames": 15903,
+     "recv_bytes": 114374376
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 16416
+    }
+   },
+   "s0/1": {
+    "sent_frames": 16417,
+    "recv_frames": 16416,
+    "sent_bytes": 319083306,
+    "recv_bytes": 319083264,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 114374376,
+     "recv_frames": 15903,
+     "recv_bytes": 114374376
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 16416
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "s0/0",
+   "gid": 0,
+   "host": "m5",
+   "device": "mps",
+   "pid": 28995,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 2338430976,
+   "kv_bytes": 117440512,
+   "idle": {
+    "peak_rss_bytes": 724566016,
+    "phys_footprint_bytes": 252511312,
+    "lifetime_max_phys_footprint_bytes": 670631016
+   },
+   "planned": {
+    "weights": 2338430976,
+    "kv": 117440512,
+    "workspace": 467957248,
+    "total": 2923828736,
+    "layer_bytes": 70057472,
+    "vocab_bytes": 376814592,
+    "kv_heads_replicated": 1,
+    "mps_floor": 1073741824,
+    "footprint": 2923828736
+   },
+   "budget": null,
+   "load_s": 5.003911972045898,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "current_allocated_bytes": 2492192768,
+   "driver_allocated_bytes": 3289055232,
+   "peak_rss_bytes": 2081964032,
+   "phys_footprint_bytes": 3644999096,
+   "lifetime_max_phys_footprint_bytes": 4001498576
+  },
+  {
+   "name": "s0/1",
+   "gid": 1,
+   "host": "air",
+   "device": "mps",
+   "pid": 25725,
+   "torch": "2.15.0",
+   "loaded_tensor_bytes": 1176666624,
+   "kv_bytes": 117440512,
+   "idle": {
+    "peak_rss_bytes": 724221952,
+    "phys_footprint_bytes": 258278528,
+    "lifetime_max_phys_footprint_bytes": 670303456
+   },
+   "planned": {
+    "weights": 1176666624,
+    "kv": 117440512,
+    "workspace": 445217536,
+    "total": 1739324672,
+    "layer_bytes": 35294720,
+    "vocab_bytes": 188407296,
+    "kv_heads_replicated": 1,
+    "mps_floor": 1073741824,
+    "footprint": 1739324672
+   },
+   "budget": null,
+   "load_s": 3.434213161468506,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "current_allocated_bytes": 1308154112,
+   "driver_allocated_bytes": 2433433600,
+   "peak_rss_bytes": 2394865664,
+   "phys_footprint_bytes": 2730837360,
+   "lifetime_max_phys_footprint_bytes": 2733180272
+  },
+  {
+   "name": "s0/2",
+   "gid": 2,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 13676,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 1178293760,
+   "kv_bytes": 58720256,
+   "idle": {
+    "peak_rss_bytes": 835661824
+   },
+   "planned": {
+    "weights": 1178293760,
+    "kv": 58720256,
+    "workspace": 440335104,
+    "total": 1677349120,
+    "layer_bytes": 35352832,
+    "vocab_bytes": 188407296,
+    "kv_heads_replicated": 1,
+    "mps_floor": 0,
+    "footprint": 1677349120
+   },
+   "budget": 5500000000,
+   "load_s": 10.322906732559204,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "current_allocated_bytes": 1254074368,
+   "driver_allocated_bytes": 1614807040,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 5916065792,
+   "max_allocated_bytes": 1498317824,
+   "peak_rss_bytes": 3205259264
+  }
+ ],
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 3512.1899445851645,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "936",
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 3311.206340789795,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "543",
+   "score": 1.0
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt_n": 44,
+   "tokens": [
+    19,
+    18,
+    22,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 3275.653044382731,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "437",
+   "score": 1.0
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt_n": 45,
+   "tokens": [
+    16,
+    17,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 3269.805908203125,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "12",
+   "score": 1.0
+  },
+  {
+   "id": "arith_05",
+   "kind": "eval",
+   "prompt_n": 58,
+   "tokens": [
+    16,
+    20,
+    15,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 3417.371988296509,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "150",
+   "score": 1.0
+  },
+  {
+   "id": "arith_06",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 3339.630126953125,
+   "category": "arithmetic",
+   "cap": 16,
+   "text": "36",
+   "score": 1.0
+  },
+  {
+   "id": "extract_01",
+   "kind": "eval",
+   "prompt_n": 67,
+   "tokens": [
+    35,
+    3362,
+    55041,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 3304.6299616495767,
+   "category": "extraction",
+   "cap": 16,
+   "text": "Dana Levi",
+   "score": 1.0
+  },
+  {
+   "id": "extract_02",
+   "kind": "eval",
+   "prompt_n": 69,
+   "tokens": [
+    14003,
+    220,
+    18,
+    16,
+    16,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 3377.110815048218,
+   "category": "extraction",
+   "cap": 16,
+   "text": "Room 311",
+   "score": 1.0
+  },
+  {
+   "id": "longopen_01",
+   "kind": "long",
+   "prompt_n": 78,
+   "tokens": [
+    32,
+    2114,
+    17220,
+    26299,
+    3922,
+    374,
+    1075,
+    264,
+    26736,
+    369,
+    821,
+    11,
+    10693,
+    697,
+    20638,
+    311,
+    5258,
+    323,
+    3624,
+    1995,
+    311,
+    279,
+    7602,
+    13,
+    3197,
+    498,
+    3736,
+    264,
+    2766,
+    389,
+    697,
+    20638,
+    11,
+    279,
+    1882,
+    12033,
+    448,
+    279,
+    9273,
+    11,
+    892,
+    14056,
+    438,
+    264,
+    8622,
+    18719,
+    11,
+    18150,
+    279,
+    6396,
+    315,
+    821,
+    311,
+    323,
+    504,
+    697,
+    7611,
+    13,
+    576,
+    9273,
+    33061,
+    311,
+    279,
+    7602,
+    4566,
+    264,
+    14652,
+    476,
+    23788,
+    80109,
+    1555,
+    11,
+    8241,
+    264,
+    6783,
+    4269,
+    315,
+    821,
+    382,
+    785,
+    9273,
+    1221,
+    91506,
+    448,
+    458,
+    2615,
+    1459,
+    11,
+    892,
+    374,
+    3545,
+    279,
+    1852,
+    3671,
+    438,
+    279,
+    9273,
+    476,
+    264,
+    8651,
+    17220,
+    26299,
+    9273,
+    13,
+    1096,
+    2615,
+    1459,
+    65098,
+    8887,
+    17289,
+    389,
+    3151,
+    33773,
+    11,
+    3881,
+    438,
+    8887,
+    11744,
+    11,
+    311,
+    5545,
+    697,
+    20638,
+    13,
+    4220,
+    8887,
+    11744,
+    525,
+    1075,
+    29447,
+    59295,
+    304,
+    279,
+    3720,
+    11,
+    323,
+    807,
+    14476,
+    389,
+    33773,
+    429,
+    1513,
+    944,
+    39878,
+    448,
+    1008,
+    7611,
+    11,
+    1741,
+    438,
+    19197,
+    651,
+    4693,
+    476,
+    22324,
+    1717,
+    17619,
+    382,
+    4498,
+    498,
+    1191,
+    16842,
+    264,
+    2766,
+    11,
+    697,
+    20638,
+    21308,
+    264,
+    1681,
+    311,
+    279,
+    7602,
+    11,
+    323,
+    279,
+    9273,
+    41054,
+    419,
+    1681,
+    311,
+    279,
+    8311,
+    3538,
+    13,
+    576,
+    3538,
+    1221,
+    21308,
+    279,
+    2766,
+    821,
+    1182,
+    311,
+    697,
+    20638,
+    304,
+    2613,
+    26757,
+    2598,
+    27035,
+    13,
+    8886,
+    10151,
+    5610,
+    264,
+    6573,
+    315,
+    279,
+    2766,
+    11,
+    323,
+    807,
+    5821,
+    1526,
+    279,
+    3720,
+    438,
+    8887,
+    17289,
+    11,
+    32587,
+    553,
+    279,
+    2615,
+    1459,
+    382,
+    7039,
+    11,
+    12793,
+    429,
+    697,
+    9565,
+    374,
+    1083,
+    16842,
+    264,
+    2766,
+    323,
+    374,
+    1667,
+    279,
+    1852,
+    8887,
+    5496,
+    13,
+    1096,
+    646,
+    5240,
+    264,
+    3491,
+    1576,
+    2176,
+    7611,
+    525,
+    4460
+   ],
+   "finish": "length",
+   "ms_per_step": 3575.205930074056,
+   "text": "A home Wi-Fi network is like a highway for data, allowing your laptop to receive and send information to the internet. When you watch a video on your laptop, the process begins with the router, which acts as a central hub, managing the flow of data to and from your devices. The router connects to the internet via a cable or fiber optic line, providing a constant stream of data.\n\nThe router then communicates with an access point, which is often the same device as the router or a separate Wi-Fi router. This access point broadcasts radio signals on specific frequencies, known as radio channels, to reach your laptop. These radio channels are like invisible highways in the air, and they operate on frequencies that don't interfere with other devices, such as microwaves or cordless phones.\n\nWhen you start streaming a video, your laptop sends a request to the internet, and the router forwards this request to the appropriate server. The server then sends the video data back to your laptop in small chunks called packets. Each packet contains a piece of the video, and they travel through the air as radio signals, guided by the access point.\n\nNow, imagine that your neighbor is also streaming a video and is using the same radio channel. This can cause a problem because both devices are trying"
+  }
+ ],
+ "commands": [
+  {
+   "host": "air",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 192.168.1.219 --port 50070 --model \"$HOME\"/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf --device mps --name s0/1 --tag R4c_gguf_tp3_q4km_7b_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 192.168.1.168 --port 50070 --model \"$HOME\"/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf --device cuda --name s0/2 --tag R4c_gguf_tp3_q4km_7b_r1"
+  },
+  {
+   "host": "air",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f '--tag R4c_gguf_tp3_q4km_7b_r1'"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx pkill -f '--tag R4c_gguf_tp3_q4km_7b_r1'"
+  }
+ ],
+ "correctness": {
+  "B4_q4km_7b_1rank_r1": {
+   "reference": "B4_q4km_7b_1rank_r1",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 3,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 44
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.5,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.25,
+    "arith_02": 0.34375,
+    "arith_03": 0.28125,
+    "arith_04": 0.189453125,
+    "arith_05": 0.28125,
+    "arith_06": 0.28125,
+    "extract_01": 0.28125,
+    "extract_02": 0.5,
+    "longopen_01": 0.25
+   },
+   "long_first_div": {
+    "longopen_01": 44
+   },
+   "criterion_met": true
+  }
+ }
+}
