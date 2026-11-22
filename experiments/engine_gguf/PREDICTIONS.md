@@ -68,3 +68,22 @@ PP only moves layers between processes. It changes no arithmetic. TP and hybrid 
 | F1 | all PASS except awdl; llama.cpp, models and link lines present | yes |
 
 Cause check for the one miss: C6 is the footprint, as listed under possible causes. The cause is real memory held beyond tensors (KV cache, dequant chunk buffers, MPS heaps). It does not affect results. The long prompt of B4 diverging at token 5 follows the larger Q4_K noise and bf16 activations; the perplexity gap to llama.cpp is 1.1 percent.
+
+# Part 2: three machines (written 2026-11-22 before any part 2 run)
+
+Hosts: m5 (MPS, torch 2.14.1), air (MPS, torch 2.15.0, gguf 0.19.0 added with uv, torch untouched), gtx (GTX 1070, 8 GB, CUDA, torch 2.14.1+cu126, WSL2). Home Wi-Fi, repo SHA bbbfd94 on all three (the Air's repo is the iCloud copy of the M5 folder). Files on all three hosts, sha256 checked on both ends: Qwen2.5-7B Q8_0 862574978752413e and Q4_K_M 65b8fcd92af6b4fe. A3 passed before this section: dequant of all six types on CUDA is bit exact against gguf-py (34 tests).
+Criterion of every row: at least 7 of 8 eval prompts identical against the one rank run of the same file from part 1 (`B2` for Q8_0, `B4` for Q4_K_M). Time per token is not predicted (T1).
+
+| id | run | prediction | confidence |
+|---|---|---|---|
+| R1 | 7B Q8_0, PP 3 stages: layers 0 to 10 and embedding on m5, 10 to 19 on air, 19 to 28 and head on gtx (budget 6.0 GB) | 7 or 8 of 8 identical. Frames per step 3. Loaded bytes equal planned. gtx loaded about 3.5 GB, VRAM free at ready above 1 GB. Session 8b did the same split in bf16 and gave 8 of 8, but the Air runs torch 2.15 against 2.14.1 and CUDA matmul rounds differently from MPS | medium |
+| R2 | 7B Q8_0, TP over three machines, heads 14 (m5), 7 (air), 7 (gtx, budget 5.5 GB), mixed devices accepted | 7 or 8 of 8. Frames 346. gtx loaded about 3.9 GB | medium |
+| R3 | 7B Q8_0 hybrid: TP pair (m5, air) for layers 0 to 13 with the embedding, one gtx stage for layers 14 to 27 and the head (budget 6.0 GB) | 7 or 8 of 8. Frames equal the planner formula. gtx loaded about 4.7 GB (14 layers and the head) and may be the tightest rank | medium |
+| R4a | 7B Q4_K_M, PP 3 stages as R1 | 6 to 8 of 8 against `B4`. Frames 3. K quant noise is larger but PP adds none | medium |
+| R4b | 7B Q4_K_M, TP with the heads override 14, 7, 7 | the planner rejects it, naming the block rule: head 21 is column 2688 of `o_proj`, not a multiple of 256. This is a prediction about the planner, not the run | high |
+| R4c | 7B Q4_K_M, TP over three machines with planner chosen heads (equal shares, heads in units of 2) | the planner accepts, every head boundary is even, 6 to 8 of 8 identical against `B4`. Frames 346 | medium |
+| R4d | R4a and R4c against llama.cpp on the same file (token ids from part 1) | same count of identical prompts as against `B4` plus or minus one | medium |
+| M | memory, every rank of R1 to R4c | loaded bytes equal planned weight bytes (within 0.1 percent). MPS footprint 1.1 to 1.6 times the plan (part 1). gtx peak allocated within its budget | high |
+| L | link record before each run | Air TCP connect median near 100 ms on an idle link (session 8), gtx near 10 ms. Both on Wi-Fi | high |
+
+Possible causes of a miss, written now: one or two prompts differing is a near tie moved by cross device rounding (check the logit gap in the first logits file); a rank failing to load is memory (gtx VRAM already holds 0.9 GB for Windows); a plan rejection is the alignment rule working, not a bug.
