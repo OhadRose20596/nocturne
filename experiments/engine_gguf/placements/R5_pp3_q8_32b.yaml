@@ -1,0 +1,23 @@
+# R5: Qwen2.5-32B Q8_0 (sha256 fc510333, the session 8c file), PP over m5, air, gtx at context 512, default M5 GPU limit.
+# Layer shares as close to the llama.cpp row A1_wifi_qwen2.5-32b-q8_m5_c512ts3m_r1 (21, 11, 32 of 64) as the planner accepts.
+model: ~/models/Qwen2.5-32B-Instruct-Q8_0.gguf
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 512
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 31]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070, budget_gb: 18.5}
+  - name: s1
+    layers: [31, 53]
+    ranks:
+      - {host: air, device: mps, port: 50070, budget_gb: 12.5}
+  - name: s2
+    layers: [53, 64]
+    lm_head: true
+    ranks:
+      - {host: gtx, device: cuda, port: 50070, budget_gb: 7.2}

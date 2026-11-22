@@ -101,3 +101,15 @@ Possible causes of a miss, written now: one or two prompts differing is a near t
 | R4d | against llama.cpp: R4a 8 of 8, R4c 8 of 8, the same count as against `B4` | yes |
 | M | loaded bytes equal planned on every rank (1.0000). MPS footprints 1.4 to 2.0 times the planned weights (the plan footprint is the larger of total and 1 GiB); gtx peak allocated within its budget everywhere | yes |
 | L | Air TCP connect median 8.2 to 9.8 ms (min about 7, max about 105), gtx 7.4 to 8.5 ms. I predicted about 100 ms for the Air median: that was the session 8 idle link figure, taken while the Air was asleep-prone; with caffeinate and the AWDL hold-down on, the median is about 9 ms | no (Air median), the link was better than predicted |
+
+## R5 (written 2026-11-22 before the run)
+
+Qwen2.5-32B Q8_0 (34.8 GB), PP over three machines, context 512, M5 GPU limit at the macOS default (`iogpu.wired_limit_mb` 0, about 17.76 GiB of Metal working set). Placement `R5_pp3_q8_32b.yaml`: m5 layers 0 to 31 with the embedding, air 31 to 53, gtx 53 to 64 with the head. The llama.cpp row of session 8c (`-ts 21,11,32` air, gtx, m5) carried 16.76, 10.84, 5.52 GiB on the same hosts, so the tight part here is gtx: our planner puts 7.04 GB on it, with about 7.3 GB of VRAM free after Windows (0.9 GB).
+
+| id | prediction | confidence |
+|---|---|---|
+| R5a | the planner accepts the placement (done: it does) with planned totals m5 17.45 GB, air 11.94 GB, gtx 7.04 GB | high |
+| R5b | the m5 and air ranks load. gtx loads or fails with CUDA out of memory (planned 7.04 GB of 7.3 GB free, plus the CUDA context). I give gtx 55 percent to load. A gtx failure is reported with the planner's numbers and the gap, then I try the split the planner proposes with one layer fewer on gtx | low |
+| R5c | if it completes: frames per step 3; task accuracy on the 8 prompts equal to the llama.cpp row (1.0); eval prompts identical to the llama.cpp answers in text for at least 6 of 8 (no token reference exists for 32B, since llama.cpp cannot hold it on the M5 alone); loaded bytes equal planned | medium |
+| R5d | M5 memory pressure: the M5 rank holds 17.4 GB of weights on a 24 GB machine with the usual apps. Swap grows. The run still completes if the apps are closed | medium |
+| R6 | only if R5 passes and the planner accepts a hybrid or TP split of 32B. TP of 32B over three machines would send 64 layers times two reductions per token over Wi-Fi: 128 round trips per token. I expect the planner to accept it only with unequal shares and I expect it to be slow, not wrong | low |
