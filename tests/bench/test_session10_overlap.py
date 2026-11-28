@@ -673,6 +673,15 @@ def test_a_plain_run_folder_is_a_reference_and_missing_prompts_are_named(tmp_pat
     c = hybrid_run.compare(out, {"a": np.zeros(4, np.float32), "L": np.full(4, 1.5, np.float32), "new": np.zeros(4, np.float32)}, ref, lg)
     assert (c["identical"], c["of"], c["long_first_div"], c["long_identical"], c["not_in_reference"]) == (1, 1, {"L": 2}, False, ["new"])
     assert c["logit_maxdiff"] == pytest.approx(0.5)
+    # pass 2, P3: a comparison that did not happen is not a pass
+    no_long = hybrid_run.compare([dict(prompts[0]), {"id": "new", "kind": "long", "tokens": [1], "score": None}],
+                                 {"a": np.zeros(4, np.float32)}, ref, lg)
+    assert (no_long["identical"], no_long["long_identical"], no_long["long_compared"], no_long["not_in_reference"]) == (1, None, 0, ["new"])
+    nothing = hybrid_run.compare([{"id": "z", "kind": "eval", "tokens": [1], "score": 1.0}], {"z": np.zeros(4, np.float32)}, ref, lg)
+    assert (nothing["of"], nothing["criterion_met"], nothing["logit_maxdiff"], nothing["long_identical"]) == (0, False, None, None)
+    part = hybrid_run.compare([dict(prompts[0]), {"id": "z", "kind": "eval", "tokens": [1], "score": 1.0}],
+                              {"a": np.zeros(4, np.float32)}, ref, lg)
+    assert part["criterion_met"] is False and part["not_in_reference"] == ["z"]      # an eval prompt the reference lacks
     (d / "record.json").write_text(json.dumps({"run_id": "X_off_r1", "outcome": "error", "prompts": prompts}))
     with pytest.raises(ValueError, match="did not complete"):
         hybrid_run.load_reference(str(d))
@@ -775,6 +784,7 @@ def test_a_failure_of_the_sender_thread_ends_the_run_at_once(tiny4, monkeypatch)
     co.shutdown()
     assert not alive, "the coordinator still waits for a head result that will never come"
     assert isinstance(out.get("e"), (LinkLost, hybrid.RankFailed, ConnectionError)), out
+    assert "sender thread failed: ValueError" in str(out["e"]), out       # pass 2, P7: the record names the real error
 
 
 def test_the_scheduler_counts_pairs_singles_and_units_in_flight(tiny4):
@@ -843,7 +853,7 @@ def test_a_frame_goes_inline_only_when_it_fits_the_buffer_the_kernel_granted(mon
     for t in tb[2]:
         t.join(timeout=5)
     assert [len(p) for _, p, _, _ in link.sent] == [120_000, 120_000]
-    assert comm._out == {1: 120_000}
+    assert comm._out == {1: 240_000}            # both frames wait for their answer, the one on the thread too
 
 
 def test_a_pair_of_large_frames_cannot_block_both_ranks_with_small_socket_buffers(monkeypatch):
@@ -885,7 +895,7 @@ def test_small_socket_buffers_do_not_change_the_tokens(tiny4, monkeypatch):
     assert all(len(v) == 2 and v[0] > 0 for r in m["ranks"].values() for v in r["socket_buffers"].values())
 
 
-def test_overlap_options_are_checked_before_anything_starts():
+def test_overlap_options_are_checked_before_anything_starts(tmp_path):
     """F10 and F11."""
     from nocturne.engines.torch_tp import coordinate, hybrid_run
     from nocturne.engines.torch_tp.plan import check_overlap
@@ -900,7 +910,10 @@ def test_overlap_options_are_checked_before_anything_starts():
     assert coordinate.overlap_options({}) == {"slots": 1, "prefill_chunk": 0, "tp_interleave": 1, "async_send": False, "on": False}
     for argv in (["--slots", "300"], ["--prefill-chunk", "1"], ["--tp-interleave", "2"]):
         with pytest.raises(SystemExit):
-            hybrid_run.main(["--placement", "none.yaml", "--run-id", "x"] + argv)
+            hybrid_run.main(["--placement", "none.yaml", "--run-id", "x", "--session-dir", str(tmp_path)] + argv)
+    with pytest.raises(SystemExit):         # pass 2, P3: a reference that cannot be read stops the run before it starts
+        hybrid_run.main(["--placement", "none.yaml", "--run-id", "x", "--session-dir", str(tmp_path), "--reference", str(tmp_path / "no_such_run")])
+    assert not list(tmp_path.iterdir())
 
 
 def test_a_host_with_several_rank_processes_and_no_host_budget_is_marked_unchecked(tiny4):
@@ -958,3 +971,119 @@ def test_pinned_copy_on_cuda_gives_the_tokens_and_logits_of_the_plain_path(tiny4
         x.join(timeout=10)
     same(ref, out)
     assert all(r["async_send"]["copy"] == "pinned" for r in m["ranks"].values())
+
+
+# ---- after the second review (REVIEW_overlap_pass2.md) -------------------------------------------------------------------------
+def _socket_pair(monkeypatch, buf=212992):
+    import socket as _s
+    monkeypatch.setattr(transport, "SOCK_BUF", buf)
+    srv = _s.socket()
+    srv.bind(("127.0.0.1", 0))
+    srv.listen(1)
+    c = _s.create_connection(srv.getsockname())
+    d, _ = srv.accept()
+    srv.close()
+    return transport.Link(c), transport.Link(d)
+
+
+def _capacity(monkeypatch) -> int:
+    """Bytes the two kernels take on one tuned link while nobody reads (it differs per kernel, so it is measured)."""
+    a, b = _socket_pair(monkeypatch)
+    a.sock.setblocking(False)
+    n, chunk = 0, b"x" * 8192
+    try:
+        while True:
+            n += a.sock.send(chunk)
+    except BlockingIOError:
+        pass
+    a.close()
+    b.close()
+    return n
+
+
+def test_a_frame_on_a_helper_thread_counts_for_its_pair_partner(monkeypatch):
+    """Pass 2, P1. A is too large for the inline rule and leaves on a thread; it fits the kernels, so the thread ends and A
+    sits unread. B is small. Sent inline on top of A it overflows the buffers, and every rank of the group blocks in that
+    send. B must count A and leave on a thread as well."""
+    import time
+    cap = _capacity(monkeypatch)
+    la, lb = _socket_pair(monkeypatch)
+    a_bytes, b_bytes = (cap - 60_000) // 4 * 4, 100_000
+    assert a_bytes > la.sndbuf // 2 and b_bytes <= la.sndbuf // 2 and a_bytes + b_bytes > cap, (cap, la.sndbuf)
+    comms = [hybrid.GroupComm(0, 2, {1: la}, "cpu"), hybrid.GroupComm(1, 2, {0: lb}, "cpu")]
+    out = [None, None]
+
+    def rank(i):
+        ta = comms[i].send_partial(torch.full((1, a_bytes // 4), float(i + 1)), 0)
+        time.sleep(0.15)                    # the compute of B: time for A's thread to end
+        tb = comms[i].send_partial(torch.full((1, b_bytes // 4), float(i + 1)), 1)
+        out[i] = (comms[i].recv_sum(ta), comms[i].recv_sum(tb))
+    ts = [threading.Thread(target=rank, args=(i,), daemon=True) for i in range(2)]
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join(timeout=30)
+    assert not any(t.is_alive() for t in ts), "both ranks are blocked in the inline send of the small frame"
+    assert float(out[0][0][0, 0]) == 3.0 and float(out[1][1][0, 0]) == 3.0
+    assert comms[0]._out == {1: 0} and comms[1]._out == {0: 0}
+    for l in (la, lb):
+        l.close()
+
+
+def test_the_count_of_unanswered_bytes_returns_to_zero_on_every_link_of_a_group_of_three(tiny4, monkeypatch):
+    """Pass 2, P2. With small buffers some frames of a pair go inline and some on threads, per link. Every link's count
+    must come back to zero; a count that drifts below zero switches the inline rule off."""
+    monkeypatch.setattr(transport, "SOCK_BUF", 4096)
+    _, ref, _ = alone(tiny4, tp3)
+    _, out, _, _, co = many(tiny4, tp3, 3, interleave=2)
+    same(ref, out)
+    assert co.rank.comm._out == {1: 0, 2: 0}
+
+
+@pytest.mark.parametrize("make", [tp3, hybrid_tp_first])
+def test_the_old_path_records_channels_that_match_on_every_link(tiny4, tmp_path, make):
+    """Pass 2, P6. Every options-off run with a timeline takes Coordinator._step: its token sends and head waits carry the
+    control channel, so every send finds its receive."""
+    from nocturne.engines.torch_tp import timeline
+    specs, co, th = boot(tiny4, make(free_ports(8)), timeline=True, run_dir=str(tmp_path))
+    try:
+        for i, p in enumerate(PROMPTS[:3]):
+            co.generate(list(p), 4, ignore_eos=True, rid=f"p{i}")
+        requests = list(co.requests)
+    finally:
+        co.shutdown()
+    for x in th:
+        x.join(timeout=10)
+    o = timeline.build(tmp_path, co.clock_record(), requests)["overlap"]
+    assert o["unmatched_links"] == [] and sum(l["frames"] for l in o["links"].values()) > 0
+    chans = {(e["kind"], e.get("ch")) for rk in timeline.load(tmp_path)["ranks"] for e in rk["events"] if e["bytes"]}
+    assert all(ch in ("g", "p", "c") for _, ch in chans), chans
+
+
+def test_a_head_frame_for_a_slot_outside_the_table_is_named(tiny4):
+    """Pass 2, P6 (F12 of pass 1): the message names the rank and the slot, not an index error from inside the receive."""
+    specs, co, th = boot(tiny4, pp3(free_ports(8)), slots=2)
+    real = hybrid.RankRuntime._send_head
+
+    def wrong_slot(self, res, flags, unit):
+        return real(self, res, flags | 7 << hybrid.SLOT_SHIFT, unit)
+    hybrid.RankRuntime._send_head = wrong_slot
+    try:
+        with pytest.raises(RuntimeError, match="head frame from s2/0 for slot 7"):
+            co.generate_many(reqs(PROMPTS[:1], 3))
+    finally:
+        hybrid.RankRuntime._send_head = real
+        co.shutdown()
+
+
+def test_the_plan_command_shows_the_host_budget_it_checked(tmp_path, tiny4, capsys):
+    """Pass 2, P4."""
+    import yaml
+    from nocturne.engines.torch_tp import __main__ as cli
+    pl = {"model": str(tiny4), "max_seq_len": 64, "granule": 16, "host_budget_gb": {"h": 1.0}, "stages": [
+        {"name": "a0", "layers": [0, 2], "embed": True, "ranks": [{"host": "h", "device": "cpu", "port": 1}]},
+        {"name": "b0", "layers": [2, 4], "lm_head": True, "ranks": [{"host": "h", "device": "cpu", "port": 2}]}]}
+    (tmp_path / "pl.yaml").write_text(yaml.safe_dump(pl))
+    assert cli.main(["plan", "--placement", str(tmp_path / "pl.yaml")]) == 0
+    text = capsys.readouterr().out
+    assert "host budget MB" in text and "not checked" not in text and "| 1000 |" in text

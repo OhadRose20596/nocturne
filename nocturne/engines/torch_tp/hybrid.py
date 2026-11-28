@@ -314,7 +314,7 @@ class GroupComm(Comm):
         self.ctx: list | None = None        # recorder contexts of the two requests of a pair, by tag
         self.sender = sender
         self._tail: dict[int, threading.Thread] = {}      # per peer: the latest threaded send that may still be running
-        self._out: dict[int, int] = {}      # per peer: bytes sent inline whose all-reduce has not been received yet
+        self._out: dict[int, int] = {}      # per peer: bytes of all-reduce frames sent (inline or on a thread) and not yet answered
 
     def all_reduce(self, x: torch.Tensor) -> torch.Tensor:
         return self.recv_sum(self.send_partial(x))
@@ -345,17 +345,17 @@ class GroupComm(Comm):
         nb = transport.frame_bytes(len(wire), xc.dim())
         dec = xc.shape[0] == 1
         pending = []
-        inline = 0
         for r in sorted(self.links):
             prev = self._tail.get(r)
             if prev is not None and not prev.is_alive():
                 prev = None
-            # inline only when this frame and the inline frames of a pair partner fit the buffer the kernel granted:
-            # every rank sends before it receives, so what is sent inline must fit without the peer reading
-            if prev is None and self.links[r].fits_inline(len(wire), self._out.get(r, 0)):
+            # Inline only when this frame fits the granted buffer together with everything this rank sent on the link and
+            # has no answer for yet. Every rank sends before it receives, so the peer is not reading. A frame of a pair
+            # partner that left on a thread counts too: once its thread has ended, it sits unread in the same buffers.
+            out = self._out.get(r, 0)
+            self._out[r] = out + len(wire)
+            if prev is None and self.links[r].fits_inline(len(wire), out):
                 self.links[r].send(transport.KIND_ALLREDUCE, wire, dt, tuple(xc.shape), decode=dec)
-                self._out[r] = self._out.get(r, 0) + len(wire)
-                inline = len(wire)
             elif prev is None:
                 self._tail[r] = self.links[r].send_async(transport.KIND_ALLREDUCE, bytes(wire), dt, tuple(xc.shape), decode=dec)
                 pending.append(self._tail[r])
@@ -367,7 +367,7 @@ class GroupComm(Comm):
                 pending.append(self._tail[r])
             if rec:
                 rec.lap("send", self.names.get(r), nb, CH_GROUP)
-        return (x.dtype, xc, pending, tag, inline)
+        return (x.dtype, xc, pending, tag, len(wire))
 
     @staticmethod
     def _send_after(prev: threading.Thread, link: transport.Link, data: bytes, dt: str, shape: tuple, dec: bool) -> None:
@@ -378,7 +378,7 @@ class GroupComm(Comm):
         """Second half: receive every peer's partial and add all partials in group rank order."""
         if self.n == 1:
             return ticket
-        dtype, xc, pending, tag, inline = ticket
+        dtype, xc, pending, tag, sent = ticket
         rec = self.rec
         if rec and tag is not None and self.ctx:
             rec.use(self.ctx[tag])
@@ -390,8 +390,8 @@ class GroupComm(Comm):
             if rec:
                 rec.lap("allreduce_wait", self.names.get(r), self.links[r].last_recv, CH_GROUP)
             parts[r] = _from_wire(payload, shape, pdt)
-            if inline:                      # the peer answered this all-reduce: it has read, or is reading, what was sent for it
-                self._out[r] = self._out.get(r, 0) - inline
+            if sent:                        # the peer answered this all-reduce: it has read, or is reading, what was sent for it
+                self._out[r] = self._out.get(r, 0) - sent
         if pending is None:                 # handed to the sender thread: my partial is on the host once its copy is done
             parts[self.me] = self.sender.host(xc)
         else:
@@ -455,7 +455,13 @@ class RankRuntime:
     def _sender_failed(self, e: BaseException) -> None:
         """The sender thread died (--async-send). The compute thread may be blocked on a link and would never learn of
         it, so every link of this rank is closed: its own receive raises, and so do its peers'."""
-        self.log(f"[hybrid] {self.spec.name}: the sender thread failed: {type(e).__name__}: {e}; closing this rank's links")
+        text = f"the sender thread failed: {type(e).__name__}: {e}"
+        try:
+            self.log(f"[hybrid] {self.spec.name}: {text}; closing this rank's links")
+            if self.ctl is not None:        # the coordinator turns an ERROR frame into the text of its record
+                self.ctl.send(transport.KIND_ERROR, json.dumps({"rank": self.spec.name, "error": text}).encode(), "uint8")
+        except Exception:                   # noqa: BLE001 - nothing here may keep the links open
+            pass
         for link in list(self.links.values()):
             link.close()
 

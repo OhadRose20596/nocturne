@@ -77,7 +77,7 @@ def main(argv=None):
             if not a.force:
                 return 2
             specs = plan(cfg, p, check_budget=False)
-        print(format_plan(specs, cfg))
+        print(format_plan(specs, cfg, p.host_budget_gb))
         return 0
     if a.cmd == "launch":
         from .gguf_source import load_tokenizer

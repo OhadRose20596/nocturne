@@ -1,0 +1,511 @@
+[
+ {
+  "mutation": "clock: offset sign (local minus remote)",
+  "file": "nocturne/engines/torch_tp/clock.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_estimate_is_remote_minus_local_and_uses_the_smallest_round_trip",
+  "tail": null
+ },
+ {
+  "mutation": "clock: event times shifted the wrong way",
+  "file": "nocturne/engines/torch_tp/clock.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_event_times_go_to_the_coordinator_clock_with_the_interpolated_offset",
+  "tail": null
+ },
+ {
+  "mutation": "clock: keep the first round instead of the smallest round trip",
+  "file": "nocturne/engines/torch_tp/clock.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_estimate_is_remote_minus_local_and_uses_the_smallest_round_trip",
+  "tail": null
+ },
+ {
+  "mutation": "clock: OS comparison with the hosts swapped",
+  "file": "nocturne/engines/torch_tp/clock.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_compare_with_os_sync_flags_a_gap_over_two_ms",
+  "tail": null
+ },
+ {
+  "mutation": "timesync: SNTP offset sign",
+  "file": "nocturne/bench/probes/timesync.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_sntp_offset_is_server_minus_local_and_delay_excludes_the_server_hold",
+  "tail": null
+ },
+ {
+  "mutation": "recorder: the cursor does not advance",
+  "file": "nocturne/engines/torch_tp/recorder.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_recorder_cursor_leaves_no_gap_inside_a_step",
+  "tail": null
+ },
+ {
+  "mutation": "timeline: sent and received bytes swapped",
+  "file": "nocturne/engines/torch_tp/timeline.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_recorded_spans_tile_every_step_and_bytes_equal_the_transport_counters",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: sha256 of a received slice not checked",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_a_slice_whose_sha256_differs_from_the_manifest_is_rejected",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: CRC32 of a chunk not checked",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_a_corrupted_chunk_is_rejected_and_nothing_enters_the_cache[False]",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: a cached file is accepted whatever its size",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_a_truncated_cache_file_is_requested_again",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: manifest slice bounds one short",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_manifest_lists_exactly_what_the_rank_loads_with_hashes_of_the_slices",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: row range used as a column range",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_manifest_lists_exactly_what_the_rank_loads_with_hashes_of_the_slices",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: hashes of the manifest not checked before they name a file",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_manifest_hashes_must_be_hex_before_they_name_a_file",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: a transfer that ends early is accepted (review F5)",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_a_transfer_that_ends_early_is_rejected_and_leaves_no_partial_file",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: the temporary file of a broken transfer is left (review F6)",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_a_corrupted_chunk_is_rejected_and_nothing_enters_the_cache[False]",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: hash memo kept across a change of the slicing code (review F4)",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_hash_memo_is_dropped_when_the_slicing_code_changes",
+  "tail": null
+ },
+ {
+  "mutation": "operator: pkill without the option terminator (review F1)",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_operator_starts_the_coordinator_on_the_placement_host_and_ranks_on_theirs",
+  "tail": null
+ },
+ {
+  "mutation": "operator: pkill pattern not anchored at the end of the tag (review F1)",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_operator_starts_the_coordinator_on_the_placement_host_and_ranks_on_theirs",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F1: the operator never gives up on a silent coordinator",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_a_coordinator_without_a_sign_of_life_is_ended_and_the_reason_is_kept",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F1: heartbeat lines do not count as a sign of life",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_heartbeats_keep_a_quiet_coordinator_and_a_stopped_one_is_ended",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F2: the run id is not checked before the run folder is made",
+  "file": "nocturne/engines/torch_tp/hybrid_run.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_run_id_is_checked_before_anything_is_written",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F2: dot and dot dot accepted as a run tag",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_run_id_is_checked_before_anything_is_written",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F3: a slice that is not contiguous is copied whole",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_a_column_slice_is_never_copied_whole",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F4: device sync without the device",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_device_sync_waits_for_the_ranks_own_cuda_device",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F5: the end clock exchange also goes down the pipeline links",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_clock_frames_use_only_ctl_links_and_the_request_number_only_with_the_recorder",
+  "tail": null
+ },
+ {
+  "mutation": "Codex: the request number on the wire with the recorder off",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "result": "NOT APPLIED: the text occurs 0 times"
+ },
+ {
+  "mutation": "Codex: --verify-cache does not hash the cached file",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_a_changed_cache_file_is_trusted_by_name_and_size_and_caught_with_verify",
+  "tail": null
+ },
+ {
+  "mutation": "rank: run tag from the wire used as a path (review F7)",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_run_tag_from_the_plan_cannot_leave_the_runs_folder",
+  "tail": null
+ },
+ {
+  "mutation": "recorder: no compute span at the end of a step of a plain group rank (review F17)",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_recorded_spans_tile_every_step_and_bytes_equal_the_transport_counters",
+  "tail": null
+ },
+ {
+  "mutation": "recorder: time stamps from the slewed monotonic clock",
+  "file": "nocturne/engines/torch_tp/clock.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_time_stamps_come_from_the_raw_monotonic_clock",
+  "tail": null
+ },
+ {
+  "mutation": "transport: a send does not wait out ENOBUFS",
+  "file": "nocturne/engines/torch_tp/transport.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_a_send_waits_out_a_moment_without_kernel_buffers",
+  "tail": null
+ },
+ {
+  "mutation": "planner: coordinator host taken from the last stage",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_slots_need_no_model_and_agree_with_the_full_plan",
+  "tail": null
+ },
+ {
+  "mutation": "operator: coordinator process started on the host of rank 1",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_operator_starts_the_coordinator_on_the_placement_host_and_ranks_on_theirs",
+  "tail": null
+ },
+ {
+  "mutation": "coordinator: the host check accepts any machine",
+  "file": "nocturne/engines/torch_tp/coordinate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_coordinator_process_refuses_another_host",
+  "tail": null
+ },
+ {
+  "mutation": "operator: model path of the operator instead of the coordinator host",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_operator_starts_the_coordinator_on_the_placement_host_and_ranks_on_theirs",
+  "tail": null
+ },
+ {
+  "mutation": "overlap V2a: the coordinator does not put the slot on the wire",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_each_request_in_flight_gives_the_tokens_it_gives_alone[2-pp3]",
+  "tail": null
+ },
+ {
+  "mutation": "overlap V2a: a rank ignores the slot of a frame",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_each_request_in_flight_gives_the_tokens_it_gives_alone[2-pp3]",
+  "tail": null
+ },
+ {
+  "mutation": "overlap V2a: a head result travels without its slot",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_each_request_in_flight_gives_the_tokens_it_gives_alone[2-pp3]",
+  "tail": null
+ },
+ {
+  "mutation": "overlap V2a: a head result of the sender thread travels without its slot",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_async_send_with_slots_chunks_and_pairs[pp3-3-3-1]",
+  "tail": null
+ },
+ {
+  "mutation": "overlap V2b: under interleave the second request is summed in another order",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_interleaved_requests_give_the_same_tokens_and_the_same_sums[2-tp3]",
+  "tail": null
+ },
+ {
+  "mutation": "overlap V2b: a pair reads the second sum before the first",
+  "file": "nocturne/engines/torch_tp/model.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_interleaved_requests_give_the_same_tokens_and_the_same_sums[2-tp3]",
+  "tail": null
+ },
+ {
+  "mutation": "overlap V2c: every prefill chunk starts at position 0",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_chunked_prefill_gives_the_same_tokens_and_the_predicted_frames[1-2-pp3]",
+  "tail": null
+ },
+ {
+  "mutation": "overlap V2d: the planner takes the largest rank of a host, not the sum",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_planner_sums_all_rank_processes_of_a_host_against_the_host_budget",
+  "tail": null
+ },
+ {
+  "mutation": "overlap V2d: the planner leaves out the cost of the processes",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_planner_sums_all_rank_processes_of_a_host_against_the_host_budget",
+  "tail": null
+ },
+ {
+  "mutation": "overlap V2d: a host over its budget is accepted",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_planner_sums_all_rank_processes_of_a_host_against_the_host_budget",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: the KV cache of slot 0 is written whatever the slot",
+  "file": "nocturne/engines/torch_tp/model.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_each_request_in_flight_gives_the_tokens_it_gives_alone[2-pp3]",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: the planner counts one KV cache whatever the slots",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_slots_need_room_and_are_checked",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: a prefill chunk that is not the last still gets a head result",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_chunked_prefill_gives_the_same_tokens_and_the_predicted_frames[1-2-pp3]",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: prefill frame formula counts head frames for every chunk",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_chunked_prefill_gives_the_same_tokens_and_the_predicted_frames[1-2-pp3]",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: a last chunk of one token is left alone",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_chunk_ranges_cover_the_prompt_and_never_end_in_one_token",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: the pair flag is not sent",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_interleaved_requests_give_the_same_tokens_and_the_same_sums[2-tp3]",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: the second large frame of a pair does not wait for the first on its link",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_a_large_pair_keeps_its_order_on_the_link_when_frames_leave_on_threads",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: the head on the device takes the last maximum on a tie",
+  "file": "nocturne/engines/torch_tp/model.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_head_on_the_device_is_the_head_argmax_also_with_ties",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: the compute thread does not wait for its partial to reach the host",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_sender_keeps_hand_over_order_and_reports_a_failure_to_the_compute_thread",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: a failure of the sender thread is not reported",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_sender_keeps_hand_over_order_and_reports_a_failure_to_the_compute_thread",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: a frame is in flight only until the receiver starts to wait",
+  "file": "nocturne/engines/torch_tp/timeline.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_a_frame_is_in_flight_from_the_send_start_to_the_end_of_the_wait_matched_by_order",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: the overlap share counts all compute time",
+  "file": "nocturne/engines/torch_tp/timeline.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_overlap_share_is_compute_time_with_a_frame_in_flight_over_the_request_window",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: the busy share ignores the request window",
+  "file": "nocturne/engines/torch_tp/timeline.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_overlap_share_is_compute_time_with_a_frame_in_flight_over_the_request_window",
+  "tail": null
+ },
+ {
+  "mutation": "overlap: sender thread frames are left out of the bytes per link",
+  "file": "nocturne/engines/torch_tp/timeline.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_async_send_records_sender_spans_and_the_bytes_of_every_link",
+  "tail": null
+ },
+ {
+  "mutation": "review F1: no compute span before a hand-over to the sender thread",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_async_send_closes_a_compute_span_before_every_hand_over",
+  "tail": null
+ },
+ {
+  "mutation": "review F2: frames in flight matched per pair of ranks, not per socket",
+  "file": "nocturne/engines/torch_tp/timeline.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_a_recorded_run_with_slots_matches_every_send_with_a_receive[False]",
+  "tail": null
+ },
+ {
+  "mutation": "review F2: a head frame recorded on the group channel",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_a_recorded_run_with_slots_matches_every_send_with_a_receive[False]",
+  "tail": null
+ },
+ {
+  "mutation": "review F3: a failing sender thread leaves the rank's links open",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_a_failure_of_the_sender_thread_ends_the_run_at_once",
+  "tail": null
+ },
+ {
+  "mutation": "review F4: steps in pairs are not counted",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_the_scheduler_counts_pairs_singles_and_units_in_flight",
+  "tail": null
+ },
+ {
+  "mutation": "review F7: the scheduler waits for every head result before the next step (nothing in flight at once)",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_the_scheduler_counts_pairs_singles_and_units_in_flight",
+  "tail": null
+ },
+ {
+  "mutation": "review F7: partials are sent on the compute thread although the sender thread is on",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_async_send_gives_the_same_tokens_logits_and_frames[tp3-inline]",
+  "tail": null
+ },
+ {
+  "mutation": "review F6: a frame goes inline whatever the kernel granted",
+  "file": "nocturne/engines/torch_tp/transport.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_a_frame_goes_inline_only_when_it_fits_the_buffer_the_kernel_granted",
+  "tail": null
+ },
+ {
+  "mutation": "review F6: inline frames of a pair partner are not counted",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_a_frame_goes_inline_only_when_it_fits_the_buffer_the_kernel_granted",
+  "tail": null
+ },
+ {
+  "mutation": "review F8: a bit set in a header field of the default path",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_options_off_send_the_frames_of_the_engine_before_part_3",
+  "tail": null
+ },
+ {
+  "mutation": "review F9: the old path writes the request number without a mask",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_the_old_path_masks_the_request_number_so_it_never_reaches_the_slot_bits",
+  "tail": null
+ },
+ {
+  "mutation": "review F10: a chunk of one token is accepted",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_overlap_options_are_checked_before_anything_starts",
+  "tail": null
+ },
+ {
+  "mutation": "review F5: a host with several processes and no budget is not marked",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_a_host_with_several_rank_processes_and_no_host_budget_is_marked_unchecked",
+  "tail": null
+ },
+ {
+  "mutation": "review F15: a pair plans the work space of one request",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_overlap.py::test_a_pair_plans_the_work_space_of_two_requests_for_group_ranks",
+  "tail": null
+ }
+]

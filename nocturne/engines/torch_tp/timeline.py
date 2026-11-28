@@ -2,8 +2,8 @@
 folder, puts every time on the coordinator's monotonic clock (clock.py), and writes trace.json.gz (Trace Event Format,
 opens in ui.perfetto.dev as it is), breakdown.csv (per step and rank: ms per kind, bytes per peer), samples_<host>.jsonl (aligned), and
 timeline.html (per rank one compute row and one communication row, colors by peer; bytes per link).
-Overlap (session 10 part 3): a frame is in flight from the start of its send to the end of the receiver's wait for it;
-the k-th send on a directed link belongs to the k-th receive. Per rank and per device: the busy share (computing) and
+Overlap (session 10 part 3): a frame is in flight from the start of its send until the receiver has read it; the k-th
+send on a socket belongs to the k-th receive on it (two ranks can share two sockets, told apart by the channel column). Per rank and per device: the busy share (computing) and
 the overlap share (computing while a frame it sent, or one addressed to it, is in flight). docs/MEASUREMENT.md.
 Usage: python -m nocturne.engines.torch_tp.timeline <run_dir> [--req N] [--from-step K] [--steps 3]
 The clock offsets and the request list come from record.json (keys `clock`, `requests`) in the run folder."""

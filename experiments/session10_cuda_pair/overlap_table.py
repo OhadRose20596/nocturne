@@ -79,15 +79,22 @@ def main():
             print(f"| {r['run_id']} | {pl} | {options(r)} | outcome: {r.get('outcome')} | | | | | | | | |")
             continue
         cs = comparisons(r)
-        off = (f"{cs[1]['identical']}/{cs[1]['of']}; {'identical' if cs[1]['long_identical'] else 'first divergence ' + str(list(cs[1]['long_first_div'].values()))}; "
-               f"{cs[1]['logit_maxdiff']:.4g}") if len(cs) > 1 else "-"
+        if len(cs) > 1:
+            c = cs[1]
+            lng = "no long prompt compared" if c["long_identical"] is None else ("identical" if c["long_identical"] else "first divergence " + str(list(c["long_first_div"].values())))
+            if c["not_in_reference"]:
+                lng += f" ({len(c['not_in_reference'])} prompts not in the reference)"
+            off = f"{c['identical']}/{c['of']}; {lng}; " + ("not compared" if c["logit_maxdiff"] is None else f"{c['logit_maxdiff']:.4g}")
+        else:
+            off = "-"
         f = r["frames"]
         busy, over, dev = shares(r)
         t = r.get("throughput") or {}
         print(f"| {r['run_id']} | {pl} | {options(r)} | {against(cs[0])} | {off} | {f['measured_per_step']:.1f} / {f['predicted']['total']} | "
               f"{f.get('prefill_measured')} / {f.get('prefill_predicted')} | {f['bytes_per_step']:.0f} | {t.get('tokens_per_s', 0):.2f} | {busy} | {over} | {dev} |")
     gate = [r for r in recs if r.get("outcome") == "completed" and not (r.get("overlap") or {}).get("on") and not (r.get("overlap") or {}).get("async_send")
-            and (Path(r["placement"]["file"]).name, bool(r["args"].get("timeline"))) in PART1]
+            and (Path(r["placement"]["file"]).name, bool(r["args"].get("timeline"))) in PART1
+            and (r["args"].get("long"), r["args"].get("fixed"), r["args"].get("dtype")) == (1, 256, None)]      # the prompt set and dtype of part 1
     if gate:
         print("\n| options-off run | recorded part 1 run | same tokens, 9 prompts | frames per step | bytes per step | frames and bytes per link per step |")
         print("|---|---|---|---|---|---|")
@@ -95,7 +102,7 @@ def main():
             old = load(PART1[(Path(r["placement"]["file"]).name, bool(r["args"].get("timeline")))])
             tok = [p["tokens"] for p in r["prompts"]] == [p["tokens"] for p in old["prompts"]]
             a, b = r["frames"], old["frames"]
-            print(f"| {r['run_id']} | {old['run_id']} | {'yes' if tok else 'NO'} | {a['measured_per_step']:.1f} = {b['measured_per_step']:.1f} | "
+            print(f"| {r['run_id']} | {old['run_id']} | {'yes' if tok else 'NO'} | {a['measured_per_step']:.1f} {'=' if a['measured_per_step'] == b['measured_per_step'] else '!='} {b['measured_per_step']:.1f} | "
                   f"{a['bytes_per_step']:.0f} {'=' if a['bytes_per_step'] == b['bytes_per_step'] else '!='} {b['bytes_per_step']:.0f} | "
                   f"{'identical' if a['per_link_per_step'] == b['per_link_per_step'] else 'DIFFERENT'} |")
 

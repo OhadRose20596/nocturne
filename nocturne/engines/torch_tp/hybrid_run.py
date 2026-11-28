@@ -306,6 +306,11 @@ def main(argv=None) -> int:
     global OUT, RUNS, HASHES
     OUT = Path(a.session_dir).resolve()
     RUNS, HASHES = OUT / "runs", OUT / "model_hashes.json"
+    for r in a.reference or []:             # a reference that cannot be read costs a moment here, not a run
+        try:
+            load_reference(r)
+        except (OSError, ValueError, KeyError) as e:
+            ap.error(f"--reference {r}: {type(e).__name__}: {e}")
 
     from ...bench.check.graders import grade
     from .operate import Operator, valid_tag
@@ -470,9 +475,11 @@ def main(argv=None) -> int:
         refs = [r for r in refs if r and r != a.run_id]
     rec["correctness"] = {r: compare(out, logits, *load_reference(r)) for r in refs}
     for r, c in rec["correctness"].items():
+        ld = "not compared" if c["logit_maxdiff"] is None else f"{c['logit_maxdiff']:.4g}"
         log(f"[run] vs {r}: identical {c['identical']}/{c['of']}, accuracy {c['accuracy']} (reference {c['ref_accuracy']}), "
-            f"max first step logit diff {c['logit_maxdiff']:.4g}, long prompt first divergence {c['long_first_div']}, "
-            f"criterion {'met' if c['criterion_met'] else 'NOT met'}")
+            f"max first step logit diff {ld}, long prompt first divergence {c['long_first_div']}, "
+            f"criterion {'met' if c['criterion_met'] else 'NOT met'}"
+            + (f"; not in the reference: {c['not_in_reference']}" if c["not_in_reference"] else ""))
     log(f"[run] frames per decode step: measured {rec['frames']['measured_per_step']}, predicted {pred['total']}; "
         f"prefill frames: measured {rec['frames'].get('prefill_measured')}, predicted {rec['frames'].get('prefill_predicted')}")
     if (rec.get("overlap") or {}).get("on"):
@@ -495,6 +502,7 @@ def latest_reference(model: str, device: str) -> str | None:
 def compare(out: list[dict], logits: dict, ref: dict, ref_logits: dict) -> dict:
     rp = ref["prompts"]
     missing = [p["id"] for p in out if p["id"] not in rp]       # a reference recorded with fewer prompts: compare what it has
+    ev_ids = {p["id"] for p in out if p["kind"] == "eval"}
     out = [p for p in out if p["id"] in rp]
     ev = [p for p in out if p["kind"] == "eval"]
     same = [p["tokens"] == rp[p["id"]]["tokens"] for p in ev]
@@ -508,8 +516,10 @@ def compare(out: list[dict], logits: dict, ref: dict, ref_logits: dict) -> dict:
     return {"reference": ref["run_id"], "identical": sum(same), "of": len(ev), "first_div": divs, "accuracy": acc,
             "ref_accuracy": racc, "logit_maxdiff": max(ld.values()) if ld else None, "logit_maxdiff_per_prompt": ld,
             "long_first_div": {p["id"]: divs[p["id"]] for p in longs},
-            "long_identical": all(p["tokens"] == rp[p["id"]]["tokens"] for p in longs), "not_in_reference": missing,
-            "criterion_met": sum(same) >= min(7, len(ev)) and acc == racc}
+            # None when the reference holds no long prompt of this run: nothing was compared, which is not "identical"
+            "long_identical": all(p["tokens"] == rp[p["id"]]["tokens"] for p in longs) if longs else None,
+            "long_compared": len(longs), "not_in_reference": missing,
+            "criterion_met": bool(ev) and not any(i in ev_ids for i in missing) and sum(same) >= min(7, len(ev)) and acc == racc}
 
 
 def transformers_check(L, out: list[dict], a, log) -> dict:

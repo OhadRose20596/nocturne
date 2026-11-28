@@ -525,3 +525,31 @@ def test_coordinator_process_reports_a_rejected_plan_and_a_wrong_host(tmp_path, 
     op.push_job(job)
     p = op.plan()
     assert not p["ok"] and p["fatal"] and "this machine is" in p["error"]
+
+
+def test_the_coordinator_record_holds_the_scheduler_counts_and_the_pair_work_space(tmp_path, tiny):
+    """Part 3, review pass 2 (P6): the options reach the planner and the record through the real job, in separate processes."""
+    pl, peers = two_name_setup(tmp_path, tiny, free_ports(3))
+    run_dir, lines = tmp_path / "run", []
+    op = operate.Operator(pl, peers, run_dir, tag="B3_pair", log=lines.append, ship_weights=True, cache_dir=str(tmp_path / "cache"))
+    try:
+        op.push_job(op.job(PROMPTS, dtype="float32", slots=2, tp_interleave=2))
+        planned = op.plan()
+        assert planned["ok"], planned
+        op.start_ranks()
+        rc = op.run_coordinator()
+        op.collect()
+    finally:
+        op.stop()
+    assert rc == 0, "\n".join(lines)
+    crec = json.loads((run_dir / "coordinator_record.json").read_text())
+    assert crec["outcome"] == "completed" and [q["tokens"] for q in crec["prompts"]] == reference_tokens(tiny)
+    ov = crec["overlap"]
+    assert (ov["slots"], ov["tp_interleave"], ov["on"]) == (2, 2, True)
+    assert ov["pair_steps"] + ov["single_steps"] > 0 and ov["max_in_flight"] == 2
+    by = {s["name"]: s for s in planned["specs"]}
+    from nocturne.engines.torch_tp.config import load_config
+    plain = {s.name: s.planned["workspace"] for s in plan(Dims.of(load_config(tiny)), op.placement, kv_slots=2)}
+    for name, s in by.items():
+        assert s["planned"]["workspace"] == plain[name] * (2 if s["group_size"] > 1 else 1), name
+    assert {s["name"]: s["planned"]["workspace"] for s in crec["planned"]} == {n: s["planned"]["workspace"] for n, s in by.items()}

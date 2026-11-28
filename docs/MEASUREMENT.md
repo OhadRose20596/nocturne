@@ -90,7 +90,7 @@ What a reader must know:
 - A step of a rank starts when the frame that triggers it arrives. The wait before it is part of that step. For the first step of a request that wait includes the idle time since the previous request.
 - `send` is the time to hand the bytes to the kernel. It is not the time on the wire.
 - A wait is the time blocked. It contains the peer's own compute and the network in both directions. The recorder does not split these two. They can be separated later by subtracting the peer's busy time in the same window, which needs the aligned clocks of section 2.
-- A frame larger than 1 MiB (prefill of a long prompt in a group) is sent by a helper thread. Its `send` span is the hand over to that thread.
+- A large all-reduce frame (prefill of a long prompt in a group) is sent by a helper thread. Its `send` span is the hand over to that thread. "Large" was "over 1 MiB" until session 10 part 3. Since then it is "more than fits half the send buffer the kernel granted": still 1 MiB on the Macs, 212992 bytes on Linux with default settings, which is every 7B prefill of 30 tokens or more. So on gtx and pc the `send` and `allreduce_wait` spans of a TP prefill are not comparable with recordings made before part 3. The bytes on the wire are the same.
 - The device sync at the end of `compute` exists only with the recorder. Without it the same wait happens inside the copy that follows. So the recorder moves time from `host_copy` to `compute`; it does not add work.
 
 Overhead and identity, measured: section 6.

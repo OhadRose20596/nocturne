@@ -276,7 +276,7 @@ A TP group may mix Metal and CUDA only with `allow_mixed_devices: true`, because
 ## 10. Known limits
 
 - The placement structure is written by hand. The planner splits inside it.
-- Greedy decoding only. One request at a time per stage.
+- Greedy decoding only. By default one request at a time per stage; section 11 has the options that change this.
 - The slice cache is never cleaned. A rank on the coordinator's own host still gets its slices through the cache, so that host holds those bytes twice on disk.
 - A cached slice is trusted by its name and size. It was checked by sha256 when it was written, and it got its name only after its bytes were on the disk.
 - The coordinator remembers slice hashes per model. That memo is dropped when the code that cuts slices changes.
@@ -355,9 +355,9 @@ A's transfer happens behind B's compute. This repeats for every all-reduce: the 
 - Every rank of the group handles A before B, so on every link the frames arrive in the order A, B.
 - The coordinator forms the pair when two slots are ready. The first frame of a pair carries a "pair" flag, and the receiver then reads the partner before it starts. The flag travels with the pair through later stages. A stage with one rank just computes A, then B. With one slot ready, the step runs alone as today.
 - It needs `--slots` of 2 or more.
-- **How often a pair forms.** A pair needs two slots ready at the same moment. In a pure TP group the two head results come back together, so with two slots most steps are pairs. Behind a later stage they come back one step apart, and with two slots almost every step then runs alone (measured on loopback: 12 of 80 steps in pairs). With four slots two are always ready. The scheduler does not wait for a partner, because the first stage would then idle while a later stage works. The record says what happened: `overlap.pair_steps`, `overlap.single_steps` and `overlap.max_in_flight`.
+- **How often a pair forms.** A pair needs two slots ready at the same moment. In a pure TP group the two head results come back together, so with two slots most steps are pairs. Behind a later stage they come back one step apart, and with two slots almost every step then runs alone (measured on loopback: 12 of 80 steps in pairs). With four slots two are always ready. The scheduler does not wait for a partner, because the first stage would then idle while a later stage works. The record says what happened: `overlap.pair_steps`, `overlap.single_steps`, and `overlap.max_in_flight`, the most requests that waited for a head result at the same time. A prefill chunk that is not the last waits for none, so chunks in the pipeline are not in that number.
 - **Memory.** A rank of a group holds the work space of two requests during a pair. The planner doubles the work space of group ranks when the option is on.
-- **Socket buffers.** Every rank sends before it receives, so what it sends on its own thread must fit the kernel's send buffer without the peer reading. A pair doubles that. The engine asks for 8 MiB and reads back what it got: 8 MiB on the Macs, 425984 bytes on Linux with the default `net.core.wmem_max` (measured on gtx). A frame goes inline only when it and the inline frames of its pair partner fit half the granted size; otherwise it leaves on a helper thread, in order. Before this rule a pair of 7B prefill frames could have blocked both Linux ranks for good, and so could a single frame between about 0.4 and 1 MiB in the old path.
+- **Socket buffers.** Every rank sends before it receives, so what it sends on its own thread must fit the kernel's send buffer without the peer reading. A pair doubles that. The engine asks for 8 MiB and reads back what it got: 8 MiB on the Macs, 425984 bytes on Linux with the default `net.core.wmem_max` (measured on gtx). A frame goes inline only when it fits half the granted size together with every frame the rank sent on that link and has no answer for yet. That count includes a pair partner's frame that left on a helper thread: once its thread has ended, the frame sits unread in the same buffers. Any other frame leaves on a helper thread, in order. Before this rule a pair of 7B prefill frames could have blocked both Linux ranks for good, and so could a single frame between about 0.4 and 1 MiB in the old path.
 
 ### 11.5 O4. Send without blocking the device (`--async-send`)
 
@@ -383,14 +383,14 @@ Rules:
 - One sender per rank and one queue, so frames leave every link in the order they were handed over.
 - The second half of an all-reduce needs the rank's own partial on the host. In `inline` mode it is there at once. In `pinned` mode the sender marks it ready when it reaches that partial in its queue, so behind the sends handed over before it.
 - Before a control frame (metrics, clock, reset, shutdown) and before the counters are read, the rank waits until the sender is empty.
-- A failure in the sender is raised on the compute thread at its next call. A compute thread that is blocked on a link makes no such call, so the failing sender also closes every link of its rank: the rank and its peers then see a closed link at once, and the rank's log names the real error.
+- A failure in the sender is raised on the compute thread at its next call. A compute thread that is blocked on a link makes no such call, so the failing sender also sends its error text to the coordinator and closes every link of its rank: the rank and its peers then see a closed link at once, and the record and the rank's log name the real error.
 
 It gives nothing alone: a rank with one request has nothing else to compute. It is meant for O1, O2 and O3.
 Tokens are identical with and without: the same bytes leave in the same order.
 
 **The recorder.** The sender thread records its own spans: `tx_wait` (it waits for a tensor to reach the host) and `tx_send` (bytes and destination). They overlap the spans of the compute thread. With the option the compute thread does no device sync, so its `compute` span is thread time: handing work to the device, not the device finishing it. `docs/MEASUREMENT.md` says so.
 
-**Found while building this.** A frame over 1 MiB leaves on a helper thread (section 5). In a pair, two such frames could be handed to two threads for the same link, and nothing fixed their order. Now the second waits for the first on its link (`GroupComm._send_after`). With one request there is never a second frame, so the old path is unchanged.
+**Found while building this.** A large all-reduce frame leaves on a helper thread (section 11.4, "Socket buffers"). In a pair, two such frames could be handed to two threads for the same link, and nothing fixed their order. Now the second waits for the first on its link (`GroupComm._send_after`). With one request there is never a second frame, so the old path is unchanged.
 
 ### 11.6 O5. Interleaved pipeline stages
 
@@ -433,14 +433,14 @@ The PLAN message gains the number of slots and the async send switch. The chunk 
 
 The recorder writes per rank spans with the request number. It adds the slot and the channel (a ninth and a tenth column; files of older runs have eight and still load). The channel says which socket a send or a wait used: the group link, the pipeline link or the control link. Two ranks can share two sockets, so frames are matched per socket.
 
-A frame is **in flight** from the start of its send to the end of the receiver's wait for it. The two are matched by their order on the link: the k-th send from A to B is the k-th receive at B from A. That needs no new field. The clocks are aligned as in section 3.9.
+A frame is **in flight** from the start of its send until the receiver has read it (the end of the receiver's wait for it). Sends and receives are matched by their order on a socket: the k-th send from A to B on a channel is the k-th receive at B from A on that channel. The channel column is the only new field this needs. The clocks are aligned as in section 3.9.
 
 `timeline.html` gains a figure and a row:
 
 - **Busy share and overlap share**, per rank and per device. Busy: the share of time in which it computes. Overlap: the share of time in which it computes while a frame it sent, or a frame addressed to it, is in flight. The time base is the time in which at least one request is in work.
 - A row **in flight** under each rank in the timeline: frames it sent in the upper half, frames addressed to it in the lower half, colored by the other rank.
 
-`record.json` gains `timeline.overlap` (the shares, and per link the frame count and whether sends and receives match), `overlap` (the options of the run, and how the scheduler ran: steps in pairs, steps alone, the most units in flight), per rank the granted socket buffers, `throughput` (tokens per second of the whole system), and `frames.prefill_predicted` against `frames.prefill_measured`.
+`record.json` gains `timeline.overlap` (the shares, and per link the frame count and whether sends and receives match), `overlap` (the options of the run, and how the scheduler ran: steps in pairs, steps alone, the most requests in flight), per rank the granted socket buffers, `throughput` (tokens per second of the whole system), and `frames.prefill_predicted` against `frames.prefill_measured`.
 
 ### 11.9 Not in this part
 
