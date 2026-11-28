@@ -8,7 +8,10 @@ counted, per layer, and the workspace adds the largest transient dequantized chu
 may be cut only at block boundaries; heads and MLP rows are allocated in units that respect it. Workspace is an estimate.
 Global rank order is stage order, then rank order; gid 0 (stage 0, rank 0) is also the coordinator.
 Session 10: slots(placement) lists the ranks (host, port, device, order) without the model, so the operator can start
-the rank processes on any host; the full plan needs the model and runs where the coordinator runs."""
+the rank processes on any host; the full plan needs the model and runs where the coordinator runs.
+Session 10 part 3 (overlap): a host may hold several ranks (interleaved pipeline stages). One GPU serves all of them,
+so host_totals sums the planned bytes of every rank of a host plus a fixed cost per rank process, and plan() rejects a
+placement over `host_budget_gb` of that host, naming the host. `kv_slots` multiplies the KV bytes (--slots K)."""
 import math
 from dataclasses import asdict, dataclass, field
 
@@ -18,6 +21,9 @@ from .shard import SliceSpec, kv_range
 BF16 = 2
 MPS_HEAP = 1 << 30           # session 6: any tensor of 10 MiB or more on MPS lands in a 1 GiB resident heap
 MPS_BIG_TENSOR = 10 << 20
+# What one more rank process costs on its device, measured 2026-11-28: CUDA context 105 MiB, 135 to 145 MiB after the first
+# multiply (GTX 1070, RTX 2000 Ada); an idle MPS process 190 MiB (M5). The MPS heap is in `footprint` already.
+PROCESS_OVERHEAD = {"cuda": 150 << 20, "mps": 200 << 20, "cpu": 0}
 
 
 class PlanError(ValueError):
@@ -53,6 +59,7 @@ class Placement:
     prefill_max: int = 256
     granule: int = 128
     allow_mixed_devices: bool = False
+    host_budget_gb: tuple = ()            # ((host, GB), ...): all rank processes of a host together (one GPU)
 
 
 @dataclass(frozen=True)
@@ -223,7 +230,8 @@ def placement_from_dict(y: dict) -> Placement:
     return Placement(model=y.get("model", ""), stages=tuple(stages), coordinator_host=c.get("host"),
                      reduce_dtype=y.get("reduce_dtype", "float32"), max_seq_len=int(y.get("max_seq_len", 4096)),
                      prefill_max=int(y.get("prefill_max", 256)), granule=int(y.get("granule", 128)),
-                     allow_mixed_devices=bool(y.get("allow_mixed_devices", False)))
+                     allow_mixed_devices=bool(y.get("allow_mixed_devices", False)),
+                     host_budget_gb=tuple(sorted((str(h), float(g)) for h, g in (y.get("host_budget_gb") or {}).items())))
 
 
 # ---- ranks without the model (session 10) --------------------------------------------------------------------------------
@@ -355,11 +363,31 @@ def validate(d: Dims, p: Placement) -> None:
     coordinator_host(p)
 
 
-def plan(cfg, p: Placement, check_budget: bool = True) -> list[RankSpec]:
-    """RankSpecs in global order. Raises PlanError naming every rank over its budget (unless check_budget is False,
-    for a forced run whose failure is the point)."""
+def host_totals(specs: list, host_budget_gb=()) -> dict:
+    """Per host: its ranks, their planned bytes (the footprint, which holds the MPS heap floor), the cost of its rank
+    processes, the sum, and the host budget when the placement gives one. One GPU serves every rank of a host."""
+    budgets = dict(host_budget_gb)
+    out: dict[str, dict] = {}
+    for s in specs:
+        h = out.setdefault(s.host, {"ranks": [], "planned": 0, "processes": 0, "process_overhead": 0})
+        h["ranks"].append(s.name)
+        h["planned"] += s.planned.get("footprint", s.planned["total"])
+        h["processes"] += 1
+        h["process_overhead"] += PROCESS_OVERHEAD.get(s.device.split(":")[0], 0)
+    for name, h in out.items():
+        h["total"] = h["planned"] + h["process_overhead"]
+        h["budget"] = int(budgets[name] * 1e9) if name in budgets else None
+    return out
+
+
+def plan(cfg, p: Placement, check_budget: bool = True, kv_slots: int = 1) -> list[RankSpec]:
+    """RankSpecs in global order. Raises PlanError naming every rank over its budget and every host over its host
+    budget (unless check_budget is False, for a forced run whose failure is the point). `kv_slots`: KV caches per
+    rank, one per request in flight."""
     d = cfg if isinstance(cfg, Dims) else Dims.of(cfg)
     validate(d, p)
+    if kv_slots < 1:
+        raise PlanError(f"slots must be 1 or more, got {kv_slots}")
     G = p.granule
     last = len(p.stages) - 1
     has_embed = [s.embed or (i == 0 and not any(t.embed for t in p.stages)) for i, s in enumerate(p.stages)]
@@ -411,7 +439,7 @@ def plan(cfg, p: Placement, check_budget: bool = True) -> list[RankSpec]:
             if L and q0 == q1 and m0 == m1 and v0 == v1:
                 raise PlanError(f"rank {s.name}/{i} on {r.host} holds no heads, no MLP rows and no vocab rows")
             w = round(L * (attn[i] + (m1 - m0) * u.mlp_row + u.norms) + vb[i] + fn)
-            kv = L * (kv1 - kv0) * d.kv_cache_per_head(p.max_seq_len)
+            kv = kv_slots * L * (kv1 - kv0) * d.kv_cache_per_head(p.max_seq_len)
             ws = workspace_bytes(d, L, q1 - q0, kv1 - kv0, m1 - m0, v1 - v0, hd_, p.prefill_max, p.max_seq_len)
             budget = int(r.budget_gb * 1e9) if r.budget_gb is not None else None
             biggest = d.matrix_elems(q1 - q0, kv1 - kv0, m1 - m0, v1 - v0)         # elements of the largest matrix
@@ -434,6 +462,14 @@ def plan(cfg, p: Placement, check_budget: bool = True) -> list[RankSpec]:
             copies = sum(kb - ka for ka, kb in kvr)
             for sp in specs[-n:]:
                 sp.planned["kv_heads_replicated"] = copies - d.n_kv_heads
+    for name, h in sorted(host_totals(specs, p.host_budget_gb).items()):
+        if h["budget"] is not None and h["total"] > h["budget"]:
+            over.append(f"host {name}: its {h['processes']} rank processes ({', '.join(h['ranks'])}) plan {h['total'] / 1e9:.3f} GB "
+                        f"together ({h['planned'] / 1e9:.3f} GB of ranks plus {h['process_overhead'] / 1e9:.3f} GB for the processes) "
+                        f"> host budget {h['budget'] / 1e9:.3f} GB")
+    unknown = sorted(set(dict(p.host_budget_gb)) - {s.host for s in specs})
+    if unknown:
+        raise PlanError(f"host_budget_gb names hosts that hold no rank: {unknown}")
     if over and check_budget:
         raise PlanError("over budget: " + "; ".join(over))
     return specs
@@ -484,6 +520,26 @@ def frames_per_step(specs: list[RankSpec], embed_split: bool | None = None) -> d
     return t
 
 
+def chunk_ranges(n: int, chunk: int) -> list[tuple[int, int]]:
+    """[start, end) of the prefill chunks of a prompt of n tokens (--prefill-chunk). 0, or a prompt that fits one
+    chunk, gives the whole prompt. A remainder of one token joins the chunk before it: a one token frame is a decode
+    frame to the counters."""
+    if chunk <= 0 or n <= chunk:
+        return [(0, n)]
+    out = [(a, min(n, a + chunk)) for a in range(0, n, chunk)]
+    if out[-1][1] - out[-1][0] == 1:
+        out[-2] = (out[-2][0], n)
+        out.pop()
+    return out
+
+
+def frames_prefill(specs: list[RankSpec], n_chunks: int = 1) -> int:
+    """Data frames of one prompt's prefill in n_chunks chunks: the frames of a step per chunk, and the head frames only
+    for the last chunk."""
+    f = frames_per_step(specs)
+    return n_chunks * (f["total"] - f["head"]) + f["head"]
+
+
 def bytes_per_step(specs: list[RankSpec], hidden: int, header: int = 24) -> int:
     """Hidden state frames times (2 hidden + header); token and head frames are small and left out."""
     f = frames_per_step(specs)
@@ -502,6 +558,13 @@ def format_plan(specs: list[RankSpec], d: Dims) -> str:
         rows.append(f"| {s.name} | {s.host} | {s.device} | {s.layers[0]}-{s.layers[1]} | {s.q0}-{s.q1} ({s.q1 - s.q0}) | "
                     f"{s.kv0}-{s.kv1} | {s.m0}-{s.m1} ({s.m1 - s.m0}) | {vocab} | {p['weights'] / 1e6:.1f} | {p['kv'] / 1e6:.1f} | "
                     f"{p['workspace'] / 1e6:.1f} | {p['total'] / 1e6:.1f} | {budget} |")
+    ht = host_totals(specs)
+    if any(h["processes"] > 1 for h in ht.values()):
+        rows.append("")
+        rows.append("| host | rank processes | planned MB | process cost MB | total MB |")
+        rows.append("|---|---|---|---|---|")
+        for name, h in sorted(ht.items()):
+            rows.append(f"| {name} | {h['processes']} ({', '.join(h['ranks'])}) | {h['planned'] / 1e6:.1f} | {h['process_overhead'] / 1e6:.1f} | {h['total'] / 1e6:.1f} |")
     f = frames_per_step(specs)
     rows.append("")
     rows.append(f"Frames per decode step: {f['total']} (token {f['token']}, embedding {f['embed']}, layers {f['layers']}, "

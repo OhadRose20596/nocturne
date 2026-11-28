@@ -224,7 +224,7 @@ def corrupt_first_chunk(monkeypatch, flip_crc=False):
     real = transport.Link.send
     state = {"done": False}
 
-    def send(self, kind, payload=b"", dtype=None, shape=(), aux0=0, aux1=0):
+    def send(self, kind, payload=b"", dtype=None, shape=(), aux0=0, aux1=0, **kw):
         if kind == transport.KIND_WEIGHTS and aux0 & 0xFF == shipping.OP_CHUNK and not state["done"] and len(payload) > 8:
             state["done"] = True
             if flip_crc:
@@ -233,7 +233,7 @@ def corrupt_first_chunk(monkeypatch, flip_crc=False):
                 payload = bytearray(payload)
                 payload[5] ^= 0x40
                 payload = bytes(payload)
-        return real(self, kind, payload, dtype, shape, aux0, aux1)
+        return real(self, kind, payload, dtype, shape, aux0, aux1, **kw)
     monkeypatch.setattr(transport.Link, "send", send)
     return state
 

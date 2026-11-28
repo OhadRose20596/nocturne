@@ -7,7 +7,11 @@ each way plus a local add for two ranks. The add is commutative, so both ranks h
 Session 6: a rank may hold any contiguous head range (KV heads gathered per query head, so an uneven split and a
 replicated KV head work), zero heads or zero MLP rows (its partial is zeros), a layer range, and vocab rows of the
 embedding (lookup of the ids in range, zeros elsewhere, summed by the caller's all-reduce) and of the output head
-(local argmax, combined by the coordinator)."""
+(local argmax, combined by the coordinator).
+Session 10 part 3 (overlap): the KV cache has a slot dimension, one cache per request in flight (slot 0 alone is the old
+cache). A layer is two partial sums (attention, MLP), each followed by an all-reduce; the all-reduce is two halves,
+send_partial and recv_sum, so two requests can share a group in lockstep (forward_pair): A's partial travels while B's
+is computed. Each request uses the same operations on the same shapes as when it runs alone."""
 import math
 
 import torch
@@ -19,8 +23,17 @@ from .shard import Shard
 
 
 class Comm:
+    """One rank: nothing to exchange. send_partial hands a partial sum over and returns a ticket; recv_sum turns the
+    ticket into the group's sum. all_reduce is the two in a row."""
+
     def all_reduce(self, x: torch.Tensor) -> torch.Tensor:
         return x
+
+    def send_partial(self, x: torch.Tensor):
+        return x
+
+    def recv_sum(self, ticket) -> torch.Tensor:
+        return ticket
 
 
 def rms_norm(x: torch.Tensor, w: torch.Tensor, eps: float) -> torch.Tensor:
@@ -48,7 +61,8 @@ def rotate_half(x: torch.Tensor) -> torch.Tensor:
 
 
 class Layer:
-    def __init__(self, i: int, w: dict[str, torch.Tensor], cfg: Qwen2Config, shard: Shard, device, dtype, max_seq: int):
+    def __init__(self, i: int, w: dict[str, torch.Tensor], cfg: Qwen2Config, shard: Shard, device, dtype, max_seq: int,
+                 slots: int = 1):
         p = f"model.layers.{i}."
         g = lambda n: w[p + n]
         self.ln1, self.ln2 = g("input_layernorm.weight"), g("post_attention_layernorm.weight")
@@ -69,21 +83,37 @@ class Layer:
         kvi = shard.kv_index() if self.nh else []
         self.kv_idx = None if kvi == list(range(self.nkv)) else torch.tensor(kvi, dtype=torch.long, device=device)
         self.hidden = cfg.hidden_size
-        self.k_cache = torch.zeros(1, self.nkv, max_seq, self.hd, dtype=dtype, device=device)
-        self.v_cache = torch.zeros(1, self.nkv, max_seq, self.hd, dtype=dtype, device=device)
+        self.k_cache = torch.zeros(slots, self.nkv, max_seq, self.hd, dtype=dtype, device=device)      # one cache per slot
+        self.v_cache = torch.zeros(slots, self.nkv, max_seq, self.hd, dtype=dtype, device=device)
 
-    def forward(self, h: torch.Tensor, pos0: int, cos: torch.Tensor, sin: torch.Tensor, comm: Comm) -> torch.Tensor:
+    def attn_partial(self, h: torch.Tensor, pos0: int, cos: torch.Tensor, sin: torch.Tensor, slot: int = 0) -> torch.Tensor:
+        """This rank's part of the attention output, to be summed over the group."""
         x = rms_norm(h, self.ln1, self.cfg.rms_norm_eps)
-        o = self._attention(x, pos0, cos, sin) if self.nh else torch.zeros(h.shape[0], self.hidden, dtype=h.dtype, device=h.device)
-        h = h + comm.all_reduce(o)
+        return self._attention(x, pos0, cos, sin, slot) if self.nh else torch.zeros(h.shape[0], self.hidden, dtype=h.dtype, device=h.device)
+
+    def mlp_partial(self, h: torch.Tensor) -> torch.Tensor:
+        """This rank's part of the MLP output, to be summed over the group."""
         x = rms_norm(h, self.ln2, self.cfg.rms_norm_eps)
         if self.wg.shape[0]:
-            m = linear(F.silu(linear(x, self.wg)) * linear(x, self.wu), self.wd)     # partial over this rank's slice
-        else:
-            m = torch.zeros_like(h)
-        return h + comm.all_reduce(m)
+            return linear(F.silu(linear(x, self.wg)) * linear(x, self.wu), self.wd)     # partial over this rank's slice
+        return torch.zeros_like(h)
 
-    def _attention(self, x: torch.Tensor, pos0: int, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
+    def forward(self, h: torch.Tensor, pos0: int, cos: torch.Tensor, sin: torch.Tensor, comm: Comm, slot: int = 0) -> torch.Tensor:
+        h = h + comm.all_reduce(self.attn_partial(h, pos0, cos, sin, slot))
+        return h + comm.all_reduce(self.mlp_partial(h))
+
+    def forward_pair(self, ha, a, hb, b, comm: Comm) -> tuple[torch.Tensor, torch.Tensor]:
+        """Two requests in lockstep. a and b are (pos0, cos, sin, slot). Each all-reduce: A's partial is sent, then B's
+        is computed and sent, then A's sum is received, then B's. Every rank of the group keeps this order."""
+        ta = comm.send_partial(self.attn_partial(ha, *a))
+        tb = comm.send_partial(self.attn_partial(hb, *b))
+        ha = ha + comm.recv_sum(ta)
+        hb = hb + comm.recv_sum(tb)
+        ta = comm.send_partial(self.mlp_partial(ha))
+        tb = comm.send_partial(self.mlp_partial(hb))
+        return ha + comm.recv_sum(ta), hb + comm.recv_sum(tb)
+
+    def _attention(self, x: torch.Tensor, pos0: int, cos: torch.Tensor, sin: torch.Tensor, slot: int = 0) -> torch.Tensor:
         T = x.shape[0]
         q = linear(x, self.wq, self.bq).view(T, self.nh, self.hd).transpose(0, 1)      # [nh, T, hd]
         k = linear(x, self.wk, self.bk).view(T, self.nkv, self.hd).transpose(0, 1)
@@ -93,10 +123,10 @@ class Layer:
             k = rms_norm(k, self.k_norm, self.cfg.rms_norm_eps)
         q = q * cos[None] + rotate_half(q) * sin[None]
         k = k * cos[None] + rotate_half(k) * sin[None]
-        self.k_cache[0, :, pos0:pos0 + T] = k
-        self.v_cache[0, :, pos0:pos0 + T] = v
-        K = self.k_cache[0, :, :pos0 + T]
-        V = self.v_cache[0, :, :pos0 + T]
+        self.k_cache[slot, :, pos0:pos0 + T] = k
+        self.v_cache[slot, :, pos0:pos0 + T] = v
+        K = self.k_cache[slot, :, :pos0 + T]
+        V = self.v_cache[slot, :, :pos0 + T]
         if self.kv_idx is not None:
             K = K.index_select(0, self.kv_idx)
             V = V.index_select(0, self.kv_idx)
@@ -116,10 +146,10 @@ class Layer:
 class Qwen2TP:
     def __init__(self, cfg: Qwen2Config, weights: dict[str, torch.Tensor], shard: Shard, device: str, max_seq: int,
                  dtype: torch.dtype = torch.bfloat16, layers: tuple[int, int] | None = None,
-                 embed_rows: tuple[int, int] | None = None, head_rows: tuple[int, int] | None = None):
-        self.cfg, self.shard, self.device, self.dtype, self.max_seq = cfg, shard, device, dtype, max_seq
+                 embed_rows: tuple[int, int] | None = None, head_rows: tuple[int, int] | None = None, slots: int = 1):
+        self.cfg, self.shard, self.device, self.dtype, self.max_seq, self.slots = cfg, shard, device, dtype, max_seq, slots
         l0, l1 = layers if layers else (0, cfg.num_hidden_layers)
-        self.layers = [Layer(i, weights, cfg, shard, device, dtype, max_seq) for i in range(l0, l1)]
+        self.layers = [Layer(i, weights, cfg, shard, device, dtype, max_seq, slots) for i in range(l0, l1)]
         self.embed = weights.get("model.embed_tokens.weight")
         self.norm = weights.get("model.norm.weight")
         self.lm_head = weights.get("lm_head.weight")
@@ -140,16 +170,33 @@ class Qwen2TP:
         e = lookup((t - v0).clamp(0, max(0, v1 - v0 - 1)))
         return torch.where(inside[:, None], e, torch.zeros_like(e))
 
-    @torch.inference_mode()
-    def layers_forward(self, h: torch.Tensor, pos0: int, comm: Comm) -> torch.Tensor:
+    def _rotary(self, h: torch.Tensor, pos0: int, slot: int):
         T = h.shape[0]
         if pos0 + T > self.max_seq:
             raise ValueError(f"sequence {pos0 + T} exceeds max_seq_len {self.max_seq}")
+        if not 0 <= slot < self.slots:
+            raise ValueError(f"slot {slot} of {self.slots}")
         pos = torch.arange(pos0, pos0 + T, device=self.device)
-        cos, sin = rotary(pos, self.cfg.head_dim, self.cfg.rope_theta, h.dtype, self.device, self.cfg.rope_factors)
+        return rotary(pos, self.cfg.head_dim, self.cfg.rope_theta, h.dtype, self.device, self.cfg.rope_factors)
+
+    @torch.inference_mode()
+    def layers_forward(self, h: torch.Tensor, pos0: int, comm: Comm, slot: int = 0) -> torch.Tensor:
+        cos, sin = self._rotary(h, pos0, slot)
         for layer in self.layers:
-            h = layer.forward(h, pos0, cos, sin, comm)
+            h = layer.forward(h, pos0, cos, sin, comm, slot)
         return h
+
+    @torch.inference_mode()
+    def layers_forward_pair(self, ha: torch.Tensor, pos_a: int, slot_a: int, hb: torch.Tensor, pos_b: int, slot_b: int,
+                            comm: Comm) -> tuple[torch.Tensor, torch.Tensor]:
+        """Two requests through every layer in lockstep (Layer.forward_pair)."""
+        if slot_a == slot_b:
+            raise ValueError(f"a pair needs two slots, got {slot_a} twice")
+        a = (pos_a, *self._rotary(ha, pos_a, slot_a), slot_a)
+        b = (pos_b, *self._rotary(hb, pos_b, slot_b), slot_b)
+        for layer in self.layers:
+            ha, hb = layer.forward_pair(ha, a, hb, b, comm)
+        return ha, hb
 
     @torch.inference_mode()
     def logits_last(self, h: torch.Tensor) -> torch.Tensor:

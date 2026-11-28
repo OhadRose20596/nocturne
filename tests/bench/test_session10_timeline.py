@@ -382,12 +382,12 @@ def test_clock_frames_use_only_ctl_links_and_the_request_number_only_with_the_re
     real = transport.Link.send
     sent, ctl = [], set()
 
-    def send(self, kind, payload=b"", dtype=None, shape=(), aux0=0, aux1=0):
+    def send(self, kind, payload=b"", dtype=None, shape=(), aux0=0, aux1=0, **kw):
         a, b = self.sock.getsockname(), self.sock.getpeername()
         if kind == transport.KIND_HELLO and b'"ctl"' in bytes(payload):
             ctl.update({(a, b), (b, a)})
         sent.append((kind, (a, b), aux1))
-        return real(self, kind, payload, dtype, shape, aux0, aux1)
+        return real(self, kind, payload, dtype, shape, aux0, aux1, **kw)
     monkeypatch.setattr(transport.Link, "send", send)
     specs, out, co, *_ = run(tiny, three_stage(free_ports(4)))
     clk = [link for kind, link, _ in sent if kind == transport.KIND_CLOCK]

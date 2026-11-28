@@ -21,7 +21,7 @@ from pathlib import Path
 
 from .clock import now_ns
 
-COLS = ("kind", "t0_ns", "t1_ns", "step", "req", "peer", "bytes", "tokens")
+COLS = ("kind", "t0_ns", "t1_ns", "step", "req", "peer", "bytes", "tokens", "slot")
 KINDS = ("compute", "host_copy", "send", "recv_wait", "allreduce_wait", "other")
 INTERVAL_S = 0.02
 GPU_INTERVAL_MS = 100
@@ -37,12 +37,19 @@ class Recorder:
                      "cols": list(COLS)}
         self.ev: list[tuple] = []
         self.t = now_ns()
-        self.step, self.req, self.tokens = -1, 0, 0
+        self.step, self.req, self.tokens, self.slot = -1, 0, 0, 0
+        self._steps = 0
 
-    def begin(self, req: int, tokens: int) -> None:
-        """A new step starts; the cursor stays where the previous step left it."""
-        self.step += 1
-        self.req, self.tokens = req, tokens
+    def begin(self, req: int, tokens: int, slot: int = 0) -> tuple:
+        """A new step starts; the cursor stays where the previous step left it. Returns the step's context, for use()."""
+        self.step = self._steps
+        self._steps += 1
+        self.req, self.tokens, self.slot = req, tokens, slot
+        return (self.step, req, tokens, slot)
+
+    def use(self, ctx: tuple) -> None:
+        """Spans from now on belong to this step (two interleaved requests take turns on one cursor)."""
+        self.step, self.req, self.tokens, self.slot = ctx
 
     def skip(self) -> None:
         """Move the cursor to now without a span (the time between requests on the coordinator)."""
@@ -50,7 +57,7 @@ class Recorder:
 
     def lap(self, kind: str, peer: str | None = None, nbytes: int = 0) -> None:
         t = now_ns()
-        self.ev.append((kind, self.t, t, self.step, self.req, peer, nbytes, self.tokens))
+        self.ev.append((kind, self.t, t, self.step, self.req, peer, nbytes, self.tokens, self.slot))
         self.t = t
 
     def write(self, run_dir: str | Path) -> Path:

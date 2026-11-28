@@ -12,8 +12,12 @@ WEIGHTS (shipping.py): aux0 = operation | slice index << 8. Operations: 1 MANIFE
   (JSON list of slice indexes, rank to coordinator), 3 CHUNK (raw bytes of one slice, at most CHUNK bytes, aux1 = CRC32
   of the payload), 4 END (end of one slice), 5 ACK (rank to coordinator, aux1 = 0 accepted, 1 rejected; JSON reason),
   6 DONE (no more slices). One slice at a time, in manifest order; the rank answers every END with an ACK.
-In TOKEN and HIDDEN frames aux1 holds the flags in bits 0 to 7. When the run records a timeline, bits 8 to 31 carry
+In TOKEN and HIDDEN frames aux1 holds the flags in bits 0 to 7. When the run records a timeline, bits 8 to 23 carry
 the request number; without the recorder they are zero and the frames are byte for byte what they were before.
+Session 10 part 3 (overlap, docs/ENGINE_DESIGN.md section 11), all inside existing fields, all zero with the options off:
+  TOKEN, HIDDEN aux1: flag bit 1 = no head result for this frame (a prefill chunk that is not the last), flag bit 2 =
+    first frame of an interleaved pair (the next frame on the link is its partner); bits 24 to 31 = the slot.
+  HEAD aux0: bits 0 to 23 = index of the best token, bits 24 to 31 = the slot.
 A send waits and goes on when the kernel has no buffer space for a moment (ENOBUFS; seen on the macOS loopback while
 GBs of weights were in flight to two ranks). The bytes and their order on the wire do not change.
 Security: the listening side accepts any peer; deferred by ADR-009, never bind 0.0.0.0 (CLAUDE.md rule 7)."""
@@ -150,17 +154,21 @@ class Link:
         self._send_lock = threading.Lock()
 
     def send(self, kind: int, payload=b"", dtype: str | None = None, shape: tuple[int, ...] = (),
-             aux0: int = 0, aux1: int = 0) -> None:
+             aux0: int = 0, aux1: int = 0, decode: bool | None = None) -> None:
+        """`decode`: is this a frame of a decode step (one token)? None asks the process wide Phase flag, as before. With
+        several requests in flight the caller says it, because the flag is only right for the step being computed."""
         n = len(payload)
         head = HEADER.pack(n, kind, DTYPE_CODES[dtype], len(shape), aux0, aux1) + struct.pack(f"<{len(shape)}I", *shape)
         with self._send_lock:
             _send_all(self.sock, head + payload, self.counters)
         self.last_sent = len(head) + n
-        self.counters.add(True, kind, len(head) + n, bool(self.phase and self.phase.decode))
+        self.counters.add(True, kind, len(head) + n, bool(self.phase and self.phase.decode) if decode is None else decode)
 
-    def recv(self, into: memoryview | None = None) -> tuple[int, bytes | memoryview, str | None, tuple[int, ...], int, int]:
+    def recv(self, into: memoryview | None = None, decode=None) -> tuple[int, bytes | memoryview, str | None, tuple[int, ...], int, int]:
         """`into`: a writable buffer; when its length equals the payload length the payload is received into it and
-        returned as that view (no copy), otherwise a new bytes object is returned."""
+        returned as that view (no copy), otherwise a new bytes object is returned.
+        `decode`: a function (kind, aux0, aux1) -> bool that says whether the frame belongs to a decode step, for a
+        receiver that knows it from the frame's slot. None keeps the rule below."""
         head = _recv_exact(self.sock, HEADER.size)
         n, kind, dcode, ndim, aux0, aux1 = HEADER.unpack(head)
         shape = struct.unpack(f"<{ndim}I", _recv_exact(self.sock, 4 * ndim)) if ndim else ()
@@ -170,7 +178,10 @@ class Link:
         else:
             payload = _recv_exact(self.sock, n) if n else b""
         # a received data frame is a decode frame when it carries one token (shape[0] == 1); HEAD frames follow the phase
-        dec = (shape[0] == 1) if shape and kind != KIND_HEAD else bool(self.phase and self.phase.decode)
+        if decode is not None:
+            dec = bool(decode(kind, aux0, aux1))
+        else:
+            dec = (shape[0] == 1) if shape and kind != KIND_HEAD else bool(self.phase and self.phase.decode)
         self.last_recv = HEADER.size + 4 * ndim + n
         self.counters.add(False, kind, self.last_recv, dec)
         return kind, payload, DTYPES[dcode], shape, aux0, aux1
