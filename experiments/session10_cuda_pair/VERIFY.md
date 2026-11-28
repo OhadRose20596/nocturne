@@ -1,7 +1,7 @@
 # Session 10, part 1: verification record
 
 Date: 2026-11-28. Operator: the M5 (24 GB, MPS, torch 2.14.1, Python 3.12). Start SHA of the change: `0e96d48`.
-gtx (GTX 1070, WSL2, torch 2.14.1+cu126, Python 3.14) and the Air (16 GB, MPS, torch 2.15.0) came on during the session and were used for short checks. Lior's laptop (`pc`) joined the Wi-Fi late and its ssh server did not answer, so nothing ran on it.
+gtx (GTX 1070, WSL2, torch 2.14.1+cu126, Python 3.14) and the Air (16 GB, MPS, torch 2.15.0) came on during the session and were used for short checks. Lior's laptop (`pc`) joined the Wi-Fi late and WSL on it had no network, so nothing ran on it.
 No experiment rows were run. The runs below verify the build.
 
 ## Gate
@@ -149,7 +149,7 @@ Other things first seen on real machines:
 
 ## Not verified
 
-- A CUDA pair. gtx was the only CUDA machine that answered. The pc was on the Wi-Fi at 192.168.1.239 with every port closed from the M5 and from gtx, and its join report did not reach the M5, after the join script ran there as administrator. The cause is on the pc (its firewall policy or a security client) and is open.
+- A CUDA pair. gtx was the only CUDA machine that answered. The pc was on the Wi-Fi at 192.168.1.239. Its join report (sent from the Windows side, applied to the ssh config and peers.yaml) passes every configuration check: mirrored networking, Private profile, both firewall rules, the ssh server, torch 2.14.1+cu130 on the RTX 2000 Ada. But WSL on it had no network: it could not reach the M5 while Windows could, nobody could reach its port 2222, and its repository was still at `73ad964` (session 7a), so its fetch did not work either. Open: restart WSL on the pc (`wsl --shutdown`) and run the join line again.
 - `scripts/17_timesync.sh --set` and `17_timesync.ps1`: they need sudo or an administrator and were not run. The measuring mode ran on the M5, the Air and gtx.
 - `powermetrics`: not used (sudo).
 - A coordinator that dies or hangs on another host in the middle of a run: read, not tried.
