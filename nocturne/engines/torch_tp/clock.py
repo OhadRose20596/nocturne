@@ -2,8 +2,10 @@
 The coordinator sends ROUNDS requests on the ctl link; the rank answers each with its wall clock and its monotonic clock.
 The round with the smallest round trip is kept: offset = remote minus local minus half the round trip (the SNTP formula
 with a zero server hold time). Two offsets come out: monotonic (aligns recorder events) and wall (compared with the OS
-time sync). The error is at most half the round trip. Measured at the start and at the end of a run; an event time is
-converted with the offset interpolated between the two, which removes a constant drift."""
+time sync). The error of one exchange is at most half its round trip. Measured at the start and at the end of a run;
+an event time is converted with the offset interpolated between the two, which removes a constant drift. Two
+measurements cannot bound a drift that is not constant, so for events between them the bound is an estimate.
+Every CLOCK frame travels on the ctl link of its rank, never on a data link."""
 import struct
 import time
 

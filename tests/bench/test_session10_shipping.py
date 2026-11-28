@@ -130,13 +130,13 @@ def test_manifest_slice_bounds_follow_the_plan_for_every_rank(tiny):
 
 
 # ---- the wire: chunks, CRC32, sha256, cache ----------------------------------------------------------------------------------
-def ship_pair(src, manifest, root, expect_fail=False):
+def ship_pair(src, manifest, root, expect_fail=False, verify=False):
     a, b = tcp_pair()
     res = {}
 
     def recv():
         try:
-            res["m"], res["stats"] = shipping.receive_slices(b, root, lambda *x: None)
+            res["m"], res["stats"] = shipping.receive_slices(b, root, lambda *x: None, verify=verify)
         except Exception as e:      # noqa: BLE001
             res["err"] = e
     t = threading.Thread(target=recv, daemon=True)
@@ -178,6 +178,45 @@ def test_a_truncated_cache_file_is_requested_again(tiny, tmp_path):
     p.write_bytes(p.read_bytes()[:-1])
     r = ship_pair(src, m, tmp_path)
     assert r["sent"]["shipped_slices"] == 1 and r["sent"]["shipped_bytes"] == big["nbytes"]
+
+
+def test_a_column_slice_is_never_copied_whole(tiny):
+    """Codex F3: a column range of a safetensors matrix is not contiguous; hashing and sending must not copy all of it."""
+    import numpy as np
+    src = shipping.SafetensorsSource(tiny)
+    t, _ = src.read("model.layers.0.mlp.down_proj.weight", None, slice(0, 64))
+    assert not t.is_contiguous() and tuple(t.shape) == (64, 64)
+    whole = bytes(shipping.tensor_bytes(t))
+    pieces = list(shipping.iter_bytes(t, 1000))
+    assert b"".join(bytes(p) for p in pieces) == whole and shipping.tensor_nbytes(t) == len(whole) == 64 * 64 * 2
+    assert max(p.obj.nbytes for p in pieces) <= 1000 < len(whole)             # every piece is backed by a few rows only
+    assert shipping._sha(t) == hashlib.sha256(whole).hexdigest()
+    c = t.contiguous()
+    first = next(shipping.iter_bytes(c, 1000))
+    assert np.frombuffer(first, dtype=np.uint8).__array_interface__["data"][0] == c.data_ptr()      # contiguous: no copy at all
+    one_row = list(shipping.iter_bytes(t, 50))                                # a piece limit below one row still tiles the bytes
+    assert b"".join(bytes(p) for p in one_row) == whole and max(len(p) for p in one_row) <= 50
+    assert list(shipping.iter_bytes(t[:0])) == []
+
+
+def test_a_changed_cache_file_is_trusted_by_name_and_size_and_caught_with_verify(tiny, tmp_path):
+    """Codex: the cache trusts name and size. `--verify-cache` reads and hashes every cached slice instead."""
+    cfg, specs, src, ms, _ = manifests_for(tiny, tp_pp(free_ports(3)))
+    m = ms[1]
+    ship_pair(src, m, tmp_path)
+    big = max(m["slices"], key=lambda s: s["nbytes"])
+    p = tmp_path / m["model_sha256"] / big["sha256"]
+    data = bytearray(p.read_bytes())
+    data[3] ^= 1
+    p.write_bytes(bytes(data))                                                 # same name, same size, other content
+    r = ship_pair(src, m, tmp_path)
+    assert r["sent"]["shipped_bytes"] == 0 and r["stats"]["cache_verified_slices"] == 0       # the documented limit
+    r = ship_pair(src, m, tmp_path, verify=True)
+    assert r["sent"]["shipped_slices"] == 1 and r["sent"]["shipped_bytes"] == big["nbytes"]
+    assert r["stats"]["cache_verified_slices"] == len({s["sha256"] for s in m["slices"]}) - 1
+    assert hashlib.sha256(p.read_bytes()).hexdigest() == big["sha256"]
+    r = ship_pair(src, m, tmp_path, verify=True)
+    assert r["sent"]["shipped_bytes"] == 0 and r["stats"]["cache_verified_slices"] == len({s["sha256"] for s in m["slices"]})
 
 
 def corrupt_first_chunk(monkeypatch, flip_crc=False):

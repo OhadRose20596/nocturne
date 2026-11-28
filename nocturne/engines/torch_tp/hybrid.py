@@ -11,7 +11,8 @@ All-reduce: every rank sends its partial to every other rank and sums all partia
 in fp32 rounded to the activation dtype once (or in bf16 for the control run), so all ranks of a group hold bitwise
 identical activations, whatever their device.
 Session 10: after READY and before shutdown the coordinator measures every rank's clock offset on the ctl link
-(clock.py). With `timeline` in the plan every rank records spans (recorder.py) and writes them at shutdown.
+(clock.py). CLOCK frames travel only on ctl links: a rank of a later stage waits on its upstream link and on its ctl
+link at once. With `timeline` in the plan every rank records spans (recorder.py) and writes them at shutdown.
 With `ship` in the plan a rank holds no model file: after its data links are up it receives its slices on the ctl
 link into a cache and loads them from there (shipping.py). The coordinator sends to all ranks at once while it loads
 its own slice from the local file. The model config always travels in the PLAN message.
@@ -21,6 +22,7 @@ import json
 import os
 import queue
 import re
+import select
 import resource
 import struct
 import threading
@@ -65,7 +67,7 @@ def sync(device: str) -> None:
     if device == "mps":
         torch.mps.synchronize()
     elif device.split(":")[0] == "cuda":
-        torch.cuda.synchronize()
+        torch.cuda.synchronize(device)      # the rank's own device: without the argument torch waits for the current one (GPU 0)
 
 
 def cuda_metrics(device: str) -> dict:
@@ -321,10 +323,18 @@ class RankRuntime:
         return m
 
     def serve(self) -> None:
-        """Remote rank loop: read the upstream link (ctl for stage 0, the previous leader otherwise)."""
+        """Remote rank loop: read the upstream link (ctl for stage 0, the previous leader otherwise). A rank of a later
+        stage also watches its ctl link, where only a clock exchange can arrive."""
         up = self.ctl if self.spec.stage == 0 else self.up
+        both = None if up is self.ctl else [up.sock, self.ctl.sock]
         rec = self.rec
         while True:
+            if both is not None and up.sock not in select.select(both, [], [])[0]:       # only the ctl link has something
+                kind, _, _, _, _, aux1 = self.ctl.recv()
+                if kind != transport.KIND_CLOCK or aux1 != clock.BEGIN:
+                    raise RuntimeError(f"{self.spec.name}: unexpected frame {transport.KIND_NAMES.get(kind, kind)} on the ctl link")
+                clock.answer(self.ctl)
+                continue
             kind, payload, dtype, shape, aux0, aux1 = up.recv()
             if kind in (transport.KIND_TOKEN, transport.KIND_HIDDEN):
                 if rec:
@@ -347,8 +357,7 @@ class RankRuntime:
                         self.ctl.send(transport.KIND_HEAD, aux0=idx, aux1=f32_bits(val))
                     if rec:
                         rec.lap("send", self.specs[0].name, self.ctl.last_sent)
-            elif kind == transport.KIND_CLOCK:
-                self.forward_control(kind, aux1=clock.BEGIN)
+            elif kind == transport.KIND_CLOCK and up is self.ctl:        # a rank of the first stage: its upstream link is its ctl link
                 clock.answer(self.ctl)
             elif kind == transport.KIND_METRICS:
                 self.forward_control(kind)
@@ -492,7 +501,7 @@ def rank_main(addrs: list[str], port: int, model_dir: str | None, device: str | 
             raise RuntimeError("started without --model, and the plan ships no weights")
         if ship:
             root = shipping.cache_root(cache_dir)
-            manifest, rt.shipping = shipping.receive_slices(ctl, root, log)
+            manifest, rt.shipping = shipping.receive_slices(ctl, root, log, verify=bool(pl.get("verify_cache")))
             rt.source = shipping.CacheSource(manifest, root)
         if device == "mps" and pl.get("mps_fraction_cap") and spec.budget:
             torch.mps.set_per_process_memory_fraction(spec.budget / torch.mps.recommended_max_memory())
@@ -525,9 +534,9 @@ class Coordinator:
                  max_seq_len: int, reduce_dtype: str, prefill_max: int, device: str | None = None, log=_flush_print,
                  enforce_budget: bool = True, mps_fraction_cap: bool = False, ready_timeout_s: float = 1800.0,
                  dtype: str = "bfloat16", timeline: bool = False, run_dir: str | None = None, run_tag: str | None = None,
-                 ship_weights: bool = False, cache_dir: str | None = None):
+                 ship_weights: bool = False, cache_dir: str | None = None, verify_cache: bool = False):
         self.log, self.specs, self.max_seq_len, self.prefill_max = log, specs, max_seq_len, prefill_max
-        self.ship_weights, self.cache_dir = ship_weights, cache_dir
+        self.ship_weights, self.cache_dir, self.verify_cache = ship_weights, cache_dir, verify_cache
         self.shipping: dict | None = None
         self.run_dir = (run_dir or default_run_dir(run_tag)) if timeline else None
         self.clock: dict = {"start": {}, "end": {}}
@@ -576,7 +585,8 @@ class Coordinator:
                 f"{len(memo) - known} slices hashed in {time.time() - t0:.1f} s")
         plan_msg = {"specs": [s.to_json() for s in specs], "hosts": hosts, "max_seq_len": max_seq_len,
                     "reduce_dtype": reduce_dtype, "enforce_budget": enforce_budget, "mps_fraction_cap": mps_fraction_cap,
-                    "dtype": dtype, "timeline": timeline, "run_tag": run_tag, "ship": ship, "cfg": config_to_json(self.cfg)}
+                    "dtype": dtype, "timeline": timeline, "run_tag": run_tag, "ship": ship, "cfg": config_to_json(self.cfg),
+                    "verify_cache": self.verify_cache}
         for s in specs[1:]:
             link = connect_link(address(s, me.host, hosts), s.port, {"role": "ctl"}, self.phase)
             link.sock.settimeout(CTL_TIMEOUT_S)
@@ -623,9 +633,10 @@ class Coordinator:
 
     # ---- one step -------------------------------------------------------------------------------------------------------
     def _step(self, ids: list[int], pos0: int, want_logits: bool = False) -> tuple[int, torch.Tensor | None]:
-        flags = (FLAG_LOGITS if want_logits else 0) | (self.req_seq << REQ_SHIFT)
-        self.phase.decode = len(ids) == 1
         rec = self.rank.rec
+        # the request number rides in the upper bits only when the recorder is on; without it the frames are as before session 10
+        flags = (FLAG_LOGITS if want_logits else 0) | ((self.req_seq << REQ_SHIFT) if rec else 0)
+        self.phase.decode = len(ids) == 1
         if rec:
             rec.begin(self.req_seq, len(ids))
             rec.lap("other")
@@ -718,12 +729,10 @@ class Coordinator:
                 "tokens_generated": self.tokens_generated, "torch": torch.__version__, "reduce_dtype": self.reduce_dtype}
 
     def clock_sync(self) -> dict:
-        """Measure every rank's clock offset again (the end measurement). The begin frame travels the data path, as
-        metrics do; then every rank answers on its ctl link."""
-        for s in self.stage0_remote:
-            self.ctl[s.gid].send(transport.KIND_CLOCK, aux1=clock.BEGIN)
-        self.rank.forward_control(transport.KIND_CLOCK, aux1=clock.BEGIN)
+        """Measure every rank's clock offset again (the end measurement). Every frame of it, the begin frame included,
+        travels on that rank's ctl link and on no data link."""
         for gid, link in self.ctl.items():
+            link.send(transport.KIND_CLOCK, aux1=clock.BEGIN)
             self.clock["end"][self.specs[gid].name] = clock.measure(link)
         return self.clock
 

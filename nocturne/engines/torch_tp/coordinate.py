@@ -13,6 +13,22 @@ import traceback
 from pathlib import Path
 
 PLAN_MARK = "PLAN_JSON "
+ALIVE_MARK = "ALIVE "
+ALIVE_S = 20.0
+
+
+def start_heartbeat(interval_s: float = ALIVE_S, out=None):
+    """A thread that prints one ALIVE line per interval, whatever the main thread does. The operator reads it as the
+    sign that this process and the way to it are alive; it says nothing about progress and is not a time limit."""
+    import threading
+    stop = threading.Event()
+
+    def beat():
+        while not stop.wait(interval_s):
+            print(f"{ALIVE_MARK}{time.time():.0f}", file=out, flush=True)
+
+    threading.Thread(target=beat, daemon=True).start()
+    return stop
 
 
 def short_hostname() -> str:
@@ -151,7 +167,7 @@ def exit_on_sigterm() -> None:
 
 
 def shipping_args(job: dict) -> dict:
-    return {"ship_weights": bool(job.get("ship_weights")), "cache_dir": job.get("cache_dir")}
+    return {"ship_weights": bool(job.get("ship_weights")), "cache_dir": job.get("cache_dir"), "verify_cache": bool(job.get("verify_cache"))}
 
 
 def main(argv=None) -> int:
@@ -176,6 +192,7 @@ def main(argv=None) -> int:
         (job_path.parent / "plan.json").write_text(json.dumps(res, indent=1))
         print(PLAN_MARK + json.dumps(res), flush=True)
         return 0 if res["ok"] else 3
+    start_heartbeat()
     rec = run_job(job, job_path.parent, log)
     return {"completed": 0, "plan_rejected": 3}.get(rec["outcome"], 1)
 

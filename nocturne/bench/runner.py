@@ -8,6 +8,11 @@ import time
 from dataclasses import dataclass, field
 
 
+# BatchMode: never prompt. ServerAlive: a host that leaves the network ends the ssh client after about a minute,
+# instead of leaving it on a half open connection for ever.
+SSH_OPTS = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=4"]
+
+
 @dataclass
 class Cmd:
     host: str
@@ -33,7 +38,7 @@ class Runner:
         if env:
             shell = " ".join(f"{k}={shlex.quote(v)}" for k, v in env.items()) + " " + shell
         if peer.get("ssh"):
-            return ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", peer["ssh"], shell]
+            return ["ssh", *SSH_OPTS, peer["ssh"], shell]
         return ["bash", "-lc", shell]
 
     def _record(self, peer: dict, full: list[str]) -> str:

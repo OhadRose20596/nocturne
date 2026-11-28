@@ -12,7 +12,8 @@ WEIGHTS (shipping.py): aux0 = operation | slice index << 8. Operations: 1 MANIFE
   (JSON list of slice indexes, rank to coordinator), 3 CHUNK (raw bytes of one slice, at most CHUNK bytes, aux1 = CRC32
   of the payload), 4 END (end of one slice), 5 ACK (rank to coordinator, aux1 = 0 accepted, 1 rejected; JSON reason),
   6 DONE (no more slices). One slice at a time, in manifest order; the rank answers every END with an ACK.
-In TOKEN and HIDDEN frames aux1 holds the flags in bits 0 to 7 and the request number in bits 8 to 31 (recorder only).
+In TOKEN and HIDDEN frames aux1 holds the flags in bits 0 to 7. When the run records a timeline, bits 8 to 31 carry
+the request number; without the recorder they are zero and the frames are byte for byte what they were before.
 Security: the listening side accepts any peer; deferred by ADR-009, never bind 0.0.0.0 (CLAUDE.md rule 7)."""
 import socket
 import struct

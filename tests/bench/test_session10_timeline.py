@@ -308,6 +308,52 @@ def test_build_writes_trace_breakdown_samples_and_html(tiny, tmp_path):
     assert timeline.main([str(tmp_path)]) == 0
 
 
+def test_device_sync_waits_for_the_ranks_own_cuda_device(monkeypatch):
+    """Codex F4: torch.cuda.synchronize() without a device waits for the current device, GPU 0."""
+    from nocturne.engines.torch_tp import hybrid
+    calls = []
+    monkeypatch.setattr(hybrid.torch.cuda, "synchronize", lambda *a, **k: calls.append(a))
+    hybrid.sync("cuda:1")
+    hybrid.sync("cuda")
+    hybrid.sync("cpu")
+    assert calls == [("cuda:1",), ("cuda",)]
+
+
+def three_stage(pts):
+    return Placement("m", (StageIn("s0", (0, 1), (RankIn("h", "cpu", pts[0]), RankIn("h", "cpu", pts[1])), embed=True),
+                           StageIn("s1", (1, 2), (RankIn("h", "cpu", pts[2]),)),
+                           StageIn("head", None, (RankIn("h", "cpu", pts[3]),), lm_head=True)), max_seq_len=64, granule=16)
+
+
+def test_clock_frames_use_only_ctl_links_and_the_request_number_only_with_the_recorder(tiny, tmp_path, monkeypatch):
+    """Codex F5: the end clock exchange sent CLOCK down the pipeline links. And the aux1 decision: with the recorder off
+    TOKEN and HIDDEN frames carry what they carried before session 10."""
+    real = transport.Link.send
+    sent, ctl = [], set()
+
+    def send(self, kind, payload=b"", dtype=None, shape=(), aux0=0, aux1=0):
+        a, b = self.sock.getsockname(), self.sock.getpeername()
+        if kind == transport.KIND_HELLO and b'"ctl"' in bytes(payload):
+            ctl.update({(a, b), (b, a)})
+        sent.append((kind, (a, b), aux1))
+        return real(self, kind, payload, dtype, shape, aux0, aux1)
+    monkeypatch.setattr(transport.Link, "send", send)
+    specs, out, co, *_ = run(tiny, three_stage(free_ports(4)))
+    clk = [link for kind, link, _ in sent if kind == transport.KIND_CLOCK]
+    assert len(clk) == 3 * (2 * (2 * clock.ROUNDS + 1) + 1)           # per rank: start and end, 16 requests, 16 replies, done; one begin
+    assert all(link in ctl for link in clk), "a CLOCK frame left the control links"
+    assert set(co.clock_record()) == {"s0/0", "s0/1", "s1/0", "head/0"} and all(v["end"] for v in co.clock_record().values())
+    data = [aux1 for kind, _, aux1 in sent if kind in (transport.KIND_TOKEN, transport.KIND_HIDDEN)]
+    assert data and all(a >> 8 == 0 for a in data)                     # recorder off: no request number on the wire
+    sent.clear()
+    _, on, _, *_ = run(tiny, three_stage(free_ports(4)), tmp_path, timeline_on=True)
+    data = [aux1 for kind, _, aux1 in sent if kind in (transport.KIND_TOKEN, transport.KIND_HIDDEN)]
+    assert {a >> 8 for a in data} == {1, 2}                            # recorder on: the two requests
+    assert all(link in ctl for kind, link, _ in sent if kind == transport.KIND_CLOCK)
+    for a, b in zip(out, on):
+        assert a["tokens"] == b["tokens"] and torch.equal(a["first_logits"], b["first_logits"])
+
+
 def test_window_choice():
     rows = [{"rank": "a", "phase": "decode" if s % 20 else "prefill", "req": 1 + s // 20, "step": s} for s in range(40)]
     assert timeline.pick_window(rows, None, None, 3) == (9, 11)

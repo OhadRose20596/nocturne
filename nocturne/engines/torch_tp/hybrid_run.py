@@ -280,6 +280,10 @@ def main(argv=None) -> int:
     ap.add_argument("--ship-weights", action=argparse.BooleanOptionalAction, default=SHIP_DEFAULT,
                     help="the coordinator sends every rank its slices; only the coordinator host holds the model")
     ap.add_argument("--cache-dir", default=None, help="slice cache of the ranks (default ~/.nocturne/cache on each host)")
+    ap.add_argument("--verify-cache", action="store_true", help="every rank hashes its cached slices again before it trusts them "
+                    "(one sequential read of the cached bytes) and asks again for any that differ")
+    ap.add_argument("--stall-timeout", type=float, default=300.0, help="end the run when the coordinator process gives no sign of life "
+                    "(output or its 20 s heartbeat) for this many seconds; 0 waits for ever. A liveness check, not a time limit")
     ap.add_argument("--dtype", default=None, help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     global OUT, RUNS, HASHES
@@ -287,9 +291,12 @@ def main(argv=None) -> int:
     RUNS, HASHES = OUT / "runs", OUT / "model_hashes.json"
 
     from ...bench.check.graders import grade
-    from .operate import Operator
+    from .operate import Operator, valid_tag
     from .plan import PlanError
 
+    if not valid_tag(a.run_id):      # before any folder or log is created: the id names folders here and on every host
+        print(f"run id {a.run_id!r}: letters, digits, dot, underscore and dash only")
+        return 2
     run_dir = RUNS / a.run_id
     if (run_dir / "record.json").exists():
         print(f"{run_dir} exists; run ids are never reused (raw run folders are evidence)")
@@ -332,7 +339,8 @@ def main(argv=None) -> int:
     rec["coordinator"] = {"host": op.coord, "hostname": op.peer(op.coord).get("host"), "operator_hostname": socket.gethostname().split(".")[0],
                           "remote": bool(op.peer(op.coord).get("ssh")), "run_dir": op.host_dir(op.coord)}
     job = op.job(load_prompts(a.subset, a.tokens, a.long, a.fixed), force=a.force, mps_fraction_cap=a.mps_fraction_cap,
-                 reduce_dtype=a.reduce_dtype, timeline=a.timeline, tokenizer_dir=a.tokenizer_dir, dtype=a.dtype)
+                 reduce_dtype=a.reduce_dtype, timeline=a.timeline, tokenizer_dir=a.tokenizer_dir, dtype=a.dtype,
+                 verify_cache=a.verify_cache)
     meta = {q["id"]: q for q in job["prompts"]}
     try:
         op.push_job(job)
@@ -363,14 +371,19 @@ def main(argv=None) -> int:
     crec = {}
     try:
         op.start_ranks()
-        rc = op.run_coordinator()
-        late = op.wait_ranks()
+        rc = op.run_coordinator(a.stall_timeout)
+        if op.stalled:               # saved now, before collection and cleanup can fail
+            rec["outcome"], rec["error"] = "coordinator_stalled", op.stalled
+            save()
+        late = op.wait_ranks(5.0 if op.stalled else 60.0)
         if late:
             log(f"[run] ranks still running a minute after the coordinator ended: {late}")
         got = op.collect()
         rec["collected"] = got
         cpath = run_dir / "coordinator_record.json"
-        if cpath.exists():
+        if op.stalled:
+            crec = {"outcome": "coordinator_stalled", "error": op.stalled}
+        elif cpath.exists():
             crec = json.loads(cpath.read_text())
         else:
             crec = {"outcome": "error", "error": f"the coordinator process on {op.coord} ended with rc {rc} and left no record"}

@@ -145,7 +145,8 @@ def split_spec(sl) -> tuple[slice | None, slice | None]:
 
 
 def tensor_bytes(t: torch.Tensor) -> memoryview:
-    """The bytes of a host tensor, without a copy when it is contiguous."""
+    """The bytes of a host tensor in one piece. It copies a tensor that is not contiguous, so the shipping path uses
+    iter_bytes instead; this is for small tensors and for tests."""
     t = t.contiguous()
     if t.numel() == 0:
         return memoryview(b"")
@@ -153,10 +154,34 @@ def tensor_bytes(t: torch.Tensor) -> memoryview:
     return memoryview(a).cast("B")
 
 
-def _sha(mv: memoryview) -> str:
+def tensor_nbytes(t: torch.Tensor) -> int:
+    return t.numel() * t.element_size()
+
+
+def iter_bytes(t: torch.Tensor, chunk: int | None = None):
+    """The bytes of a host tensor in row major order, in pieces of at most `chunk` bytes. A contiguous tensor is not
+    copied. A tensor that is not contiguous (a column range of a safetensors matrix) is made contiguous a few rows at a
+    time, so only one piece exists next to the tensor, never a second copy of the whole slice."""
+    chunk = chunk or CHUNK
+    if t.numel() == 0:
+        return
+    if t.is_contiguous():
+        mv = tensor_bytes(t)
+        for off in range(0, len(mv), chunk):
+            yield mv[off:off + chunk]
+        return
+    row_bytes = tensor_nbytes(t[0])
+    step = max(1, chunk // max(1, row_bytes))
+    for r0 in range(0, t.shape[0], step):
+        mv = tensor_bytes(t[r0:r0 + step])
+        for off in range(0, len(mv), chunk):
+            yield mv[off:off + chunk]
+
+
+def _sha(t: torch.Tensor) -> str:
     h = hashlib.sha256()
-    for off in range(0, len(mv), 8 << 20):
-        h.update(mv[off:off + (8 << 20)])
+    for piece in iter_bytes(t, 8 << 20):
+        h.update(piece)
     return h.hexdigest()
 
 
@@ -173,8 +198,7 @@ def build_manifest(source, cfg, load_spec: LoadSpec, model_sha: str, memo: dict 
         e = memo.get(key) if memo is not None else None
         if e is None:
             t, qtype = source.read(src, rows, cols)
-            mv = tensor_bytes(t)
-            e = {"qtype": qtype, "dtype": str(t.dtype), "shape": list(t.shape), "nbytes": len(mv), "sha256": _sha(mv)}
+            e = {"qtype": qtype, "dtype": str(t.dtype), "shape": list(t.shape), "nbytes": tensor_nbytes(t), "sha256": _sha(t)}
             if memo is not None:
                 memo[key] = e
         slices.append({"name": out_name, "src": src, "rows": r, "cols": c, **e})
@@ -225,11 +249,9 @@ def send_slices(link: transport.Link, source, manifest: dict, rank: str = "") ->
     for i in need:
         sl = slices[i]
         t, _ = source.read(sl["src"], None if sl["rows"] is None else slice(*sl["rows"]), None if sl["cols"] is None else slice(*sl["cols"]))
-        mv = tensor_bytes(t)
-        if len(mv) != sl["nbytes"]:
-            raise ShipRejected(f"{rank}: slice {sl['name']} is {len(mv)} bytes now, the manifest says {sl['nbytes']} (the model file changed)")
-        for off in range(0, len(mv), CHUNK):
-            chunk = mv[off:off + CHUNK]
+        if tensor_nbytes(t) != sl["nbytes"]:
+            raise ShipRejected(f"{rank}: slice {sl['name']} is {tensor_nbytes(t)} bytes now, the manifest says {sl['nbytes']} (the model file changed)")
+        for chunk in iter_bytes(t):
             link.send(transport.KIND_WEIGHTS, chunk, "uint8", aux0=OP_CHUNK | i << 8, aux1=zlib.crc32(chunk))
             chunks += 1
         link.send(transport.KIND_WEIGHTS, aux0=OP_END | i << 8)
@@ -260,13 +282,28 @@ def unique_bytes(m: dict) -> int:
     return sum({s["sha256"]: s["nbytes"] for s in m["slices"]}.values())
 
 
-def cached(d: Path, sl: dict) -> bool:
+def file_hash(p: Path) -> str:
+    h = hashlib.sha256()
+    with p.open("rb") as f:
+        while True:
+            b = f.read(8 << 20)
+            if not b:
+                return h.hexdigest()
+            h.update(b)
+
+
+def cached(d: Path, sl: dict, verify: bool = False) -> bool:
+    """Is this slice in the cache? By name and size; with `verify` also by reading and hashing the file, which catches
+    a file whose content changed under the same name and size."""
     p = d / sl["sha256"]
-    return p.is_file() and p.stat().st_size == sl["nbytes"]
+    if not (p.is_file() and p.stat().st_size == sl["nbytes"]):
+        return False
+    return not verify or file_hash(p) == sl["sha256"]
 
 
-def receive_slices(link: transport.Link, root: Path, log=print) -> tuple[dict, dict]:
-    """Rank side. Returns (manifest, stats). Raises ShipRejected after answering a bad slice with a rejecting ack."""
+def receive_slices(link: transport.Link, root: Path, log=print, verify: bool = False) -> tuple[dict, dict]:
+    """Rank side. Returns (manifest, stats). Raises ShipRejected after answering a bad slice with a rejecting ack.
+    `verify`: hash every cached slice before trusting it, and ask again for one that differs."""
     t0 = time.time()
     kind, payload, _, _, aux0, _ = link.recv()
     if kind != transport.KIND_WEIGHTS or aux0 & 0xFF != OP_MANIFEST:
@@ -276,10 +313,13 @@ def receive_slices(link: transport.Link, root: Path, log=print) -> tuple[dict, d
     slices = m["slices"]
     d = root / m["model_sha256"]
     d.mkdir(parents=True, exist_ok=True)
-    need, seen = [], set()
+    need, seen, verified = [], set(), 0
     for i, sl in enumerate(slices):
-        if sl["sha256"] not in seen and not cached(d, sl):
-            need.append(i)
+        if sl["sha256"] not in seen:
+            if cached(d, sl, verify):
+                verified += 1 if verify else 0
+            else:
+                need.append(i)
         seen.add(sl["sha256"])
     missing = sum(slices[i]["nbytes"] for i in need)
     free = shutil.disk_usage(d).free
@@ -344,6 +384,7 @@ def receive_slices(link: transport.Link, root: Path, log=print) -> tuple[dict, d
     total, unique = m["total_bytes"], unique_bytes(m)
     stats = {"manifest_bytes": total, "manifest_slices": len(slices), "received_bytes": received, "received_slices": len(accepted),
              "cache_bytes": unique - received, "duplicate_bytes": total - unique, "hash_checks": checks, "chunks": chunks,
+             "cache_verified_slices": verified,
              "recv_s": time.time() - t0, "cache_dir": str(d)}
     log(f"[ship] {received / 1e9:.3f} GB received in {len(need)} slices, {(unique - received) / 1e9:.3f} GB from the cache, {stats['recv_s']:.1f} s")
     return m, stats

@@ -86,6 +86,8 @@ The operator (`hybrid_run`):
 5. Starts one `rank` process per rank, each on its host, each listening on its port.
 6. Starts the `coordinate` process on the coordinator host and follows its log.
 
+The operator also watches that process apart from its log. The coordinator prints a sign of life every 20 s from its own thread. When none arrives for 300 s (`--stall-timeout`), because the process hangs, was stopped, or its host left the network, the operator ends it, writes `outcome: coordinator_stalled` with the reason into `record.json`, and still collects the files and cleans up. This is a liveness check. It is not a limit on how long a run may take.
+
 ### 3.6 Links: who connects to whom
 
 Every rank listens on one TCP port. It listens on `127.0.0.1` for a peer on its own host and on its `bind` address for a peer on another host. Never on `0.0.0.0`.
@@ -121,6 +123,8 @@ A **slice** is the part of one tensor that one rank holds: a row range or a colu
 
 The coordinator serves all ranks at once, one thread per control link, and loads its own slice from the local file in the meantime.
 A second run of the same placement ships 0 bytes. A different placement of the same model ships only the slices whose cut changed.
+A cached slice is trusted by its name and size. `--verify-cache` makes every rank read and hash its cached slices before it trusts them, and ask again for any that differ. That costs one sequential read of the cached bytes per run.
+On the coordinator a slice is hashed and sent in pieces. A slice that is not one block of memory (a column range of a safetensors matrix) is copied a few rows at a time, never as a whole.
 Per rank the record holds: manifest bytes, shipped bytes, bytes found in the cache, shipping time, and the number of hash checks.
 
 Shipped bytes against planned bytes. The manifest counts stored bytes. For safetensors they equal the planned weight bytes exactly.
@@ -161,7 +165,7 @@ With `--timeline` every rank also records what it does in every step: compute, c
 The coordinator measures the clocks again, then sends SHUTDOWN along the data path. Every rank writes its timeline files and exits.
 The coordinator writes `coordinator_record.json`. The operator copies the files of every host into the run folder and writes `record.json`.
 It first waits for the rank processes to end, because each rank writes its timeline files as it exits.
-Then it stops what is left on every host: `pkill` (SIGTERM) for every process that carries this run's tag. A rank that is blocked on a dead link ends this way. Rank and coordinator processes turn SIGTERM into a normal exit, so their files are closed and the sampler stops.
+Then it stops what is left on every host: `pkill` (SIGTERM, and SIGKILL two seconds later for what is still there) for every process that carries this run's tag. A rank that is blocked on a dead link ends this way. Rank and coordinator processes turn SIGTERM into a normal exit, so their files are closed and the sampler stops.
 
 ## 4. Control plane
 
@@ -239,7 +243,9 @@ Session 10 changed three things on the wire, and nothing else:
 
 1. The WEIGHTS kind (section 3.8).
 2. The CLOCK kind (section 3.9).
-3. In TOKEN and HIDDEN frames the second 32 bit field held only flags in its low byte. Its upper 24 bits now carry the request number, in every run. The recorder reads it. The frame size and every other field are unchanged.
+3. In TOKEN and HIDDEN frames the second 32 bit field holds flags in its low byte. In a run with `--timeline` its upper 24 bits carry the request number, which the recorder reads. Without `--timeline` they are zero, so those frames are byte for byte what they were before session 10. The frame size and every other field are unchanged.
+
+CLOCK and WEIGHTS frames travel only on control links, never on a group or pipeline link. A rank of a later stage waits on its upstream link and on its control link at the same time, so the coordinator can reach it for the end clock measurement without using the data path.
 
 ## 7. Why the result does not depend on the split
 
@@ -250,6 +256,7 @@ Session 10 changed three things on the wire, and nothing else:
 ## 8. Failures
 
 There is no recovery. A broken link ends the run and the record says which link. A rank that fails while loading sends its error text first.
+A coordinator that gives no sign of life is ended by the operator (section 3.5). An ssh connection to a host that left the network ends by itself after about a minute.
 A wrong chunk or hash during shipping ends the run. Nothing wrong can enter the cache, because a file gets its cache name only after its sha256 matched.
 
 ## 9. The same flow on Metal and on CUDA

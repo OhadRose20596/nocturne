@@ -139,6 +139,8 @@ The coordinator host is the one the placement names. It needs the model file, `t
 | `--ship-weights` / `--no-ship-weights` | on | The coordinator sends every rank its slices. Only the coordinator host holds the model. Off: every host reads its own copy, as before session 10 |
 | `--cache-dir DIR` | `~/.nocturne/cache` on each host | Where a rank keeps shipped slices: `<dir>/<model sha256>/<slice sha256>` |
 | `--timeline` | off | Record spans and samples, write the timeline files |
+| `--verify-cache` | off | Every rank hashes its cached slices before it trusts them (one read of the cached bytes) |
+| `--stall-timeout S` | 300 | End the run when the coordinator process gives no sign of life for S seconds (it prints one every 20 s). 0 waits for ever. Not a time limit on the run |
 
 peers.yaml keys added: `peers.<host>.models.<key>` (the model path on that host), `peers.<host>.run_root` (where that host writes its run files; default `~/.nocturne/runs`).
 The slice cache is never cleaned. Delete `~/.nocturne/cache/<model sha256>` by hand when a model is no longer used.

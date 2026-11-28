@@ -411,6 +411,95 @@ def test_hybrid_run_main_end_to_end_on_a_tiny_gguf(tmp_path, monkeypatch):
     assert [p["tokens"] for p in rec2["prompts"]] == [p["tokens"] for p in rec["prompts"]]
 
 
+# ---- Codex review: F1 a coordinator that gives no sign of life, F2 the run id ---------------------------------------------
+QUIET = "import time; time.sleep(30)"
+BEATING = "import time\nfor i in range(8):\n    print('ALIVE 1', flush=True); time.sleep(0.3)\nprint('done', flush=True)"
+BEATS_FOREVER = "import time\nwhile True:\n    print('ALIVE 1', flush=True); time.sleep(0.2)"
+
+
+def fake_coordinator(op, monkeypatch, code):
+    monkeypatch.setattr(op, "coordinate_argv", lambda plan_only=False: [sys.executable, "-u", "-c", code, "--tag", op.tag])
+
+
+def test_a_coordinator_without_a_sign_of_life_is_ended_and_the_reason_is_kept(tmp_path, tiny, monkeypatch):
+    """Codex F1: the operator used to wait for ever on a silent coordinator."""
+    import time
+    pl, peers = two_name_setup(tmp_path, tiny, free_ports(3))
+    lines = []
+    op = operate.Operator(pl, peers, tmp_path / "run", tag="F1_quiet", log=lines.append)
+    fake_coordinator(op, monkeypatch, QUIET)
+    t0 = time.time()
+    rc = op.run_coordinator(stall_s=1.5)
+    assert rc is None and time.time() - t0 < 15
+    assert "no sign of life from the coordinator process on co2 for 2 s" in op.stalled and any("ending it" in l for l in lines)
+    assert op.coord_proc.poll() is not None
+    op.stop()
+
+
+def test_heartbeats_keep_a_quiet_coordinator_and_a_stopped_one_is_ended(tmp_path, tiny, monkeypatch):
+    """Codex F1: the sign of life is the heartbeat, not progress. A process stopped with SIGSTOP stops beating."""
+    import signal
+    import threading
+    import time
+    pl, peers = two_name_setup(tmp_path, tiny, free_ports(3))
+    lines = []
+    op = operate.Operator(pl, peers, tmp_path / "run", tag="F1_beat", log=lines.append)
+    fake_coordinator(op, monkeypatch, BEATING)
+    assert op.run_coordinator(stall_s=1.0) == 0 and op.stalled is None        # 2.4 s of work, only heartbeats in between
+    assert lines == ["done"]                                                    # the heartbeat lines stay out of the log
+    op2 = operate.Operator(pl, peers, tmp_path / "run2", tag="F1_stop", log=lines.append)
+    fake_coordinator(op2, monkeypatch, BEATS_FOREVER)
+
+    def freeze():
+        time.sleep(1.0)
+        os.killpg(os.getpgid(op2.coord_proc.pid), signal.SIGSTOP)
+    threading.Thread(target=freeze, daemon=True).start()
+    t0 = time.time()
+    assert op2.run_coordinator(stall_s=1.5) is None and 2.0 < time.time() - t0 < 15
+    assert "no sign of life" in op2.stalled and op2.coord_proc.poll() is not None
+    op2.stop()
+
+
+def test_the_coordinator_process_prints_a_heartbeat():
+    import time
+    buf = io.StringIO()
+    stop = coordinate.start_heartbeat(0.05, out=buf)
+    time.sleep(0.3)
+    stop.set()
+    got = buf.getvalue().splitlines()
+    assert len(got) >= 3 and all(l.startswith(coordinate.ALIVE_MARK) for l in got)
+
+
+def test_a_stalled_run_is_recorded_before_cleanup(tmp_path, tiny, monkeypatch):
+    """Codex F1: record.json says why, and the run still ends with collection and cleanup."""
+    pl, peers = two_name_setup(tmp_path, tiny, free_ports(3))
+    real = operate.Operator.coordinate_argv
+    monkeypatch.setattr(operate.Operator, "coordinate_argv",
+                        lambda self, plan_only=False: real(self, True) if plan_only else [sys.executable, "-u", "-c", QUIET, "--tag", self.tag])
+    monkeypatch.setattr(hr, "host_state", lambda *a, **k: {"os": "test"})
+    rc = hr.main(["--placement", pl, "--peers", peers, "--session-dir", str(tmp_path / "sess"), "--run-id", "F1_rec", "--subset", "1",
+                  "--long", "0", "--reference", "--no-ship-weights", "--stall-timeout", "2"])
+    rec = json.loads((tmp_path / "sess" / "runs" / "F1_rec" / "record.json").read_text())
+    assert rc == 1 and rec["outcome"] == "coordinator_stalled" and "no sign of life" in rec["error"]
+    assert any("pkill" in c["cmd"] for c in rec["commands"])                    # cleanup ran after the stall
+    left = subprocess.run(["pgrep", "-f", "--", "--tag F1_rec( |$)"], capture_output=True, text=True)
+    assert left.returncode == 1, left.stdout
+
+
+def test_run_id_is_checked_before_anything_is_written(tmp_path, tiny):
+    """Codex F2: `../outside` used to create a folder outside runs/ before the tag was rejected."""
+    pl, peers = two_name_setup(tmp_path, tiny, free_ports(3))
+    sess = tmp_path / "sess"
+    for bad in ("../outside", str(tmp_path / "abs"), ".", "..", "x\n", "a b", ""):
+        assert hr.main(["--placement", pl, "--peers", peers, "--session-dir", str(sess), "--run-id", bad]) == 2, bad
+    assert not sess.exists() and not (tmp_path / "outside").exists() and not (tmp_path / "abs").exists()
+    for bad in (".", "..", "x\n", "a/b"):
+        assert not operate.valid_tag(bad)
+        with pytest.raises(ValueError, match="run tag"):
+            operate.Operator(pl, peers, tmp_path, tag=bad)
+    assert operate.valid_tag("R1_ok-2.x") and not operate.valid_tag(None)
+
+
 def test_setup_errors_leave_a_record(tmp_path, tiny):
     """Review F14: a bad peers entry ends the run with a record, not with a traceback."""
     pl, peers = two_name_setup(tmp_path, tiny, free_ports(3))

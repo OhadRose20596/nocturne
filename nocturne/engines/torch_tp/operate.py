@@ -1,6 +1,8 @@
 """The operator of a run (session 10, part B): the machine that holds peers.yaml and has ssh to every host. It is not a
 role in the engine. It starts one rank process per rank on its host, starts the coordinator process on the host the
 placement names (coordinate.py), streams its log, and collects every host's run files. It never loads the model.
+The coordinator process prints a sign of life every 20 s (coordinate.ALIVE_MARK). When none arrives for `stall_s` the
+operator ends it, records why, and still collects and cleans up. That is a liveness check, not a time limit on the run.
 A host is reached over ssh when its peers.yaml entry has `ssh`, else with a local shell. Each host writes its run files
 under ~/.nocturne/runs/<tag> (or peers.<host>.run_root/<tag>); a host without ssh writes straight into the run folder.
 Ports accept any peer: security is deferred by ADR-009. Listen addresses come from peers.yaml, never 0.0.0.0."""
@@ -8,6 +10,7 @@ import io
 import json
 import re
 import shlex
+import signal
 import subprocess
 import tarfile
 import threading
@@ -16,12 +19,19 @@ from pathlib import Path
 
 import yaml
 
-from ...bench.runner import Runner
-from .coordinate import PLAN_MARK
+from ...bench.runner import SSH_OPTS, Runner
+from .coordinate import ALIVE_MARK, PLAN_MARK
 from .launch import PEERS, host_addrs, load_peers, model_dir_of
 from .plan import coordinator_host, listen_addrs, placement_from_dict, slots
 
-TAG_OK = re.compile(r"^[A-Za-z0-9._-]+$")
+TAG_OK = re.compile(r"[A-Za-z0-9._-]+")
+STALL_S = 300.0
+
+
+def valid_tag(tag) -> bool:
+    """A run tag names a folder on every host and is part of shell commands: a plain name, the whole string, and not
+    a directory reference."""
+    return isinstance(tag, str) and TAG_OK.fullmatch(tag) is not None and tag not in (".", "..")
 BACKEND_DEVICE = {"metal": "mps", "mps": "mps", "cuda": "cuda", "cpu": "cpu"}
 
 
@@ -45,14 +55,15 @@ def shell_path(p: str) -> str:
 
 def shell_argv(peer: dict, cmd: str) -> list[str]:
     if peer.get("ssh"):
-        return ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", peer["ssh"], cmd]
+        return ["ssh", *SSH_OPTS, peer["ssh"], cmd]
     return ["bash", "-lc", cmd]
 
 
-def kill_argv(tag: str) -> list[str]:
+def kill_argv(tag: str, force: bool = False) -> list[str]:
     """pkill for every process of one run. `--` ends pkill's own options (the pattern starts with two dashes), and the
-    pattern ends at a space or at the end, so tag X_r1 does not match the processes of X_r13."""
-    return ["pkill", "-f", "--", f"--tag {re.escape(tag)}( |$)"]
+    pattern ends at a space or at the end, so tag X_r1 does not match the processes of X_r13. `force` sends SIGKILL:
+    a stopped process, or one inside a long C call, does not act on SIGTERM."""
+    return ["pkill"] + (["-9"] if force else []) + ["-f", "--", f"--tag {re.escape(tag)}( |$)"]
 
 
 def safe_extract(data: bytes, dest: Path) -> list[str]:
@@ -82,13 +93,14 @@ class Operator:
         self.listen = listen_addrs(self.slots, self.hosts)
         self.model_dir = model_dir_of(self.placement.model, self.peers, self.coord)
         self.tag = tag or f"hyb{int(time.time())}"
-        if not TAG_OK.match(self.tag):
+        if not valid_tag(self.tag):
             raise ValueError(f"run tag {self.tag!r}: letters, digits, dot, underscore and dash only (it names folders on every host)")
         self.run_dir = Path(run_dir)
         self.ship_weights, self.cache_dir = ship_weights, cache_dir
         self.runner = runner or Runner(echo=False)
         self.procs: list = []
         self.coord_proc = None
+        self.stalled: str | None = None
 
     # ---- hosts ----------------------------------------------------------------------------------------------------------
     def peer(self, host: str) -> dict:
@@ -198,15 +210,38 @@ class Operator:
                     raise RuntimeError(f"rank {s.name} on {s.host} did not open its port in {wait_s:.0f} s; see {path}")
                 time.sleep(0.3)
 
-    def run_coordinator(self) -> int:
-        """Start the coordinator process on its host and wait for it. Its output goes to the operator's log."""
+    def run_coordinator(self, stall_s: float | None = STALL_S) -> int | None:
+        """Start the coordinator process on its host and wait for it. Its output goes to the operator's log.
+        The process is watched apart from its output: when it gives no sign of life (no line, no ALIVE mark) for
+        `stall_s`, it is ended, `self.stalled` says why, and None is returned. 0 or None for `stall_s` waits for ever."""
         p = self.runner.spawn(self.peer(self.coord), self.coordinate_argv(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if p is None:
             return 0
         self.coord_proc = p
-        for line in p.stdout:
-            self.log(line.rstrip("\n"))
-        return p.wait()
+        last = [time.time()]
+
+        def reader():
+            for line in p.stdout:
+                last[0] = time.time()
+                if not line.startswith(ALIVE_MARK):
+                    self.log(line.rstrip("\n"))
+
+        t = threading.Thread(target=reader, daemon=True)
+        t.start()
+        while p.poll() is None:
+            if stall_s and time.time() - last[0] > stall_s:
+                self.stalled = (f"no sign of life from the coordinator process on {self.coord} for {stall_s:.0f} s "
+                                f"(no output and no heartbeat): it hangs, was stopped, or its host left the network")
+                self.log(f"[run] {self.stalled}; ending it")
+                Runner._signal_group(p, signal.SIGKILL)
+                try:
+                    p.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    pass
+                return None
+            time.sleep(0.25)
+        t.join(timeout=5)
+        return p.returncode
 
     def wait_ranks(self, timeout_s: float = 60.0) -> list[str]:
         """Wait until every rank process has ended (each writes its timeline files as it exits). Returns the names of
@@ -245,6 +280,7 @@ class Operator:
             while p.poll() is None and time.time() - t0 < 15:
                 time.sleep(0.2)
         self.runner.stop_all()
+        found = []
         for h in sorted({s.host for s in self.slots}):
             try:
                 r = self.runner.run(self.peer(h), kill_argv(self.tag), timeout=30)
@@ -253,3 +289,12 @@ class Operator:
                 continue
             if r.returncode not in (0, 1):
                 self.log(f"[run] pkill on {h} failed (rc {r.returncode}): {(r.stderr or '').strip()[-200:]}")
+            elif r.returncode == 0 and not self.runner.dry_run:
+                found.append(h)
+        if found:           # something was still alive: give it a moment to exit cleanly, then SIGKILL what ignores SIGTERM
+            time.sleep(2.0)
+            for h in found:
+                try:
+                    self.runner.run(self.peer(h), kill_argv(self.tag, force=True), timeout=30)
+                except (OSError, subprocess.SubprocessError):
+                    pass

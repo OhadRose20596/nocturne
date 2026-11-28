@@ -59,7 +59,9 @@ From the round with the smallest round trip: offset = remote minus local minus h
 
 - Recorded always, also without `--timeline`: `record.json`, `clock.<rank>.start` and `.end` (`offset_mono_ns`, `offset_wall_ns`, `rtt_ns`, `rtt_median_ns`), and `.drift` (the change between start and end, also in ppm).
 - Every recorded event time is converted with it: `clock.to_coordinator`. The offset is interpolated linearly between the start and the end measurement, which removes a constant drift.
-- Precision: at most half the round trip, when the two directions take the same time. On loopback the round trip is about 0.2 ms. Between machines it is the round trip of the network: 5 to 8 ms on the home Wi-Fi on 2026-11-28.
+- Precision of one exchange: at most half its round trip, when the two directions take the same time. Between the two exchanges the offset is interpolated, which is exact for a constant drift. Two measurements cannot bound a drift that changes during a long run, so for events in the middle the bound is an estimate.
+- Every CLOCK frame travels on the control link of its rank.
+- Measured: on loopback the round trip is about 0.2 ms. Between machines it is the round trip of the network: 5 to 8 ms on the home Wi-Fi on 2026-11-28.
 - The check in the coordinator process that it runs on the right host uses the name the host reports when the operator asks it. It protects a coordinator started by hand on the wrong machine. In an operator run it cannot fail, because the operator starts the process on that host.
 - The two levels are compared in `hybrid_run.clock_report`: the OS level predicts (server minus coordinator) minus (server minus rank). `clock.<rank>.os.gap_ns` is the engine's wall offset minus that prediction. `disagree` is true when the gap is over 2 ms. `os_bound_ns` is the sum of the two OS bounds, so the reader can see whether the gap means anything.
 
@@ -79,7 +81,8 @@ The recorder keeps a cursor on `time.monotonic_ns()`. `lap(kind)` closes the spa
 | `recv_wait` | Blocked on the upstream link (a rank), or on a head rank's answer (the coordinator). With the source and the bytes | `RankRuntime.serve`, `Coordinator._step` |
 | `other` | The coordinator's Python between steps: choosing the token, the loop | `Coordinator._step`, `Coordinator.generate` |
 
-Every span carries the step number, the request number, the rank and the host. The request number travels in the upper bits of an existing header field of the TOKEN and HIDDEN frames.
+Every span carries the step number and the request number; the rank and the host are in the header line of the file. The request number travels in the upper bits of an existing header field of the TOKEN and HIDDEN frames, only in runs with `--timeline`.
+On a host with more than one GPU, `compute` ends after a sync of the rank's own device (`torch.cuda.synchronize(device)`).
 
 What a reader must know:
 

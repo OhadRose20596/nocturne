@@ -1,0 +1,229 @@
+[
+ {
+  "mutation": "clock: offset sign (local minus remote)",
+  "file": "nocturne/engines/torch_tp/clock.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_estimate_is_remote_minus_local_and_uses_the_smallest_round_trip",
+  "tail": null
+ },
+ {
+  "mutation": "clock: event times shifted the wrong way",
+  "file": "nocturne/engines/torch_tp/clock.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_event_times_go_to_the_coordinator_clock_with_the_interpolated_offset",
+  "tail": null
+ },
+ {
+  "mutation": "clock: keep the first round instead of the smallest round trip",
+  "file": "nocturne/engines/torch_tp/clock.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_estimate_is_remote_minus_local_and_uses_the_smallest_round_trip",
+  "tail": null
+ },
+ {
+  "mutation": "clock: OS comparison with the hosts swapped",
+  "file": "nocturne/engines/torch_tp/clock.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_compare_with_os_sync_flags_a_gap_over_two_ms",
+  "tail": null
+ },
+ {
+  "mutation": "timesync: SNTP offset sign",
+  "file": "nocturne/bench/probes/timesync.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_sntp_offset_is_server_minus_local_and_delay_excludes_the_server_hold",
+  "tail": null
+ },
+ {
+  "mutation": "recorder: the cursor does not advance",
+  "file": "nocturne/engines/torch_tp/recorder.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_recorder_cursor_leaves_no_gap_inside_a_step",
+  "tail": null
+ },
+ {
+  "mutation": "timeline: sent and received bytes swapped",
+  "file": "nocturne/engines/torch_tp/timeline.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_recorded_spans_tile_every_step_and_bytes_equal_the_transport_counters",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: sha256 of a received slice not checked",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_a_slice_whose_sha256_differs_from_the_manifest_is_rejected",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: CRC32 of a chunk not checked",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_a_corrupted_chunk_is_rejected_and_nothing_enters_the_cache[False]",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: a cached file is accepted whatever its size",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "result": "NOT APPLIED: the text occurs 0 times"
+ },
+ {
+  "mutation": "shipping: manifest slice bounds one short",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_manifest_lists_exactly_what_the_rank_loads_with_hashes_of_the_slices",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: row range used as a column range",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_manifest_lists_exactly_what_the_rank_loads_with_hashes_of_the_slices",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: hashes of the manifest not checked before they name a file",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_manifest_hashes_must_be_hex_before_they_name_a_file",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: a transfer that ends early is accepted (review F5)",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_a_transfer_that_ends_early_is_rejected_and_leaves_no_partial_file",
+  "tail": null
+ },
+ {
+  "mutation": "shipping: the temporary file of a broken transfer is left (review F6)",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "result": "NOT APPLIED: the text occurs 0 times"
+ },
+ {
+  "mutation": "shipping: hash memo kept across a change of the slicing code (review F4)",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_hash_memo_is_dropped_when_the_slicing_code_changes",
+  "tail": null
+ },
+ {
+  "mutation": "operator: pkill without the option terminator (review F1)",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_operator_starts_the_coordinator_on_the_placement_host_and_ranks_on_theirs",
+  "tail": null
+ },
+ {
+  "mutation": "operator: pkill pattern not anchored at the end of the tag (review F1)",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_operator_starts_the_coordinator_on_the_placement_host_and_ranks_on_theirs",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F1: the operator never gives up on a silent coordinator",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_a_coordinator_without_a_sign_of_life_is_ended_and_the_reason_is_kept",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F1: heartbeat lines do not count as a sign of life",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_heartbeats_keep_a_quiet_coordinator_and_a_stopped_one_is_ended",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F2: the run id is not checked before the run folder is made",
+  "file": "nocturne/engines/torch_tp/hybrid_run.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_run_id_is_checked_before_anything_is_written",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F2: dot and dot dot accepted as a run tag",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_run_id_is_checked_before_anything_is_written",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F3: a slice that is not contiguous is copied whole",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_a_column_slice_is_never_copied_whole",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F4: device sync without the device",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_device_sync_waits_for_the_ranks_own_cuda_device",
+  "tail": null
+ },
+ {
+  "mutation": "Codex F5: the end clock exchange also goes down the pipeline links",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_clock_frames_use_only_ctl_links_and_the_request_number_only_with_the_recorder",
+  "tail": null
+ },
+ {
+  "mutation": "Codex: the request number on the wire with the recorder off",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_clock_frames_use_only_ctl_links_and_the_request_number_only_with_the_recorder",
+  "tail": null
+ },
+ {
+  "mutation": "Codex: --verify-cache does not hash the cached file",
+  "file": "nocturne/engines/torch_tp/shipping.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_shipping.py::test_a_changed_cache_file_is_trusted_by_name_and_size_and_caught_with_verify",
+  "tail": null
+ },
+ {
+  "mutation": "rank: run tag from the wire used as a path (review F7)",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_run_tag_from_the_plan_cannot_leave_the_runs_folder",
+  "tail": null
+ },
+ {
+  "mutation": "recorder: no compute span at the end of a step of a plain group rank (review F17)",
+  "file": "nocturne/engines/torch_tp/hybrid.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_timeline.py::test_recorded_spans_tile_every_step_and_bytes_equal_the_transport_counters",
+  "tail": null
+ },
+ {
+  "mutation": "planner: coordinator host taken from the last stage",
+  "file": "nocturne/engines/torch_tp/plan.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_slots_need_no_model_and_agree_with_the_full_plan",
+  "tail": null
+ },
+ {
+  "mutation": "operator: coordinator process started on the host of rank 1",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_operator_starts_the_coordinator_on_the_placement_host_and_ranks_on_theirs",
+  "tail": null
+ },
+ {
+  "mutation": "coordinator: the host check accepts any machine",
+  "file": "nocturne/engines/torch_tp/coordinate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_coordinator_process_refuses_another_host",
+  "tail": null
+ },
+ {
+  "mutation": "operator: model path of the operator instead of the coordinator host",
+  "file": "nocturne/engines/torch_tp/operate.py",
+  "caught": true,
+  "first_failing_test": "tests/bench/test_session10_coordinator.py::test_operator_starts_the_coordinator_on_the_placement_host_and_ranks_on_theirs",
+  "tail": null
+ }
+]
