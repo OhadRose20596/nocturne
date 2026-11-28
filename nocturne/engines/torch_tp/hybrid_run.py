@@ -364,6 +364,9 @@ def main(argv=None) -> int:
     try:
         op.start_ranks()
         rc = op.run_coordinator()
+        late = op.wait_ranks()
+        if late:
+            log(f"[run] ranks still running a minute after the coordinator ended: {late}")
         got = op.collect()
         rec["collected"] = got
         cpath = run_dir / "coordinator_record.json"

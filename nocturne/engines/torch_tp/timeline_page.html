@@ -65,7 +65,7 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--text2); }
 <div class="scroll"><table id="links"></table></div>
 
 <h2>Clock alignment</h2>
-<p class="note">Offset of each rank's monotonic clock to the coordinator, from 16 round trips at the start and at the end. The error is at most half the round trip.</p>
+<p class="note">Each rank's clock minus the coordinator's clock, from 16 round trips on the control link at the start and at the end of the run. The error is at most half the round trip. The table shows the wall clocks. Events are aligned with the same measurement of the monotonic clocks. The last column compares with the NTP measurement of the two hosts before the run.</p>
 <div class="scroll"><table id="clock"></table></div>
 
 <h2>Samplers per host</h2>
@@ -187,9 +187,9 @@ function niceTicks(a, b, n) { const span = b - a || 1, raw = span / n, p = Math.
   Object.entries(D.all_bytes).forEach(([k, a]) => { all += a; if (!seen.has(k)) t += `<tr><td>${esc(k.replace(" -> ", " to "))}</td><td>0 B</td><td>0 B</td><td>${bytes(a)}</td></tr>`; });
   t += `<tr class="total"><td>this configuration, all links</td><td>${bytes(D.decode_bytes_per_step)}</td><td>${bytes(D.decode_bytes_total)}</td><td>${bytes(all)}</td></tr>`;
   $("links").innerHTML = t;
-  let c = "<tr><th>rank</th><th class='l'>host</th><th>offset at start (ms)</th><th>round trip (µs)</th><th>offset at end (ms)</th><th>drift (µs)</th><th>drift (ppm)</th><th>gap to OS sync (ms)</th></tr>";
+  let c = "<tr><th>rank</th><th class='l'>host</th><th>offset at start (ms)</th><th>round trip (ms)</th><th>offset at end (ms)</th><th>drift during the run (µs)</th><th>drift (ppm)</th><th>gap to the OS time sync (ms)</th><th>bound of the OS sync (ms)</th></tr>";
   Object.entries(D.clock || {}).forEach(([n, v]) => { const s = v.start || {}, e = v.end, d = v.drift, o = v.os || {};
-    c += `<tr><td>${esc(n)}</td><td class="l">${esc(v.host || "")}</td><td>${f(s.offset_mono_ns / 1e6, 3)}</td><td>${f(s.rtt_ns / 1e3, 0)}</td><td>${e ? f(e.offset_mono_ns / 1e6, 3) : "n/a"}</td><td>${d ? f(d.drift_ns / 1e3, 1) : "n/a"}</td><td>${d && d.ppm != null ? f(d.ppm, 2) : "n/a"}</td><td>${o.gap_ns != null ? f(o.gap_ns / 1e6, 2) + (o.disagree ? " (over 2 ms)" : "") : "n/a"}</td></tr>`; });
+    c += `<tr><td>${esc(n)}</td><td class="l">${esc(v.host || "")}</td><td>${f(s.offset_wall_ns / 1e6, 3)}</td><td>${f(s.rtt_ns / 1e6, 3)}</td><td>${e ? f(e.offset_wall_ns / 1e6, 3) : "n/a"}</td><td>${d ? f(d.drift_ns / 1e3, 1) : "n/a"}</td><td>${d && d.ppm != null ? f(d.ppm, 2) : "n/a"}</td><td>${o.gap_ns != null ? f(o.gap_ns / 1e6, 2) + (o.disagree ? " (over 2 ms)" : "") : "n/a"}</td><td>${o.os_bound_ns != null ? f(o.os_bound_ns / 1e6, 1) : (o.same_host ? "same host" : "n/a")}</td></tr>`; });
   $("clock").innerHTML = c;
   let h = "<tr><th>host</th><th>host CPU busy</th><th class='l'>process CPU (cores) per rank</th><th class='l'>network bytes in / out</th><th>GPU util mean</th><th class='l'>notes</th></tr>";
   Object.entries(D.hosts || {}).forEach(([n, v]) => {

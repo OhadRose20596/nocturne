@@ -220,3 +220,29 @@ Suggested fix: at the end of `step`, when `rec` is set and nothing was closed, `
 - The real `~/.nocturne/peers.yaml` was not read, so the hostname check of `coordinate.check_host` against the WSL2 host name is not confirmed.
 - Thread safety of `gguf-py` readers is inferred from the code (memory map slices), not stress tested.
 - Limits of the 32 bit fields (slice index below 2^24, request number below 2^24) are far from real use and were not tested.
+
+## Disposition (author, after pass 1)
+
+Commit `efad24d` holds the fixes. A second fresh reviewer checked the fixes only (`REVIEW_pass2.md`).
+
+| finding | rating | disposition |
+|---|---|---|
+| F1 `pkill` by run tag never worked | medium | Fixed. `operate.kill_argv`: `pkill -f -- '--tag <tag>( \|$)'`, the tag escaped, the return code logged. Same in `launch.py`. Confirmed on gtx that the old form fails on Linux too. A stale rank of the R6 run was found on gtx and stopped. Test with real processes: `test_stop_kills_what_is_left_of_this_run_and_nothing_of_another` |
+| F2 shipped bytes against planned bytes for GGUF | medium | Left as it is, and recorded. The planner is not changed. `record.json` now holds per rank `loaded_tensor_bytes`, `planned_weight_bytes` and `stored_minus_loaded_bytes`. The rule is in `docs/ENGINE_DESIGN.md` 3.8. In every V3 run manifest bytes minus that difference equal the loaded bytes, and loaded bytes equal planned bytes |
+| F3 the "no process left" check could not fail | low | Fixed. `pgrep -f --`, return code asserted |
+| F4 memo and cache keyed without the cut | low | Fixed for the memo: it carries a hash of the files that decide a cut and is dropped when they change. The cache is keyed by content hash and is safe by itself. `fsync` before the cache name |
+| F5 DONE before every needed slice | low | Fixed. The rank rejects, with the first missing slice named. `received_slices` counts accepted slices |
+| F6 `.part` files left behind | low | Fixed for every abnormal end inside the process (`try/finally`). A file left by a killed process is still not swept |
+| F7 run tag and hash with a weak check | low | Fixed. `fullmatch` for both |
+| F8 a finished run recorded as failed | low | Fixed. Results are stored before the end clock measurement. A host whose files cannot be collected is a warning |
+| F9 shipping failure records nothing | low | Partly. The constructor's failure path now closes the links and the listener, and the coordinator reads the rank's own error text after a send error. The shipping numbers of the other ranks are still not in the record when the bring up fails |
+| F10 design said no other frame changed | low | Fixed in `docs/ENGINE_DESIGN.md` section 6: the three wire changes in one place |
+| F11 time of the last sync, the common server | low | Partly. `chronyc` "Ref time" and the last `--set` of the script are recorded. `--set` on Linux adds the common server to chrony first (not run, it needs sudo). macOS gives no last sync time |
+| F12 output names with `.gz` | low | Left on purpose: a TP run of 500 steps is 7 MB per rank and a 60 MB trace as plain text. Stated in the design and in `docs/MEASUREMENT.md` |
+| F13 GPU samples for one device only | low | Fixed. One `nvidia-smi` for every GPU of the host, started by the host sampler when any rank of the host uses CUDA. It ends with its rank (`atexit`, and on Linux a parent death signal) |
+| F14 unquoted Python path, setup errors without a record | low | Fixed. New outcome `setup_failed` |
+| F15 `launch` and `plan` ignore the per host model path | low | Fixed |
+| F16 test gaps | low | Fixed: `test_operator_run_with_shipped_weights_ranks_get_no_model`, `test_hybrid_run_main_end_to_end_on_a_tiny_gguf`. Identity with the recorder on real devices is shown by the V3 runs, not by a unit test |
+| F17 last compute of a plain group rank counted as waiting | low | Fixed |
+
+Gate: no open high finding.

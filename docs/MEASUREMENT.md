@@ -36,7 +36,8 @@ It sends 8 queries (4 in preflight) and keeps the one with the smallest round tr
 
 - One server for all hosts: `time.apple.com`, or `NOCTURNE_NTP_SERVER`.
 - Without flags the script measures and sets nothing. `--set` steps the clock and needs sudo: `sntp -sS` on macOS, `chronyc makestep` or systemd-timesyncd on Linux, `hwclock -s` on WSL2 after `17_timesync.ps1 -Set` on Windows.
-- Recorded per run and per host by `hybrid_run.preflight`: `record.json`, `preflight.hosts.<host>.timesync` (server, offset, round trip, the OS tool and its own offset, the time of the measurement).
+- Recorded per run and per host by `hybrid_run.preflight`: `record.json`, `preflight.hosts.<host>.timesync`: the server, the offset, the round trip, the time of the measurement (`at`), the OS tool with its source and its own offset, and the time of the last sync as far as the OS tells it. That is `last_sync_utc` from `chronyc` and `last_sync` from `w32tm`. macOS has no such line. `last_set` is the time, the server and the method of the last `17_timesync.sh --set` on that host.
+- The OS services keep their own servers. On gtx, chrony inside WSL2 follows the Hyper-V clock and an Ubuntu NTS server, and Windows follows `time.windows.com`. `--set` on plain Linux adds the common server to chrony before it steps. On WSL2 it only reads the Windows clock, so the common server is set on the Windows side (`17_timesync.ps1 -Set`). The offset we report is always measured by our own SNTP query against the one common server, whatever the OS follows.
 - Precision: half the round trip to the server (`bound_s`).
 
 Measured on the M5 on 2026-11-28, home Wi-Fi, a VPN client installed:
@@ -58,7 +59,8 @@ From the round with the smallest round trip: offset = remote minus local minus h
 
 - Recorded always, also without `--timeline`: `record.json`, `clock.<rank>.start` and `.end` (`offset_mono_ns`, `offset_wall_ns`, `rtt_ns`, `rtt_median_ns`), and `.drift` (the change between start and end, also in ppm).
 - Every recorded event time is converted with it: `clock.to_coordinator`. The offset is interpolated linearly between the start and the end measurement, which removes a constant drift.
-- Precision: at most half the round trip, when the two directions take the same time. On loopback the round trip is about 0.2 ms. Between machines it is the round trip of the network; part 2 records it for the CUDA pair.
+- Precision: at most half the round trip, when the two directions take the same time. On loopback the round trip is about 0.2 ms. Between machines it is the round trip of the network: 5 to 8 ms on the home Wi-Fi on 2026-11-28.
+- The check in the coordinator process that it runs on the right host uses the name the host reports when the operator asks it. It protects a coordinator started by hand on the wrong machine. In an operator run it cannot fail, because the operator starts the process on that host.
 - The two levels are compared in `hybrid_run.clock_report`: the OS level predicts (server minus coordinator) minus (server minus rank). `clock.<rank>.os.gap_ns` is the engine's wall offset minus that prediction. `disagree` is true when the gap is over 2 ms. `os_bound_ns` is the sum of the two OS bounds, so the reader can see whether the gap means anything.
 
 Loopback check on 2026-11-28 (1.5B, three ranks on the M5, one physical clock): offsets of -3.5 and +2.0 microseconds at start, +7.8 and -8.5 at end, round trips 0.12 and 0.19 ms. The offsets are inside the bound, as they must be on one host.
@@ -93,7 +95,7 @@ Overhead and identity, measured: section 6.
 
 Code: `recorder.Sampler`, a thread in every rank process, on with `--timeline`.
 Every 20 ms it reads cumulative counters with `psutil`: CPU seconds of the rank process, and, in one rank per host, the busy CPU seconds of the host and the bytes in and out of the interfaces the rank listens on. Rates are formed later from differences.
-On a CUDA rank it also reads `nvidia-smi` every 100 ms (utilization, memory used).
+On a host with a CUDA rank the host sampler also runs `nvidia-smi` every 100 ms, for every GPU of the host (index, utilization, memory used). It ran on gtx under WSL2 in the checks of 2026-11-28.
 On a Mac there is no GPU sampler: `powermetrics` needs sudo and is not used.
 
 Limits: CPU time is counted by the OS in ticks of 10 ms, so one 20 ms interval is coarse; use windows of a second or more. On loopback the interface counts every byte twice (in and out). `nvidia-smi` utilization is an average over its own window.
@@ -127,7 +129,9 @@ Bytes of shipped weights are separate: `record.json`, `shipping.ranks.<rank>`.
 | GPU utilization (CUDA) | same | same | same | `nvidia-smi`, 100 ms. Not on Metal |
 | tokens, identical prompts, accuracy | `record.json` `prompts[]`, `correctness` | the coordinator; `hybrid_run.compare` | none | Exact |
 
-Recorder overhead and identity: filled in from the V3 runs of this session, see `experiments/session10_cuda_pair/VERIFY.md`.
+Recorder overhead and identity, measured on 2026-11-28 (`experiments/session10_cuda_pair/VERIFY.md`): OVERHEAD_SENTENCE Tokens were identical with the recorder on and off in every pair.
+
+Measured between machines on the home Wi-Fi on 2026-11-28 (same file): the control link round trip was 5 to 8 ms, so the alignment between machines is good to about 3 to 4 ms. The wall clocks differed by 24 to 82 ms. The offset drifted by 6 to 14 ppm during a run, which is why it is measured twice and interpolated.
 
 ## 7. The method of 23 November, and what the recorder replaces
 

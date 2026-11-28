@@ -164,6 +164,44 @@ def test_operator_refuses_a_bad_tag_and_zero_bind(tmp_path):
         operate.Operator(pl, peers, tmp_path, tag="t")
 
 
+def test_a_host_that_does_not_answer_does_not_end_the_operator(tmp_path, monkeypatch):
+    """Review pass 2, N2: the hostname query and the final pkill must survive a host that times out."""
+    pl, peers = write(tmp_path, cuda_pair_yaml("gtx"))
+    lines = []
+    op = operate.Operator(pl, peers, tmp_path / "run", tag="t", log=lines.append, runner=Runner(dry_run=True, echo=False))
+
+    def timeout(*a, **k):
+        raise subprocess.TimeoutExpired("ssh", 20)
+    monkeypatch.setattr(op, "sh", timeout)
+    assert op.hostname("gtx") == "Ohad"                               # falls back to the peers.yaml name
+    monkeypatch.setattr(op.runner, "run", timeout)
+    op.stop()
+    assert sum("pkill on" in l and "did not run" in l for l in lines) == 2      # both hosts were tried
+
+
+def test_collect_keeps_the_files_when_tar_reports_a_changed_file(tmp_path, monkeypatch):
+    """Review pass 2: GNU tar ends with 1 when a file changed while it was read; the stream is still good."""
+    pl, peers = write(tmp_path, cuda_pair_yaml("gtx"))
+    lines = []
+    (tmp_path / "run").mkdir()
+    op = operate.Operator(pl, peers, tmp_path / "run", tag="t", log=lines.append)
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w") as tf:
+        ti = tarfile.TarInfo("./timeline_s1_0.jsonl.gz")
+        ti.size = 3
+        tf.addfile(ti, io.BytesIO(b"abc"))
+
+    def sh(host, cmd, timeout=120, stdin=None):
+        if host == "pc":
+            return subprocess.CompletedProcess(cmd, 1, buf.getvalue(), b"tar: ./x: file changed as we read it")
+        raise subprocess.TimeoutExpired("ssh", timeout)
+    monkeypatch.setattr(op, "sh", sh)
+    got = op.collect()
+    assert got == {"gtx": [], "pc": ["timeline_s1_0.jsonl.gz"]} and (tmp_path / "run" / "timeline_s1_0.jsonl.gz").read_bytes() == b"abc"
+    assert any("tar on pc ended with rc 1" in l for l in lines) and any("collecting the run files of gtx failed" in l for l in lines)
+    assert op.wait_ranks(timeout_s=0.1) == []
+
+
 def test_collected_tar_keeps_only_plain_files_of_the_run_folder(tmp_path):
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w") as tf:

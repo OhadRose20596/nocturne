@@ -6,7 +6,8 @@ upstream link or on a head rank, with source), allreduce_wait (blocked on a grou
 Events stay in memory and are written once, at shutdown, as timeline_<rank>.jsonl.gz: a header line, then one JSON
 array per event in the order of COLS (gzip: a TP run of 500 steps is 7 MB per rank as plain text).
 Sampler: a thread that reads cumulative counters every 20 ms (process CPU seconds; for the host sampler also host busy
-CPU seconds and bytes per network interface) and, on a CUDA rank, nvidia-smi every 100 ms. Written as
+CPU seconds and bytes per network interface). On a host with a CUDA rank the host sampler also runs one nvidia-smi for
+every GPU of the host, every 100 ms; it ends with its rank (atexit, and on Linux a parent death signal). Written as
 samples_rank_<rank>.jsonl.gz (timeline.py merges them into samples_<host>.jsonl). Rates are formed later from differences (timeline.py)."""
 import atexit
 import gzip

@@ -120,7 +120,10 @@ class Operator:
 
     def hostname(self, host: str) -> str | None:
         """The name the host gives itself now (a Mac's changes with the network); the peers.yaml entry when it does not answer."""
-        r = self.sh(host, "hostname", 20)
+        try:
+            r = self.sh(host, "hostname", 20)
+        except (OSError, subprocess.SubprocessError):
+            return self.peer(host).get("host")
         name = r.stdout.decode(errors="replace").strip().splitlines()[-1:] if r.returncode == 0 and r.stdout else []
         return name[0] if name else self.peer(host).get("host")
 
@@ -205,17 +208,28 @@ class Operator:
             self.log(line.rstrip("\n"))
         return p.wait()
 
+    def wait_ranks(self, timeout_s: float = 60.0) -> list[str]:
+        """Wait until every rank process has ended (each writes its timeline files as it exits). Returns the names of
+        the ranks still running at the timeout."""
+        t0 = time.time()
+        while time.time() - t0 < timeout_s and any(p.poll() is None for _, p in self.procs):
+            time.sleep(0.2)
+        return [s.name for s, p in self.procs if p.poll() is None]
+
     def collect(self) -> dict[str, list[str]]:
-        """Copy every other host's run files into the run folder (a tar stream over the same shell)."""
+        """Copy every other host's run files into the run folder (a tar stream over the same shell). Call it after
+        wait_ranks: tar reports a file that changes while it is read."""
         got = {}
         for host in self.collected_hosts():
             d = shell_path(self.host_dir(host))
             try:
                 r = self.sh(host, f"cd {d} 2>/dev/null && tar -cf - .", 600)
-                if r.returncode or not r.stdout:
+                if not r.stdout:
                     self.log(f"[run] no run files from {host} ({self.host_dir(host)}): {r.stderr.decode(errors='replace')[-200:]}")
                     got[host] = []
                     continue
+                if r.returncode:      # GNU tar ends with 1 when a file changed while it was read; keep what arrived and say so
+                    self.log(f"[run] tar on {host} ended with rc {r.returncode}: {r.stderr.decode(errors='replace').strip()[-200:]}")
                 got[host] = safe_extract(r.stdout, self.run_dir)
             except (OSError, subprocess.SubprocessError, tarfile.TarError) as e:      # a host that fails here must not lose the others
                 self.log(f"[run] collecting the run files of {host} failed: {type(e).__name__}: {e}")
@@ -232,6 +246,10 @@ class Operator:
                 time.sleep(0.2)
         self.runner.stop_all()
         for h in sorted({s.host for s in self.slots}):
-            r = self.runner.run(self.peer(h), kill_argv(self.tag), timeout=30)
+            try:
+                r = self.runner.run(self.peer(h), kill_argv(self.tag), timeout=30)
+            except (OSError, subprocess.SubprocessError) as e:      # one host that does not answer must not skip the others
+                self.log(f"[run] pkill on {h} did not run: {type(e).__name__}: {e}")
+                continue
             if r.returncode not in (0, 1):
                 self.log(f"[run] pkill on {h} failed (rc {r.returncode}): {(r.stderr or '').strip()[-200:]}")

@@ -160,7 +160,8 @@ With `--timeline` every rank also records what it does in every step: compute, c
 
 The coordinator measures the clocks again, then sends SHUTDOWN along the data path. Every rank writes its timeline files and exits.
 The coordinator writes `coordinator_record.json`. The operator copies the files of every host into the run folder and writes `record.json`.
-Then it stops what is left on every host: `pkill` for every process that carries this run's tag. A rank that is blocked on a dead link ends this way.
+It first waits for the rank processes to end, because each rank writes its timeline files as it exits.
+Then it stops what is left on every host: `pkill` (SIGTERM) for every process that carries this run's tag. A rank that is blocked on a dead link ends this way. Rank and coordinator processes turn SIGTERM into a normal exit, so their files are closed and the sampler stops.
 
 ## 4. Control plane
 

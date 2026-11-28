@@ -336,7 +336,10 @@ def receive_slices(link: transport.Link, root: Path, log=print) -> tuple[dict, d
             link.send(transport.KIND_WEIGHTS, aux0=OP_ACK | i << 8, aux1=0)
     finally:
         if cur is not None:      # any abnormal end: a rejected slice, a lost link, a full disk
-            cur["f"].close()
+            try:
+                cur["f"].close()
+            except OSError:
+                pass
             cur["tmp"].unlink(missing_ok=True)
     total, unique = m["total_bytes"], unique_bytes(m)
     stats = {"manifest_bytes": total, "manifest_slices": len(slices), "received_bytes": received, "received_slices": len(accepted),
@@ -395,7 +398,7 @@ def ship_all(links: dict, source, manifests: dict, names: dict) -> tuple[dict, l
                         if kind == transport.KIND_ERROR:
                             text += f" (the rank said: {bytes(payload).decode(errors='replace')})"
                             break
-                except (OSError, ValueError):
+                except Exception:      # noqa: BLE001 - the first error text is what matters
                     pass
             with lock:
                 errors.append(text)

@@ -190,7 +190,7 @@ def trace(run: dict) -> dict:
         pid, prev = hosts.index(m["host"]), None
         for r in s["rows"]:
             if "gu" in r:
-                ev.append({"ph": "C", "name": f"gpu util % ({m['host']})", "pid": pid, "ts": r["t"] / 1000, "args": {"util": r["gu"]}})
+                ev.append({"ph": "C", "name": f"gpu {r.get('gi', 0)} util % ({m['host']})", "pid": pid, "ts": r["t"] / 1000, "args": {"util": r["gu"]}})
             elif prev is not None and r["t"] > prev["t"]:
                 dt = (r["t"] - prev["t"]) / 1e9
                 ev.append({"ph": "C", "name": f"cpu cores {m['rank']}", "pid": pid, "ts": r["t"] / 1000, "args": {"process": (r["pc"] - prev["pc"]) / dt}})

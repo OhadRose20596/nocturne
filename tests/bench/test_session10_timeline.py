@@ -171,10 +171,11 @@ def test_run_tag_from_the_plan_cannot_leave_the_runs_folder():
 def test_sampler_writes_cumulative_counters(tmp_path):
     pytest.importorskip("psutil")
     s = recorder.Sampler("s0/0", "h", "cpu", recorder.ifaces_for(["127.0.0.1"]), True, interval_s=0.005).start()
-    x = 0
-    for i in range(300_000):
-        x += i * i
-    __import__("time").sleep(0.06)
+    import time
+    x, t0 = 0, time.monotonic()
+    while time.monotonic() - t0 < 0.25:          # the OS counts CPU time in ticks of 10 ms; burn many of them
+        x += 1
+    time.sleep(0.03)
     s.stop()
     head, rows = timeline.read_jsonl(s.write(tmp_path))
     assert head["host_level"] and head["ifaces"] and len(rows) >= 5

@@ -1,0 +1,22 @@
+# Session 10 part 1 check (not an experiment row): the M5 is the coordinator; gtx and the Air get their slices shipped.
+model: ~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 9]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+  - name: s1
+    layers: [9, 19]
+    ranks:
+      - {host: gtx, device: cuda, port: 50070}
+  - name: s2
+    layers: [19, 28]
+    lm_head: true
+    ranks:
+      - {host: air, device: mps, port: 50070}
