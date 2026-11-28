@@ -15,7 +15,7 @@ A run is one folder, `experiments/<session>/runs/<run_id>/`. A run id is never r
 | `job.json`, `plan.json` | the operator; the coordinator (`coordinate --plan-only`) | The job as sent, and the planner's answer |
 | `coordinator.log`, `rank_<rank>.log` | the operator | The output of every process, with wall time stamps of the operator |
 | `first_logits.npz` | the coordinator | Logits of the first step of every prompt, float32 |
-| `timeline_<rank>.jsonl.gz` | each rank, `Recorder.write` | Raw spans of that rank, on that rank's own monotonic clock. Only with `--timeline` |
+| `timeline_<rank>.jsonl.gz` | each rank, `Recorder.write` | Raw spans of that rank, on that rank's own raw monotonic clock. Only with `--timeline` |
 | `samples_rank_<rank>.jsonl.gz` | each rank, `Sampler.write` | Raw counters of that process and its host, same clock |
 | `samples_<host>.jsonl` | `timeline.write_host_samples` | The counters of one host, moved to the coordinator clock |
 | `trace.json.gz` | `timeline.trace` | All spans in Trace Event Format. Open it at ui.perfetto.dev |
@@ -57,6 +57,7 @@ Code: `clock.measure` (coordinator), `clock.answer` (rank), called from `Coordin
 The coordinator sends 16 requests on the control link of each rank. The rank answers each with its wall clock and its monotonic clock.
 From the round with the smallest round trip: offset = remote minus local minus half the round trip. It is computed twice, for the monotonic clocks and for the wall clocks.
 
+- The monotonic clock is the raw one, `CLOCK_MONOTONIC_RAW` (`clock.now_ns`). Every recorder time stamp uses it. The OS time service does not touch it. Python's `time.monotonic_ns()` is `CLOCK_MONOTONIC` on Linux, and the time service runs that clock faster or slower while it corrects the wall clock. Measured on 2026-11-28 on the pc, whose wall clock was 370 ms off: its `CLOCK_MONOTONIC` ran 0.8 to 1.9 percent fast, and its offset to gtx moved by 110 ms in 6 s. On the raw clock the same pair drifts by 14 ppm. `clock.<rank>.drift.wall_minus_mono_change_ns` shows how far the wall clock moved against the raw clock during a run (66 ms in 27 s on the pc).
 - Recorded always, also without `--timeline`: `record.json`, `clock.<rank>.start` and `.end` (`offset_mono_ns`, `offset_wall_ns`, `rtt_ns`, `rtt_median_ns`), and `.drift` (the change between start and end, also in ppm).
 - Every recorded event time is converted with it: `clock.to_coordinator`. The offset is interpolated linearly between the start and the end measurement, which removes a constant drift.
 - Precision of one exchange: at most half its round trip, when the two directions take the same time. Between the two exchanges the offset is interpolated, which is exact for a constant drift. Two measurements cannot bound a drift that changes during a long run, so for events in the middle the bound is an estimate.
@@ -70,7 +71,7 @@ Loopback check on 2026-11-28 (1.5B, three ranks on the M5, one physical clock): 
 ## 3. The recorder
 
 Code: `recorder.Recorder`. On with `--timeline`. Off by default, and then the engine's code path is unchanged.
-The recorder keeps a cursor on `time.monotonic_ns()`. `lap(kind)` closes the span from the cursor to now. So every instant of a step belongs to exactly one span.
+The recorder keeps a cursor on the raw monotonic clock (`clock.now_ns`, section 2.2). `lap(kind)` closes the span from the cursor to now. So every instant of a step belongs to exactly one span.
 
 | kind | what it covers | where it is closed |
 |---|---|---|

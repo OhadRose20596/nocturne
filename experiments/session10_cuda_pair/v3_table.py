@@ -49,7 +49,7 @@ def main():
         by = f"{tl['decode_bytes_per_step']:.0f} / {r['frames']['bytes_per_step']:.0f}" if tl.get("decode_bytes_per_step") is not None else f"- / {r['frames']['bytes_per_step']:.0f}"
         same = against(r, SAME_PLACEMENT[pl]) if pl in SAME_PLACEMENT else "-"
         print(f"| {r['run_id']} | {pl} | {'shipped' if ship else 'local'} | {'on' if r['args'].get('timeline') else 'off'} | "
-              f"{c['identical']}/{c['of']}; {list(c['long_first_div'].values())[0]} | {same} | "
+              f"{c['identical']}/{c['of']}; {(list(c['long_first_div'].values()) or ['no long prompt'])[0]} | {same} | "
               f"{r['frames']['measured_per_step']:.1f} / {r['frames']['predicted']['total']} | {by} | {sh} | {mean_ms(r):.1f} |")
 
 

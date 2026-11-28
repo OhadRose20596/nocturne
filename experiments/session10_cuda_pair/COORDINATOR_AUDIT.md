@@ -53,12 +53,12 @@ Status: **fixed** (code changed, test named), **kept** (already correct or inten
 | 28 | `scripts/16_join_apply.py:22` | The tool edits `~/.nocturne/peers.yaml` of the machine it runs on. | kept. That machine is the operator. peers.yaml belongs to the operator; the coordinator needs none (finding 30) |
 | 29 | `scripts/16_join_apply.py:54-58` | `ipconfig getifaddr` is macOS. | kept. Linux reads `ip route` (engine GGUF part 1) |
 | 30 | `~/.nocturne/peers.yaml` | `ssh:` entries are as seen from the M5 (`ssh: null` for the M5 itself). `roles:` is for the bench. `models:` paths assume the same `~` path everywhere. | fixed by design. The coordinator gets host addresses in the job, not from peers.yaml. New optional keys: `peers.<host>.models`, `peers.<host>.run_root` |
-| 31 | `~/.nocturne/peers.yaml`, peer `pc` | `bind` and `networks` hold the stale hotspot address 172.20.10.2. | open. Needs the join tool on `pc` when it is on the home network |
+| 31 | `~/.nocturne/peers.yaml`, peer `pc` | `bind` and `networks` hold the stale hotspot address 172.20.10.2. | fixed on 2026-11-28 by the join tool: `16_join_apply.py apply` set 192.168.1.239 in peers.yaml and in the ssh config |
 | 32 | `scripts/15_join.sh:303` | A machine with no model files fails the `models` check, "the coordinator copies them". | fixed. Now SKIP: a worker of the torch engine needs no model file |
 | 33 | `docs/JOIN.md:4` | "The coordinator (the M5)". | fixed. The text names the operator |
 | 34 | `nocturne/bench/live/hybrid.py` | Talks to a `launch` server on localhost. | open. Untracked file of Ohad's, not touched |
 
-Counts: 34 findings. 19 fixed, 11 kept, 4 open.
+Counts: 34 findings. 20 fixed, 11 kept, 3 open.
 
 ## What a coordinator host needs now
 
@@ -71,4 +71,4 @@ Counts: 34 findings. 19 fixed, 11 kept, 4 open.
 
 - Unit tests: `tests/bench/test_session10_coordinator.py` (15 tests).
 - Loopback with the coordinator under a second peer name, in its own process and its own run folder, collected by the operator: `test_loopback_run_with_the_coordinator_under_a_second_name`.
-- Not run: gtx as coordinator. gtx and pc were off on 2026-11-28. The command for part 2 is a placement with `coordinator: {host: gtx}`, run from the M5.
+- Run later the same day, when gtx, the Air and the pc came on: gtx as coordinator with the Air as worker (`K1_*`), the M5 as coordinator with gtx and the Air (`K2_*`), and gtx as coordinator with the pc as worker, the CUDA pair (`K3_*`). The M5 only operated in K1 and K3. See `VERIFY.md`.

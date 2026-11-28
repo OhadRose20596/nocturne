@@ -256,6 +256,7 @@ CLOCK and WEIGHTS frames travel only on control links, never on a group or pipel
 ## 8. Failures
 
 There is no recovery. A broken link ends the run and the record says which link. A rank that fails while loading sends its error text first.
+A send that finds no kernel buffer space for a moment (ENOBUFS, seen on the macOS loopback during shipping) waits and goes on; the run does not end.
 A coordinator that gives no sign of life is ended by the operator (section 3.5). An ssh connection to a host that left the network ends by itself after about a minute.
 A wrong chunk or hash during shipping ends the run. Nothing wrong can enter the cache, because a file gets its cache name only after its sha256 matched.
 

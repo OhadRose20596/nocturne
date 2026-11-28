@@ -1,0 +1,852 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "K3_gtxcoord_pc_pp2_15b_bf16_r1",
+ "date": "2026-11-28T10:24:25+0200",
+ "placement": {
+  "file": "experiments/session10_cuda_pair/placements/K3_gtxcoord_pc_pp2_15b_bf16.yaml",
+  "sha256": "3a4586ff863add6a5ab67b0ceff8c0fb1ef6bb0bb3176052bd57b26b2ba3cde5",
+  "yaml": "# Session 10 part 1 readiness check (not an experiment row): the CUDA pair. gtx is the coordinator and planner, the pc gets its slices shipped.\nmodel: qwen2.5-1.5b-bf16\ncoordinator: {host: gtx}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nstages:\n  - name: s0\n    layers: [0, 14]\n    embed: true\n    ranks:\n      - {host: gtx, device: cuda, port: 50070}\n  - name: s1\n    layers: [14, 28]\n    lm_head: true\n    ranks:\n      - {host: pc, device: cuda, port: 50070}\n"
+ },
+ "git": {
+  "sha": "8fa7bbd210cc17c3ae945326158580bce9673195",
+  "dirty": false
+ },
+ "args": {
+  "placement": "experiments/session10_cuda_pair/placements/K3_gtxcoord_pc_pp2_15b_bf16.yaml",
+  "session_dir": "experiments/session10_cuda_pair",
+  "run_id": "K3_gtxcoord_pc_pp2_15b_bf16_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 4,
+  "tokens": 32,
+  "long": 0,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "experiments/session7_hetero/runs/R0_qwen2.5-1.5b-bf16_cuda_gtx_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "transformers_dir": null,
+  "tokenizer_dir": null,
+  "force": false,
+  "mps_fraction_cap": false,
+  "timeline": true,
+  "ship_weights": true,
+  "cache_dir": null,
+  "verify_cache": false,
+  "stall_timeout": 300.0,
+  "dtype": null
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "qwen2.5-1.5b-bf16",
+  "dir": "~/models/hf/Qwen2.5-1.5B-Instruct",
+  "sha256": {
+   "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+   "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee"
+  }
+ },
+ "coordinator": {
+  "host": "gtx",
+  "hostname": "Ohad",
+  "operator_hostname": "MMF4FWRG4R",
+  "remote": true,
+  "run_dir": "~/.nocturne/runs/K3_gtxcoord_pc_pp2_15b_bf16_r1"
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    14
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": [
+    0,
+    151936
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 1777086464,
+    "kv": 58720256,
+    "workspace": 50659328,
+    "total": 1886466048,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1886466048
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s1/0",
+   "stage": 1,
+   "stage_name": "s1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "pc",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    14,
+    28
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1777089536,
+    "kv": 58720256,
+    "workspace": 51570944,
+    "total": 1887380736,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1887380736
+   }
+  }
+ ],
+ "planner_host": "Ohad",
+ "frames": {
+  "predicted": {
+   "token": 0,
+   "embed": 0,
+   "layers": 0,
+   "hops": 1,
+   "head": 1,
+   "total": 2
+  },
+  "decode_steps": 11,
+  "measured_per_step": 2.0,
+  "bytes_per_step": 3112.0,
+  "per_link_per_step": {
+   "s0/0->s1/0": {
+    "sent_frames": 1.0,
+    "sent_bytes": 3096.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s0/0->ctl:s1/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s1/0->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s1/0->s0/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 3096.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "gtx": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA GeForce GTX 1070, 8192 MiB, 647 MiB, 582.78",
+    "engine_sha256": "c9ed881d4f207f26f7fd5fb0fd928716af214c6ce5861d5b7e72e52ccc5d6ae8",
+    "timesync": {
+     "host": "Ohad",
+     "os": "Linux",
+     "at": "2026-11-28T10:24:34+0200",
+     "at_unix": 1795854274.2299573,
+     "sntp": {
+      "server": "time.apple.com",
+      "server_ip": "17.253.14.45",
+      "stratum": 1,
+      "samples": 4,
+      "asked": 4,
+      "offset_s": 0.07445859909057617,
+      "delay_s": 0.06319904327392578,
+      "bound_s": 0.03159952163696289,
+      "spread_s": 0.005080103874206543
+     },
+     "os_service": {
+      "tool": "chronyc",
+      "source": "PHC0",
+      "offset_s": 8.21e-07,
+      "last_sync_utc": "Sat Nov 28 08:24:22 2026",
+      "wsl": true,
+      "windows": {
+       "tool": "w32tm",
+       "source": "time.windows.com,0x9",
+       "last_sync": "11/28/2026 8:07:31 AM"
+      }
+     },
+     "last_set": null
+    },
+    "psutil": "7.2.2",
+    "transformers": "5.23.0",
+    "model_sha256": {
+     "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+     "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+     "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee"
+    }
+   },
+   "pc": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA RTX 2000 Ada Generation Laptop GPU, 8188 MiB, 0 MiB, 596.58",
+    "engine_sha256": "c9ed881d4f207f26f7fd5fb0fd928716af214c6ce5861d5b7e72e52ccc5d6ae8",
+    "timesync": {
+     "host": "lioryahel",
+     "os": "Linux",
+     "at": "2026-11-28T10:25:00+0200",
+     "at_unix": 1795854300.045582,
+     "sntp": {
+      "server": "time.apple.com",
+      "server_ip": "17.253.14.37",
+      "stratum": 1,
+      "samples": 4,
+      "asked": 4,
+      "offset_s": -0.3555135726928711,
+      "delay_s": 0.057222843170166016,
+      "bound_s": 0.028611421585083008,
+      "spread_s": 0.00440669059753418
+     },
+     "os_service": {
+      "tool": "timedatectl",
+      "source": "ntp.ubuntu.com",
+      "offset_s": -0.389094,
+      "wsl": true,
+      "windows": {
+       "tool": "w32tm",
+       "source": "Local CMOS Clock",
+       "last_sync": "unspecified"
+      }
+     },
+     "last_set": null
+    },
+    "psutil": "7.2.2"
+   }
+  },
+  "coordinator": "gtx",
+  "ship_weights": true
+ },
+ "collected": {
+  "gtx": [
+   "coordinator_record.json",
+   "first_logits.npz",
+   "job.json",
+   "plan.json",
+   "samples_rank_s0_0.jsonl.gz",
+   "timeline_s0_0.jsonl.gz"
+  ],
+  "pc": [
+   "samples_rank_s1_0.jsonl.gz",
+   "timeline_s1_0.jsonl.gz"
+  ]
+ },
+ "commands": [
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx hostname"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx mkdir -p ~/.nocturne/runs/K3_gtxcoord_pc_pp2_15b_bf16_r1 && cat > ~/.nocturne/runs/K3_gtxcoord_pc_pp2_15b_bf16_r1/job.json"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job \"$HOME\"/.nocturne/runs/K3_gtxcoord_pc_pp2_15b_bf16_r1/job.json --tag K3_gtxcoord_pc_pp2_15b_bf16_r1 --plan-only"
+  },
+  {
+   "host": "pc",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 p16v /home/t-lioryahel/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 192.168.1.239 --port 50070 --device cuda --name s1/0 --tag K3_gtxcoord_pc_pp2_15b_bf16_r1 --run-dir \"$HOME\"/.nocturne/runs/K3_gtxcoord_pc_pp2_15b_bf16_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job \"$HOME\"/.nocturne/runs/K3_gtxcoord_pc_pp2_15b_bf16_r1/job.json --tag K3_gtxcoord_pc_pp2_15b_bf16_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx cd ~/.nocturne/runs/K3_gtxcoord_pc_pp2_15b_bf16_r1 2>/dev/null && tar -cf - ."
+  },
+  {
+   "host": "pc",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 p16v cd ~/.nocturne/runs/K3_gtxcoord_pc_pp2_15b_bf16_r1 2>/dev/null && tar -cf - ."
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx pkill -f -- '--tag K3_gtxcoord_pc_pp2_15b_bf16_r1( |$)'"
+  },
+  {
+   "host": "pc",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 p16v pkill -f -- '--tag K3_gtxcoord_pc_pp2_15b_bf16_r1( |$)'"
+  }
+ ],
+ "load_s": 97.95905089378357,
+ "link_counters": {
+  "s0/0": {
+   "s1/0": {
+    "sent_frames": 17,
+    "recv_frames": 1,
+    "sent_bytes": 593288,
+    "recv_bytes": 42,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 11,
+     "sent_bytes": 34056,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "metrics": 2,
+     "hidden": 15
+    }
+   },
+   "ctl:s1/0": {
+    "sent_frames": 752,
+    "recv_frames": 204,
+    "sent_bytes": 1777153867,
+    "recv_bytes": 1223088,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 11,
+     "recv_bytes": 176
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "weights": 733,
+     "clock": 17
+    }
+   }
+  },
+  "s1/0": {
+   "ctl": {
+    "sent_frames": 204,
+    "recv_frames": 752,
+    "sent_bytes": 1223088,
+    "recv_bytes": 1777153867,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 11,
+     "sent_bytes": 176,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "weights": 171,
+     "ready": 1,
+     "clock": 16,
+     "metrics_reply": 1,
+     "head": 15
+    }
+   },
+   "s0/0": {
+    "sent_frames": 1,
+    "recv_frames": 17,
+    "sent_bytes": 42,
+    "recv_bytes": 593288,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 11,
+     "recv_bytes": 34056
+    },
+    "by_kind_sent": {
+     "hello": 1
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "s0/0",
+   "gid": 0,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 24898,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 1777086464,
+   "kv_bytes": 58720256,
+   "idle": {
+    "peak_rss_bytes": 617156608
+   },
+   "planned": {
+    "weights": 1777086464,
+    "kv": 58720256,
+    "workspace": 50659328,
+    "total": 1886466048,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1886466048
+   },
+   "budget": null,
+   "load_s": 0.7367539405822754,
+   "steps": 15,
+   "allreduce_calls": 0,
+   "shipping": null,
+   "current_allocated_bytes": 1845251072,
+   "driver_allocated_bytes": 1944059904,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 5586812928,
+   "max_allocated_bytes": 1848524800,
+   "peak_rss_bytes": 2428416000
+  },
+  {
+   "name": "s1/0",
+   "gid": 1,
+   "host": "pc",
+   "device": "cuda",
+   "pid": 1952,
+   "torch": "2.14.1+cu130",
+   "loaded_tensor_bytes": 1777089536,
+   "kv_bytes": 58720256,
+   "idle": {
+    "peak_rss_bytes": 642551808
+   },
+   "planned": {
+    "weights": 1777089536,
+    "kv": 58720256,
+    "workspace": 51570944,
+    "total": 1887380736,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1887380736
+   },
+   "budget": null,
+   "load_s": 0.4465451240539551,
+   "steps": 15,
+   "allreduce_calls": 0,
+   "shipping": {
+    "manifest_bytes": 1777089536,
+    "manifest_slices": 170,
+    "received_bytes": 1777089536,
+    "received_slices": 170,
+    "cache_bytes": 0,
+    "duplicate_bytes": 0,
+    "hash_checks": 170,
+    "chunks": 561,
+    "cache_verified_slices": 0,
+    "recv_s": 84.10502982139587,
+    "cache_dir": "/home/t-lioryahel/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef"
+   },
+   "current_allocated_bytes": 1845561344,
+   "driver_allocated_bytes": 1944059904,
+   "cuda_name": "NVIDIA RTX 2000 Ada Generation Laptop GPU",
+   "vram_total_bytes": 8585216000,
+   "vram_free_bytes": 5467275264,
+   "max_allocated_bytes": 1848832000,
+   "peak_rss_bytes": 1294925824
+  }
+ ],
+ "requests": [
+  {
+   "req": 1,
+   "rid": "arith_01",
+   "prompt_n": 46,
+   "n_gen": 4,
+   "t0_mono_ns": 36786510721693,
+   "first_token_mono_ns": 36788613026486,
+   "t1_mono_ns": 36789131287784
+  },
+  {
+   "req": 2,
+   "rid": "arith_02",
+   "prompt_n": 47,
+   "n_gen": 4,
+   "t0_mono_ns": 36789133037284,
+   "first_token_mono_ns": 36789261461284,
+   "t1_mono_ns": 36789401953983
+  },
+  {
+   "req": 3,
+   "rid": "arith_03",
+   "prompt_n": 44,
+   "n_gen": 4,
+   "t0_mono_ns": 36789402581183,
+   "first_token_mono_ns": 36789508730883,
+   "t1_mono_ns": 36789660243882
+  },
+  {
+   "req": 4,
+   "rid": "arith_04",
+   "prompt_n": 45,
+   "n_gen": 3,
+   "t0_mono_ns": 36789660892982,
+   "first_token_mono_ns": 36789773618782,
+   "t1_mono_ns": 36789871984182
+  }
+ ],
+ "shipping": {
+  "model_sha256": "e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef",
+  "model_files": {
+   "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  },
+  "kind": "safetensors",
+  "manifest_s": 10.938960075378418,
+  "slices_hashed": 170,
+  "ranks": {
+   "s1/0": {
+    "manifest_bytes": 1777089536,
+    "manifest_slices": 170,
+    "shipped_bytes": 1777089536,
+    "shipped_slices": 170,
+    "chunks": 561,
+    "ship_s": 83.95553016662598,
+    "received_bytes": 1777089536,
+    "received_slices": 170,
+    "cache_bytes": 0,
+    "duplicate_bytes": 0,
+    "hash_checks": 170,
+    "cache_verified_slices": 0,
+    "recv_s": 84.10502982139587,
+    "cache_dir": "/home/t-lioryahel/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef",
+    "loaded_tensor_bytes": 1777089536,
+    "planned_weight_bytes": 1777089536,
+    "stored_minus_loaded_bytes": 0
+   }
+  },
+  "ship_s": 83.95553016662598,
+  "agrees_with_preflight": true
+ },
+ "torch_coordinator": "2.14.1+cu126",
+ "clock": {
+  "s0/0": {
+   "start": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "end": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "drift": null,
+   "host": "gtx",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": 0,
+    "disagree": false,
+    "same_host": true
+   }
+  },
+  "s1/0": {
+   "start": {
+    "offset_mono_ns": -35091890163448,
+    "offset_wall_ns": 429781139,
+    "rtt_ns": 5778400,
+    "rtt_median_ns": 6359599,
+    "rounds": 16,
+    "at_mono_ns": 36784417674563,
+    "at_wall_ns": 1795854401799995459
+   },
+   "end": {
+    "offset_mono_ns": -35092000382540,
+    "offset_wall_ns": 319562789,
+    "rtt_ns": 3924400,
+    "rtt_median_ns": 6420500,
+    "rounds": 16,
+    "at_mono_ns": 36790236501981,
+    "at_wall_ns": 1795854407618822877
+   },
+   "drift": {
+    "drift_ns": -110219092,
+    "span_s": 5.818827418,
+    "ppm": -18941.804608098108,
+    "wall_minus_mono_change_ns": 742
+   },
+   "host": "pc",
+   "os": {
+    "os_predicted_ns": 429972172,
+    "gap_ns": -110409383,
+    "disagree": true,
+    "os_bound_ns": 60210943
+   }
+  }
+ },
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 172.74991671244302,
+   "text": "936",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 46.8294620513916,
+   "text": "543",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt_n": 44,
+   "tokens": [
+    19,
+    18,
+    22,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 50.50357182820638,
+   "text": "437",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt_n": 45,
+   "tokens": [
+    16,
+    17,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 49.18229579925537,
+   "text": "12",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  }
+ ],
+ "timeline": {
+  "decode_steps": 11,
+  "per_rank_ms_per_step": {
+   "s0/0": {
+    "host": "gtx",
+    "device": "cuda",
+    "total_ms": 83.78732690909091,
+    "compute": 32.45777254545454,
+    "host_copy": 0.13748181818181818,
+    "send": 0.058418181818181814,
+    "recv_wait": 49.92227254545455,
+    "allreduce_wait": 0.0,
+    "other": 1.2113818181818183,
+    "decode_steps": 11
+   },
+   "s1/0": {
+    "host": "pc",
+    "device": "cuda",
+    "total_ms": 90.92376704758523,
+    "compute": 40.84903581747159,
+    "host_copy": 0.5658766342329545,
+    "send": 0.06991486008522727,
+    "recv_wait": 49.43893973579546,
+    "allreduce_wait": 0.0,
+    "other": 0.0,
+    "decode_steps": 11
+   }
+  },
+  "links": {
+   "s0/0 -> s1/0": {
+    "from": "s0/0",
+    "to": "s1/0",
+    "bytes": 34056,
+    "bytes_per_step": 3096.0
+   },
+   "s1/0 -> s0/0": {
+    "from": "s1/0",
+    "to": "s0/0",
+    "bytes": 176,
+    "bytes_per_step": 16.0
+   }
+  },
+  "decode_bytes_total": 34232,
+  "decode_bytes_per_step": 3112.0,
+  "hosts": {
+   "gtx": {
+    "ranks": {
+     "s0/0": {
+      "process_cpu_cores": 0.18232604418293388,
+      "samples": 5178,
+      "interval_ms_mean": 20.06564388023952
+     }
+    },
+    "notes": [],
+    "host_cpu_busy_fraction": 0.016605724721011562,
+    "net": {
+     "eth0": {
+      "rx_bytes": 3638290,
+      "tx_bytes": 1781820551
+     }
+    },
+    "gpu": {
+     "0": {
+      "util_mean_percent": 1.1551891367604268,
+      "mem_used_max_mib": 2612.0,
+      "samples": 1031
+     }
+    },
+    "gpu_util_mean_percent": 1.1551891367604268,
+    "gpu_mem_used_max_mib": 2612.0,
+    "gpu_samples": 1031
+   },
+   "pc": {
+    "ranks": {
+     "s1/0": {
+      "process_cpu_cores": 0.09164275300268546,
+      "samples": 4524,
+      "interval_ms_mean": 20.385998786611488
+     }
+    },
+    "notes": [],
+    "host_cpu_busy_fraction": 0.007273126773066387,
+    "net": {
+     "eth1": {
+      "rx_bytes": 1781454725,
+      "tx_bytes": 3649424
+     }
+    },
+    "gpu": {
+     "0": {
+      "util_mean_percent": 1.1085972850678734,
+      "mem_used_max_mib": 1975.0,
+      "samples": 884
+     }
+    },
+    "gpu_util_mean_percent": 1.1085972850678734,
+    "gpu_mem_used_max_mib": 1975.0,
+    "gpu_samples": 884
+   }
+  },
+  "events": {
+   "s0/0": 79,
+   "s1/0": 60
+  },
+  "all_bytes": {
+   "s0/0 -> s1/0": 593256,
+   "s1/0 -> s0/0": 1215744
+  },
+  "files": [
+   "trace.json.gz",
+   "breakdown.csv",
+   "timeline.html",
+   "timeline_s0_0.jsonl.gz",
+   "timeline_s1_0.jsonl.gz",
+   "samples_gtx.jsonl",
+   "samples_pc.jsonl",
+   "samples_rank_s0_0.jsonl.gz",
+   "samples_rank_s1_0.jsonl.gz"
+  ],
+  "not_aligned": []
+ },
+ "correctness": {
+  "experiments/session7_hetero/runs/R0_qwen2.5-1.5b-bf16_cuda_gtx_r1": {
+   "reference": "R0_qwen2.5-1.5b-bf16_cuda_gtx_r1",
+   "identical": 4,
+   "of": 4,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.375,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.28515625,
+    "arith_02": 0.314453125,
+    "arith_03": 0.34375,
+    "arith_04": 0.375
+   },
+   "long_first_div": {},
+   "criterion_met": true
+  }
+ }
+}

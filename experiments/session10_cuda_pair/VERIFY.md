@@ -1,17 +1,17 @@
 # Session 10, part 1: verification record
 
 Date: 2026-11-28. Operator: the M5 (24 GB, MPS, torch 2.14.1, Python 3.12). Start SHA of the change: `0e96d48`.
-gtx (GTX 1070, WSL2, torch 2.14.1+cu126, Python 3.14) and the Air (16 GB, MPS, torch 2.15.0) came on during the session and were used for short checks. Lior's laptop (`pc`) joined the Wi-Fi late and WSL on it had no network, so nothing ran on it.
+gtx (GTX 1070, WSL2, torch 2.14.1+cu126, Python 3.14) and the Air (16 GB, MPS, torch 2.15.0) came on during the session and were used for short checks. Lior's laptop (`pc`, RTX 2000 Ada, WSL2, torch 2.14.1+cu130) came on last. After its WSL network and its ssh key were sorted out it ran the CUDA pair check with gtx.
 No experiment rows were run. The runs below verify the build.
 
 ## Gate
 
 | condition | result |
 |---|---|
-| tests pass | yes: 323 passed on the M5 (`tests/bench`, 3.5 minutes), 61 of them new |
-| mutations caught | yes: 24 of 24 after two added assertions |
-| V3 identical, 8 of 8 | yes, every run |
-| no open high finding | yes: pass 1 had 0 high, 2 medium, 15 low; pass 2 (fixes only): 0 high, 0 medium, 13 low, and of the 17 pass 1 findings 12 fixed, 4 partly fixed, 1 left on purpose |
+| tests pass | yes: 334 passed on the M5 (`tests/bench`, 4 minutes), 74 of them new |
+| mutations caught | yes: 35 of 35 on the final code (round 1 missed one, caught after a new assertion) |
+| V3 identical, 8 of 8 | yes, every completed run, also on the final code |
+| no open high finding | yes. Pass 1: 0 high, 2 medium, 15 low. Pass 2 (fixes only): 0 high, 0 medium, 13 low. Codex: 1 high, 4 medium, all fixed (section "After the Codex review") |
 
 ## V1. Tests
 
@@ -149,8 +149,61 @@ Other things first seen on real machines:
 
 ## Not verified
 
-- A CUDA pair. gtx was the only CUDA machine that answered. The pc was on the Wi-Fi at 192.168.1.239. Its join report (sent from the Windows side, applied to the ssh config and peers.yaml) passes every configuration check: mirrored networking, Private profile, both firewall rules, the ssh server, torch 2.14.1+cu130 on the RTX 2000 Ada. But WSL on it had no network: it could not reach the M5 while Windows could, nobody could reach its port 2222, and its repository was still at `73ad964` (session 7a), so its fetch did not work either. Open: restart WSL on the pc (`wsl --shutdown`) and run the join line again.
+- At the time of the first record, a CUDA pair (done later, see "After the Codex review"). gtx was the only CUDA machine that answered. The pc was on the Wi-Fi at 192.168.1.239. Its join report (sent from the Windows side, applied to the ssh config and peers.yaml) passes every configuration check: mirrored networking, Private profile, both firewall rules, the ssh server, torch 2.14.1+cu130 on the RTX 2000 Ada. But WSL on it had no network: it could not reach the M5 while Windows could, nobody could reach its port 2222, and its repository was still at `73ad964` (session 7a), so its fetch did not work either. Open: restart WSL on the pc (`wsl --shutdown`) and run the join line again.
 - `scripts/17_timesync.sh --set` and `17_timesync.ps1`: they need sudo or an administrator and were not run. The measuring mode ran on the M5, the Air and gtx.
 - `powermetrics`: not used (sudo).
 - A coordinator that dies or hangs on another host in the middle of a run: read, not tried.
 - A rank host whose cache disk fills up during shipping: tested with a fake free space number only.
+
+## After the Codex review (same day)
+
+`REVIEW_CODEX.md`: 1 high, 4 medium. All five were reproduced and fixed (commit `8fa7bbd`); the disposition is at the end of that file. Two more fixes came out of the runs that followed (commit `7231cbe`). Final code: `7231cbe`.
+
+| what | result |
+|---|---|
+| Tests on the M5 | 334 passed |
+| Mutations | 35 of 35 caught: `mutations_round4.json` (33; two entries not applied because their target text had changed), `mutations_round4b.json` (those two), `mutations_round5.json` (the two new fixes) |
+| Codex F1, a coordinator without a sign of life | Tested with a silent child, a child that only prints the heartbeat, a child stopped with SIGSTOP, and `hybrid_run.main` with a silent coordinator: the operator ends it after the stall time, `record.json` says `coordinator_stalled`, collection and cleanup run |
+| Codex F5, CLOCK only on control links | A three stage loopback run records the link of every CLOCK frame: all on control links. Also run on real machines (K1 r4, K3) |
+
+### Two findings from the runs after the Codex fixes
+
+1. **A transient kernel error ended a run.** `V3codex_q8_7b_pp3_tl_r1` failed after 22 s with `OSError: [Errno 55] No buffer space available`, raised in rank s2/0 while two ranks received 2.5 and 2.8 GB over the macOS loopback. No wrong result, no bad cache file. The run is kept as it is. Fix: `transport._send_all` sends what fits, waits 5 ms and goes on from the same byte; the wire bytes do not change. The same placement then ran as `V3final_q8_7b_pp3_tl_r1`: 8 of 8, same tokens as the recorded part 1 run. The link counters now show `send_waits`.
+2. **The Linux time service bends `time.monotonic_ns()`.** In `K3_gtxcoord_pc_pp2_15b_bf16_r1` the offset between the pc and gtx moved by 110 ms in 6 s (1.9 percent). The pc's wall clock was 370 ms off and systemd-timesyncd was correcting it by running the clock fast; a direct test on the pc showed `CLOCK_MONOTONIC` 0.8 percent fast against `CLOCK_MONOTONIC_RAW`, and 2 ppm on gtx. Fix: recorder time stamps and the clock exchange use the raw clock (`clock.now_ns`). In `K3_..._r2` the same pair drifts by 13.7 ppm on the raw clock, while the pc's wall clock moved 66 ms in 27 s, which the record shows as `wall_minus_mono_change_ns`. Timelines recorded before this fix on a Linux host whose clock was being corrected are stretched by that much; on the Macs `time.monotonic_ns()` was already a raw clock.
+
+### Runs on the code after the Codex fixes (M5 loopback)
+
+| run | placement | weights | timeline | identical to the one rank run (8; long first divergence) | same tokens as the recorded part 1 run | frames per step measured / predicted | bytes per step, recorder / counters | shipped GB (from cache GB) | mean ms per step |
+|---|---|---|---|---|---|---|---|---|---|
+| V3codex_q8_15b_hybrid_tl_r1 | S10_q8_15b_hybrid.yaml | shipped | on | 8/8; 20 | - | 61.0 / 61 | 182708 / 182708 | 0.472 (0.944) | 431.5 |
+| V3codex_q8_15b_pp3_tl_r1 | S10_q8_15b_pp3.yaml | shipped | on | 8/8; 256 | - | 3.0 / 3 | 6208 / 6208 | 1.193 (0.000) | 412.8 |
+| V3codex_q8_15b_tp3_notl_r1 | S10_q8_15b_tp3.yaml | shipped | off | 8/8; 77 | - | 346.0 / 346 | - / 1058920 | 1.097 (0.022) | 418.4 |
+| V3codex_q8_15b_tp3_tl_vc_r1 | S10_q8_15b_tp3.yaml | shipped | on | 8/8; 77 | - | 346.0 / 346 | 1058920 / 1058920 | 0.000 (1.120) | 427.9 |
+| V3codex_q8_7b_hybrid_tl_r1 | Q8_7b_hybrid.yaml | shipped | on | 8/8; 49 | 8/8, long identical | 61.0 / 61 | 424372 / 424372 | 4.831 (1.238) | 1939.0 |
+| V3codex_q8_7b_pp3_tl_r1 | Q8_7b_pp3.yaml | | | outcome: rank_failed | | | | | |
+| V3final_q8_15b_hybrid_tl_r1 | S10_q8_15b_hybrid.yaml | shipped | on | 8/8; 20 | - | 61.0 / 61 | 182708 / 182708 | 1.416 (0.000) | 427.0 |
+| V3final_q8_7b_pp3_tl_r1 | Q8_7b_pp3.yaml | shipped | on | 8/8; 256 | 8/8, long identical | 3.0 / 3 | 14400 / 14400 | 5.285 (0.000) | 1960.6 |
+| V3final_q8_7b_tp3_tl_r1 | Q8_7b_tp3.yaml | shipped | on | 8/8; 162 | 8/8, long identical | 346.0 / 346 | 2459752 / 2459752 | 5.427 (0.001) | 1875.1 |
+
+`V3codex_*` ran on `8fa7bbd`, `V3final_*` on `7231cbe`. `tl_vc` is a run with `--verify-cache`.
+
+### Checks on real machines, all runs
+
+| run | placement | weights | timeline | identical to the one rank run (8; long first divergence) | same tokens as the recorded part 1 run | frames per step measured / predicted | bytes per step, recorder / counters | shipped GB (from cache GB) | mean ms per step |
+|---|---|---|---|---|---|---|---|---|---|
+| K1_gtxcoord_air_pp2_7b_q8_r1 | K1_gtxcoord_air_pp2_7b_q8.yaml | shipped | on | 2/2; no long prompt | - | 2.0 / 2 | 7208 / 7208 | 5.037 (0.000) | 2183.3 |
+| K1_gtxcoord_air_pp2_7b_q8_r2 | K1_gtxcoord_air_pp2_7b_q8.yaml | shipped | on | 2/2; no long prompt | - | 2.0 / 2 | 7208 / 7208 | 0.000 (5.037) | 2202.2 |
+| K1_gtxcoord_air_pp2_7b_q8_r3 | K1_gtxcoord_air_pp2_7b_q8.yaml | shipped | on | 2/2; no long prompt | - | 2.0 / 2 | 7208 / 7208 | 0.000 (5.037) | 2195.6 |
+| K1_gtxcoord_air_pp2_7b_q8_r4 | K1_gtxcoord_air_pp2_7b_q8.yaml | shipped | on | 2/2; no long prompt | - | 2.0 / 2 | 7208 / 7208 | 0.000 (5.037) | 2181.0 |
+| K2_m5coord_gtx_air_pp3_7b_q8_r1 | K2_m5coord_gtx_air_pp3_7b_q8.yaml | shipped | on | 2/2; no long prompt | - | 3.0 / 3 | 14400 / 14400 | 2.477 (2.808) | 2049.8 |
+| K3_gtxcoord_pc_pp2_15b_bf16_r1 | K3_gtxcoord_pc_pp2_15b_bf16.yaml | shipped | on | 4/4; no long prompt | - | 2.0 / 2 | 3112 / 3112 | 1.777 (0.000) | 79.8 |
+| K3_gtxcoord_pc_pp2_15b_bf16_r2 | K3_gtxcoord_pc_pp2_15b_bf16.yaml | shipped | on | 8/8; 21 | - | 2.0 / 2 | 3112 / 3112 | 0.000 (1.777) | 81.8 |
+
+- `K3_gtxcoord_pc_pp2_15b_bf16_*` is **the CUDA pair**: gtx (GTX 1070) is the coordinator and planner, the pc (RTX 2000 Ada) gets its slices shipped, the M5 only operates. 1.5B bf16 safetensors. r1: 4 of 4 identical to the gtx CUDA one rank reference, 1.78 GB shipped in 84 s. r2, on the final code with the 8 eval prompts and the long prompt: 8 of 8 identical, 0 bytes shipped, 170 cached slices verified by hash.
+- `K1_..._r4`: gtx as coordinator with the Air, on the code with the Codex fixes, with `--verify-cache`: 218 cached slices (5 GB) hashed on the Air in about 3 s.
+- Per decode step in K3 r2: gtx computes 33 ms, the pc 30 ms, the whole step takes 76 ms. The rest is the two hops over Wi-Fi.
+
+### State of the pc
+
+Reachable at 192.168.1.239 (ssh alias `p16v`, peers.yaml updated by the join tool). Same engine files as the others. Its Python has no `gguf` package and it holds no 7B Q8_0 file: both are needed only when the pc is the coordinator of a GGUF model (rung B4 of part 2). Its clock was 355 to 390 ms off NTP; stepping it needs sudo.
+Seven untracked session 7 files blocked its `git pull`. They are moved to `~/nocturne_untracked_backup_20261128` on the pc, not deleted; the six run files among them are identical to the committed copies.
