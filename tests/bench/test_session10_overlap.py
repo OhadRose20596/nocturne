@@ -1527,5 +1527,8 @@ def test_both_requests_of_a_pair_keep_their_full_request_number(tiny4, tmp_path,
         co.shutdown()
     for t in th:
         t.join(timeout=10)
-    for rk in timeline.load(tmp_path)["ranks"]:
-        assert {e["req"] for e in rk["events"] if e["step"] >= 0} == set(range(1, 13)), rk["meta"]["rank"]
+    # steps per request, per rank: a partner recorded under its number modulo 8 would move steps of requests 9 to 12 to 1 to 4
+    steps = [sorted({(e["req"], e["step"]) for e in rk["events"] if e["step"] >= 0}) for rk in timeline.load(tmp_path)["ranks"]]
+    count = lambda st: {q: sum(1 for r, _ in st if r == q) for q in range(1, 13)}
+    assert len(steps) == 3 and count(steps[0]) == count(steps[1]) == count(steps[2])
+    assert all(n >= 3 for n in count(steps[0]).values()) and {r for st in steps for r, _ in st} == set(range(1, 13))
