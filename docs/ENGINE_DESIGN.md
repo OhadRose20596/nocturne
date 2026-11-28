@@ -355,6 +355,9 @@ A's transfer happens behind B's compute. This repeats for every all-reduce: the 
 - Every rank of the group handles A before B, so on every link the frames arrive in the order A, B.
 - The coordinator forms the pair when two slots are ready. The first frame of a pair carries a "pair" flag, and the receiver then reads the partner before it starts. The flag travels with the pair through later stages. A stage with one rank just computes A, then B. With one slot ready, the step runs alone as today.
 - It needs `--slots` of 2 or more.
+- **How often a pair forms.** A pair needs two slots ready at the same moment. In a pure TP group the two head results come back together, so with two slots most steps are pairs. Behind a later stage they come back one step apart, and with two slots almost every step then runs alone (measured on loopback: 12 of 80 steps in pairs). With four slots two are always ready. The scheduler does not wait for a partner, because the first stage would then idle while a later stage works. The record says what happened: `overlap.pair_steps`, `overlap.single_steps` and `overlap.max_in_flight`.
+- **Memory.** A rank of a group holds the work space of two requests during a pair. The planner doubles the work space of group ranks when the option is on.
+- **Socket buffers.** Every rank sends before it receives, so what it sends on its own thread must fit the kernel's send buffer without the peer reading. A pair doubles that. The engine asks for 8 MiB and reads back what it got: 8 MiB on the Macs, 425984 bytes on Linux with the default `net.core.wmem_max` (measured on gtx). A frame goes inline only when it and the inline frames of its pair partner fit half the granted size; otherwise it leaves on a helper thread, in order. Before this rule a pair of 7B prefill frames could have blocked both Linux ranks for good, and so could a single frame between about 0.4 and 1 MiB in the old path.
 
 ### 11.5 O4. Send without blocking the device (`--async-send`)
 
@@ -378,9 +381,9 @@ What goes through the sender: the all-reduce partials, the hidden state to the n
 Rules:
 
 - One sender per rank and one queue, so frames leave every link in the order they were handed over.
-- The second half of an all-reduce needs the rank's own partial on the host. It waits for the copy of that partial, not for its send.
+- The second half of an all-reduce needs the rank's own partial on the host. In `inline` mode it is there at once. In `pinned` mode the sender marks it ready when it reaches that partial in its queue, so behind the sends handed over before it.
 - Before a control frame (metrics, clock, reset, shutdown) and before the counters are read, the rank waits until the sender is empty.
-- A failure in the sender (a closed link) is raised on the compute thread at its next call.
+- A failure in the sender is raised on the compute thread at its next call. A compute thread that is blocked on a link makes no such call, so the failing sender also closes every link of its rank: the rank and its peers then see a closed link at once, and the rank's log names the real error.
 
 It gives nothing alone: a rank with one request has nothing else to compute. It is meant for O1, O2 and O3.
 Tokens are identical with and without: the same bytes leave in the same order.
@@ -396,12 +399,13 @@ The runtime already allows it: links, ports and listen addresses are per rank, a
 With one request this only adds hops. With several requests, or with chunks, each machine gets work twice per pass and waits half as long.
 
 **New in the planner.** One GPU serves all rank processes of a host. So the planner sums them: the planned bytes of every rank of the host, plus a fixed cost per process, against a budget of the host (`host_budget_gb` per host in the placement). It rejects a placement that goes over and names the host.
+A host with several rank processes and no `host_budget_gb` is still accepted, because every loopback placement written before part 3 is of that kind. The plan table and the operator's log then say that the sum is not checked (`planned_hosts.<host>.unchecked`). The sum is per host name; a host with two GPUs would need one per device, and no machine of the project has two.
 
 Cost of one more process, measured on 2026-11-28:
 
 | device | cost per extra process |
 |---|---|
-| CUDA, GTX 1070 and RTX 2000 Ada | about 105 MiB for the context, 135 to 145 MiB after its first multiply |
+| CUDA, GTX 1070 and RTX 2000 Ada | about 105 MiB for the context, 135 to 145 MiB after its first multiply. In a real run on the GTX 1070 four rank processes used 309 MiB more than two for the same model (`OVc_gtx_pp4_off_r1` against `OVc_gtx_pp2_off_r1`): about 155 MiB per extra process |
 | MPS, M5 | about 190 MiB of process memory when idle, and a 1 GiB heap as soon as the process holds a tensor of 10 MiB or more |
 
 On an 8 GB card that is under 2 percent per extra process. So separate processes are affordable on CUDA. If part 4 shows otherwise, the alternative is one process that holds several stage slices. That is not built without a decision.
@@ -422,12 +426,12 @@ Changes on the wire, all inside fields that exist (also listed in section 6 and 
 | TOKEN, HIDDEN | second 32 bit field | bits 0 to 7 flags (bit 0: send logits), bits 8 to 31 request number, recorder only | bits 0 to 7 flags (bit 1: no head for this chunk, bit 2: first of a pair), bits 8 to 23 request number, recorder only, bits 24 to 31 slot |
 | HEAD | first 32 bit field | index of the best token | bits 0 to 23 index, bits 24 to 31 slot |
 
-With every option off the new bits are zero. A vocabulary must stay under 16.7 million tokens and a run under 256 slots; both are checked.
+With every option off the new bits are zero. A vocabulary must stay under 16.7 million tokens and a run may have at most 256 slots; both are checked. The option values are checked before any process starts (`plan.check_overlap`): slots 1 to 256, a chunk size of 0 or of 2 and more, interleave 1 or 2.
 The PLAN message gains the number of slots and the async send switch. The chunk size and the interleave switch stay on the coordinator: a rank never schedules, it only follows the frames.
 
 ### 11.8 What is measured
 
-The recorder writes per rank spans with the request number. It adds the slot (a ninth column; files of older runs have eight and still load).
+The recorder writes per rank spans with the request number. It adds the slot and the channel (a ninth and a tenth column; files of older runs have eight and still load). The channel says which socket a send or a wait used: the group link, the pipeline link or the control link. Two ranks can share two sockets, so frames are matched per socket.
 
 A frame is **in flight** from the start of its send to the end of the receiver's wait for it. The two are matched by their order on the link: the k-th send from A to B is the k-th receive at B from A. That needs no new field. The clocks are aligned as in section 3.9.
 
@@ -436,7 +440,7 @@ A frame is **in flight** from the start of its send to the end of the receiver's
 - **Busy share and overlap share**, per rank and per device. Busy: the share of time in which it computes. Overlap: the share of time in which it computes while a frame it sent, or a frame addressed to it, is in flight. The time base is the time in which at least one request is in work.
 - A row **in flight** under each rank in the timeline: frames it sent in the upper half, frames addressed to it in the lower half, colored by the other rank.
 
-`record.json` gains `timeline.overlap` (the shares, and per link the frame count and whether sends and receives match), `overlap` (the options of the run), `throughput` (tokens per second of the whole system), and `frames.prefill_predicted` against `frames.prefill_measured`.
+`record.json` gains `timeline.overlap` (the shares, and per link the frame count and whether sends and receives match), `overlap` (the options of the run, and how the scheduler ran: steps in pairs, steps alone, the most units in flight), per rank the granted socket buffers, `throughput` (tokens per second of the whole system), and `frames.prefill_predicted` against `frames.prefill_measured`.
 
 ### 11.9 Not in this part
 

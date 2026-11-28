@@ -58,15 +58,15 @@ def model_info(job: dict):
 
 def plan_job(job: dict) -> dict:
     """The planner's answer for a job: the rank specs and the predicted frames, or the rejection text."""
-    from .plan import PlanError, format_plan, frames_per_step, plan
+    from .plan import PlanError, format_plan, frames_per_step, host_totals, plan
     p, path, cfg, dims = model_info(job)
-    from .plan import host_totals
     try:
-        specs = plan(dims, p, check_budget=not job.get("force"), kv_slots=int(job.get("slots") or 1))
+        ov = overlap_options(job)
+        specs = plan(dims, p, check_budget=not job.get("force"), kv_slots=ov["slots"], pair=ov["tp_interleave"] == 2)
     except PlanError as e:
         return {"ok": False, "error": str(e)}
     return {"ok": True, "specs": [s.to_json() for s in specs], "frames_predicted": frames_per_step(specs), "model_dir": path,
-            "reduce_dtype": p.reduce_dtype, "table": format_plan(specs, dims), "planner_host": short_hostname(),
+            "reduce_dtype": p.reduce_dtype, "table": format_plan(specs, dims, p.host_budget_gb), "planner_host": short_hostname(),
             "hosts": host_totals(specs, p.host_budget_gb)}
 
 
@@ -91,7 +91,7 @@ def run_job(job: dict, run_dir: str | Path, log=print) -> dict:
         check_host(job)
         p, path, cfg, dims = model_info(job)
         ov = overlap_options(job)
-        specs = plan(dims, p, check_budget=not job.get("force"), kv_slots=ov["slots"])
+        specs = plan(dims, p, check_budget=not job.get("force"), kv_slots=ov["slots"], pair=ov["tp_interleave"] == 2)
         rec["planned"] = [s.to_json() for s in specs]
         rec["planned_hosts"] = host_totals(specs, p.host_budget_gb)
         rec["overlap"] = ov
@@ -129,6 +129,8 @@ def run_job(job: dict, run_dir: str | Path, log=print) -> dict:
             log(f"[run] {q['id']}: {len(res['tokens'])} tokens")
         wall = time.time() - t_gen
         m1 = co.metrics()
+        if ov["on"]:        # how the scheduler really ran: steps in pairs, steps alone, the most units in flight at once
+            rec["overlap"] = dict(ov, **co.schedule)
         n_tok = sum(len(o["tokens"]) for o in out)
         rec["throughput"] = {"wall_s": wall, "tokens": n_tok, "tokens_per_s": n_tok / wall if wall > 0 else None,
                              "note": "all prompts, prefill included; background (T1)"}
@@ -192,9 +194,12 @@ def shipping_args(job: dict) -> dict:
 
 
 def overlap_options(job: dict) -> dict:
-    """The overlap options of a job (docs/ENGINE_DESIGN.md section 11) with their off values."""
+    """The overlap options of a job (docs/ENGINE_DESIGN.md section 11) with their off values. Raises PlanError for a
+    value that cannot run, so the planner's answer carries it before any rank starts."""
+    from .plan import check_overlap
     o = {"slots": int(job.get("slots") or 1), "prefill_chunk": int(job.get("prefill_chunk") or 0),
          "tp_interleave": int(job.get("tp_interleave") or 1), "async_send": bool(job.get("async_send"))}
+    check_overlap(o["slots"], o["prefill_chunk"], o["tp_interleave"])
     o["on"] = o["slots"] > 1 or o["prefill_chunk"] > 0 or o["tp_interleave"] > 1
     return o
 

@@ -100,7 +100,7 @@ class LinkComm(Comm):
         return memoryview(self._rbuf)[:nbytes]
 
     def _send(self, wire: memoryview, shape):
-        if len(wire) <= transport.SMALL_FRAME:
+        if self.link.fits_inline(len(wire)):
             self.link.send(transport.KIND_ALLREDUCE, wire, "bfloat16", shape)
             return None
         return self.link.send_async(transport.KIND_ALLREDUCE, bytes(wire), "bfloat16", shape)

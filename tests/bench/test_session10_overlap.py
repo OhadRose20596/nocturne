@@ -74,17 +74,17 @@ def hybrid_pp_first(p):
                            StageIn("s1", (1, 4), (R(p[1]), R(p[2]), R(p[3])), lm_head=True)), max_seq_len=64, granule=16)
 
 
-def boot(model, placement, slots=1, **kw):
+def boot(model, placement, slots=1, device="cpu", **kw):
     cfg = load_config(model)
     specs = plan(Dims.of(cfg), placement, kv_slots=slots)
     threads = []
     for s in specs[1:]:
-        t = threading.Thread(target=hybrid.rank_main, args=(["127.0.0.1"], s.port, str(model), "cpu"),
+        t = threading.Thread(target=hybrid.rank_main, args=(["127.0.0.1"], s.port, str(model), device),
                              kwargs={"log": lambda *a: None, "run_dir": kw.get("run_dir")}, daemon=True)
         t.start()
         threads.append(t)
     co = hybrid.Coordinator(specs, str(model), {"h": "127.0.0.1", "g": "127.0.0.1"}, ["127.0.0.1"], placement.max_seq_len, placement.reduce_dtype,
-                            placement.prefill_max, device="cpu", log=lambda *a: None, dtype="float32", slots=slots, **kw)
+                            placement.prefill_max, device=device, log=lambda *a: None, dtype="float32", slots=slots, **kw)
     return specs, co, threads
 
 
@@ -317,7 +317,7 @@ def test_interleave_needs_two_slots_and_a_value_of_one_or_two(tiny4):
     from nocturne.engines.torch_tp.model import Comm
     specs, co, th = boot(tiny4, tp3(free_ports(3)), slots=2)
     try:
-        with pytest.raises(ValueError, match="tp_interleave must be 1 or 2"):
+        with pytest.raises(ValueError, match="tp-interleave must be 1 or 2"):
             co.generate_many(reqs(PROMPTS[:1]), tp_interleave=3)
         h = torch.zeros(1, 64)
         with pytest.raises(ValueError, match="a pair needs two slots"):
@@ -447,10 +447,13 @@ def test_head_on_the_device_is_the_head_argmax_also_with_ties(tiny4):
 class _FakeLink:
     """A link that writes down what it is asked to send. `slow`: seconds the first frame takes."""
 
-    def __init__(self, slow=0.0):
+    fits_inline = transport.Link.fits_inline
+
+    def __init__(self, slow=0.0, sndbuf=8 << 20):
         import time as _t
         self.sent, self.slow, self.last_sent, self._sleep = [], slow, 0, _t.sleep
         self.lock = threading.Lock()
+        self.sndbuf = self.rcvbuf = sndbuf
 
     def send(self, kind, payload=b"", dtype=None, shape=(), aux0=0, aux1=0, decode=None):
         with self.lock:
@@ -668,3 +671,285 @@ def test_a_plain_run_folder_is_a_reference_and_missing_prompts_are_named(tmp_pat
     (d / "record.json").write_text(json.dumps({"run_id": "X_off_r1", "outcome": "error", "prompts": prompts}))
     with pytest.raises(ValueError, match="did not complete"):
         hybrid_run.load_reference(str(d))
+
+
+# ---- after the first review (REVIEW_overlap.md) ------------------------------------------------------------------------------
+GOLDEN = {       # produced by tests/bench/golden_frames.py on the engine of commit 965385f, before part 3
+    "pp3": {"frames": 60, "sha256": "2217c89fa75ee8faa26b42909f2010c4949c8475a63a417919f5a9f196c8e8dc"},
+    "pp3_timeline": {"frames": 60, "sha256": "2bb58b65ffc96b6d89dad5211dd92e0736a04ec4a96814f9f9c540f6f0a4b75f"},
+    "tp3": {"frames": 1160, "sha256": "19e4fbb7529ee0540d5288d34ff67205c9dc29e434bb20824f4172ba425b17d1"},
+    "tp3_timeline": {"frames": 1160, "sha256": "e460f1202fa98df54ad5c63d5396a0b64cd359d0db2e49b092464cc4e7cffe5d"},
+    "hybrid": {"frames": 320, "sha256": "11124a461014963896d4f189bc5b973c7423babaaacc9416b8e781c099a32081"},
+    "hybrid_timeline": {"frames": 320, "sha256": "93166f7711adff37352862de41bfc5239d12df89a621bcf16f8bd2ebf52a497a"},
+}
+
+
+def test_options_off_send_the_frames_of_the_engine_before_part_3(tmp_path):
+    """F8. Every data frame of a fixed run, by kind, dtype, shape, length and header fields, and the frames by kind per
+    link, against hashes made with the old code. A new bit in a header field of the default path changes the hash."""
+    from . import golden_frames
+    assert golden_frames.all_records(golden_frames.write_model(tmp_path / "t4")) == GOLDEN
+
+
+def test_async_send_closes_a_compute_span_before_every_hand_over(tiny4, tmp_path):
+    """F1. A TP rank's compute before an all-reduce must not be booked as waiting for the all-reduce."""
+    from nocturne.engines.torch_tp import timeline
+    specs, co, th = boot(tiny4, tp3(free_ports(8)), async_send=True, timeline=True, run_dir=str(tmp_path))
+    try:
+        co.generate(list(PROMPTS[0]), 5, ignore_eos=True)
+        m = co.metrics()
+    finally:
+        co.shutdown()
+    for x in th:
+        x.join(timeout=10)
+    run = timeline.load(tmp_path)
+    assert len(run["ranks"]) == 3
+    for rk in run["ranks"]:
+        calls = m["ranks"][rk["meta"]["rank"]]["allreduce_calls"]
+        compute = sum(1 for e in rk["events"] if e["kind"] == "compute")
+        assert calls > 0 and compute >= calls, (rk["meta"]["rank"], compute, calls)
+
+
+@pytest.mark.parametrize("interleave,async_send", [(1, False), (2, False), (2, True)])
+def test_frames_in_flight_are_matched_per_socket_in_a_tp_group_with_slots(tiny4, tmp_path, interleave, async_send):
+    """F2. A first stage rank with head rows has two sockets to the coordinator. Their frames must not be matched as one sequence."""
+    from nocturne.engines.torch_tp import timeline
+    specs, co, th = boot(tiny4, tp3(free_ports(8)), slots=3, async_send=async_send, timeline=True, run_dir=str(tmp_path))
+    try:
+        co.generate_many(reqs(PROMPTS, 6), tp_interleave=interleave)
+        requests = list(co.requests)
+    finally:
+        co.shutdown()
+    for x in th:
+        x.join(timeout=10)
+    o = timeline.build(tmp_path, co.clock_record(), requests)["overlap"]
+    assert o["unmatched_links"] == []
+    assert all(l["sent"] == l["received"] == l["frames"] for l in o["links"].values())
+
+
+def test_in_flight_keeps_two_sockets_of_one_pair_of_ranks_apart():
+    from nocturne.engines.torch_tp.timeline import in_flight
+    ev = lambda kind, t0, t1, peer, n, ch: dict(_ev(kind, t0, t1, peer, n), ch=ch)
+    # b sends a head frame on the control link, then a partial on the group link; a reads the partial first
+    b = [ev("send", 10, 11, "a", 16, "c"), ev("send", 20, 21, "a", 500, "g")]
+    a = [ev("allreduce_wait", 0, 25, "b", 500, "g"), ev("recv_wait", 25, 40, "b", 16, "c")]
+    fl = in_flight(_run(a, b))["b -> a"]
+    assert fl["bytes_match"] and (fl["sent"], fl["received"]) == (2, 2)
+    assert fl["frames"] == [[10.0, 40.0, 16, 1, 0], [20.0, 25.0, 500, 1, 0]]
+    # files from before the channel column: one sequence per pair of ranks, and the mismatch is reported
+    for e in a + b:
+        e.pop("ch")
+    assert in_flight(_run(a, b))["b -> a"]["bytes_match"] is False
+
+
+def test_a_failure_of_the_sender_thread_ends_the_run_at_once(tiny4, monkeypatch):
+    """F3. The head rank's sender raises (no maximum among the logits). The rank is blocked on its upstream link and
+    makes no further call to the sender, so the sender must close the rank's links."""
+    from nocturne.engines.torch_tp.engine import LinkLost
+    from nocturne.engines.torch_tp.model import Qwen2TP
+    real = Qwen2TP.head_device
+
+    def no_maximum(self, h):
+        pair, lg = real(self, h)
+        return torch.stack([pair[0], torch.tensor(float(lg.shape[0]))]), lg
+    monkeypatch.setattr(Qwen2TP, "head_device", no_maximum)
+    logs = []
+    specs, co, th = boot(tiny4, pp3(free_ports(8)), async_send=True)
+    co.rank.log = logs.append
+    out = {}
+
+    def go():
+        try:
+            co.generate(list(PROMPTS[0]), 4, ignore_eos=True)
+        except Exception as e:      # noqa: BLE001
+            out["e"] = e
+    t = threading.Thread(target=go, daemon=True)
+    t.start()
+    t.join(timeout=20)
+    alive = t.is_alive()
+    co.shutdown()
+    assert not alive, "the coordinator still waits for a head result that will never come"
+    assert isinstance(out.get("e"), (LinkLost, hybrid.RankFailed, ConnectionError)), out
+
+
+def test_the_scheduler_counts_pairs_singles_and_units_in_flight(tiny4):
+    """F4 and F7. Two requests are really in flight at once, and the record says how many steps ran as a pair."""
+    _, _, _, _, co = many(tiny4, pp3, 2)
+    assert co.schedule["max_in_flight"] == 2 and co.schedule["pair_steps"] == 0 and co.schedule["single_steps"] > 0
+    _, _, _, _, co = many(tiny4, pp3, 3)
+    assert co.schedule["max_in_flight"] == 3
+    _, _, _, _, co = many(tiny4, tp3, 2, interleave=2)
+    assert co.schedule["pair_steps"] > 0 and co.schedule["max_in_flight"] == 2
+    _, _, _, _, co = many(tiny4, pp3, 1, chunk=3)
+    assert co.schedule["max_in_flight"] == 1 and co.schedule["pair_steps"] == 0
+
+
+def test_a_chunk_leaves_the_first_stage_before_the_head_result_of_the_prompt(tiny4):
+    """F7, O2. With one slot the first stage sends every chunk of a prompt on without waiting: several hidden state
+    frames leave the coordinator before any head frame comes back."""
+    real_send, real_recv = transport.Link.send, transport.Link.recv
+    ev, me = [], threading.get_ident()
+
+    def send(self, kind, payload=b"", dtype=None, shape=(), aux0=0, aux1=0, **kw):
+        if kind == transport.KIND_HIDDEN and threading.get_ident() == me:
+            ev.append("h")
+        return real_send(self, kind, payload, dtype, shape, aux0, aux1, **kw)
+
+    def recv(self, *a, **kw):
+        out = real_recv(self, *a, **kw)
+        if out[0] == transport.KIND_HEAD and threading.get_ident() == me:
+            ev.append("r")
+        return out
+    transport.Link.send, transport.Link.recv = send, recv
+    try:
+        many(tiny4, pp3, 1, chunk=3, prompts=[PROMPTS[2]], n=3)       # 7 tokens: chunks of 3, 4
+    finally:
+        transport.Link.send, transport.Link.recv = real_send, real_recv
+    assert "".join(ev).startswith("hhr"), "".join(ev)
+
+
+def test_async_send_returns_before_the_frame_has_left():
+    """F7, O4. With the sender thread the compute thread does not wait for a slow link."""
+    import time
+    link = _FakeLink(slow=0.4)
+    s = hybrid.Sender("cpu", None)
+    comm = hybrid.GroupComm(0, 2, {1: link}, "cpu", sender=s)
+    t0 = time.perf_counter()
+    ticket = comm.send_partial(torch.ones(1, 8))
+    dt = time.perf_counter() - t0
+    assert dt < 0.2 and link.sent == [], (dt, link.sent)
+    s.flush()
+    assert len(link.sent) == 1 and ticket[2] is None
+    s.stop()
+
+
+def test_a_frame_goes_inline_only_when_it_fits_the_buffer_the_kernel_granted(monkeypatch):
+    """F6. Linux grants far less than the 8 MiB asked for. Every rank sends before it receives, so what is sent on the
+    caller's thread must fit the granted buffer; in a pair that is two frames."""
+    link = _FakeLink(sndbuf=425984)                 # what gtx reports after the request for 8 MiB
+    assert link.fits_inline(200_000) and not link.fits_inline(220_000)
+    assert link.fits_inline(100_000, outstanding=100_000) and not link.fits_inline(120_000, outstanding=100_000)
+    assert _FakeLink().fits_inline(1 << 20) and not _FakeLink().fits_inline((1 << 20) + 1)     # the Macs: SMALL_FRAME decides, as before
+    comm = hybrid.GroupComm(0, 2, {1: link}, "cpu")
+    x, y = torch.ones(1, 30_000), torch.ones(1, 30_000)           # 120 kB each as float32
+    ta = comm.send_partial(x, 0)
+    tb = comm.send_partial(y, 1)
+    assert ta[2] == [] and len(tb[2]) == 1, "the second frame of the pair must leave on a thread: both do not fit 212992 bytes"
+    for t in tb[2]:
+        t.join(timeout=5)
+    assert [len(p) for _, p, _, _ in link.sent] == [120_000, 120_000]
+    assert comm._out == {1: 120_000}
+
+
+def test_a_pair_of_large_frames_cannot_block_both_ranks_with_small_socket_buffers(monkeypatch):
+    """F6, the mechanism on real sockets: two ranks, buffers as small as Linux grants, a pair of 600 kB frames each way."""
+    import socket as _s
+    monkeypatch.setattr(transport, "SOCK_BUF", 212992)
+    srv = _s.socket()
+    srv.bind(("127.0.0.1", 0))
+    srv.listen(1)
+    c = _s.create_connection(srv.getsockname())
+    d, _ = srv.accept()
+    la, lb = transport.Link(c), transport.Link(d)
+    assert la.sndbuf <= 2 * 212992 + 4096
+    comms = [hybrid.GroupComm(0, 2, {1: la}, "cpu"), hybrid.GroupComm(1, 2, {0: lb}, "cpu")]
+    xs = [torch.full((1, 150_000), 1.0), torch.full((1, 150_000), 2.0)]       # 600 kB each
+    out = [None, None]
+
+    def rank(i):
+        ta = comms[i].send_partial(xs[0] * (i + 1), 0)
+        tb = comms[i].send_partial(xs[1] * (i + 1), 1)
+        out[i] = (comms[i].recv_sum(ta), comms[i].recv_sum(tb))
+    ts = [threading.Thread(target=rank, args=(i,), daemon=True) for i in range(2)]
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join(timeout=30)
+    assert not any(t.is_alive() for t in ts), "both ranks are blocked in the send of the second frame"
+    assert float(out[0][0][0, 0]) == 3.0 and float(out[1][1][0, 0]) == 6.0
+    for l in (la, lb):
+        l.close()
+    srv.close()
+
+
+def test_small_socket_buffers_do_not_change_the_tokens(tiny4, monkeypatch):
+    monkeypatch.setattr(transport, "SOCK_BUF", 4096)
+    _, ref, _ = alone(tiny4, tp3)
+    _, out, m, _, _ = many(tiny4, tp3, 2, interleave=2)
+    same(ref, out)
+    assert all(len(v) == 2 and v[0] > 0 for r in m["ranks"].values() for v in r["socket_buffers"].values())
+
+
+def test_overlap_options_are_checked_before_anything_starts():
+    """F10 and F11."""
+    from nocturne.engines.torch_tp import coordinate, hybrid_run
+    from nocturne.engines.torch_tp.plan import check_overlap
+    check_overlap(1, 0, 1)
+    check_overlap(256, 2, 2)
+    for bad, text in [((0, 0, 1), "slots"), ((257, 0, 1), "slots"), ((1, 1, 1), "prefill-chunk"), ((1, -4, 1), "prefill-chunk"),
+                      ((2, 0, 3), "tp-interleave"), ((1, 0, 2), "needs --slots 2")]:
+        with pytest.raises(PlanError, match=text):
+            check_overlap(*bad)
+    with pytest.raises(PlanError):
+        coordinate.overlap_options({"prefill_chunk": 1})
+    assert coordinate.overlap_options({}) == {"slots": 1, "prefill_chunk": 0, "tp_interleave": 1, "async_send": False, "on": False}
+    for argv in (["--slots", "300"], ["--prefill-chunk", "1"], ["--tp-interleave", "2"]):
+        with pytest.raises(SystemExit):
+            hybrid_run.main(["--placement", "none.yaml", "--run-id", "x"] + argv)
+
+
+def test_a_host_with_several_rank_processes_and_no_host_budget_is_marked_unchecked(tiny4):
+    """F5. Old placements keep working, and the plan says in words that nobody compared the sum with the machine."""
+    from nocturne.engines.torch_tp.plan import format_plan
+    d = Dims.of(load_config(tiny4))
+    p = interleaved([1, 2, 3, 4])
+    specs = plan(d, p)
+    ht = host_totals(specs, p.host_budget_gb)
+    assert all(h["unchecked"] for h in ht.values())
+    assert "the sum is not checked" in format_plan(specs, d, p.host_budget_gb)
+    one = host_totals(plan(d, tp3([1, 2, 3])))
+    assert one["h"]["unchecked"] is True and one["h"]["processes"] == 3
+
+
+def test_a_pair_plans_the_work_space_of_two_requests_for_group_ranks(tiny4):
+    """F15."""
+    d = Dims.of(load_config(tiny4))
+    a, b = plan(d, hybrid_tp_first([1, 2, 3, 4, 5])), plan(d, hybrid_tp_first([1, 2, 3, 4, 5]), pair=True)
+    for x, y in zip(a, b):
+        assert y.planned["workspace"] == x.planned["workspace"] * (2 if x.group_size > 1 else 1), x.name
+
+
+def test_the_old_path_masks_the_request_number_so_it_never_reaches_the_slot_bits(tiny4, tmp_path):
+    """F9."""
+    specs, co, th = boot(tiny4, pp3(free_ports(8)), timeline=True, run_dir=str(tmp_path))
+    try:
+        co.req_seq = 65535
+        ref = co.generate(list(PROMPTS[0]), 3, ignore_eos=True)
+        assert len(ref["tokens"]) == 3
+    finally:
+        co.shutdown()
+    for x in th:
+        x.join(timeout=10)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="the pinned copy needs a CUDA device")
+@pytest.mark.parametrize("make,slots,interleave", [(pp3, 3, 1), (tp3, 2, 2), (hybrid_tp_first, 3, 2)])
+def test_pinned_copy_on_cuda_gives_the_tokens_and_logits_of_the_plain_path(tiny4, make, slots, interleave):
+    """F13. The CUDA default of --async-send: non blocking copies into pooled pinned buffers, events, the sender thread."""
+    specs, co, th = boot(tiny4, make(free_ports(8)), device="cuda")
+    try:
+        ref = [co.generate(list(p), 8, ignore_eos=True, first_logits=True, rid=f"p{i}") for i, p in enumerate(PROMPTS)]
+    finally:
+        co.shutdown()
+    for x in th:
+        x.join(timeout=10)
+    specs, co, th = boot(tiny4, make(free_ports(8)), slots=slots, device="cuda", async_send=True)
+    try:
+        out = co.generate_many(reqs(PROMPTS, 8), tp_interleave=interleave)
+        m = co.metrics()
+    finally:
+        co.shutdown()
+    for x in th:
+        x.join(timeout=10)
+    same(ref, out)
+    assert all(r["async_send"]["copy"] == "pinned" for r in m["ranks"].values())

@@ -23,7 +23,8 @@ from pathlib import Path
 
 from .clock import now_ns
 
-COLS = ("kind", "t0_ns", "t1_ns", "step", "req", "peer", "bytes", "tokens", "slot")
+COLS = ("kind", "t0_ns", "t1_ns", "step", "req", "peer", "bytes", "tokens", "slot", "ch")
+CH_GROUP, CH_PIPE, CH_CTL = "g", "p", "c"      # which socket to that peer: the group link, the pipeline link, the control link
 KINDS = ("compute", "host_copy", "send", "recv_wait", "allreduce_wait", "other")
 ASYNC_KINDS = ("tx_wait", "tx_send")      # spans of the sender thread (--async-send); they overlap the spans above
 INTERVAL_S = 0.02
@@ -58,15 +59,17 @@ class Recorder:
         """Move the cursor to now without a span (the time between requests on the coordinator)."""
         self.t = now_ns()
 
-    def lap(self, kind: str, peer: str | None = None, nbytes: int = 0) -> None:
+    def lap(self, kind: str, peer: str | None = None, nbytes: int = 0, ch: str | None = None) -> None:
+        """`ch` names the socket of a send or a wait: two ranks can share two sockets (group link and control link)."""
         t = now_ns()
-        self.ev.append((kind, self.t, t, self.step, self.req, peer, nbytes, self.tokens, self.slot))
+        self.ev.append((kind, self.t, t, self.step, self.req, peer, nbytes, self.tokens, self.slot, ch))
         self.t = t
 
-    def span(self, kind: str, t0: int, t1: int, ctx: tuple | None, peer: str | None = None, nbytes: int = 0) -> None:
+    def span(self, kind: str, t0: int, t1: int, ctx: tuple | None, peer: str | None = None, nbytes: int = 0,
+             ch: str | None = None) -> None:
         """A span of another thread (the sender), with its own times and the context of the step it serves."""
         step, req, tokens, slot = ctx or (-1, 0, 0, 0)
-        self.ev.append((kind, t0, t1, step, req, peer, nbytes, tokens, slot))
+        self.ev.append((kind, t0, t1, step, req, peer, nbytes, tokens, slot, ch))
 
     def write(self, run_dir: str | Path) -> Path:
         d = Path(run_dir)

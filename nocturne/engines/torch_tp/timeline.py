@@ -160,9 +160,12 @@ def length(iv: list) -> float:
 
 
 def in_flight(run: dict) -> dict:
-    """{"A -> B": {"frames": [[t0, t1, bytes, req, slot], ...], "sent": n, "received": n}}. A frame is in flight from
-    the start of its send at A to the end of B's wait for it. The k-th send on the link is the k-th receive: a link
-    keeps its order, and each side records its frames in that order."""
+    """{"A -> B": {"frames": [[t0, t1, bytes, req, slot], ...], "sent": n, "received": n, "bytes_match": bool}}. A
+    frame is in flight from the start of its send at A until B has read it (the end of B's wait for it). The k-th send
+    on a socket is the k-th receive on it: a socket keeps its order and each side records its frames in that order. Two
+    ranks can share two sockets (a first stage rank with head rows has a group link and a control link to the
+    coordinator), so the match is per socket: the channel column of the span (`ch`). Files from before the channel
+    column match per pair of ranks."""
     sends, recvs = {}, {}
     for rk in run["ranks"]:
         me = rk["meta"]["rank"]
@@ -170,16 +173,21 @@ def in_flight(run: dict) -> dict:
             if not e["bytes"] or not e["peer"]:
                 continue
             if e["kind"] in SENDS:
-                sends.setdefault((me, e["peer"]), []).append(e)
+                sends.setdefault((me, e["peer"], e.get("ch")), []).append(e)
             elif e["kind"] in WAITS:
-                recvs.setdefault((e["peer"], me), []).append(e)
+                recvs.setdefault((e["peer"], me, e.get("ch")), []).append(e)
     out = {}
-    for key in sorted(set(sends) | set(recvs)):
+    for key in sorted(set(sends) | set(recvs), key=lambda k: (k[0], k[1], k[2] or "")):
         s = sorted(sends.get(key, []), key=lambda e: e["t0"])
         r = sorted(recvs.get(key, []), key=lambda e: e["t1"])
         frames = [[a["t0"], max(a["t0"], b["t1"]), a["bytes"], a["req"], a.get("slot", 0)] for a, b in zip(s, r)]
-        out[f"{key[0]} -> {key[1]}"] = {"from": key[0], "to": key[1], "frames": frames, "sent": len(s), "received": len(r),
-                                         "bytes_match": all(a["bytes"] == b["bytes"] for a, b in zip(s, r))}
+        o = out.setdefault(f"{key[0]} -> {key[1]}", {"from": key[0], "to": key[1], "frames": [], "sent": 0, "received": 0, "bytes_match": True})
+        o["frames"] += frames
+        o["sent"] += len(s)
+        o["received"] += len(r)
+        o["bytes_match"] = o["bytes_match"] and len(s) == len(r) and all(a["bytes"] == b["bytes"] for a, b in zip(s, r))
+    for o in out.values():
+        o["frames"].sort()
     return out
 
 

@@ -192,5 +192,7 @@ The record holds:
 
 - **MPS memory is allocated in heaps (torch 2.14.1).** A tensor of 10 MiB or more opens a 1 GiB heap on Apple Silicon. That 1 GiB is resident. So an MPS rank that holds any tensor of 10 MiB or more costs at least about 1.2 GB of real memory, whatever its budget. `torch.mps.set_per_process_memory_fraction` counts heaps, so it refuses a budget below about 1.07 GB as soon as a second large tensor arrives. Budgets are therefore enforced on tensor bytes (loader and KV). The footprint is reported next to them.
 - **Greedy only.** Decode runs one token at a time per request. Requests in flight are never batched into one tensor.
+- **Linux grants small socket buffers.** The engine asks for 8 MiB per direction and gets 425984 bytes with the default `net.core.wmem_max` and `rmem_max` (212992). It reads the granted size back and sends a frame on the caller's thread only when it fits; larger frames leave on a helper thread. Raising the two sysctls needs sudo and is not required.
+- **With two slots, `--tp-interleave 2` seldom pairs behind a later stage.** Use four slots, and read `overlap.pair_steps` in the record.
 - **On a Mac `--async-send` moves only the socket send.** Two threads may not use the MPS device at once, so the copy to the host stays on the compute thread.
 - **No recovery.** A broken link ends the run.

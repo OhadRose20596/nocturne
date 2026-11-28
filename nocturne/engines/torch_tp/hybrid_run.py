@@ -298,6 +298,11 @@ def main(argv=None) -> int:
     ap.add_argument("--async-send", action="store_true", help="copy to the host and send off the compute thread")
     ap.add_argument("--dtype", default=None, help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
+    from .plan import PlanError, check_overlap
+    try:
+        check_overlap(a.slots, a.prefill_chunk, a.tp_interleave)
+    except PlanError as e:
+        ap.error(str(e))
     global OUT, RUNS, HASHES
     OUT = Path(a.session_dir).resolve()
     RUNS, HASHES = OUT / "runs", OUT / "model_hashes.json"
@@ -370,6 +375,10 @@ def main(argv=None) -> int:
     rec["planned"] = pl["specs"]
     rec["planner_host"] = pl.get("planner_host")
     rec["planned_hosts"] = pl.get("hosts")
+    for h, t in sorted((pl.get("hosts") or {}).items()):
+        if t.get("unchecked"):
+            log(f"[run] note: host {h} holds {t['processes']} rank processes ({t['total'] / 1e9:.3f} GB planned together) and the placement "
+                f"gives no host_budget_gb for it: the sum is not checked")
     pred = pl["frames_predicted"]
     rec["frames"] = {"predicted": pred}
     try:
