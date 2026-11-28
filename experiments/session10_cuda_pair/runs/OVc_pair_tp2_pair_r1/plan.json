@@ -1,0 +1,123 @@
+{
+ "ok": true,
+ "specs": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 2,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 0,
+   "q1": 6,
+   "m0": 0,
+   "m1": 4480,
+   "kv0": 0,
+   "kv1": 1,
+   "embed_rows": [
+    0,
+    76032
+   ],
+   "head_rows": [
+    0,
+    76032
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1543998464,
+    "kv": 117440512,
+    "workspace": 28931584,
+    "total": 1690370560,
+    "layer_bytes": 46800896,
+    "vocab_bytes": 233570304,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1690370560
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s0/1",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 1,
+   "group_size": 2,
+   "host": "pc",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 6,
+   "q1": 12,
+   "m0": 4480,
+   "m1": 8960,
+   "kv0": 1,
+   "kv1": 2,
+   "embed_rows": [
+    76032,
+    151936
+   ],
+   "head_rows": [
+    76032,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1543605248,
+    "kv": 117440512,
+    "workspace": 28930816,
+    "total": 1689976576,
+    "layer_bytes": 46800896,
+    "vocab_bytes": 233177088,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1689976576
+   }
+  }
+ ],
+ "frames_predicted": {
+  "token": 1,
+  "embed": 2,
+  "layers": 112,
+  "hops": 0,
+  "head": 1,
+  "total": 116
+ },
+ "model_dir": "/home/ohadr/models/hf/Qwen2.5-1.5B-Instruct",
+ "reduce_dtype": "float32",
+ "table": "| rank | host | device | layers | heads | KV heads | MLP rows | vocab rows | weights MB | KV MB | workspace MB | total MB | budget MB |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|\n| s0/0 | gtx | cuda | 0-28 | 0-6 (6) | 0-1 | 0-4480 (4480) | 0-76032 EH | 1544.0 | 117.4 | 28.9 | 1690.4 | - |\n| s0/1 | pc | cuda | 0-28 | 6-12 (6) | 1-2 | 4480-8960 (4480) | 76032-151936 EH | 1543.6 | 117.4 | 28.9 | 1690.0 | - |\n\nFrames per decode step: 116 (token 1, embedding 2, layers 112, hops 0, head 1); bytes per step about 0.353 MB.",
+ "planner_host": "Ohad",
+ "hosts": {
+  "gtx": {
+   "ranks": [
+    "s0/0"
+   ],
+   "planned": 1690370560,
+   "processes": 1,
+   "process_overhead": 157286400,
+   "total": 1847656960,
+   "budget": null
+  },
+  "pc": {
+   "ranks": [
+    "s0/1"
+   ],
+   "planned": 1689976576,
+   "processes": 1,
+   "process_overhead": 157286400,
+   "total": 1847262976,
+   "budget": null
+  }
+ }
+}

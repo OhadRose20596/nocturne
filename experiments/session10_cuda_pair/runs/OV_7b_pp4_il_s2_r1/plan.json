@@ -1,0 +1,183 @@
+{
+ "ok": true,
+ "specs": [
+  {
+   "gid": 0,
+   "name": "a0/0",
+   "stage": 0,
+   "stage_name": "a0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    7
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": [
+    0,
+    152064
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 2312504320,
+    "kv": 117440512,
+    "workspace": 517668864,
+    "total": 2947613696,
+    "layer_bytes": 247634944,
+    "vocab_bytes": 579059712,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 2947613696
+   }
+  },
+  {
+   "gid": 1,
+   "name": "b0/0",
+   "stage": 1,
+   "stage_name": "b0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50071,
+   "layers": [
+    7,
+    14
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": null,
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 1733444608,
+    "kv": 117440512,
+    "workspace": 517668864,
+    "total": 2368553984,
+    "layer_bytes": 247634944,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 2368553984
+   }
+  },
+  {
+   "gid": 2,
+   "name": "a1/0",
+   "stage": 2,
+   "stage_name": "a1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50072,
+   "layers": [
+    14,
+    21
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": null,
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 1733444608,
+    "kv": 117440512,
+    "workspace": 517668864,
+    "total": 2368553984,
+    "layer_bytes": 247634944,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 2368553984
+   }
+  },
+  {
+   "gid": 3,
+   "name": "b1/0",
+   "stage": 3,
+   "stage_name": "b1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50073,
+   "layers": [
+    21,
+    28
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    152064
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 2312511488,
+    "kv": 117440512,
+    "workspace": 518581248,
+    "total": 2948533248,
+    "layer_bytes": 247634944,
+    "vocab_bytes": 579059712,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 2948533248
+   }
+  }
+ ],
+ "frames_predicted": {
+  "token": 0,
+  "embed": 0,
+  "layers": 0,
+  "hops": 3,
+  "head": 1,
+  "total": 4
+ },
+ "model_dir": "/Users/orosentswaig/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf",
+ "reduce_dtype": "float32",
+ "table": "| rank | host | device | layers | heads | KV heads | MLP rows | vocab rows | weights MB | KV MB | workspace MB | total MB | budget MB |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|\n| a0/0 | m5 | mps | 0-7 | 0-28 (28) | 0-4 | 0-18944 (18944) | 0-152064 E | 2312.5 | 117.4 | 517.7 | 2947.6 | - |\n| b0/0 | m5 | mps | 7-14 | 0-28 (28) | 0-4 | 0-18944 (18944) | - | 1733.4 | 117.4 | 517.7 | 2368.6 | - |\n| a1/0 | m5 | mps | 14-21 | 0-28 (28) | 0-4 | 0-18944 (18944) | - | 1733.4 | 117.4 | 517.7 | 2368.6 | - |\n| b1/0 | m5 | mps | 21-28 | 0-28 (28) | 0-4 | 0-18944 (18944) | 0-152064 H | 2312.5 | 117.4 | 518.6 | 2948.5 | - |\n\n| host | rank processes | planned MB | process cost MB | total MB | host budget MB |\n|---|---|---|---|---|---|\n| m5 | 4 (a0/0, b0/0, a1/0, b1/0) | 10633.3 | 838.9 | 11472.1 | 20000 |\n\nFrames per decode step: 4 (token 0, embedding 0, layers 0, hops 3, head 1); bytes per step about 0.022 MB.",
+ "planner_host": "MMF4FWRG4R",
+ "hosts": {
+  "m5": {
+   "ranks": [
+    "a0/0",
+    "b0/0",
+    "a1/0",
+    "b1/0"
+   ],
+   "planned": 10633254912,
+   "processes": 4,
+   "process_overhead": 838860800,
+   "total": 11472115712,
+   "budget": 20000000000,
+   "unchecked": false
+  }
+ }
+}

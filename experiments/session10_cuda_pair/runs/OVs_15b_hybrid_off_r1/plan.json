@@ -1,0 +1,148 @@
+{
+ "ok": true,
+ "specs": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 2,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    14
+   ],
+   "q0": 0,
+   "q1": 6,
+   "m0": 0,
+   "m1": 4480,
+   "kv0": 0,
+   "kv1": 1,
+   "embed_rows": [
+    0,
+    76032
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 472219648,
+    "kv": 29360128,
+    "workspace": 431128576,
+    "total": 932708352,
+    "layer_bytes": 24866816,
+    "vocab_bytes": 124084224,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 1073741824
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s0/1",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 1,
+   "group_size": 2,
+   "host": "m5",
+   "device": "mps",
+   "port": 50071,
+   "layers": [
+    0,
+    14
+   ],
+   "q0": 6,
+   "q1": 12,
+   "m0": 4480,
+   "m1": 8960,
+   "kv0": 1,
+   "kv1": 2,
+   "embed_rows": [
+    76032,
+    151936
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 472010752,
+    "kv": 29360128,
+    "workspace": 431128576,
+    "total": 932499456,
+    "layer_bytes": 24866816,
+    "vocab_bytes": 123875328,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 1073741824
+   }
+  },
+  {
+   "gid": 2,
+   "name": "s1/0",
+   "stage": 1,
+   "stage_name": "s1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50072,
+   "layers": [
+    14,
+    28
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 944147456,
+    "kv": 58720256,
+    "workspace": 454224128,
+    "total": 1457091840,
+    "layer_bytes": 49727488,
+    "vocab_bytes": 247959552,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 1457091840
+   }
+  }
+ ],
+ "frames_predicted": {
+  "token": 1,
+  "embed": 2,
+  "layers": 56,
+  "hops": 1,
+  "head": 1,
+  "total": 61
+ },
+ "model_dir": "/Users/orosentswaig/models/gguf/Qwen2.5-1.5B-Instruct-Q8_0.gguf",
+ "reduce_dtype": "float32",
+ "table": "| rank | host | device | layers | heads | KV heads | MLP rows | vocab rows | weights MB | KV MB | workspace MB | total MB | budget MB |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|\n| s0/0 | m5 | mps | 0-14 | 0-6 (6) | 0-1 | 0-4480 (4480) | 0-76032 E | 472.2 | 29.4 | 431.1 | 932.7 | - |\n| s0/1 | m5 | mps | 0-14 | 6-12 (6) | 1-2 | 4480-8960 (4480) | 76032-151936 E | 472.0 | 29.4 | 431.1 | 932.5 | - |\n| s1/0 | m5 | mps | 14-28 | 0-12 (12) | 0-2 | 0-8960 (8960) | 0-151936 H | 944.1 | 58.7 | 454.2 | 1457.1 | - |\n\n| host | rank processes | planned MB | process cost MB | total MB |\n|---|---|---|---|---|\n| m5 | 3 (s0/0, s0/1, s1/0) | 3604.6 | 629.1 | 4233.7 |\n\nFrames per decode step: 61 (token 1, embedding 2, layers 56, hops 1, head 1); bytes per step about 0.183 MB.",
+ "planner_host": "MMF4FWRG4R",
+ "hosts": {
+  "m5": {
+   "ranks": [
+    "s0/0",
+    "s0/1",
+    "s1/0"
+   ],
+   "planned": 3604575488,
+   "processes": 3,
+   "process_overhead": 629145600,
+   "total": 4233721088,
+   "budget": null
+  }
+ }
+}

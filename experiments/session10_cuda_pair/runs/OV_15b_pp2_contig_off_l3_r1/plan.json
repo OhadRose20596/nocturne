@@ -1,0 +1,109 @@
+{
+ "ok": true,
+ "specs": [
+  {
+   "gid": 0,
+   "name": "a0/0",
+   "stage": 0,
+   "stage_name": "a0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    14
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": [
+    0,
+    151936
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 944144384,
+    "kv": 58720256,
+    "workspace": 453312512,
+    "total": 1456177152,
+    "layer_bytes": 49727488,
+    "vocab_bytes": 247959552,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 1456177152
+   }
+  },
+  {
+   "gid": 1,
+   "name": "b0/0",
+   "stage": 1,
+   "stage_name": "b0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50071,
+   "layers": [
+    14,
+    28
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 944147456,
+    "kv": 58720256,
+    "workspace": 454224128,
+    "total": 1457091840,
+    "layer_bytes": 49727488,
+    "vocab_bytes": 247959552,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 1457091840
+   }
+  }
+ ],
+ "frames_predicted": {
+  "token": 0,
+  "embed": 0,
+  "layers": 0,
+  "hops": 1,
+  "head": 1,
+  "total": 2
+ },
+ "model_dir": "/Users/orosentswaig/models/gguf/Qwen2.5-1.5B-Instruct-Q8_0.gguf",
+ "reduce_dtype": "float32",
+ "table": "| rank | host | device | layers | heads | KV heads | MLP rows | vocab rows | weights MB | KV MB | workspace MB | total MB | budget MB |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|\n| a0/0 | m5 | mps | 0-14 | 0-12 (12) | 0-2 | 0-8960 (8960) | 0-151936 E | 944.1 | 58.7 | 453.3 | 1456.2 | - |\n| b0/0 | m5 | mps | 14-28 | 0-12 (12) | 0-2 | 0-8960 (8960) | 0-151936 H | 944.1 | 58.7 | 454.2 | 1457.1 | - |\n\n| host | rank processes | planned MB | process cost MB | total MB | host budget MB |\n|---|---|---|---|---|---|\n| m5 | 2 (a0/0, b0/0) | 2913.3 | 419.4 | 3332.7 | 12000 |\n\nFrames per decode step: 2 (token 0, embedding 0, layers 0, hops 1, head 1); bytes per step about 0.003 MB.",
+ "planner_host": "MMF4FWRG4R",
+ "hosts": {
+  "m5": {
+   "ranks": [
+    "a0/0",
+    "b0/0"
+   ],
+   "planned": 2913268992,
+   "processes": 2,
+   "process_overhead": 419430400,
+   "total": 3332699392,
+   "budget": 12000000000,
+   "unchecked": false
+  }
+ }
+}

@@ -1,0 +1,1600 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "OVc_gtx_pp4_off_r1",
+ "date": "2026-11-28T12:18:53+0200",
+ "placement": {
+  "file": "experiments/session10_cuda_pair/placements/C2_gtx_15b_bf16_pp4_interleaved.yaml",
+  "sha256": "c5ffa2aadbb825ec8c2bbee92b887f502799f85b2dbd4490f35ddf8f8c7fbe3e",
+  "yaml": "# Session 10 part 3, CUDA check (not an experiment row): 1.5B bf16, four rank processes on gtx (one GPU): the memory cost of virtual stages\nmodel: qwen2.5-1.5b-bf16\ncoordinator: {host: gtx}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nhost_budget_gb: {gtx: 7}\nstages:\n  - name: a0\n    layers: [0, 7]\n    embed: true\n    ranks:\n      - {host: gtx, device: cuda, port: 50070}\n  - name: b0\n    layers: [7, 14]\n    ranks:\n      - {host: gtx, device: cuda, port: 50071}\n  - name: a1\n    layers: [14, 21]\n    ranks:\n      - {host: gtx, device: cuda, port: 50072}\n  - name: b1\n    layers: [21, 28]\n    lm_head: true\n    ranks:\n      - {host: gtx, device: cuda, port: 50073}\n"
+ },
+ "git": {
+  "sha": "1d39b45f10a9893992f2dd6696528e57585714af",
+  "dirty": false
+ },
+ "args": {
+  "placement": "experiments/session10_cuda_pair/placements/C2_gtx_15b_bf16_pp4_interleaved.yaml",
+  "session_dir": "experiments/session10_cuda_pair",
+  "run_id": "OVc_gtx_pp4_off_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "experiments/session7_hetero/runs/R0_qwen2.5-1.5b-bf16_cuda_gtx_r1",
+   "experiments/session10_cuda_pair/runs/OVc_gtx_pp2_off_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "transformers_dir": null,
+  "tokenizer_dir": null,
+  "force": false,
+  "mps_fraction_cap": false,
+  "timeline": true,
+  "ship_weights": true,
+  "cache_dir": null,
+  "verify_cache": false,
+  "stall_timeout": 300.0,
+  "slots": 1,
+  "prefill_chunk": 0,
+  "tp_interleave": 1,
+  "async_send": false,
+  "dtype": null
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "qwen2.5-1.5b-bf16",
+  "dir": "~/models/hf/Qwen2.5-1.5B-Instruct",
+  "sha256": {
+   "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  }
+ },
+ "coordinator": {
+  "host": "gtx",
+  "hostname": "Ohad",
+  "operator_hostname": "MMF4FWRG4R",
+  "remote": true,
+  "run_dir": "~/.nocturne/runs/OVc_gtx_pp4_off_r1"
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "a0/0",
+   "stage": 0,
+   "stage_name": "a0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    7
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": [
+    0,
+    151936
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 1121916928,
+    "kv": 29360128,
+    "workspace": 50659328,
+    "total": 1201936384,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1201936384
+   }
+  },
+  {
+   "gid": 1,
+   "name": "b0/0",
+   "stage": 1,
+   "stage_name": "b0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50071,
+   "layers": [
+    7,
+    14
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": null,
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 655169536,
+    "kv": 29360128,
+    "workspace": 50659328,
+    "total": 735188992,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 735188992
+   }
+  },
+  {
+   "gid": 2,
+   "name": "a1/0",
+   "stage": 2,
+   "stage_name": "a1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50072,
+   "layers": [
+    14,
+    21
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": null,
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 655169536,
+    "kv": 29360128,
+    "workspace": 50659328,
+    "total": 735188992,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 735188992
+   }
+  },
+  {
+   "gid": 3,
+   "name": "b1/0",
+   "stage": 3,
+   "stage_name": "b1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50073,
+   "layers": [
+    21,
+    28
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1121920000,
+    "kv": 29360128,
+    "workspace": 51570944,
+    "total": 1202851072,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1202851072
+   }
+  }
+ ],
+ "planner_host": "Ohad",
+ "planned_hosts": {
+  "gtx": {
+   "ranks": [
+    "a0/0",
+    "b0/0",
+    "a1/0",
+    "b1/0"
+   ],
+   "planned": 3875165440,
+   "processes": 4,
+   "process_overhead": 629145600,
+   "total": 4504311040,
+   "budget": 7000000000
+  }
+ },
+ "frames": {
+  "predicted": {
+   "token": 0,
+   "embed": 0,
+   "layers": 0,
+   "hops": 3,
+   "head": 1,
+   "total": 4
+  },
+  "prefill_predicted": 36,
+  "prefill_measured": 36,
+  "prefill_holds": true,
+  "prefill_chunks": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "decode_steps": 279,
+  "measured_per_step": 4.0,
+  "bytes_per_step": 9304.0,
+  "per_link_per_step": {
+   "a0/0->b0/0": {
+    "sent_frames": 1.0,
+    "sent_bytes": 3096.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "a0/0->ctl:b0/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "a0/0->ctl:a1/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "a0/0->ctl:b1/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "b0/0->ctl": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "b0/0->a0/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 3096.0
+   },
+   "b0/0->a1/0": {
+    "sent_frames": 1.0,
+    "sent_bytes": 3096.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "a1/0->ctl": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "a1/0->b0/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 3096.0
+   },
+   "a1/0->b1/0": {
+    "sent_frames": 1.0,
+    "sent_bytes": 3096.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "b1/0->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "b1/0->a1/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 3096.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "gtx": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA GeForce GTX 1070, 8192 MiB, 625 MiB, 582.78",
+    "engine_sha256": "52c12ab5eb76ec069a9a2d564921bf0b00330653d8f677a99c682e1ef870080c",
+    "timesync": {
+     "host": "Ohad",
+     "os": "Linux",
+     "at": "2026-11-28T12:18:58+0200",
+     "at_unix": 1795861138.8883111,
+     "sntp": {
+      "server": "time.apple.com",
+      "server_ip": "17.253.108.125",
+      "stratum": 1,
+      "samples": 4,
+      "asked": 4,
+      "offset_s": 0.1437004804611206,
+      "delay_s": 0.05675673484802246,
+      "bound_s": 0.02837836742401123,
+      "spread_s": 0.005981564521789551
+     },
+     "os_service": {
+      "tool": "chronyc",
+      "source": "ntp-nts-3.ps5.canonical.com",
+      "offset_s": 0.143015385,
+      "last_sync_utc": "Sat Nov 28 10:17:26 2026",
+      "wsl": true,
+      "windows": {
+       "tool": "w32tm",
+       "source": "time.windows.com,0x9",
+       "last_sync": "11/28/2026 8:07:31 AM"
+      }
+     },
+     "last_set": null
+    },
+    "psutil": "7.2.2",
+    "transformers": "5.23.0",
+    "model_sha256": {
+     "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+     "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+     "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+   }
+  },
+  "coordinator": "gtx",
+  "ship_weights": true
+ },
+ "collected": {
+  "gtx": [
+   "coordinator_record.json",
+   "first_logits.npz",
+   "job.json",
+   "plan.json",
+   "samples_rank_a0_0.jsonl.gz",
+   "samples_rank_a1_0.jsonl.gz",
+   "samples_rank_b0_0.jsonl.gz",
+   "samples_rank_b1_0.jsonl.gz",
+   "timeline_a0_0.jsonl.gz",
+   "timeline_a1_0.jsonl.gz",
+   "timeline_b0_0.jsonl.gz",
+   "timeline_b1_0.jsonl.gz"
+  ]
+ },
+ "commands": [
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx hostname"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx mkdir -p ~/.nocturne/runs/OVc_gtx_pp4_off_r1 && cat > ~/.nocturne/runs/OVc_gtx_pp4_off_r1/job.json"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job \"$HOME\"/.nocturne/runs/OVc_gtx_pp4_off_r1/job.json --tag OVc_gtx_pp4_off_r1 --plan-only"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50071 --device cuda --name b0/0 --tag OVc_gtx_pp4_off_r1 --run-dir \"$HOME\"/.nocturne/runs/OVc_gtx_pp4_off_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50072 --device cuda --name a1/0 --tag OVc_gtx_pp4_off_r1 --run-dir \"$HOME\"/.nocturne/runs/OVc_gtx_pp4_off_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50073 --device cuda --name b1/0 --tag OVc_gtx_pp4_off_r1 --run-dir \"$HOME\"/.nocturne/runs/OVc_gtx_pp4_off_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job \"$HOME\"/.nocturne/runs/OVc_gtx_pp4_off_r1/job.json --tag OVc_gtx_pp4_off_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx cd ~/.nocturne/runs/OVc_gtx_pp4_off_r1 2>/dev/null && tar -cf - ."
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx pkill -f -- '--tag OVc_gtx_pp4_off_r1( |$)'"
+  }
+ ],
+ "load_s": 11.847255945205688,
+ "link_counters": {
+  "a0/0": {
+   "b0/0": {
+    "sent_frames": 290,
+    "recv_frames": 1,
+    "sent_bytes": 2403104,
+    "recv_bytes": 42,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 863784,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "metrics": 2,
+     "hidden": 288
+    }
+   },
+   "ctl:b0/0": {
+    "sent_frames": 329,
+    "recv_frames": 103,
+    "sent_bytes": 655202560,
+    "recv_bytes": 6126,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "weights": 310,
+     "clock": 17
+    }
+   },
+   "ctl:a1/0": {
+    "sent_frames": 21,
+    "recv_frames": 19,
+    "sent_bytes": 28168,
+    "recv_bytes": 4437,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "weights": 2,
+     "clock": 17
+    }
+   },
+   "ctl:b1/0": {
+    "sent_frames": 21,
+    "recv_frames": 307,
+    "sent_bytes": 28686,
+    "recv_bytes": 2743436,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 4464
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "weights": 2,
+     "clock": 17
+    }
+   }
+  },
+  "b0/0": {
+   "ctl": {
+    "sent_frames": 103,
+    "recv_frames": 329,
+    "sent_bytes": 6126,
+    "recv_bytes": 655202560,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "weights": 85,
+     "ready": 1,
+     "clock": 16,
+     "metrics_reply": 1
+    }
+   },
+   "a0/0": {
+    "sent_frames": 1,
+    "recv_frames": 290,
+    "sent_bytes": 42,
+    "recv_bytes": 2403104,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 863784
+    },
+    "by_kind_sent": {
+     "hello": 1
+    }
+   },
+   "a1/0": {
+    "sent_frames": 290,
+    "recv_frames": 1,
+    "sent_bytes": 2403104,
+    "recv_bytes": 42,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 863784,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "metrics": 2,
+     "hidden": 288
+    }
+   }
+  },
+  "a1/0": {
+   "ctl": {
+    "sent_frames": 19,
+    "recv_frames": 21,
+    "sent_bytes": 4437,
+    "recv_bytes": 28168,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "weights": 1,
+     "ready": 1,
+     "clock": 16,
+     "metrics_reply": 1
+    }
+   },
+   "b0/0": {
+    "sent_frames": 1,
+    "recv_frames": 290,
+    "sent_bytes": 42,
+    "recv_bytes": 2403104,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 863784
+    },
+    "by_kind_sent": {
+     "hello": 1
+    }
+   },
+   "b1/0": {
+    "sent_frames": 290,
+    "recv_frames": 1,
+    "sent_bytes": 2403104,
+    "recv_bytes": 42,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 863784,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "metrics": 2,
+     "hidden": 288
+    }
+   }
+  },
+  "b1/0": {
+   "ctl": {
+    "sent_frames": 307,
+    "recv_frames": 21,
+    "sent_bytes": 2743436,
+    "recv_bytes": 28686,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 4464,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "weights": 1,
+     "ready": 1,
+     "clock": 16,
+     "metrics_reply": 1,
+     "head": 288
+    }
+   },
+   "a1/0": {
+    "sent_frames": 1,
+    "recv_frames": 290,
+    "sent_bytes": 42,
+    "recv_bytes": 2403104,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 863784
+    },
+    "by_kind_sent": {
+     "hello": 1
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "a0/0",
+   "gid": 0,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 29958,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 1121916928,
+   "kv_bytes": 29360128,
+   "idle": {
+    "peak_rss_bytes": 617828352
+   },
+   "planned": {
+    "weights": 1121916928,
+    "kv": 29360128,
+    "workspace": 50659328,
+    "total": 1201936384,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1201936384
+   },
+   "budget": null,
+   "load_s": 0.9674584865570068,
+   "steps": 288,
+   "allreduce_calls": 0,
+   "shipping": null,
+   "slots": 1,
+   "async_send": null,
+   "current_allocated_bytes": 1161766400,
+   "driver_allocated_bytes": 1228931072,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 6301941760,
+   "max_allocated_bytes": 1169993216,
+   "peak_rss_bytes": 1771180032
+  },
+  {
+   "name": "b0/0",
+   "gid": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 29881,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 655169536,
+   "kv_bytes": 29360128,
+   "idle": {
+    "peak_rss_bytes": 617439232
+   },
+   "planned": {
+    "weights": 655169536,
+    "kv": 29360128,
+    "workspace": 50659328,
+    "total": 735188992,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 735188992
+   },
+   "budget": null,
+   "load_s": 0.6787717342376709,
+   "steps": 288,
+   "allreduce_calls": 0,
+   "shipping": {
+    "manifest_bytes": 655169536,
+    "manifest_slices": 84,
+    "received_bytes": 655169536,
+    "received_slices": 84,
+    "cache_bytes": 0,
+    "duplicate_bytes": 0,
+    "hash_checks": 84,
+    "chunks": 224,
+    "cache_verified_slices": 0,
+    "recv_s": 10.363430261611938,
+    "cache_dir": "/home/ohadr/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef"
+   },
+   "slots": 1,
+   "async_send": null,
+   "current_allocated_bytes": 694104576,
+   "driver_allocated_bytes": 761266176,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 6769606656,
+   "max_allocated_bytes": 702328320,
+   "peak_rss_bytes": 982761472
+  },
+  {
+   "name": "a1/0",
+   "gid": 2,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 29887,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 655169536,
+   "kv_bytes": 29360128,
+   "idle": {
+    "peak_rss_bytes": 617672704
+   },
+   "planned": {
+    "weights": 655169536,
+    "kv": 29360128,
+    "workspace": 50659328,
+    "total": 735188992,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 735188992
+   },
+   "budget": null,
+   "load_s": 0.5875144004821777,
+   "steps": 288,
+   "allreduce_calls": 0,
+   "shipping": {
+    "manifest_bytes": 655169536,
+    "manifest_slices": 84,
+    "received_bytes": 0,
+    "received_slices": 0,
+    "cache_bytes": 655169536,
+    "duplicate_bytes": 0,
+    "hash_checks": 0,
+    "chunks": 0,
+    "cache_verified_slices": 0,
+    "recv_s": 0.004422664642333984,
+    "cache_dir": "/home/ohadr/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef"
+   },
+   "slots": 1,
+   "async_send": null,
+   "current_allocated_bytes": 694104576,
+   "driver_allocated_bytes": 761266176,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 6769606656,
+   "max_allocated_bytes": 702328320,
+   "peak_rss_bytes": 982982656
+  },
+  {
+   "name": "b1/0",
+   "gid": 3,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 29889,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 1121920000,
+   "kv_bytes": 29360128,
+   "idle": {
+    "peak_rss_bytes": 618143744
+   },
+   "planned": {
+    "weights": 1121920000,
+    "kv": 29360128,
+    "workspace": 51570944,
+    "total": 1202851072,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1202851072
+   },
+   "budget": null,
+   "load_s": 0.8984830379486084,
+   "steps": 288,
+   "allreduce_calls": 0,
+   "shipping": {
+    "manifest_bytes": 1121920000,
+    "manifest_slices": 86,
+    "received_bytes": 0,
+    "received_slices": 0,
+    "cache_bytes": 1121920000,
+    "duplicate_bytes": 0,
+    "hash_checks": 0,
+    "chunks": 0,
+    "cache_verified_slices": 0,
+    "recv_s": 0.003983974456787109,
+    "cache_dir": "/home/ohadr/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef"
+   },
+   "slots": 1,
+   "async_send": null,
+   "current_allocated_bytes": 1161772544,
+   "driver_allocated_bytes": 1228931072,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 6301941760,
+   "max_allocated_bytes": 1169996288,
+   "peak_rss_bytes": 1087774720
+  }
+ ],
+ "requests": [
+  {
+   "req": 1,
+   "rid": "arith_01",
+   "prompt_n": 46,
+   "n_gen": 4,
+   "t0_mono_ns": 43550748739400,
+   "first_token_mono_ns": 43552634244000,
+   "t1_mono_ns": 43552971324400
+  },
+  {
+   "req": 2,
+   "rid": "arith_02",
+   "prompt_n": 47,
+   "n_gen": 4,
+   "t0_mono_ns": 43552972179400,
+   "first_token_mono_ns": 43553126383000,
+   "t1_mono_ns": 43553330352200
+  },
+  {
+   "req": 3,
+   "rid": "arith_03",
+   "prompt_n": 44,
+   "n_gen": 4,
+   "t0_mono_ns": 43553330627300,
+   "first_token_mono_ns": 43553489543700,
+   "t1_mono_ns": 43553690812200
+  },
+  {
+   "req": 4,
+   "rid": "arith_04",
+   "prompt_n": 45,
+   "n_gen": 3,
+   "t0_mono_ns": 43553691132100,
+   "first_token_mono_ns": 43553842379800,
+   "t1_mono_ns": 43553993928100
+  },
+  {
+   "req": 5,
+   "rid": "arith_05",
+   "prompt_n": 58,
+   "n_gen": 4,
+   "t0_mono_ns": 43553994225300,
+   "first_token_mono_ns": 43554138217300,
+   "t1_mono_ns": 43554358288800
+  },
+  {
+   "req": 6,
+   "rid": "arith_06",
+   "prompt_n": 47,
+   "n_gen": 3,
+   "t0_mono_ns": 43554358605400,
+   "first_token_mono_ns": 43554485899100,
+   "t1_mono_ns": 43554615379200
+  },
+  {
+   "req": 7,
+   "rid": "extract_01",
+   "prompt_n": 67,
+   "n_gen": 4,
+   "t0_mono_ns": 43554615642600,
+   "first_token_mono_ns": 43554789004900,
+   "t1_mono_ns": 43554977872600
+  },
+  {
+   "req": 8,
+   "rid": "extract_02",
+   "prompt_n": 69,
+   "n_gen": 6,
+   "t0_mono_ns": 43554978186800,
+   "first_token_mono_ns": 43555151252200,
+   "t1_mono_ns": 43555565374300
+  },
+  {
+   "req": 9,
+   "rid": "longopen_01",
+   "prompt_n": 78,
+   "n_gen": 256,
+   "t0_mono_ns": 43555565659900,
+   "first_token_mono_ns": 43555735944400,
+   "t1_mono_ns": 43574137669100
+  }
+ ],
+ "shipping": {
+  "model_sha256": "e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef",
+  "model_files": {
+   "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  },
+  "kind": "safetensors",
+  "manifest_s": 0.00619196891784668,
+  "slices_hashed": 0,
+  "ranks": {
+   "b1/0": {
+    "manifest_bytes": 1121920000,
+    "manifest_slices": 86,
+    "shipped_bytes": 0,
+    "shipped_slices": 0,
+    "chunks": 0,
+    "ship_s": 0.011003971099853516,
+    "received_bytes": 0,
+    "received_slices": 0,
+    "cache_bytes": 1121920000,
+    "duplicate_bytes": 0,
+    "hash_checks": 0,
+    "cache_verified_slices": 0,
+    "recv_s": 0.003983974456787109,
+    "cache_dir": "/home/ohadr/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef",
+    "loaded_tensor_bytes": 1121920000,
+    "planned_weight_bytes": 1121920000,
+    "stored_minus_loaded_bytes": 0
+   },
+   "a1/0": {
+    "manifest_bytes": 655169536,
+    "manifest_slices": 84,
+    "shipped_bytes": 0,
+    "shipped_slices": 0,
+    "chunks": 0,
+    "ship_s": 0.023041486740112305,
+    "received_bytes": 0,
+    "received_slices": 0,
+    "cache_bytes": 655169536,
+    "duplicate_bytes": 0,
+    "hash_checks": 0,
+    "cache_verified_slices": 0,
+    "recv_s": 0.004422664642333984,
+    "cache_dir": "/home/ohadr/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef",
+    "loaded_tensor_bytes": 655169536,
+    "planned_weight_bytes": 655169536,
+    "stored_minus_loaded_bytes": 0
+   },
+   "b0/0": {
+    "manifest_bytes": 655169536,
+    "manifest_slices": 84,
+    "shipped_bytes": 655169536,
+    "shipped_slices": 84,
+    "chunks": 224,
+    "ship_s": 10.383086204528809,
+    "received_bytes": 655169536,
+    "received_slices": 84,
+    "cache_bytes": 0,
+    "duplicate_bytes": 0,
+    "hash_checks": 84,
+    "cache_verified_slices": 0,
+    "recv_s": 10.363430261611938,
+    "cache_dir": "/home/ohadr/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef",
+    "loaded_tensor_bytes": 655169536,
+    "planned_weight_bytes": 655169536,
+    "stored_minus_loaded_bytes": 0
+   }
+  },
+  "ship_s": 10.383086204528809,
+  "agrees_with_preflight": true
+ },
+ "torch_coordinator": "2.14.1+cu126",
+ "overlap": {
+  "slots": 1,
+  "prefill_chunk": 0,
+  "tp_interleave": 1,
+  "async_send": false,
+  "on": false
+ },
+ "throughput": {
+  "wall_s": 23.389505863189697,
+  "tokens": 288,
+  "tokens_per_s": 12.31321438274817,
+  "note": "all prompts, prefill included; background (T1)"
+ },
+ "clock": {
+  "a0/0": {
+   "start": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "end": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "drift": null,
+   "host": "gtx",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": 0,
+    "disagree": false,
+    "same_host": true
+   }
+  },
+  "b0/0": {
+   "start": {
+    "offset_mono_ns": -10950,
+    "offset_wall_ns": -11250,
+    "rtt_ns": 375500,
+    "rtt_median_ns": 396800,
+    "rounds": 16,
+    "at_mono_ns": 43548962940150,
+    "at_wall_ns": 1795861158188732188
+   },
+   "end": {
+    "offset_mono_ns": -6950,
+    "offset_wall_ns": -7350,
+    "rtt_ns": 361500,
+    "rtt_median_ns": 416200,
+    "rounds": 16,
+    "at_mono_ns": 43575087819350,
+    "at_wall_ns": 1795861184313609689
+   },
+   "drift": {
+    "drift_ns": 4000,
+    "span_s": 26.1248792,
+    "ppm": 0.15311075581930345,
+    "wall_minus_mono_change_ns": -100
+   },
+   "host": "gtx",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": -7350,
+    "disagree": false,
+    "same_host": true
+   }
+  },
+  "a1/0": {
+   "start": {
+    "offset_mono_ns": 17350,
+    "offset_wall_ns": 16850,
+    "rtt_ns": 384100,
+    "rtt_median_ns": 421300,
+    "rounds": 16,
+    "at_mono_ns": 43548969108950,
+    "at_wall_ns": 1795861158194900988
+   },
+   "end": {
+    "offset_mono_ns": -25300,
+    "offset_wall_ns": -25600,
+    "rtt_ns": 380600,
+    "rtt_median_ns": 432900,
+    "rounds": 16,
+    "at_mono_ns": 43575095951300,
+    "at_wall_ns": 1795861184321741639
+   },
+   "drift": {
+    "drift_ns": -42650,
+    "span_s": 26.12684235,
+    "ppm": -1.6324207659177765,
+    "wall_minus_mono_change_ns": 200
+   },
+   "host": "gtx",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": -25600,
+    "disagree": false,
+    "same_host": true
+   }
+  },
+  "b1/0": {
+   "start": {
+    "offset_mono_ns": -2350,
+    "offset_wall_ns": -2750,
+    "rtt_ns": 331900,
+    "rtt_median_ns": 358000,
+    "rounds": 16,
+    "at_mono_ns": 43548978380750,
+    "at_wall_ns": 1795861158204172888
+   },
+   "end": {
+    "offset_mono_ns": 6350,
+    "offset_wall_ns": 5550,
+    "rtt_ns": 394700,
+    "rtt_median_ns": 420800,
+    "rounds": 16,
+    "at_mono_ns": 43575099015350,
+    "at_wall_ns": 1795861184324805789
+   },
+   "drift": {
+    "drift_ns": 8700,
+    "span_s": 26.1206346,
+    "ppm": 0.33307000894993566,
+    "wall_minus_mono_change_ns": -400
+   },
+   "host": "gtx",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": 5550,
+    "disagree": false,
+    "same_host": true
+   }
+  }
+ },
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 112.35984166463216,
+   "text": "936",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 67.98879305521648,
+   "text": "543",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt_n": 44,
+   "tokens": [
+    19,
+    18,
+    22,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 67.08916028340657,
+   "text": "437",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt_n": 45,
+   "tokens": [
+    16,
+    17,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 75.77395439147949,
+   "text": "12",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_05",
+   "kind": "eval",
+   "prompt_n": 58,
+   "tokens": [
+    16,
+    20,
+    15,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 73.35694630940755,
+   "text": "150",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_06",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 64.73970413208008,
+   "text": "36",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "extract_01",
+   "kind": "eval",
+   "prompt_n": 67,
+   "tokens": [
+    35,
+    3362,
+    55041,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 62.95569737752279,
+   "text": "Dana Levi",
+   "category": "extraction",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "extract_02",
+   "kind": "eval",
+   "prompt_n": 69,
+   "tokens": [
+    14003,
+    220,
+    18,
+    16,
+    16,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 82.8242301940918,
+   "text": "Room 311",
+   "category": "extraction",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "longopen_01",
+   "kind": "long",
+   "prompt_n": 78,
+   "tokens": [
+    32,
+    2114,
+    17220,
+    26299,
+    3922,
+    23377,
+    264,
+    2766,
+    4269,
+    504,
+    279,
+    7602,
+    311,
+    264,
+    20638,
+    1526,
+    264,
+    4013,
+    315,
+    7354,
+    15860,
+    59175,
+    11,
+    2615,
+    3501,
+    11,
+    8887,
+    11744,
+    11,
+    323,
+    10151,
+    18368,
+    13,
+    5692,
+    748,
+    264,
+    43799,
+    16148,
+    1447,
+    16,
+    13,
+    3070,
+    9523,
+    323,
+    9549,
+    5126,
+    95518,
+    576,
+    9273,
+    374,
+    279,
+    8622,
+    18719,
+    315,
+    697,
+    17220,
+    26299,
+    3922,
+    13,
+    1084,
+    33061,
+    311,
+    279,
+    7602,
+    323,
+    65098,
+    264,
+    20739,
+    8286,
+    429,
+    1008,
+    7611,
+    646,
+    5258,
+    13,
+    1527,
+    2615,
+    1459,
+    374,
+    264,
+    943,
+    315,
+    9273,
+    429,
+    374,
+    11689,
+    6188,
+    311,
+    3410,
+    264,
+    20739,
+    3922,
+    369,
+    264,
+    3175,
+    3671,
+    11,
+    1075,
+    264,
+    20638,
+    382,
+    17,
+    13,
+    3070,
+    37845,
+    1717,
+    27230,
+    95518,
+    576,
+    9273,
+    65098,
+    264,
+    20739,
+    8286,
+    429,
+    14521,
+    264,
+    3654,
+    3082,
+    11,
+    11136,
+    264,
+    2421,
+    7739,
+    7541,
+    13,
+    1096,
+    8286,
+    374,
+    29447,
+    311,
+    279,
+    19020,
+    7912,
+    714,
+    646,
+    387,
+    16507,
+    553,
+    7611,
+    429,
+    525,
+    2878,
+    1181,
+    2088,
+    382,
+    18,
+    13,
+    3070,
+    43,
+    16386,
+    323,
+    40377,
+    95518,
+    576,
+    20638,
+    323,
+    1008,
+    7611,
+    2878,
+    279,
+    2088,
+    315,
+    279,
+    9273,
+    476,
+    2615,
+    1459,
+    5258,
+    279,
+    20739,
+    8286,
+    13,
+    576,
+    20638,
+    11,
+    304,
+    3953,
+    11,
+    374,
+    18650,
+    448,
+    264,
+    17220,
+    26299,
+    3701,
+    429,
+    646,
+    4564,
+    311,
+    279,
+    3922,
+    382,
+    19,
+    13,
+    3070,
+    16679,
+    47025,
+    95518,
+    3197,
+    279,
+    20638,
+    6801,
+    311,
+    3624,
+    821,
+    11,
+    432,
+    18303,
+    279,
+    821,
+    1119,
+    9155,
+    8153,
+    2598,
+    27035,
+    13,
+    4220,
+    27035,
+    525,
+    1221,
+    3208,
+    1526,
+    279,
+    20739,
+    8286,
+    311,
+    279,
+    9273,
+    476,
+    2615,
+    1459,
+    382,
+    20,
+    13,
+    3070,
+    9523,
+    14,
+    6054,
+    5126,
+    95518,
+    576,
+    9273,
+    476,
+    2615,
+    1459,
+    21189,
+    1493,
+    27035,
+    323,
+    41054,
+    1105,
+    311,
+    279,
+    7602,
+    13
+   ],
+   "finish": "length",
+   "ms_per_step": 72.16361831216251,
+   "text": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving routers, access points, radio channels, and packet transmission. Here\u2019s a simplified explanation:\n\n1. **Router and Access Point**: The router is the central hub of your Wi-Fi network. It connects to the internet and broadcasts a wireless signal that other devices can receive. An access point is a type of router that is specifically designed to provide a wireless network for a single device, like a laptop.\n\n2. **Wireless Signal**: The router broadcasts a wireless signal that covers a certain area, typically a few hundred feet. This signal is invisible to the naked eye but can be detected by devices that are within its range.\n\n3. **Laptop and Devices**: The laptop and other devices within the range of the router or access point receive the wireless signal. The laptop, in particular, is equipped with a Wi-Fi card that can connect to the network.\n\n4. **Packet Transmission**: When the laptop wants to send data, it breaks the data into smaller units called packets. These packets are then sent through the wireless signal to the router or access point.\n\n5. **Router/Access Point**: The router or access point receives these packets and forwards them to the internet."
+  }
+ ]
+}

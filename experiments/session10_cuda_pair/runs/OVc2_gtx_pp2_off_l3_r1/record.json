@@ -1,0 +1,1359 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "OVc2_gtx_pp2_off_l3_r1",
+ "date": "2026-11-28T12:31:31+0200",
+ "placement": {
+  "file": "experiments/session10_cuda_pair/placements/C1_gtx_15b_bf16_pp2.yaml",
+  "sha256": "1e66330afc69f3f062b08a42f3f25b9745b78debd6bc80c0935f2d18853c5825",
+  "yaml": "# Session 10 part 3, CUDA check (not an experiment row): 1.5B bf16, two contiguous stages, both rank processes on gtx (one GPU)\nmodel: qwen2.5-1.5b-bf16\ncoordinator: {host: gtx}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nhost_budget_gb: {gtx: 7}\nstages:\n  - name: a0\n    layers: [0, 14]\n    embed: true\n    ranks:\n      - {host: gtx, device: cuda, port: 50070}\n  - name: b0\n    layers: [14, 28]\n    lm_head: true\n    ranks:\n      - {host: gtx, device: cuda, port: 50071}\n"
+ },
+ "git": {
+  "sha": "6ddcf01e9f5d78e41ed638b7948bfce7c264f7e0",
+  "dirty": false
+ },
+ "args": {
+  "placement": "experiments/session10_cuda_pair/placements/C1_gtx_15b_bf16_pp2.yaml",
+  "session_dir": "experiments/session10_cuda_pair",
+  "run_id": "OVc2_gtx_pp2_off_l3_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 3,
+  "fixed": 96,
+  "reduce_dtype": null,
+  "reference": [
+   "experiments/session7_hetero/runs/R0_qwen2.5-1.5b-bf16_cuda_gtx_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "transformers_dir": null,
+  "tokenizer_dir": null,
+  "force": false,
+  "mps_fraction_cap": false,
+  "timeline": true,
+  "ship_weights": true,
+  "cache_dir": null,
+  "verify_cache": false,
+  "stall_timeout": 300.0,
+  "slots": 1,
+  "prefill_chunk": 0,
+  "tp_interleave": 1,
+  "async_send": false,
+  "dtype": null
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "qwen2.5-1.5b-bf16",
+  "dir": "~/models/hf/Qwen2.5-1.5B-Instruct",
+  "sha256": {
+   "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  }
+ },
+ "coordinator": {
+  "host": "gtx",
+  "hostname": "Ohad",
+  "operator_hostname": "MMF4FWRG4R",
+  "remote": true,
+  "run_dir": "~/.nocturne/runs/OVc2_gtx_pp2_off_l3_r1"
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "a0/0",
+   "stage": 0,
+   "stage_name": "a0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    14
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": [
+    0,
+    151936
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 1777086464,
+    "kv": 58720256,
+    "workspace": 50659328,
+    "total": 1886466048,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1886466048
+   }
+  },
+  {
+   "gid": 1,
+   "name": "b0/0",
+   "stage": 1,
+   "stage_name": "b0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50071,
+   "layers": [
+    14,
+    28
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1777089536,
+    "kv": 58720256,
+    "workspace": 51570944,
+    "total": 1887380736,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1887380736
+   }
+  }
+ ],
+ "planner_host": "Ohad",
+ "planned_hosts": {
+  "gtx": {
+   "ranks": [
+    "a0/0",
+    "b0/0"
+   ],
+   "planned": 3773846784,
+   "processes": 2,
+   "process_overhead": 314572800,
+   "total": 4088419584,
+   "budget": 7000000000
+  }
+ },
+ "frames": {
+  "predicted": {
+   "token": 0,
+   "embed": 0,
+   "layers": 0,
+   "hops": 1,
+   "head": 1,
+   "total": 2
+  },
+  "prefill_predicted": 22,
+  "prefill_measured": 22,
+  "prefill_holds": true,
+  "prefill_chunks": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "decode_steps": 309,
+  "measured_per_step": 2.0,
+  "bytes_per_step": 3112.0,
+  "per_link_per_step": {
+   "a0/0->b0/0": {
+    "sent_frames": 1.0,
+    "sent_bytes": 3096.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "a0/0->ctl:b0/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "b0/0->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "b0/0->a0/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 3096.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "gtx": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA GeForce GTX 1070, 8192 MiB, 624 MiB, 582.78",
+    "engine_sha256": "ae823fd5fd3150cf135d3f2b1d46b95262a7326a4088c371d4b71d2d6789fb0d",
+    "timesync": {
+     "host": "Ohad",
+     "os": "Linux",
+     "at": "2026-11-28T12:31:39+0200",
+     "at_unix": 1795861899.8181212,
+     "sntp": {
+      "server": "time.apple.com",
+      "server_ip": "17.253.108.125",
+      "stratum": 1,
+      "samples": 4,
+      "asked": 4,
+      "offset_s": 0.1464604139328003,
+      "delay_s": 0.06313920021057129,
+      "bound_s": 0.031569600105285645,
+      "spread_s": 0.004993438720703125
+     },
+     "os_service": {
+      "tool": "chronyc",
+      "source": "PHC0",
+      "offset_s": -2.37e-07,
+      "last_sync_utc": "Sat Nov 28 10:31:30 2026",
+      "wsl": true,
+      "windows": {
+       "tool": "w32tm",
+       "source": "time.windows.com,0x9",
+       "last_sync": "11/28/2026 8:07:31 AM"
+      }
+     },
+     "last_set": null
+    },
+    "psutil": "7.2.2",
+    "transformers": "5.23.0",
+    "model_sha256": {
+     "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+     "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+     "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+   }
+  },
+  "coordinator": "gtx",
+  "ship_weights": true
+ },
+ "collected": {
+  "gtx": [
+   "coordinator_record.json",
+   "first_logits.npz",
+   "job.json",
+   "plan.json",
+   "samples_rank_a0_0.jsonl.gz",
+   "samples_rank_b0_0.jsonl.gz",
+   "timeline_a0_0.jsonl.gz",
+   "timeline_b0_0.jsonl.gz"
+  ]
+ },
+ "commands": [
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx hostname"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx mkdir -p ~/.nocturne/runs/OVc2_gtx_pp2_off_l3_r1 && cat > ~/.nocturne/runs/OVc2_gtx_pp2_off_l3_r1/job.json"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job \"$HOME\"/.nocturne/runs/OVc2_gtx_pp2_off_l3_r1/job.json --tag OVc2_gtx_pp2_off_l3_r1 --plan-only"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50071 --device cuda --name b0/0 --tag OVc2_gtx_pp2_off_l3_r1 --run-dir \"$HOME\"/.nocturne/runs/OVc2_gtx_pp2_off_l3_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job \"$HOME\"/.nocturne/runs/OVc2_gtx_pp2_off_l3_r1/job.json --tag OVc2_gtx_pp2_off_l3_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx cd ~/.nocturne/runs/OVc2_gtx_pp2_off_l3_r1 2>/dev/null && tar -cf - ."
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx pkill -f -- '--tag OVc2_gtx_pp2_off_l3_r1( |$)'"
+  }
+ ],
+ "load_s": 4.918345212936401,
+ "link_counters": {
+  "a0/0": {
+   "b0/0": {
+    "sent_frames": 322,
+    "recv_frames": 1,
+    "sent_bytes": 2910752,
+    "recv_bytes": 42,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 309,
+     "sent_bytes": 956664,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "metrics": 2,
+     "hidden": 320
+    }
+   },
+   "ctl:b0/0": {
+    "sent_frames": 21,
+    "recv_frames": 339,
+    "sent_bytes": 52638,
+    "recv_bytes": 3351700,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 309,
+     "recv_bytes": 4944
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "weights": 2,
+     "clock": 17
+    }
+   }
+  },
+  "b0/0": {
+   "ctl": {
+    "sent_frames": 339,
+    "recv_frames": 21,
+    "sent_bytes": 3351700,
+    "recv_bytes": 52638,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 309,
+     "sent_bytes": 4944,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "weights": 1,
+     "ready": 1,
+     "clock": 16,
+     "metrics_reply": 1,
+     "head": 320
+    }
+   },
+   "a0/0": {
+    "sent_frames": 1,
+    "recv_frames": 322,
+    "sent_bytes": 42,
+    "recv_bytes": 2910752,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 309,
+     "recv_bytes": 956664
+    },
+    "by_kind_sent": {
+     "hello": 1
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "a0/0",
+   "gid": 0,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 31352,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 1777086464,
+   "kv_bytes": 58720256,
+   "idle": {
+    "peak_rss_bytes": 617381888
+   },
+   "planned": {
+    "weights": 1777086464,
+    "kv": 58720256,
+    "workspace": 50659328,
+    "total": 1886466048,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1886466048
+   },
+   "budget": null,
+   "load_s": 3.380258798599243,
+   "steps": 320,
+   "allreduce_calls": 0,
+   "shipping": null,
+   "slots": 1,
+   "async_send": null,
+   "current_allocated_bytes": 1845251072,
+   "driver_allocated_bytes": 1944059904,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 5586812928,
+   "max_allocated_bytes": 1851854336,
+   "peak_rss_bytes": 2400223232
+  },
+  {
+   "name": "b0/0",
+   "gid": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 31309,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 1777089536,
+   "kv_bytes": 58720256,
+   "idle": {
+    "peak_rss_bytes": 618008576
+   },
+   "planned": {
+    "weights": 1777089536,
+    "kv": 58720256,
+    "workspace": 51570944,
+    "total": 1887380736,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1887380736
+   },
+   "budget": null,
+   "load_s": 4.324904680252075,
+   "steps": 320,
+   "allreduce_calls": 0,
+   "shipping": {
+    "manifest_bytes": 1777089536,
+    "manifest_slices": 170,
+    "received_bytes": 0,
+    "received_slices": 0,
+    "cache_bytes": 1777089536,
+    "duplicate_bytes": 0,
+    "hash_checks": 0,
+    "chunks": 0,
+    "cache_verified_slices": 0,
+    "recv_s": 0.018295764923095703,
+    "cache_dir": "/home/ohadr/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef"
+   },
+   "slots": 1,
+   "async_send": null,
+   "current_allocated_bytes": 1845257216,
+   "driver_allocated_bytes": 1944059904,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 5586812928,
+   "max_allocated_bytes": 1851857408,
+   "peak_rss_bytes": 1087377408
+  }
+ ],
+ "requests": [
+  {
+   "req": 1,
+   "rid": "arith_01",
+   "prompt_n": 46,
+   "n_gen": 4,
+   "t0_mono_ns": 44303667760100,
+   "first_token_mono_ns": 44305180128200,
+   "t1_mono_ns": 44305491804400
+  },
+  {
+   "req": 2,
+   "rid": "arith_02",
+   "prompt_n": 47,
+   "n_gen": 4,
+   "t0_mono_ns": 44305492816000,
+   "first_token_mono_ns": 44305634068400,
+   "t1_mono_ns": 44305890193900
+  },
+  {
+   "req": 3,
+   "rid": "arith_03",
+   "prompt_n": 44,
+   "n_gen": 4,
+   "t0_mono_ns": 44305890538300,
+   "first_token_mono_ns": 44306019442900,
+   "t1_mono_ns": 44306226220900
+  },
+  {
+   "req": 4,
+   "rid": "arith_04",
+   "prompt_n": 45,
+   "n_gen": 3,
+   "t0_mono_ns": 44306226594800,
+   "first_token_mono_ns": 44306339334300,
+   "t1_mono_ns": 44306464787100
+  },
+  {
+   "req": 5,
+   "rid": "arith_05",
+   "prompt_n": 58,
+   "n_gen": 4,
+   "t0_mono_ns": 44306465204400,
+   "first_token_mono_ns": 44306575059700,
+   "t1_mono_ns": 44306803968500
+  },
+  {
+   "req": 6,
+   "rid": "arith_06",
+   "prompt_n": 47,
+   "n_gen": 3,
+   "t0_mono_ns": 44306804311600,
+   "first_token_mono_ns": 44306915329000,
+   "t1_mono_ns": 44307048870600
+  },
+  {
+   "req": 7,
+   "rid": "extract_01",
+   "prompt_n": 67,
+   "n_gen": 4,
+   "t0_mono_ns": 44307049276400,
+   "first_token_mono_ns": 44307199543400,
+   "t1_mono_ns": 44307354880300
+  },
+  {
+   "req": 8,
+   "rid": "extract_02",
+   "prompt_n": 69,
+   "n_gen": 6,
+   "t0_mono_ns": 44307355206900,
+   "first_token_mono_ns": 44307501919900,
+   "t1_mono_ns": 44307831198500
+  },
+  {
+   "req": 9,
+   "rid": "longopen_01",
+   "prompt_n": 78,
+   "n_gen": 96,
+   "t0_mono_ns": 44307831543900,
+   "first_token_mono_ns": 44307981004500,
+   "t1_mono_ns": 44315117446100
+  },
+  {
+   "req": 10,
+   "rid": "longopen_02",
+   "prompt_n": 71,
+   "n_gen": 96,
+   "t0_mono_ns": 44315117828300,
+   "first_token_mono_ns": 44315264058500,
+   "t1_mono_ns": 44320727400200
+  },
+  {
+   "req": 11,
+   "rid": "longopen_03",
+   "prompt_n": 64,
+   "n_gen": 96,
+   "t0_mono_ns": 44320727820900,
+   "first_token_mono_ns": 44320836252500,
+   "t1_mono_ns": 44326542092200
+  }
+ ],
+ "shipping": {
+  "model_sha256": "e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef",
+  "model_files": {
+   "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  },
+  "kind": "safetensors",
+  "manifest_s": 0.00744938850402832,
+  "slices_hashed": 0,
+  "ranks": {
+   "b0/0": {
+    "manifest_bytes": 1777089536,
+    "manifest_slices": 170,
+    "shipped_bytes": 0,
+    "shipped_slices": 0,
+    "chunks": 0,
+    "ship_s": 0.017467498779296875,
+    "received_bytes": 0,
+    "received_slices": 0,
+    "cache_bytes": 1777089536,
+    "duplicate_bytes": 0,
+    "hash_checks": 0,
+    "cache_verified_slices": 0,
+    "recv_s": 0.018295764923095703,
+    "cache_dir": "/home/ohadr/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef",
+    "loaded_tensor_bytes": 1777089536,
+    "planned_weight_bytes": 1777089536,
+    "stored_minus_loaded_bytes": 0
+   }
+  },
+  "ship_s": 0.017467498779296875,
+  "agrees_with_preflight": true
+ },
+ "torch_coordinator": "2.14.1+cu126",
+ "overlap": {
+  "slots": 1,
+  "prefill_chunk": 0,
+  "tp_interleave": 1,
+  "async_send": false,
+  "on": false
+ },
+ "throughput": {
+  "wall_s": 22.874778032302856,
+  "tokens": 320,
+  "tokens_per_s": 13.989206782601723,
+  "note": "all prompts, prefill included; background (T1)"
+ },
+ "clock": {
+  "a0/0": {
+   "start": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "end": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "drift": null,
+   "host": "gtx",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": 0,
+    "disagree": false,
+    "same_host": true
+   }
+  },
+  "b0/0": {
+   "start": {
+    "offset_mono_ns": 1200,
+    "offset_wall_ns": 900,
+    "rtt_ns": 312600,
+    "rtt_median_ns": 399100,
+    "rounds": 16,
+    "at_mono_ns": 44302340344000,
+    "at_wall_ns": 1795861911566133001
+   },
+   "end": {
+    "offset_mono_ns": -1500,
+    "offset_wall_ns": -1800,
+    "rtt_ns": 417800,
+    "rtt_median_ns": 492600,
+    "rounds": 16,
+    "at_mono_ns": 44327499929600,
+    "at_wall_ns": 1795861936725720945
+   },
+   "drift": {
+    "drift_ns": -2700,
+    "span_s": 25.1595856,
+    "ppm": -0.10731496308905819,
+    "wall_minus_mono_change_ns": 0
+   },
+   "host": "gtx",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": -1800,
+    "disagree": false,
+    "same_host": true
+   }
+  }
+ },
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 103.89113426208496,
+   "text": "936",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 85.37356058756511,
+   "text": "543",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt_n": 44,
+   "tokens": [
+    19,
+    18,
+    22,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 68.92577807108562,
+   "text": "437",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt_n": 45,
+   "tokens": [
+    16,
+    17,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 62.72602081298828,
+   "text": "12",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_05",
+   "kind": "eval",
+   "prompt_n": 58,
+   "tokens": [
+    16,
+    20,
+    15,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 76.30308469136556,
+   "text": "150",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_06",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 66.77138805389404,
+   "text": "36",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "extract_01",
+   "kind": "eval",
+   "prompt_n": 67,
+   "tokens": [
+    35,
+    3362,
+    55041,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 51.778952280680336,
+   "text": "Dana Levi",
+   "category": "extraction",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "extract_02",
+   "kind": "eval",
+   "prompt_n": 69,
+   "tokens": [
+    14003,
+    220,
+    18,
+    16,
+    16,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 65.85574150085449,
+   "text": "Room 311",
+   "category": "extraction",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "longopen_01",
+   "kind": "long",
+   "prompt_n": 78,
+   "tokens": [
+    32,
+    2114,
+    17220,
+    26299,
+    3922,
+    23377,
+    264,
+    2766,
+    4269,
+    504,
+    279,
+    7602,
+    311,
+    264,
+    20638,
+    1526,
+    264,
+    4013,
+    315,
+    7354,
+    15860,
+    59175,
+    11,
+    2615,
+    3501,
+    11,
+    8887,
+    11744,
+    11,
+    323,
+    10151,
+    18368,
+    13,
+    5692,
+    748,
+    264,
+    43799,
+    16148,
+    1447,
+    16,
+    13,
+    3070,
+    9523,
+    323,
+    9549,
+    5126,
+    95518,
+    576,
+    9273,
+    374,
+    279,
+    8622,
+    18719,
+    315,
+    697,
+    17220,
+    26299,
+    3922,
+    13,
+    1084,
+    33061,
+    311,
+    279,
+    7602,
+    323,
+    65098,
+    264,
+    20739,
+    8286,
+    429,
+    1008,
+    7611,
+    646,
+    5258,
+    13,
+    1527,
+    2615,
+    1459,
+    374,
+    264,
+    943,
+    315,
+    9273,
+    429,
+    374,
+    11689,
+    6188,
+    311,
+    3410,
+    264,
+    20739,
+    3922,
+    369,
+    264,
+    3175,
+    3671
+   ],
+   "finish": "length",
+   "ms_per_step": 75.12044153715435,
+   "text": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving routers, access points, radio channels, and packet transmission. Here\u2019s a simplified explanation:\n\n1. **Router and Access Point**: The router is the central hub of your Wi-Fi network. It connects to the internet and broadcasts a wireless signal that other devices can receive. An access point is a type of router that is specifically designed to provide a wireless network for a single device"
+  },
+  {
+   "id": "longopen_02",
+   "kind": "long",
+   "prompt_n": 71,
+   "tokens": [
+    641,
+    279,
+    4124,
+    4115,
+    315,
+    279,
+    6556,
+    11,
+    279,
+    326,
+    57909,
+    53416,
+    11,
+    4392,
+    13,
+    3757,
+    9082,
+    11,
+    1035,
+    41418,
+    311,
+    279,
+    5112,
+    315,
+    279,
+    9396,
+    323,
+    279,
+    28727,
+    57745,
+    315,
+    511,
+    351,
+    70423,
+    13,
+    1260,
+    1035,
+    1221,
+    1281,
+    806,
+    1616,
+    311,
+    279,
+    2613,
+    45622,
+    429,
+    10223,
+    438,
+    806,
+    2114,
+    323,
+    5163,
+    11,
+    1380,
+    566,
+    1035,
+    10549,
+    264,
+    81551,
+    17496,
+    315,
+    4154,
+    11183,
+    323,
+    2588,
+    69466,
+    2181,
+    18805,
+    13,
+    4710,
+    2121,
+    279,
+    7015,
+    6009,
+    311,
+    10000,
+    11,
+    4392,
+    13,
+    9082,
+    1035,
+    1968,
+    700,
+    311,
+    279,
+    326,
+    57909,
+    11,
+    1380,
+    566,
+    1035,
+    3161,
+    806,
+    1899,
+    553,
+    13295
+   ],
+   "finish": "length",
+   "ms_per_step": 57.5088526073255,
+   "text": "In the early hours of the morning, the lighthouse keeper, Mr. John Smith, would awaken to the sound of the sea and the distant cries of seagulls. He would then make his way to the small cottage that served as his home and office, where he would prepare a hearty breakfast of porridge and hard-boiled eggs. \n\nAs the sun began to rise, Mr. Smith would head out to the lighthouse, where he would begin his day by checking"
+  },
+  {
+   "id": "longopen_03",
+   "kind": "long",
+   "prompt_n": 64,
+   "tokens": [
+    6689,
+    46444,
+    389,
+    264,
+    22670,
+    374,
+    4937,
+    1576,
+    70403,
+    525,
+    6188,
+    311,
+    2736,
+    15279,
+    7525,
+    29720,
+    13,
+    70403,
+    614,
+    264,
+    3460,
+    1372,
+    315,
+    8692,
+    8153,
+    320,
+    7701,
+    8,
+    429,
+    646,
+    9026,
+    5248,
+    11221,
+    24303,
+    11,
+    892,
+    6147,
+    1105,
+    311,
+    2736,
+    6172,
+    12557,
+    10709,
+    1753,
+    10596,
+    1091,
+    264,
+    13940,
+    13,
+    22406,
+    11,
+    70403,
+    614,
+    27076,
+    11773,
+    369,
+    11589,
+    6172,
+    7525,
+    11,
+    1741,
+    438,
+    279,
+    15626,
+    35704,
+    304,
+    33561,
+    70403,
+    11,
+    892,
+    4623,
+    24722,
+    705,
+    279,
+    1882,
+    382,
+    1925,
+    279,
+    1008,
+    1424,
+    11,
+    7218,
+    264,
+    6172,
+    916,
+    264,
+    3922,
+    374,
+    6301,
+    1576,
+    432,
+    17601,
+    5248,
+    7354,
+    11,
+    2670
+   ],
+   "finish": "length",
+   "ms_per_step": 60.06146230195698,
+   "text": "Matrix multiplication on a GPU is fast because GPUs are designed to perform parallel operations efficiently. GPUs have a large number of processing units (cores) that can execute multiple instructions simultaneously, which allows them to perform matrix multiplications much faster than a CPU. Additionally, GPUs have specialized hardware for handling matrix operations, such as the tensor cores in NVIDIA GPUs, which further speeds up the process.\n\nOn the other hand, moving a matrix over a network is slow because it involves multiple steps, including"
+  }
+ ],
+ "timeline": {
+  "decode_steps": 309,
+  "per_rank_ms_per_step": {
+   "a0/0": {
+    "host": "gtx",
+    "device": "cuda",
+    "total_ms": 64.94392880258894,
+    "compute": 35.44892006472489,
+    "host_copy": 0.1422165048543689,
+    "send": 0.0650003236245955,
+    "recv_wait": 29.22127864077672,
+    "allreduce_wait": 0.0,
+    "other": 0.0665132686084142,
+    "decode_steps": 309
+   },
+   "b0/0": {
+    "host": "gtx",
+    "device": "cuda",
+    "total_ms": 64.96295389704699,
+    "compute": 28.190947038481003,
+    "host_copy": 0.27221103218547726,
+    "send": 0.0786414322411003,
+    "recv_wait": 36.42115439413938,
+    "allreduce_wait": 0.0,
+    "other": 0.0,
+    "decode_steps": 309
+   }
+  },
+  "links": {
+   "a0/0 -> b0/0": {
+    "from": "a0/0",
+    "to": "b0/0",
+    "bytes": 956664,
+    "bytes_per_step": 3096.0
+   },
+   "b0/0 -> a0/0": {
+    "from": "b0/0",
+    "to": "a0/0",
+    "bytes": 4944,
+    "bytes_per_step": 16.0
+   }
+  },
+  "decode_bytes_total": 961608,
+  "decode_bytes_per_step": 3112.0,
+  "overlap": {
+   "window_ms": 22869.9611,
+   "per_rank": {
+    "a0/0": {
+     "busy_share": 0.5451812683669147,
+     "overlap_share": 0.0,
+     "overlap_out_share": 0.0,
+     "overlap_in_share": 0.0,
+     "in_flight_share": 0.012696323408987456,
+     "compute_ms": 12468.2744,
+     "host": "gtx",
+     "device": "cuda"
+    },
+    "b0/0": {
+     "busy_share": 0.4351695494630728,
+     "overlap_share": 0.0,
+     "overlap_out_share": 0.0,
+     "overlap_in_share": 0.0,
+     "in_flight_share": 0.012696323408987456,
+     "compute_ms": 9952.310668125,
+     "host": "gtx",
+     "device": "cuda"
+    }
+   },
+   "per_device": {
+    "gtx cuda": {
+     "busy_share": 0.9803508178299875,
+     "overlap_share": 0.0,
+     "overlap_out_share": 0.0,
+     "overlap_in_share": 0.0,
+     "in_flight_share": 0.012696323408987456,
+     "compute_ms": 22420.585068125,
+     "ranks": [
+      "a0/0",
+      "b0/0"
+     ]
+    }
+   },
+   "links": {
+    "a0/0 -> b0/0": {
+     "frames": 320,
+     "sent": 320,
+     "received": 320,
+     "bytes_match": true,
+     "in_flight_ms_mean": 0.4536019350830078
+    },
+    "b0/0 -> a0/0": {
+     "frames": 320,
+     "sent": 320,
+     "received": 320,
+     "bytes_match": true,
+     "in_flight_ms_mean": 0.45378688515625
+    }
+   },
+   "unmatched_links": [],
+   "async_send": false
+  },
+  "hosts": {
+   "gtx": {
+    "ranks": {
+     "a0/0": {
+      "process_cpu_cores": 0.5675504299931263,
+      "samples": 1493,
+      "interval_ms_mean": 20.241259718498657
+     },
+     "b0/0": {
+      "process_cpu_cores": 0.421361260412941,
+      "samples": 1476,
+      "interval_ms_mean": 19.99974709542373
+     }
+    },
+    "notes": [],
+    "host_cpu_busy_fraction": 0.11782576507513487,
+    "net": {
+     "lo": {
+      "rx_bytes": 0,
+      "tx_bytes": 0
+     }
+    },
+    "gpu": {
+     "0": {
+      "util_mean_percent": 32.59,
+      "mem_used_max_mib": 4555.0,
+      "samples": 300
+     }
+    },
+    "gpu_util_mean_percent": 32.59,
+    "gpu_mem_used_max_mib": 4555.0,
+    "gpu_samples": 300
+   }
+  },
+  "events": {
+   "a0/0": 1611,
+   "b0/0": 1280
+  },
+  "all_bytes": {
+   "a0/0 -> b0/0": 2910720,
+   "b0/0 -> a0/0": 3347756
+  },
+  "files": [
+   "trace.json.gz",
+   "breakdown.csv",
+   "timeline.html",
+   "timeline_a0_0.jsonl.gz",
+   "timeline_b0_0.jsonl.gz",
+   "samples_gtx.jsonl",
+   "samples_rank_a0_0.jsonl.gz",
+   "samples_rank_b0_0.jsonl.gz"
+  ],
+  "not_aligned": []
+ },
+ "correctness": {
+  "experiments/session7_hetero/runs/R0_qwen2.5-1.5b-bf16_cuda_gtx_r1": {
+   "reference": "R0_qwen2.5-1.5b-bf16_cuda_gtx_r1",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 3,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 96
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.0,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.0,
+    "arith_02": 0.0,
+    "arith_03": 0.0,
+    "arith_04": 0.0,
+    "arith_05": 0.0,
+    "arith_06": 0.0,
+    "extract_01": 0.0,
+    "extract_02": 0.0,
+    "longopen_01": 0.0
+   },
+   "long_first_div": {
+    "longopen_01": 96
+   },
+   "long_identical": false,
+   "not_in_reference": [
+    "longopen_02",
+    "longopen_03"
+   ],
+   "criterion_met": true
+  }
+ }
+}

@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run timeline</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface: #fcfcfb; --panel: #f4f3f0; --text: #0b0b0b; --text2: #52514e; --grid: #e2e1dc;
+  --compute: #6b6a66; --copy: #c4c3bc; --other: #e6e5e0;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948; --s9: #8a8983;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface: #1a1a19; --panel: #232322; --text: #f0efec; --text2: #c3c2b7; --grid: #363531;
+    --compute: #a8a79f; --copy: #5c5b55; --other: #3a3935;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #0ca30c; --s7: #9085e9; --s8: #e66767; --s9: #7d7c76;
+  }
+}
+body { background: var(--surface); color: var(--text); font: 14px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; margin: 0; padding: 24px 16px 48px; }
+main { max-width: 1160px; margin: 0 auto; }
+h1 { font-size: 20px; margin: 0 0 2px; }
+h2 { font-size: 15px; margin: 34px 0 4px; }
+p.sub, p.note { color: var(--text2); margin: 0 0 10px; max-width: 80ch; }
+svg { display: block; width: 100%; height: auto; }
+svg text { fill: var(--text2); font-size: 11px; }
+svg text.lab { fill: var(--text); font-size: 12px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 8px 0 6px; color: var(--text2); font-size: 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { display: inline-block; width: 14px; height: 12px; border-radius: 2px; }
+.sw.wait { height: 6px; opacity: .5; align-self: flex-end; margin-bottom: 3px; }
+.zoom { display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
+.zoom button { font: inherit; font-size: 12px; color: var(--text); background: var(--panel); border: 1px solid var(--grid); border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+.zoom button[aria-pressed="true"] { border-color: var(--text2); font-weight: 600; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 12.5px; margin: 6px 0; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 4px 12px 4px 0; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--text2); font-weight: 600; }
+th:first-child, td:first-child, td.l, th.l { text-align: left; }
+tr.total td { font-weight: 600; border-top: 1px solid var(--text2); }
+#tip { position: fixed; pointer-events: none; background: var(--panel); color: var(--text); border: 1px solid var(--grid); border-radius: 6px; padding: 6px 9px; font-size: 12px; display: none; max-width: 300px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+</style>
+</head>
+<body>
+<main>
+<h1 id="title">Run timeline</h1>
+<p class="sub" id="sub"></p>
+
+<h2>Time per decode step, by rank</h2>
+<p class="note" id="bars-note"></p>
+<div class="legend" id="legend1"></div>
+<div id="bars"></div>
+<div class="scroll"><table id="bars-table"></table></div>
+
+<h2>Busy share and overlap share</h2>
+<p class="note" id="ov-note"></p>
+<div class="legend" id="legend3"></div>
+<div id="ov"></div>
+<div class="scroll"><table id="ov-table"></table></div>
+
+<h2 id="tl-title">Timeline</h2>
+<p class="note" id="tl-note">Each rank has a compute row and a communication row. The compute row is device time, closed by a device sync. The communication row shows sends, waits and copies between the device and the host. The row "in flight" shows every frame from the start of its send until the receiver has read it: the upper half is a frame this rank sent, the lower half one addressed to it. A color is the other rank. All times are on the coordinator clock.</p>
+<div class="legend" id="legend2"></div>
+<div class="zoom" id="zoom"></div>
+<div id="tl"></div>
+
+<h2>Bytes per link</h2>
+<p class="note">Bytes on the wire, frame headers included, counted by the sender. Decode steps only, then the whole run with prefill.</p>
+<div class="scroll"><table id="links"></table></div>
+
+<h2>Clock alignment</h2>
+<p class="note">Each rank's clock minus the coordinator's clock, from 16 round trips on the control link at the start and at the end of the run. The error is at most half the round trip. The table shows the wall clocks. Events are aligned with the same measurement of the monotonic clocks. The last column compares with the NTP measurement of the two hosts before the run.</p>
+<div class="scroll"><table id="clock"></table></div>
+
+<h2>Samplers per host</h2>
+<div class="scroll"><table id="hosts"></table></div>
+</main>
+<div id="tip"></div>
+<script>
+const D = {"info":{"run_id":"OVc3_gtx_pp2_off_l3_r1","model":"qwen2.5-1.5b-bf16","placement":"experiments/session10_cuda_pair/placements/C1_gtx_15b_bf16_pp2.yaml","date":"2026-11-28T12:54:06+0200"},"ranks":[{"name":"a0/0","host":"gtx","device":"cuda","aligned":true},{"name":"b0/0","host":"gtx","device":"cuda","aligned":true}],"kinds":["compute","host_copy","send","recv_wait","allreduce_wait","other","tx_wait","tx_send"],"window":{"first_step":41,"last_step":43,"ms":182.5078,"req":9,"step_starts_ms":[0.0,65.1169,127.3241]},"spans":[[0,0,-1,0.0175,24.2943,0,41,9,0],[0,1,-1,24.2943,24.4113,0,41,9,0],[0,2,1,24.4113,24.4723,3096,41,9,0],[0,3,1,24.4723,65.1169,16,41,9,0],[0,0,-1,65.1344,100.799,0,42,9,0],[0,1,-1,100.799,100.9334,0,42,9,0],[0,2,1,100.9334,101.0203,3096,42,9,0],[0,3,1,101.0203,127.3241,16,42,9,0],[0,0,-1,127.3426,156.0619,0,43,9,0],[0,1,-1,156.0619,156.1772,0,43,9,0],[0,2,1,156.1772,156.2343,3096,43,9,0],[0,3,1,156.2343,182.5078,16,43,9,0],[1,3,0,0.0,24.8144,3096,41,9,0],[1,1,-1,24.8144,25.0642,0,41,9,0],[1,0,-1,25.0642,64.683,0,41,9,0],[1,2,0,64.683,64.7543,16,41,9,0],[1,3,0,64.7543,101.2985,3096,42,9,0],[1,1,-1,101.2985,101.5666,0,42,9,0],[1,0,-1,101.5666,126.8525,0,42,9,0],[1,2,0,126.8525,126.9233,16,42,9,0],[1,3,0,126.9233,156.5153,3096,43,9,0],[1,1,-1,156.5153,156.7606,0,43,9,0],[1,0,-1,156.7606,182.1015,0,43,9,0],[1,2,0,182.1015,182.1698,16,43,9,0],[1,3,0,182.1698,182.5078,3096,44,9,0]],"flights":[[0,1,24.4113,24.8144,3096,9,0],[0,1,100.9334,101.2985,3096,9,0],[0,1,156.1772,156.5153,3096,9,0],[1,0,64.683,65.1169,16,9,0],[1,0,126.8525,127.3241,16,9,0],[1,0,182.1015,182.5078,16,9,0]],"overlap":{"window_ms":19414.2905,"per_rank":{"a0/0":{"busy_share":0.487255102111509,"overlap_share":0.0,"overlap_out_share":0.0,"overlap_in_share":0.0,"in_flight_share":0.014247583254539356,"compute_ms":9459.7121,"host":"gtx","device":"cuda"},"b0/0":{"busy_share":0.4910215726887013,"overlap_share":0.0,"overlap_out_share":0.0,"overlap_in_share":0.0,"in_flight_share":0.014247583254539356,"compute_ms":9532.835453945312,"host":"gtx","device":"cuda"}},"per_device":{"gtx cuda":{"busy_share":0.9782766748002103,"overlap_share":0.0,"overlap_out_share":0.0,"overlap_in_share":0.0,"in_flight_share":0.014247583254539356,"compute_ms":18992.54755394531,"ranks":["a0/0","b0/0"]}},"links":{"a0/0 -> b0/0":{"frames":320,"sent":320,"received":320,"bytes_match":true,"in_flight_ms_mean":0.40956501745605467},"b0/0 -> a0/0":{"frames":320,"sent":320,"received":320,"bytes_match":true,"in_flight_ms_mean":0.45483098325195315}},"unmatched_links":[],"async_send":false},"per_step":[{"compute":26.876054692556636,"host_copy":0.1324051779935275,"other":0.044831715210355984,"send":{"b0/0":0.061585436893203886},"wait":{"b0/0":27.928752750809036}},{"compute":26.933378289795712,"host_copy":0.2665570381017395,"other":0.0,"send":{"a0/0":0.07379710975424754},"wait":{"a0/0":27.78689116661609}}],"links":[{"from":"a0/0","to":"b0/0","bytes_per_step":3096.0,"bytes":956664},{"from":"b0/0","to":"a0/0","bytes_per_step":16.0,"bytes":4944}],"decode_steps":309,"decode_bytes_per_step":3112.0,"decode_bytes_total":961608,"all_bytes":{"a0/0 -> b0/0":2910720,"b0/0 -> a0/0":3347756},"clock":{"a0/0":{"start":{"offset_mono_ns":0,"offset_wall_ns":0,"rtt_ns":0,"rtt_median_ns":0,"rounds":0,"at_mono_ns":0,"at_wall_ns":0},"end":{"offset_mono_ns":0,"offset_wall_ns":0,"rtt_ns":0,"rtt_median_ns":0,"rounds":0,"at_mono_ns":0,"at_wall_ns":0},"drift":null,"host":"gtx","os":{"os_predicted_ns":0,"gap_ns":0,"disagree":false,"same_host":true}},"b0/0":{"start":{"offset_mono_ns":15500,"offset_wall_ns":15200,"rtt_ns":298400,"rtt_median_ns":375700,"rounds":16,"at_mono_ns":45656514440500,"at_wall_ns":1795863265740231381},"end":{"offset_mono_ns":9000,"offset_wall_ns":8800,"rtt_ns":330000,"rtt_median_ns":445800,"rounds":16,"at_mono_ns":45678225346600,"at_wall_ns":1795863287451137259},"drift":{"drift_ns":-6500,"span_s":21.7109061,"ppm":-0.29938870216015534,"wall_minus_mono_change_ns":100},"host":"gtx","os":{"os_predicted_ns":0,"gap_ns":8800,"disagree":false,"same_host":true}}},"hosts":{"gtx":{"ranks":{"a0/0":{"process_cpu_cores":0.5349470797002859,"samples":1328,"interval_ms_mean":20.271180934438583},"b0/0":{"process_cpu_cores":0.4645244430331495,"samples":1311,"interval_ms_mean":19.999111941704438}},"notes":[],"host_cpu_busy_fraction":0.08302398503557416,"net":{"lo":{"rx_bytes":0,"tx_bytes":0}},"gpu":{"0":{"util_mean_percent":36.61423220973783,"mem_used_max_mib":4557.0,"samples":267}},"gpu_util_mean_percent":36.61423220973783,"gpu_mem_used_max_mib":4557.0,"gpu_samples":267}}};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const col = i => i < 0 ? "var(--s9)" : `var(--s${Math.min(i, 8) + 1})`;
+const f = (x, d = 2) => x == null ? "n/a" : Number(x).toFixed(d);
+const bytes = b => b == null ? "n/a" : b >= 1e6 ? (b / 1e6).toFixed(2) + " MB" : b >= 1e3 ? (b / 1e3).toFixed(1) + " kB" : Math.round(b) + " B";
+const tip = $("tip");
+function showTip(ev, html) { tip.innerHTML = html; tip.style.display = "block"; const w = tip.offsetWidth; tip.style.left = Math.min(ev.clientX + 14, innerWidth - w - 8) + "px"; tip.style.top = (ev.clientY + 14) + "px"; }
+function hideTip() { tip.style.display = "none"; }
+const R = D.ranks, names = R.map(r => r.name);
+const i = D.info || {};
+$("title").textContent = "Run timeline" + (i.run_id ? ": " + i.run_id : "");
+$("sub").textContent = [i.model && "model " + i.model, i.placement && "placement " + i.placement, i.date, R.length + " ranks", D.decode_steps + " decode steps recorded"].filter(Boolean).join(" · ");
+
+function legend(el, withShapes) {
+  let h = `<span><i class="sw" style="background:var(--compute)"></i>compute</span><span><i class="sw" style="background:var(--copy)"></i>copy between device and host</span>`;
+  R.forEach((r, k) => { h += `<span><i class="sw" style="background:${col(k)}"></i>send to ${esc(r.name)}</span><span><i class="sw wait" style="background:${col(k)}"></i>wait for ${esc(r.name)}</span>`; });
+  if (!withShapes) h += `<span><i class="sw" style="background:var(--other)"></i>other</span>`;
+  el.innerHTML = h;
+}
+
+// ---- stacked bars: mean ms per decode step ----
+(function () {
+  const segs = D.per_step.map((p, k) => {
+    const a = [["compute", "var(--compute)", 1, p.compute, null], ["copy between device and host", "var(--copy)", 1, p.host_copy, null]];
+    names.forEach((n, j) => { if (p.send[n]) a.push(["send to " + n, col(j), 1, p.send[n], n]); if (p.wait[n]) a.push(["wait for " + n, col(j), .5, p.wait[n], n]); });
+    if (p.other > 0) a.push(["other", "var(--other)", 1, p.other, null]);
+    return a;
+  });
+  const tot = segs.map(a => a.reduce((s, x) => s + x[3], 0)), max = Math.max(...tot, 1e-9);
+  const W = 1100, L = 190, Rm = 80, rowH = 26, gap = 12, H = R.length * (rowH + gap) + 34, pw = W - L - Rm;
+  const ticks = niceTicks(0, max, 6);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Mean time per decode step by rank">`;
+  ticks.forEach(t => { const x = L + t / max * pw; s += `<line x1="${x}" x2="${x}" y1="0" y2="${H - 30}" stroke="var(--grid)"/><text x="${x}" y="${H - 16}" text-anchor="middle">${f(t, t < 10 ? 1 : 0)}</text>`; });
+  s += `<text x="${L + pw / 2}" y="${H - 2}" text-anchor="middle">mean time per decode step (ms)</text>`;
+  R.forEach((r, k) => {
+    const y = k * (rowH + gap) + 2; let x = L;
+    s += `<rect x="6" y="${y + 7}" width="10" height="12" rx="2" fill="${col(k)}"/><text class="lab" x="22" y="${y + 12}">${esc(r.name)}</text><text x="22" y="${y + 25}">${esc(r.host)} · ${esc(r.device)}</text>`;
+    segs[k].forEach((g, j) => { const w = g[3] / max * pw; if (w > 0) s += `<rect data-b="${k},${j}" x="${x + 1}" y="${y}" width="${Math.max(w - 2, .5)}" height="${rowH}" rx="2" fill="${g[1]}" opacity="${g[2]}"/>`; x += w; });
+    s += `<text class="lab" x="${x + 6}" y="${y + 17}">${f(tot[k])} ms</text>`;
+  });
+  $("bars").innerHTML = s + "</svg>";
+  $("bars").addEventListener("mousemove", ev => { const b = ev.target.getAttribute && ev.target.getAttribute("data-b"); if (!b) return hideTip(); const [k, j] = b.split(",").map(Number), g = segs[k][j]; showTip(ev, `<b>${esc(R[k].name)}</b><br>${esc(g[0])}<br>${f(g[3], 3)} ms per step (${f(100 * g[3] / tot[k], 1)}%)`); });
+  $("bars").addEventListener("mouseleave", hideTip);
+  $("bars-note").textContent = `Mean over ${D.decode_steps} decode steps. A step of a rank starts when the frame that triggers it arrives, so the wait before it is part of the step.`;
+  let t = "<tr><th>rank</th><th>total ms</th><th>compute</th><th>copy</th><th>send</th><th>wait</th><th>other</th><th>compute share</th></tr>";
+  D.per_step.forEach((p, k) => { const sd = Object.values(p.send).reduce((a, b) => a + b, 0), wt = Object.values(p.wait).reduce((a, b) => a + b, 0); t += `<tr><td>${esc(R[k].name)} (${esc(R[k].host)})</td><td>${f(tot[k])}</td><td>${f(p.compute)}</td><td>${f(p.host_copy)}</td><td>${f(sd)}</td><td>${f(wt)}</td><td>${f(p.other)}</td><td>${f(100 * p.compute / (tot[k] || 1), 1)}%</td></tr>`; });
+  $("bars-table").innerHTML = t;
+  legend($("legend1"), false);
+})();
+
+function niceTicks(a, b, n) { const span = b - a || 1, raw = span / n, p = Math.pow(10, Math.floor(Math.log10(raw))), m = [1, 2, 5, 10].find(m => m * p >= raw) * p, out = []; for (let t = Math.ceil(a / m) * m; t <= b + 1e-9; t += m) out.push(Math.round(t / m) * m); return out; }
+
+// ---- busy and overlap share ----
+(function () {
+  const o = D.overlap;
+  if (!o) { $("ov").innerHTML = "<p class='note'>No request interval was recorded.</p>"; return; }
+  const pc = x => f(100 * x, 1) + "%";
+  $("legend3").innerHTML = `<span><i class="sw" style="background:var(--text)"></i>computing while a frame of this rank is in flight</span><span><i class="sw" style="background:var(--compute)"></i>computing, nothing in flight</span><span><i class="sw" style="background:var(--other)"></i>not computing</span>`;
+  const W = 1100, L = 190, Rm = 190, rowH = 22, gap = 12, H = R.length * (rowH + gap) + 34, pw = W - L - Rm;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Busy share and overlap share by rank">`;
+  [0, 25, 50, 75, 100].forEach(t => { const x = L + t / 100 * pw; s += `<line x1="${x}" x2="${x}" y1="0" y2="${H - 30}" stroke="var(--grid)"/><text x="${x}" y="${H - 16}" text-anchor="middle">${t}%</text>`; });
+  s += `<text x="${L + pw / 2}" y="${H - 2}" text-anchor="middle">share of the time in which a request was in work</text>`;
+  R.forEach((r, k) => {
+    const v = o.per_rank[r.name] || { busy_share: 0, overlap_share: 0 }, y = k * (rowH + gap) + 2;
+    const a = v.overlap_share * pw, b = (v.busy_share - v.overlap_share) * pw;
+    s += `<rect x="6" y="${y + 5}" width="10" height="12" rx="2" fill="${col(k)}"/><text class="lab" x="22" y="${y + 10}">${esc(r.name)}</text><text x="22" y="${y + 23}">${esc(r.host)} · ${esc(r.device)}</text>`;
+    s += `<rect x="${L}" y="${y}" width="${pw}" height="${rowH}" rx="2" fill="var(--other)"/>`;
+    if (a > 0) s += `<rect data-o="${k},0" x="${L}" y="${y}" width="${Math.max(a - 1, .5)}" height="${rowH}" rx="2" fill="var(--text)"/>`;
+    if (b > 0) s += `<rect data-o="${k},1" x="${L + a + 1}" y="${y}" width="${Math.max(b - 1, .5)}" height="${rowH}" rx="2" fill="var(--compute)"/>`;
+    s += `<text class="lab" x="${L + pw + 8}" y="${y + 15}">busy ${pc(v.busy_share)} · overlap ${pc(v.overlap_share)}</text>`;
+  });
+  $("ov").innerHTML = s + "</svg>";
+  $("ov").addEventListener("mousemove", ev => { const d = ev.target.getAttribute && ev.target.getAttribute("data-o"); if (!d) return hideTip(); const [k, j] = d.split(",").map(Number), v = o.per_rank[R[k].name];
+    showTip(ev, `<b>${esc(R[k].name)}</b><br>${j ? "computing, nothing in flight: " + pc(v.busy_share - v.overlap_share) : "computing with a frame in flight: " + pc(v.overlap_share)}<br>compute ${f(v.compute_ms, 1)} ms of ${f(o.window_ms, 1)} ms`); });
+  $("ov").addEventListener("mouseleave", hideTip);
+  let t = "<tr><th>rank or device</th><th>busy share</th><th>overlap share</th><th>with a frame it sent</th><th>with a frame addressed to it</th><th>a frame in flight</th><th>compute ms</th></tr>";
+  const row = (n, v) => `<tr><td>${esc(n)}</td><td>${pc(v.busy_share)}</td><td>${pc(v.overlap_share)}</td><td>${pc(v.overlap_out_share)}</td><td>${pc(v.overlap_in_share)}</td><td>${pc(v.in_flight_share)}</td><td>${f(v.compute_ms, 1)}</td></tr>`;
+  R.forEach(r => { if (o.per_rank[r.name]) t += row(r.name + " (" + r.host + ")", o.per_rank[r.name]); });
+  Object.entries(o.per_device || {}).forEach(([n, v]) => { t += row("device " + n + ": " + v.ranks.join(", "), v); });
+  $("ov-table").innerHTML = t;
+  $("ov-note").textContent = `Over the ${f(o.window_ms, 1)} ms in which at least one request was in work. Busy: the rank computes. Overlap: it computes while a frame it sent, or one addressed to it, is in flight. A frame is in flight from the start of its send until the receiver has read it (so a frame that waits in the buffer of a busy receiver counts), on aligned clocks (error at most half a round trip).`
+    + (o.async_send ? " This run sent off the compute thread: a compute span is the time of the compute thread, not of the device." : "")
+    + (o.unmatched_links && o.unmatched_links.length ? " Sends and receives do not match on: " + o.unmatched_links.join(", ") + "." : "");
+})();
+
+// ---- timeline ----
+(function () {
+  const w = D.window;
+  if (!w) { $("tl").innerHTML = "<p class='note'>No decode steps were recorded.</p>"; return; }
+  $("tl-title").textContent = `Timeline of decode steps ${w.first_step} to ${w.last_step} (request ${w.req})`;
+  legend($("legend2"), true);
+  if (D.overlap && D.overlap.async_send) $("tl-note").textContent += " This run sent off the compute thread: the compute row is the time of the compute thread, which no longer waits for the device, and the sender thread has its own row.";
+  const K = D.kinds, isTx = k => K[k] === "tx_wait" || K[k] === "tx_send";
+  const hasTx = D.spans.some(sp => isTx(sp[1])), hasFl = (D.flights || []).length > 0;
+  const rowNames = ["compute", "communication"].concat(hasTx ? ["sender thread"] : []).concat(hasFl ? ["in flight"] : []);
+  const txRow = hasTx ? 2 : -1, flRow = hasFl ? rowNames.length - 1 : -1, nr = rowNames.length;
+  const rows = R.map(() => rowNames.map(() => []));
+  D.spans.forEach(sp => rows[sp[0]][K[sp[1]] === "compute" ? 0 : isTx(sp[1]) ? txRow : 1].push(sp));
+  // a frame in flight shows on both ends: [rank, "out" or "in", other rank, t0, t1, bytes, null, request, slot]
+  (D.flights || []).forEach(fl => { rows[fl[0]][flRow].push([fl[0], "out", fl[1], fl[2], fl[3], fl[4], null, fl[5], fl[6]]); rows[fl[1]][flRow].push([fl[1], "in", fl[0], fl[2], fl[3], fl[4], null, fl[5], fl[6]]); });
+  rows.forEach(r => r.forEach(x => x.sort((a, b) => a[3] - b[3])));
+  const W = 1100, L = 190, Rm = 14, rh = 20, pair = nr * rh + (nr - 1) * 6, gap = 14, top = 6, H = top + R.length * (pair + gap) + 34, pw = W - L - Rm;
+  const starts = w.step_starts_ms.concat([w.ms]);
+  let dom = [0, w.ms];
+  const zb = [["all " + (starts.length - 1) + " steps", 0, w.ms]].concat(starts.slice(0, -1).map((s, k) => ["step " + (w.first_step + k), s, starts[k + 1]]));
+  $("zoom").innerHTML = zb.map((z, k) => `<button data-z="${k}" aria-pressed="${k === 0}">${z[0]}</button>`).join("");
+  $("zoom").addEventListener("click", ev => { const k = ev.target.getAttribute("data-z"); if (k == null) return; dom = [zb[k][1], zb[k][2]]; [...$("zoom").children].forEach((b, j) => b.setAttribute("aria-pressed", j == k)); draw(); });
+  const X = t => L + (t - dom[0]) / (dom[1] - dom[0]) * pw;
+  const kindOf = sp => typeof sp[1] === "string" ? sp[1] : K[sp[1]];
+  function draw() {
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Timeline per rank"><defs><clipPath id="cp"><rect x="${L}" y="0" width="${pw}" height="${H}"/></clipPath></defs>`;
+    niceTicks(dom[0], dom[1], 8).forEach(t => { s += `<line x1="${X(t)}" x2="${X(t)}" y1="0" y2="${H - 30}" stroke="var(--grid)"/><text x="${X(t)}" y="${H - 16}" text-anchor="middle">${f(t, (dom[1] - dom[0]) < 20 ? 1 : 0)}</text>`; });
+    s += `<text x="${L + pw / 2}" y="${H - 2}" text-anchor="middle">time since the start of step ${w.first_step} (ms), coordinator clock</text>`;
+    starts.slice(0, -1).forEach((t, k) => { if (t >= dom[0] && t <= dom[1]) s += `<line x1="${X(t)}" x2="${X(t)}" y1="0" y2="${H - 30}" stroke="var(--text2)" stroke-dasharray="3 3"/>`; });
+    R.forEach((r, k) => {
+      const y = top + k * (pair + gap);
+      s += `<rect x="6" y="${y + 4}" width="10" height="12" rx="2" fill="${col(k)}"/><text class="lab" x="22" y="${y + 14}">${esc(r.name)}</text><text x="22" y="${y + 27}">${esc(r.host)} · ${esc(r.device)}${r.aligned ? "" : " · clock not aligned"}</text>`;
+      rowNames.forEach((n, ri) => { s += `<text x="${L - 6}" y="${y + ri * (rh + 6) + 14}" text-anchor="end">${n}</text><rect x="${L}" y="${y + ri * (rh + 6)}" width="${pw}" height="${rh}" fill="var(--panel)"/>`; });
+      s += `<g clip-path="url(#cp)">`;
+      rows[k].forEach((row, ri) => row.forEach(sp => {
+        if (sp[4] < dom[0] || sp[3] > dom[1]) return;
+        const x = X(sp[3]), wd = Math.max(X(sp[4]) - x, .6), kind = kindOf(sp), y0 = y + ri * (rh + 6);
+        if (kind === "compute") s += `<rect x="${x}" y="${y0}" width="${wd}" height="${rh}" fill="var(--compute)"/>`;
+        else if (kind === "host_copy" || kind === "tx_wait") s += `<rect x="${x}" y="${y0}" width="${wd}" height="${rh}" fill="var(--copy)"/>`;
+        else if (kind === "send" || kind === "tx_send") s += `<rect x="${x}" y="${y0}" width="${wd}" height="${rh}" fill="${col(sp[2])}"/>`;
+        else if (kind === "out") s += `<rect x="${x}" y="${y0}" width="${wd}" height="${rh / 2 - 1}" fill="${col(sp[2])}"/>`;
+        else if (kind === "in") s += `<rect x="${x}" y="${y0 + rh / 2 + 1}" width="${wd}" height="${rh / 2 - 1}" fill="${col(sp[2])}" opacity=".5"/>`;
+        else s += `<rect x="${x}" y="${y0 + rh / 2}" width="${wd}" height="${rh / 2}" fill="${col(sp[2])}" opacity=".5"/>`;
+      }));
+      s += "</g>";
+    });
+    $("tl").innerHTML = s + "</svg>";
+  }
+  draw();
+  const label = { compute: "compute", host_copy: "copy between device and host", send: "send to", recv_wait: "wait for", allreduce_wait: "wait for (all-reduce)",
+                  tx_wait: "sender thread: wait for the tensor on the host", tx_send: "sender thread: send to", out: "frame in flight to", in: "frame in flight from" };
+  $("tl").addEventListener("mousemove", ev => {
+    const svg = $("tl").querySelector("svg"), bb = svg.getBoundingClientRect(), sx = W / bb.width, px = (ev.clientX - bb.left) * sx, py = (ev.clientY - bb.top) * sx;
+    const k = Math.floor((py - top) / (pair + gap)); if (k < 0 || k >= R.length || px < L) return hideTip();
+    const yy = py - top - k * (pair + gap), ri = yy >= 0 && yy < pair && yy % (rh + 6) < rh ? Math.floor(yy / (rh + 6)) : -1; if (ri < 0) return hideTip();
+    const t = dom[0] + (px - L) / pw * (dom[1] - dom[0]), tol = (dom[1] - dom[0]) / pw * 2;
+    let best = null; for (const sp of rows[k][ri]) { if (sp[3] - tol <= t && t <= sp[4] + tol && (!best || sp[4] - sp[3] < best[4] - best[3])) best = sp; if (sp[3] > t + tol) break; }
+    if (!best) return hideTip();
+    const kind = kindOf(best);
+    showTip(ev, `<b>${esc(R[k].name)}</b>${best[6] != null ? " · step " + best[6] : ""} · request ${best[7]}, slot ${best[8]}<br>${label[kind]}${best[2] >= 0 ? " " + esc(names[best[2]]) : ""}<br>${f(best[4] - best[3], 3)} ms${best[5] ? " · " + bytes(best[5]) : ""}<br>at ${f(best[3], 3)} ms`);
+  });
+  $("tl").addEventListener("mouseleave", hideTip);
+})();
+
+// ---- tables ----
+(function () {
+  let t = "<tr><th>link (sender to receiver)</th><th>bytes per decode step</th><th>decode total</th><th>whole run</th></tr>", all = 0;
+  const seen = new Set();
+  D.links.forEach(l => { const k = l.from + " -> " + l.to; seen.add(k); const a = D.all_bytes[k] || 0; t += `<tr><td>${esc(l.from)} to ${esc(l.to)}</td><td>${bytes(l.bytes_per_step)}</td><td>${bytes(l.bytes)}</td><td>${bytes(a)}</td></tr>`; });
+  Object.entries(D.all_bytes).forEach(([k, a]) => { all += a; if (!seen.has(k)) t += `<tr><td>${esc(k.replace(" -> ", " to "))}</td><td>0 B</td><td>0 B</td><td>${bytes(a)}</td></tr>`; });
+  t += `<tr class="total"><td>this configuration, all links</td><td>${bytes(D.decode_bytes_per_step)}</td><td>${bytes(D.decode_bytes_total)}</td><td>${bytes(all)}</td></tr>`;
+  $("links").innerHTML = t;
+  let c = "<tr><th>rank</th><th class='l'>host</th><th>offset at start (ms)</th><th>round trip (ms)</th><th>offset at end (ms)</th><th>drift during the run (µs)</th><th>drift (ppm)</th><th>gap to the OS time sync (ms)</th><th>bound of the OS sync (ms)</th></tr>";
+  Object.entries(D.clock || {}).forEach(([n, v]) => { const s = v.start || {}, e = v.end, d = v.drift, o = v.os || {};
+    c += `<tr><td>${esc(n)}</td><td class="l">${esc(v.host || "")}</td><td>${f(s.offset_wall_ns / 1e6, 3)}</td><td>${f(s.rtt_ns / 1e6, 3)}</td><td>${e ? f(e.offset_wall_ns / 1e6, 3) : "n/a"}</td><td>${d ? f(d.drift_ns / 1e3, 1) : "n/a"}</td><td>${d && d.ppm != null ? f(d.ppm, 2) : "n/a"}</td><td>${o.gap_ns != null ? f(o.gap_ns / 1e6, 2) + (o.disagree ? " (over 2 ms)" : "") : "n/a"}</td><td>${o.os_bound_ns != null ? f(o.os_bound_ns / 1e6, 1) : (o.same_host ? "same host" : "n/a")}</td></tr>`; });
+  $("clock").innerHTML = c;
+  let h = "<tr><th>host</th><th>host CPU busy</th><th class='l'>process CPU (cores) per rank</th><th class='l'>network bytes in / out</th><th>GPU util mean</th><th class='l'>notes</th></tr>";
+  Object.entries(D.hosts || {}).forEach(([n, v]) => {
+    const pr = Object.entries(v.ranks || {}).map(([r, x]) => `${esc(r)} ${f(x.process_cpu_cores)}`).join(", ");
+    const net = Object.entries(v.net || {}).map(([k, x]) => `${esc(k)} ${bytes(x.rx_bytes)} / ${bytes(x.tx_bytes)}`).join(", ");
+    h += `<tr><td>${esc(n)}</td><td>${v.host_cpu_busy_fraction != null ? f(100 * v.host_cpu_busy_fraction, 1) + "%" : "n/a"}</td><td class="l">${pr}</td><td class="l">${net || "n/a"}</td><td>${v.gpu_util_mean_percent != null ? f(v.gpu_util_mean_percent, 1) + "%" : "n/a"}</td><td class="l">${esc((v.notes || []).join("; "))}</td></tr>`; });
+  $("hosts").innerHTML = h;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1380 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "OVc_pair_tp2_off_r1",
+ "date": "2026-11-28T12:04:32+0200",
+ "placement": {
+  "file": "experiments/session10_cuda_pair/placements/C4_gtx_pc_15b_bf16_tp2.yaml",
+  "sha256": "5a2901e28ccf20d6dc8b995e6762aa77c6991affb42ced977d9ee7931e5ec7e0",
+  "yaml": "# Session 10 part 3, CUDA check (not an experiment row): the pair as one TP group, for the interleaved pair and the async send on two CUDA machines\nmodel: qwen2.5-1.5b-bf16\ncoordinator: {host: gtx}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nstages:\n  - name: s0\n    layers: [0, 28]\n    embed: true\n    lm_head: true\n    ranks:\n      - {host: gtx, device: cuda, port: 50070}\n      - {host: pc, device: cuda, port: 50070}\n"
+ },
+ "git": {
+  "sha": "1d39b45f10a9893992f2dd6696528e57585714af",
+  "dirty": false
+ },
+ "args": {
+  "placement": "experiments/session10_cuda_pair/placements/C4_gtx_pc_15b_bf16_tp2.yaml",
+  "session_dir": "experiments/session10_cuda_pair",
+  "run_id": "OVc_pair_tp2_off_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "experiments/session7_hetero/runs/R0_qwen2.5-1.5b-bf16_cuda_gtx_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "transformers_dir": null,
+  "tokenizer_dir": null,
+  "force": false,
+  "mps_fraction_cap": false,
+  "timeline": true,
+  "ship_weights": true,
+  "cache_dir": null,
+  "verify_cache": false,
+  "stall_timeout": 300.0,
+  "slots": 1,
+  "prefill_chunk": 0,
+  "tp_interleave": 1,
+  "async_send": false,
+  "dtype": null
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "qwen2.5-1.5b-bf16",
+  "dir": "~/models/hf/Qwen2.5-1.5B-Instruct",
+  "sha256": {
+   "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  }
+ },
+ "coordinator": {
+  "host": "gtx",
+  "hostname": "Ohad",
+  "operator_hostname": "MMF4FWRG4R",
+  "remote": true,
+  "run_dir": "~/.nocturne/runs/OVc_pair_tp2_off_r1"
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 2,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 0,
+   "q1": 6,
+   "m0": 0,
+   "m1": 4480,
+   "kv0": 0,
+   "kv1": 1,
+   "embed_rows": [
+    0,
+    76032
+   ],
+   "head_rows": [
+    0,
+    76032
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1543998464,
+    "kv": 58720256,
+    "workspace": 28931584,
+    "total": 1631650304,
+    "layer_bytes": 46800896,
+    "vocab_bytes": 233570304,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1631650304
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s0/1",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 1,
+   "group_size": 2,
+   "host": "pc",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 6,
+   "q1": 12,
+   "m0": 4480,
+   "m1": 8960,
+   "kv0": 1,
+   "kv1": 2,
+   "embed_rows": [
+    76032,
+    151936
+   ],
+   "head_rows": [
+    76032,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1543605248,
+    "kv": 58720256,
+    "workspace": 28930816,
+    "total": 1631256320,
+    "layer_bytes": 46800896,
+    "vocab_bytes": 233177088,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1631256320
+   }
+  }
+ ],
+ "planner_host": "Ohad",
+ "planned_hosts": {
+  "gtx": {
+   "ranks": [
+    "s0/0"
+   ],
+   "planned": 1631650304,
+   "processes": 1,
+   "process_overhead": 157286400,
+   "total": 1788936704,
+   "budget": null
+  },
+  "pc": {
+   "ranks": [
+    "s0/1"
+   ],
+   "planned": 1631256320,
+   "processes": 1,
+   "process_overhead": 157286400,
+   "total": 1788542720,
+   "budget": null
+  }
+ },
+ "frames": {
+  "predicted": {
+   "token": 1,
+   "embed": 2,
+   "layers": 112,
+   "hops": 0,
+   "head": 1,
+   "total": 116
+  },
+  "prefill_predicted": 1044,
+  "prefill_measured": 1044,
+  "prefill_holds": true,
+  "prefill_chunks": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "decode_steps": 279,
+  "measured_per_step": 116.0,
+  "bytes_per_step": 352988.0,
+  "per_link_per_step": {
+   "s0/0->s0/1": {
+    "sent_frames": 57.0,
+    "sent_bytes": 176472.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 176472.0
+   },
+   "s0/0->ctl:s0/1": {
+    "sent_frames": 1.0,
+    "sent_bytes": 28.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s0/1->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 28.0
+   },
+   "s0/1->s0/0": {
+    "sent_frames": 57.0,
+    "sent_bytes": 176472.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 176472.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "gtx": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA GeForce GTX 1070, 8192 MiB, 624 MiB, 582.78",
+    "engine_sha256": "52c12ab5eb76ec069a9a2d564921bf0b00330653d8f677a99c682e1ef870080c",
+    "timesync": {
+     "host": "Ohad",
+     "os": "Linux",
+     "at": "2026-11-28T12:04:42+0200",
+     "at_unix": 1795860282.894012,
+     "sntp": {
+      "server": "time.apple.com",
+      "server_ip": "17.253.38.43",
+      "stratum": 1,
+      "samples": 4,
+      "asked": 4,
+      "offset_s": 0.13563096523284912,
+      "delay_s": 0.060343027114868164,
+      "bound_s": 0.030171513557434082,
+      "spread_s": 0.009163260459899902
+     },
+     "os_service": {
+      "tool": "chronyc",
+      "source": "PHC0",
+      "offset_s": 4.73e-07,
+      "last_sync_utc": "Sat Nov 28 10:04:32 2026",
+      "wsl": true,
+      "windows": {
+       "tool": "w32tm",
+       "source": "time.windows.com,0x9",
+       "last_sync": "11/28/2026 8:07:31 AM"
+      }
+     },
+     "last_set": null
+    },
+    "psutil": "7.2.2",
+    "transformers": "5.23.0",
+    "model_sha256": {
+     "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+     "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+     "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+   },
+   "pc": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA RTX 2000 Ada Generation Laptop GPU, 8188 MiB, 0 MiB, 596.58",
+    "engine_sha256": "52c12ab5eb76ec069a9a2d564921bf0b00330653d8f677a99c682e1ef870080c",
+    "timesync": {
+     "host": "lioryahel",
+     "os": "Linux",
+     "at": "2026-11-28T12:04:50+0200",
+     "at_unix": 1795860290.6890032,
+     "sntp": {
+      "server": "time.apple.com",
+      "server_ip": "17.253.14.45",
+      "stratum": 1,
+      "samples": 3,
+      "asked": 4,
+      "offset_s": -0.20300686359405518,
+      "delay_s": 0.05863547325134277,
+      "bound_s": 0.029317736625671387,
+      "spread_s": 0.0262068510055542
+     },
+     "os_service": {
+      "tool": "timedatectl",
+      "source": "ntp.ubuntu.com",
+      "offset_s": -0.321879,
+      "wsl": true,
+      "windows": {
+       "tool": "w32tm",
+       "source": "Local CMOS Clock",
+       "last_sync": "unspecified"
+      }
+     },
+     "last_set": null
+    },
+    "psutil": "7.2.2"
+   }
+  },
+  "coordinator": "gtx",
+  "ship_weights": true
+ },
+ "collected": {
+  "gtx": [
+   "coordinator_record.json",
+   "first_logits.npz",
+   "job.json",
+   "plan.json",
+   "samples_rank_s0_0.jsonl.gz",
+   "timeline_s0_0.jsonl.gz"
+  ],
+  "pc": [
+   "samples_rank_s0_1.jsonl.gz",
+   "timeline_s0_1.jsonl.gz"
+  ]
+ },
+ "commands": [
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx hostname"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx mkdir -p ~/.nocturne/runs/OVc_pair_tp2_off_r1 && cat > ~/.nocturne/runs/OVc_pair_tp2_off_r1/job.json"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job \"$HOME\"/.nocturne/runs/OVc_pair_tp2_off_r1/job.json --tag OVc_pair_tp2_off_r1 --plan-only"
+  },
+  {
+   "host": "pc",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 p16v /home/t-lioryahel/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 192.168.1.239 --port 50070 --device cuda --name s0/1 --tag OVc_pair_tp2_off_r1 --run-dir \"$HOME\"/.nocturne/runs/OVc_pair_tp2_off_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job \"$HOME\"/.nocturne/runs/OVc_pair_tp2_off_r1/job.json --tag OVc_pair_tp2_off_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx cd ~/.nocturne/runs/OVc_pair_tp2_off_r1 2>/dev/null && tar -cf - ."
+  },
+  {
+   "host": "pc",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 p16v cd ~/.nocturne/runs/OVc_pair_tp2_off_r1 2>/dev/null && tar -cf - ."
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx pkill -f -- '--tag OVc_pair_tp2_off_r1( |$)'"
+  },
+  {
+   "host": "pc",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 p16v pkill -f -- '--tag OVc_pair_tp2_off_r1( |$)'"
+  }
+ ],
+ "load_s": 78.18619441986084,
+ "link_counters": {
+  "s0/0": {
+   "s0/1": {
+    "sent_frames": 16416,
+    "recv_frames": 16417,
+    "sent_bytes": 136975104,
+    "recv_bytes": 136975146,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 49235688,
+     "recv_frames": 15903,
+     "recv_bytes": 49235688
+    },
+    "by_kind_sent": {
+     "allreduce": 16416
+    }
+   },
+   "ctl:s0/1": {
+    "sent_frames": 1236,
+    "recv_frames": 616,
+    "sent_bytes": 1543645899,
+    "recv_bytes": 1381321,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 7812,
+     "recv_frames": 279,
+     "recv_bytes": 4464
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "weights": 927,
+     "clock": 17,
+     "metrics": 2,
+     "token": 288
+    }
+   }
+  },
+  "s0/1": {
+   "ctl": {
+    "sent_frames": 616,
+    "recv_frames": 1236,
+    "sent_bytes": 1381321,
+    "recv_bytes": 1543645899,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 4464,
+     "recv_frames": 279,
+     "recv_bytes": 7812
+    },
+    "by_kind_sent": {
+     "weights": 310,
+     "ready": 1,
+     "clock": 16,
+     "metrics_reply": 1,
+     "head": 288
+    }
+   },
+   "s0/0": {
+    "sent_frames": 16417,
+    "recv_frames": 16416,
+    "sent_bytes": 136975146,
+    "recv_bytes": 136975104,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 49235688,
+     "recv_frames": 15903,
+     "recv_bytes": 49235688
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 16416
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "s0/0",
+   "gid": 0,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 26645,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 1543998464,
+   "kv_bytes": 58720256,
+   "idle": {
+    "peak_rss_bytes": 619589632
+   },
+   "planned": {
+    "weights": 1543998464,
+    "kv": 58720256,
+    "workspace": 28931584,
+    "total": 1631650304,
+    "layer_bytes": 46800896,
+    "vocab_bytes": 233570304,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1631650304
+   },
+   "budget": null,
+   "load_s": 2.2393553256988525,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "shipping": null,
+   "slots": 1,
+   "async_send": null,
+   "current_allocated_bytes": 1674181632,
+   "driver_allocated_bytes": 1690304512,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 5840568320,
+   "max_allocated_bytes": 1678300672,
+   "peak_rss_bytes": 2698428416
+  },
+  {
+   "name": "s0/1",
+   "gid": 1,
+   "host": "pc",
+   "device": "cuda",
+   "pid": 3759,
+   "torch": "2.14.1+cu130",
+   "loaded_tensor_bytes": 1543605248,
+   "kv_bytes": 58720256,
+   "idle": {
+    "peak_rss_bytes": 640376832
+   },
+   "planned": {
+    "weights": 1543605248,
+    "kv": 58720256,
+    "workspace": 28930816,
+    "total": 1631256320,
+    "layer_bytes": 46800896,
+    "vocab_bytes": 233177088,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1631256320
+   },
+   "budget": null,
+   "load_s": 0.6659114360809326,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "shipping": {
+    "manifest_bytes": 1543605248,
+    "manifest_slices": 338,
+    "received_bytes": 1543516160,
+    "received_slices": 309,
+    "cache_bytes": 89088,
+    "duplicate_bytes": 0,
+    "hash_checks": 309,
+    "chunks": 616,
+    "cache_verified_slices": 0,
+    "recv_s": 68.96304941177368,
+    "cache_dir": "/home/t-lioryahel/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef"
+   },
+   "slots": 1,
+   "async_send": null,
+   "current_allocated_bytes": 1673788416,
+   "driver_allocated_bytes": 1688207360,
+   "cuda_name": "NVIDIA RTX 2000 Ada Generation Laptop GPU",
+   "vram_total_bytes": 8585216000,
+   "vram_free_bytes": 5723127808,
+   "max_allocated_bytes": 1676883456,
+   "peak_rss_bytes": 1366740992
+  }
+ ],
+ "requests": [
+  {
+   "req": 1,
+   "rid": "arith_01",
+   "prompt_n": 46,
+   "n_gen": 4,
+   "t0_mono_ns": 42769711472500,
+   "first_token_mono_ns": 42771664891900,
+   "t1_mono_ns": 42773142287300
+  },
+  {
+   "req": 2,
+   "rid": "arith_02",
+   "prompt_n": 47,
+   "n_gen": 4,
+   "t0_mono_ns": 42773144078400,
+   "first_token_mono_ns": 42773953890100,
+   "t1_mono_ns": 42775389742300
+  },
+  {
+   "req": 3,
+   "rid": "arith_03",
+   "prompt_n": 44,
+   "n_gen": 4,
+   "t0_mono_ns": 42775390028800,
+   "first_token_mono_ns": 42776110058200,
+   "t1_mono_ns": 42777528806400
+  },
+  {
+   "req": 4,
+   "rid": "arith_04",
+   "prompt_n": 45,
+   "n_gen": 3,
+   "t0_mono_ns": 42777529385600,
+   "first_token_mono_ns": 42778230511900,
+   "t1_mono_ns": 42778981541100
+  },
+  {
+   "req": 5,
+   "rid": "arith_05",
+   "prompt_n": 58,
+   "n_gen": 4,
+   "t0_mono_ns": 42778981971000,
+   "first_token_mono_ns": 42779907181300,
+   "t1_mono_ns": 42781371121700
+  },
+  {
+   "req": 6,
+   "rid": "arith_06",
+   "prompt_n": 47,
+   "n_gen": 3,
+   "t0_mono_ns": 42781371414000,
+   "first_token_mono_ns": 42782188817600,
+   "t1_mono_ns": 42783152228500
+  },
+  {
+   "req": 7,
+   "rid": "extract_01",
+   "prompt_n": 67,
+   "n_gen": 4,
+   "t0_mono_ns": 42783152524400,
+   "first_token_mono_ns": 42784134456000,
+   "t1_mono_ns": 42785608850900
+  },
+  {
+   "req": 8,
+   "rid": "extract_02",
+   "prompt_n": 69,
+   "n_gen": 6,
+   "t0_mono_ns": 42785609236100,
+   "first_token_mono_ns": 42786691180200,
+   "t1_mono_ns": 42788926399500
+  },
+  {
+   "req": 9,
+   "rid": "longopen_01",
+   "prompt_n": 78,
+   "n_gen": 256,
+   "t0_mono_ns": 42788926717000,
+   "first_token_mono_ns": 42790160468700,
+   "t1_mono_ns": 42926573779900
+  }
+ ],
+ "shipping": {
+  "model_sha256": "e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef",
+  "model_files": {
+   "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  },
+  "kind": "safetensors",
+  "manifest_s": 6.13261342048645,
+  "slices_hashed": 309,
+  "ranks": {
+   "s0/1": {
+    "manifest_bytes": 1543605248,
+    "manifest_slices": 338,
+    "shipped_bytes": 1543516160,
+    "shipped_slices": 309,
+    "chunks": 616,
+    "ship_s": 68.92254662513733,
+    "received_bytes": 1543516160,
+    "received_slices": 309,
+    "cache_bytes": 89088,
+    "duplicate_bytes": 0,
+    "hash_checks": 309,
+    "cache_verified_slices": 0,
+    "recv_s": 68.96304941177368,
+    "cache_dir": "/home/t-lioryahel/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef",
+    "loaded_tensor_bytes": 1543605248,
+    "planned_weight_bytes": 1543605248,
+    "stored_minus_loaded_bytes": 0
+   }
+  },
+  "ship_s": 68.92254662513733,
+  "agrees_with_preflight": true
+ },
+ "torch_coordinator": "2.14.1+cu126",
+ "overlap": {
+  "slots": 1,
+  "prefill_chunk": 0,
+  "tp_interleave": 1,
+  "async_send": false,
+  "on": false
+ },
+ "throughput": {
+  "wall_s": 156.86290788650513,
+  "tokens": 288,
+  "tokens_per_s": 1.8359980946443781,
+  "note": "all prompts, prefill included; background (T1)"
+ },
+ "clock": {
+  "s0/0": {
+   "start": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "end": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "drift": null,
+   "host": "gtx",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": 0,
+    "disagree": false,
+    "same_host": true
+   }
+  },
+  "s0/1": {
+   "start": {
+    "offset_mono_ns": -35283276287063,
+    "offset_wall_ns": 413544793,
+    "rtt_ns": 3864500,
+    "rtt_median_ns": 6048900,
+    "rounds": 16,
+    "at_mono_ns": 42767304094450,
+    "at_wall_ns": 1795860376529880929
+   },
+   "end": {
+    "offset_mono_ns": -35283276982272,
+    "offset_wall_ns": 405259846,
+    "rtt_ns": 5575800,
+    "rtt_median_ns": 6023700,
+    "rounds": 16,
+    "at_mono_ns": 42927513687800,
+    "at_wall_ns": 1795860536739476461
+   },
+   "drift": {
+    "drift_ns": -695209,
+    "span_s": 160.20959335,
+    "ppm": -4.339371853227415,
+    "wall_minus_mono_change_ns": -7589738
+   },
+   "host": "pc",
+   "os": {
+    "os_predicted_ns": 338637829,
+    "gap_ns": 66622017,
+    "disagree": true,
+    "os_bound_ns": 59489250
+   }
+  }
+ },
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 492.4640655517578,
+   "text": "936",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 478.6161581675212,
+   "text": "543",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt_n": 44,
+   "tokens": [
+    19,
+    18,
+    22,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 472.9154904683431,
+   "text": "437",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt_n": 45,
+   "tokens": [
+    16,
+    17,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 375.5134344100952,
+   "text": "12",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_05",
+   "kind": "eval",
+   "prompt_n": 58,
+   "tokens": [
+    16,
+    20,
+    15,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 487.9802068074544,
+   "text": "150",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_06",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 481.7047119140625,
+   "text": "36",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "extract_01",
+   "kind": "eval",
+   "prompt_n": 67,
+   "tokens": [
+    35,
+    3362,
+    55041,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 491.46461486816406,
+   "text": "Dana Levi",
+   "category": "extraction",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "extract_02",
+   "kind": "eval",
+   "prompt_n": 69,
+   "tokens": [
+    14003,
+    220,
+    18,
+    16,
+    16,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 447.0436096191406,
+   "text": "Room 311",
+   "category": "extraction",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "longopen_01",
+   "kind": "long",
+   "prompt_n": 78,
+   "tokens": [
+    32,
+    2114,
+    17220,
+    26299,
+    3922,
+    23377,
+    264,
+    2766,
+    4269,
+    504,
+    279,
+    7602,
+    311,
+    264,
+    20638,
+    1526,
+    264,
+    4013,
+    315,
+    7354,
+    15860,
+    59175,
+    11,
+    2615,
+    3501,
+    11,
+    8887,
+    11744,
+    11,
+    323,
+    10151,
+    18368,
+    13,
+    5692,
+    748,
+    264,
+    43799,
+    16148,
+    1447,
+    16,
+    13,
+    3070,
+    9523,
+    323,
+    9549,
+    5126,
+    95518,
+    576,
+    9273,
+    374,
+    279,
+    8622,
+    18719,
+    315,
+    279,
+    17220,
+    26299,
+    3922,
+    13,
+    1084,
+    33061,
+    311,
+    279,
+    7602,
+    323,
+    65098,
+    264,
+    20739,
+    8286,
+    429,
+    1008,
+    7611,
+    646,
+    5258,
+    13,
+    1527,
+    2615,
+    1459,
+    374,
+    264,
+    943,
+    315,
+    9273,
+    429,
+    374,
+    11689,
+    6188,
+    311,
+    3410,
+    264,
+    20739,
+    3922,
+    369,
+    264,
+    3151,
+    3082,
+    11,
+    1075,
+    264,
+    2114,
+    476,
+    5163,
+    382,
+    17,
+    13,
+    3070,
+    37845,
+    1717,
+    27230,
+    95518,
+    576,
+    9273,
+    65098,
+    264,
+    20739,
+    8286,
+    429,
+    14521,
+    264,
+    3654,
+    3082,
+    13,
+    1096,
+    8286,
+    374,
+    29447,
+    311,
+    279,
+    19020,
+    7912,
+    714,
+    646,
+    387,
+    16507,
+    553,
+    7611,
+    429,
+    525,
+    2878,
+    2088,
+    13,
+    576,
+    8286,
+    374,
+    1075,
+    264,
+    8887,
+    12060,
+    429,
+    23377,
+    821,
+    382,
+    18,
+    13,
+    3070,
+    16679,
+    47025,
+    95518,
+    3197,
+    264,
+    2766,
+    4269,
+    374,
+    3208,
+    504,
+    279,
+    7602,
+    11,
+    432,
+    374,
+    10865,
+    1495,
+    1119,
+    9155,
+    8153,
+    2598,
+    27035,
+    13,
+    8886,
+    10151,
+    5610,
+    264,
+    2613,
+    949,
+    315,
+    279,
+    2766,
+    821,
+    13,
+    576,
+    9273,
+    21189,
+    1493,
+    27035,
+    323,
+    21308,
+    1105,
+    311,
+    279,
+    2615,
+    1459,
+    382,
+    19,
+    13,
+    3070,
+    6054,
+    5126,
+    95518,
+    576,
+    2615,
+    1459,
+    21189,
+    279,
+    27035,
+    323,
+    21308,
+    1105,
+    311,
+    279,
+    20638,
+    13,
+    576,
+    20638,
+    374,
+    8433,
+    311,
+    279,
+    2615,
+    1459,
+    1526,
+    264,
+    52121,
+    476,
+    20739,
+    3633,
+    13,
+    576,
+    20638,
+    646,
+    1221,
+    5258,
+    279,
+    2766,
+    4269,
+    323,
+    3037,
+    432,
+    389,
+    279,
+    4171,
+    382,
+    20,
+    13,
+    3070,
+    28203,
+    62900
+   ],
+   "finish": "length",
+   "ms_per_step": 534.9541654773788,
+   "text": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving routers, access points, radio channels, and packet transmission. Here\u2019s a simplified explanation:\n\n1. **Router and Access Point**: The router is the central hub of the Wi-Fi network. It connects to the internet and broadcasts a wireless signal that other devices can receive. An access point is a type of router that is specifically designed to provide a wireless network for a specific area, like a home or office.\n\n2. **Wireless Signal**: The router broadcasts a wireless signal that covers a certain area. This signal is invisible to the naked eye but can be detected by devices that are within range. The signal is like a radio wave that carries data.\n\n3. **Packet Transmission**: When a video stream is sent from the internet, it is broken down into smaller units called packets. Each packet contains a small part of the video data. The router receives these packets and sends them to the access point.\n\n4. **Access Point**: The access point receives the packets and sends them to the laptop. The laptop is connected to the access point through a wired or wireless connection. The laptop can then receive the video stream and display it on the screen.\n\n5. **Radio Channels"
+  }
+ ],
+ "timeline": {
+  "decode_steps": 279,
+  "per_rank_ms_per_step": {
+   "s0/0": {
+    "host": "gtx",
+    "device": "cuda",
+    "total_ms": 529.1857071684592,
+    "compute": 160.96021541218644,
+    "host_copy": 40.49878315412185,
+    "send": 3.5997401433691745,
+    "recv_wait": 12.335734767025087,
+    "allreduce_wait": 311.71817921146953,
+    "other": 0.07305448028673839,
+    "decode_steps": 279
+   },
+   "s0/1": {
+    "host": "pc",
+    "device": "cuda",
+    "total_ms": 529.9380494799502,
+    "compute": 196.9270670876456,
+    "host_copy": 58.02653514280911,
+    "send": 3.3271402411234323,
+    "recv_wait": 9.437550487119177,
+    "allreduce_wait": 262.2197565212533,
+    "other": 0.0,
+    "decode_steps": 279
+   }
+  },
+  "links": {
+   "s0/0 -> s0/1": {
+    "from": "s0/0",
+    "to": "s0/1",
+    "bytes": 49243500,
+    "bytes_per_step": 176500.0
+   },
+   "s0/1 -> s0/0": {
+    "from": "s0/1",
+    "to": "s0/0",
+    "bytes": 49240152,
+    "bytes_per_step": 176488.0
+   }
+  },
+  "decode_bytes_total": 98483652,
+  "decode_bytes_per_step": 352988.0,
+  "overlap": {
+   "window_ms": 156857.9298,
+   "per_rank": {
+    "s0/0": {
+     "busy_share": 0.30911590419319684,
+     "overlap_share": 0.23913399364594556,
+     "overlap_out_share": 0.11268993629208482,
+     "overlap_in_share": 0.12644405735386074,
+     "in_flight_share": 0.9032857998499679,
+     "compute_ms": 48487.2808,
+     "host": "gtx",
+     "device": "cuda"
+    },
+    "s0/1": {
+     "busy_share": 0.36989731748312643,
+     "overlap_share": 0.3005146284654774,
+     "overlap_out_share": 0.08579018609149558,
+     "overlap_in_share": 0.21472444237398183,
+     "in_flight_share": 0.9032857998499679,
+     "compute_ms": 58021.327458976564,
+     "host": "pc",
+     "device": "cuda"
+    }
+   },
+   "per_device": {
+    "gtx cuda": {
+     "busy_share": 0.30911590419319684,
+     "overlap_share": 0.23913399364594556,
+     "overlap_out_share": 0.11268993629208482,
+     "overlap_in_share": 0.12644405735386074,
+     "in_flight_share": 0.9032857998499679,
+     "compute_ms": 48487.2808,
+     "ranks": [
+      "s0/0"
+     ]
+    },
+    "pc cuda": {
+     "busy_share": 0.36989731748312643,
+     "overlap_share": 0.3005146284654774,
+     "overlap_out_share": 0.08579018609149558,
+     "overlap_in_share": 0.21472444237398183,
+     "in_flight_share": 0.9032857998499679,
+     "compute_ms": 58021.327458976564,
+     "ranks": [
+      "s0/1"
+     ]
+    }
+   },
+   "links": {
+    "s0/0 -> s0/1": {
+     "frames": 16704,
+     "sent": 16704,
+     "received": 16704,
+     "bytes_match": true,
+     "in_flight_ms_mean": 4.574286363043189
+    },
+    "s0/1 -> s0/0": {
+     "frames": 16704,
+     "sent": 16704,
+     "received": 16704,
+     "bytes_match": true,
+     "in_flight_ms_mean": 5.880150393580879
+    }
+   },
+   "unmatched_links": [],
+   "async_send": false
+  },
+  "hosts": {
+   "gtx": {
+    "ranks": {
+     "s0/0": {
+      "process_cpu_cores": 0.3674438292862744,
+      "samples": 11905,
+      "interval_ms_mean": 20.038630804771504
+     }
+    },
+    "notes": [],
+    "host_cpu_busy_fraction": 0.0304700996295382,
+    "net": {
+     "eth0": {
+      "rx_bytes": 144321013,
+      "tx_bytes": 1684642719
+     }
+    },
+    "gpu": {
+     "0": {
+      "util_mean_percent": 17.210815378115758,
+      "mem_used_max_mib": 2349.0,
+      "samples": 2367
+     }
+    },
+    "gpu_util_mean_percent": 17.210815378115758,
+    "gpu_mem_used_max_mib": 2349.0,
+    "gpu_samples": 2367
+   },
+   "pc": {
+    "ranks": {
+     "s0/1": {
+      "process_cpu_cores": 0.4328878853966779,
+      "samples": 11498,
+      "interval_ms_mean": 20.002362837005034
+     }
+    },
+    "notes": [],
+    "host_cpu_busy_fraction": 0.04082919828173228,
+    "net": {
+     "eth1": {
+      "rx_bytes": 1686170173,
+      "tx_bytes": 142810239
+     }
+    },
+    "gpu": {
+     "0": {
+      "util_mean_percent": 22.337511190689348,
+      "mem_used_max_mib": 1731.0,
+      "samples": 2234
+     }
+    },
+    "gpu_util_mean_percent": 22.337511190689348,
+    "gpu_mem_used_max_mib": 1731.0,
+    "gpu_samples": 2234
+   }
+  },
+  "events": {
+   "s0/0": 83241,
+   "s0/1": 82944
+  },
+  "all_bytes": {
+   "s0/0 -> s0/1": 136987104,
+   "s0/1 -> s0/0": 138346020
+  },
+  "files": [
+   "trace.json.gz",
+   "breakdown.csv",
+   "timeline.html",
+   "timeline_s0_0.jsonl.gz",
+   "timeline_s0_1.jsonl.gz",
+   "samples_gtx.jsonl",
+   "samples_pc.jsonl",
+   "samples_rank_s0_0.jsonl.gz",
+   "samples_rank_s0_1.jsonl.gz"
+  ],
+  "not_aligned": []
+ },
+ "correctness": {
+  "experiments/session7_hetero/runs/R0_qwen2.5-1.5b-bf16_cuda_gtx_r1": {
+   "reference": "R0_qwen2.5-1.5b-bf16_cuda_gtx_r1",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 3,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 54
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.5,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.3125,
+    "arith_02": 0.265625,
+    "arith_03": 0.40625,
+    "arith_04": 0.5,
+    "arith_05": 0.4140625,
+    "arith_06": 0.390625,
+    "extract_01": 0.4375,
+    "extract_02": 0.3125,
+    "longopen_01": 0.25
+   },
+   "long_first_div": {
+    "longopen_01": 54
+   },
+   "criterion_met": true
+  }
+ }
+}

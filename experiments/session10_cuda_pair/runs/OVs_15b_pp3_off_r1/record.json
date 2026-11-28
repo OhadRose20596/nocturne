@@ -1,0 +1,1532 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "OVs_15b_pp3_off_r1",
+ "date": "2026-11-28T12:06:41+0200",
+ "placement": {
+  "file": "experiments/session10_cuda_pair/placements/S10_q8_15b_pp3.yaml",
+  "sha256": "b8e1fa8d92097771206452ba110f54fa008a6a92d184197b9d0dc32efc758afc",
+  "yaml": "# Session 10 V3: 1.5B Q8_0, pipeline over three stages, all on the M5 loopback\nmodel: ~/models/gguf/Qwen2.5-1.5B-Instruct-Q8_0.gguf\ncoordinator: {host: m5}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nstages:\n  - name: s0\n    layers: [0, 9]\n    embed: true\n    ranks:\n      - {host: m5, device: mps, port: 50070}\n  - name: s1\n    layers: [9, 19]\n    ranks:\n      - {host: m5, device: mps, port: 50071}\n  - name: s2\n    layers: [19, 28]\n    lm_head: true\n    ranks:\n      - {host: m5, device: mps, port: 50072}\n"
+ },
+ "git": {
+  "sha": "1d39b45f10a9893992f2dd6696528e57585714af",
+  "dirty": false
+ },
+ "args": {
+  "placement": "experiments/session10_cuda_pair/placements/S10_q8_15b_pp3.yaml",
+  "session_dir": "experiments/session10_cuda_pair",
+  "run_id": "OVs_15b_pp3_off_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "experiments/engine_gguf/runs/B1_q8_1.5b_1rank_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "transformers_dir": null,
+  "tokenizer_dir": null,
+  "force": false,
+  "mps_fraction_cap": false,
+  "timeline": true,
+  "ship_weights": true,
+  "cache_dir": "/private/tmp/claude-501/-Users-orosentswaig-Library-Mobile-Documents-com-apple-CloudDocs-Documents------------------------nocturne/5a5953c6-361b-4d46-bd6a-8ee1643507e1/scratchpad/s10_cache",
+  "verify_cache": false,
+  "stall_timeout": 300.0,
+  "slots": 1,
+  "prefill_chunk": 0,
+  "tp_interleave": 1,
+  "async_send": false,
+  "dtype": null
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "~/models/gguf/Qwen2.5-1.5B-Instruct-Q8_0.gguf",
+  "dir": "~/models/gguf/Qwen2.5-1.5B-Instruct-Q8_0.gguf",
+  "sha256": {
+   "Qwen2.5-1.5B-Instruct-Q8_0.gguf": "5926a692b27bc90f12815ce8326593becea3dae459cf5c250579d7ce0ffff8d7"
+  }
+ },
+ "coordinator": {
+  "host": "m5",
+  "hostname": "MMF4FWRG4R",
+  "operator_hostname": "MMF4FWRG4R",
+  "remote": false,
+  "run_dir": "/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne/experiments/session10_cuda_pair/runs/OVs_15b_pp3_off_r1"
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    9
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": [
+    0,
+    151936
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 695506944,
+    "kv": 37748736,
+    "workspace": 453312512,
+    "total": 1186568192,
+    "layer_bytes": 49727488,
+    "vocab_bytes": 247959552,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 1186568192
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s1/0",
+   "stage": 1,
+   "stage_name": "s1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50071,
+   "layers": [
+    9,
+    19
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": null,
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 497274880,
+    "kv": 41943040,
+    "workspace": 380960768,
+    "total": 920178688,
+    "layer_bytes": 49727488,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 1073741824
+   }
+  },
+  {
+   "gid": 2,
+   "name": "s2/0",
+   "stage": 2,
+   "stage_name": "s2",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50072,
+   "layers": [
+    19,
+    28
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 695510016,
+    "kv": 37748736,
+    "workspace": 454224128,
+    "total": 1187482880,
+    "layer_bytes": 49727488,
+    "vocab_bytes": 247959552,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 1187482880
+   }
+  }
+ ],
+ "planner_host": "MMF4FWRG4R",
+ "planned_hosts": {
+  "m5": {
+   "ranks": [
+    "s0/0",
+    "s1/0",
+    "s2/0"
+   ],
+   "planned": 3447792896,
+   "processes": 3,
+   "process_overhead": 629145600,
+   "total": 4076938496,
+   "budget": null
+  }
+ },
+ "frames": {
+  "predicted": {
+   "token": 0,
+   "embed": 0,
+   "layers": 0,
+   "hops": 2,
+   "head": 1,
+   "total": 3
+  },
+  "prefill_predicted": 27,
+  "prefill_measured": 27,
+  "prefill_holds": true,
+  "prefill_chunks": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "decode_steps": 279,
+  "measured_per_step": 3.0,
+  "bytes_per_step": 6208.0,
+  "per_link_per_step": {
+   "s0/0->s1/0": {
+    "sent_frames": 1.0,
+    "sent_bytes": 3096.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s0/0->ctl:s1/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s0/0->ctl:s2/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s1/0->ctl": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s1/0->s0/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 3096.0
+   },
+   "s1/0->s2/0": {
+    "sent_frames": 1.0,
+    "sent_bytes": 3096.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s2/0->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s2/0->s1/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 3096.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "m5": {
+    "os": "Darwin",
+    "caffeinate": "on",
+    "awdl": "up",
+    "vpn_state": "disconnected",
+    "engine_sha256": "52c12ab5eb76ec069a9a2d564921bf0b00330653d8f677a99c682e1ef870080c",
+    "timesync": {
+     "host": "MMF4FWRG4R",
+     "os": "Darwin",
+     "at": "2026-11-28T12:06:44+0200",
+     "at_unix": 1795860404.414169,
+     "sntp": {
+      "server": "time.apple.com",
+      "server_ip": "17.253.14.37",
+      "stratum": 1,
+      "samples": 4,
+      "asked": 4,
+      "offset_s": 0.17342674732208252,
+      "delay_s": 0.0591580867767334,
+      "bound_s": 0.0295790433883667,
+      "spread_s": 0.024468421936035156
+     },
+     "os_service": {
+      "tool": "sntp",
+      "source": "time.apple.com",
+      "offset_s": 0.173292,
+      "err_s": 0.062161
+     },
+     "last_set": null
+    },
+    "psutil": "7.2.2",
+    "transformers": "5.21.0",
+    "model_sha256": {
+     "Qwen2.5-1.5B-Instruct-Q8_0.gguf": "5926a692b27bc90f12815ce8326593becea3dae459cf5c250579d7ce0ffff8d7"
+    }
+   }
+  },
+  "coordinator": "m5",
+  "ship_weights": true
+ },
+ "collected": {},
+ "commands": [
+  {
+   "host": "m5",
+   "cmd": "hostname"
+  },
+  {
+   "host": "m5",
+   "cmd": "mkdir -p '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne/experiments/session10_cuda_pair/runs/OVs_15b_pp3_off_r1' && cat > '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne/experiments/session10_cuda_pair/runs/OVs_15b_pp3_off_r1'/job.json"
+  },
+  {
+   "host": "m5",
+   "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne/experiments/session10_cuda_pair/runs/OVs_15b_pp3_off_r1/job.json' --tag OVs_15b_pp3_off_r1 --plan-only"
+  },
+  {
+   "host": "m5",
+   "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50071 --device mps --name s1/0 --tag OVs_15b_pp3_off_r1 --run-dir '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne/experiments/session10_cuda_pair/runs/OVs_15b_pp3_off_r1' --cache-dir /private/tmp/claude-501/-Users-orosentswaig-Library-Mobile-Documents-com-apple-CloudDocs-Documents------------------------nocturne/5a5953c6-361b-4d46-bd6a-8ee1643507e1/scratchpad/s10_cache"
+  },
+  {
+   "host": "m5",
+   "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 127.0.0.1 --port 50072 --device mps --name s2/0 --tag OVs_15b_pp3_off_r1 --run-dir '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne/experiments/session10_cuda_pair/runs/OVs_15b_pp3_off_r1' --cache-dir /private/tmp/claude-501/-Users-orosentswaig-Library-Mobile-Documents-com-apple-CloudDocs-Documents------------------------nocturne/5a5953c6-361b-4d46-bd6a-8ee1643507e1/scratchpad/s10_cache"
+  },
+  {
+   "host": "m5",
+   "cmd": "/Users/orosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job '/Users/orosentswaig/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u05d0\u05d5\u05e0\u05d9\u05d1\u05e8\u05e1\u05d9\u05d8\u05d4/\u05e4\u05e8\u05d5\u05d9\u05d9\u05e7\u05d8 \u05d2\u05de\u05e8/nocturne/experiments/session10_cuda_pair/runs/OVs_15b_pp3_off_r1/job.json' --tag OVs_15b_pp3_off_r1"
+  },
+  {
+   "host": "m5",
+   "cmd": "pkill -f -- '--tag OVs_15b_pp3_off_r1( |$)'"
+  }
+ ],
+ "load_s": 3.2282228469848633,
+ "link_counters": {
+  "s0/0": {
+   "s1/0": {
+    "sent_frames": 290,
+    "recv_frames": 1,
+    "sent_bytes": 2403104,
+    "recv_bytes": 42,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 863784,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "metrics": 2,
+     "hidden": 288
+    }
+   },
+   "ctl:s1/0": {
+    "sent_frames": 351,
+    "recv_frames": 139,
+    "sent_bytes": 497420306,
+    "recv_bytes": 7265,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "weights": 332,
+     "clock": 17
+    }
+   },
+   "ctl:s2/0": {
+    "sent_frames": 381,
+    "recv_frames": 417,
+    "sent_bytes": 695645782,
+    "recv_bytes": 2746032,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 4464
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "weights": 362,
+     "clock": 17
+    }
+   }
+  },
+  "s1/0": {
+   "ctl": {
+    "sent_frames": 139,
+    "recv_frames": 351,
+    "sent_bytes": 7265,
+    "recv_bytes": 497420306,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "weights": 121,
+     "ready": 1,
+     "clock": 16,
+     "metrics_reply": 1
+    }
+   },
+   "s0/0": {
+    "sent_frames": 1,
+    "recv_frames": 290,
+    "sent_bytes": 42,
+    "recv_bytes": 2403104,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 863784
+    },
+    "by_kind_sent": {
+     "hello": 1
+    }
+   },
+   "s2/0": {
+    "sent_frames": 290,
+    "recv_frames": 1,
+    "sent_bytes": 2403104,
+    "recv_bytes": 42,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 863784,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "metrics": 2,
+     "hidden": 288
+    }
+   }
+  },
+  "s2/0": {
+   "ctl": {
+    "sent_frames": 417,
+    "recv_frames": 381,
+    "sent_bytes": 2746032,
+    "recv_bytes": 695645782,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 4464,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "weights": 111,
+     "ready": 1,
+     "clock": 16,
+     "metrics_reply": 1,
+     "head": 288
+    }
+   },
+   "s1/0": {
+    "sent_frames": 1,
+    "recv_frames": 290,
+    "sent_bytes": 42,
+    "recv_bytes": 2403104,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 279,
+     "recv_bytes": 863784
+    },
+    "by_kind_sent": {
+     "hello": 1
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "s0/0",
+   "gid": 0,
+   "host": "m5",
+   "device": "mps",
+   "pid": 97368,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 695506944,
+   "kv_bytes": 37748736,
+   "idle": {
+    "peak_rss_bytes": 841334784,
+    "phys_footprint_bytes": 708576576,
+    "lifetime_max_phys_footprint_bytes": 708576576
+   },
+   "planned": {
+    "weights": 695506944,
+    "kv": 37748736,
+    "workspace": 453312512,
+    "total": 1186568192,
+    "layer_bytes": 49727488,
+    "vocab_bytes": 247959552,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 1186568192
+   },
+   "budget": null,
+   "load_s": 0.08275294303894043,
+   "steps": 288,
+   "allreduce_calls": 0,
+   "shipping": null,
+   "slots": 1,
+   "async_send": null,
+   "current_allocated_bytes": 739389696,
+   "driver_allocated_bytes": 1099628544,
+   "peak_rss_bytes": 2583429120,
+   "phys_footprint_bytes": 2041662488,
+   "lifetime_max_phys_footprint_bytes": 2304658288
+  },
+  {
+   "name": "s1/0",
+   "gid": 1,
+   "host": "m5",
+   "device": "mps",
+   "pid": 97360,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 497274880,
+   "kv_bytes": 41943040,
+   "idle": {
+    "peak_rss_bytes": 329924608,
+    "phys_footprint_bytes": 202425280,
+    "lifetime_max_phys_footprint_bytes": 202425280
+   },
+   "planned": {
+    "weights": 497274880,
+    "kv": 41943040,
+    "workspace": 380960768,
+    "total": 920178688,
+    "layer_bytes": 49727488,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 1073741824
+   },
+   "budget": null,
+   "load_s": 1.257218837738037,
+   "steps": 288,
+   "allreduce_calls": 0,
+   "shipping": {
+    "manifest_bytes": 497377280,
+    "manifest_slices": 120,
+    "received_bytes": 497377280,
+    "received_slices": 120,
+    "cache_bytes": 0,
+    "duplicate_bytes": 0,
+    "hash_checks": 120,
+    "chunks": 210,
+    "cache_verified_slices": 0,
+    "recv_s": 0.7847678661346436,
+    "cache_dir": "/private/tmp/claude-501/-Users-orosentswaig-Library-Mobile-Documents-com-apple-CloudDocs-Documents------------------------nocturne/5a5953c6-361b-4d46-bd6a-8ee1643507e1/scratchpad/s10_cache/5926a692b27bc90f12815ce8326593becea3dae459cf5c250579d7ce0ffff8d7"
+   },
+   "slots": 1,
+   "async_send": null,
+   "current_allocated_bytes": 541926912,
+   "driver_allocated_bytes": 1099628544,
+   "peak_rss_bytes": 351469568,
+   "phys_footprint_bytes": 1329824800,
+   "lifetime_max_phys_footprint_bytes": 1340441632
+  },
+  {
+   "name": "s2/0",
+   "gid": 2,
+   "host": "m5",
+   "device": "mps",
+   "pid": 97361,
+   "torch": "2.14.1",
+   "loaded_tensor_bytes": 695510016,
+   "kv_bytes": 37748736,
+   "idle": {
+    "peak_rss_bytes": 329515008,
+    "phys_footprint_bytes": 202032088,
+    "lifetime_max_phys_footprint_bytes": 202032088
+   },
+   "planned": {
+    "weights": 695510016,
+    "kv": 37748736,
+    "workspace": 454224128,
+    "total": 1187482880,
+    "layer_bytes": 49727488,
+    "vocab_bytes": 247959552,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 1187482880
+   },
+   "budget": null,
+   "load_s": 1.09440279006958,
+   "steps": 288,
+   "allreduce_calls": 0,
+   "shipping": {
+    "manifest_bytes": 695605248,
+    "manifest_slices": 110,
+    "received_bytes": 695605248,
+    "received_slices": 110,
+    "cache_bytes": 0,
+    "duplicate_bytes": 0,
+    "hash_checks": 110,
+    "chunks": 250,
+    "cache_verified_slices": 0,
+    "recv_s": 0.922929048538208,
+    "cache_dir": "/private/tmp/claude-501/-Users-orosentswaig-Library-Mobile-Documents-com-apple-CloudDocs-Documents------------------------nocturne/5a5953c6-361b-4d46-bd6a-8ee1643507e1/scratchpad/s10_cache/5926a692b27bc90f12815ce8326593becea3dae459cf5c250579d7ce0ffff8d7"
+   },
+   "slots": 1,
+   "async_send": null,
+   "current_allocated_bytes": 739395840,
+   "driver_allocated_bytes": 2173370368,
+   "peak_rss_bytes": 352731136,
+   "phys_footprint_bytes": 2406728760,
+   "lifetime_max_phys_footprint_bytes": 2413052984
+  }
+ ],
+ "requests": [
+  {
+   "req": 1,
+   "rid": "arith_01",
+   "prompt_n": 46,
+   "n_gen": 4,
+   "t0_mono_ns": 107145987879791,
+   "first_token_mono_ns": 107146759797250,
+   "t1_mono_ns": 107148077774375
+  },
+  {
+   "req": 2,
+   "rid": "arith_02",
+   "prompt_n": 47,
+   "n_gen": 4,
+   "t0_mono_ns": 107148077901250,
+   "first_token_mono_ns": 107148545999416,
+   "t1_mono_ns": 107149835657125
+  },
+  {
+   "req": 3,
+   "rid": "arith_03",
+   "prompt_n": 44,
+   "n_gen": 4,
+   "t0_mono_ns": 107149835740583,
+   "first_token_mono_ns": 107150304855875,
+   "t1_mono_ns": 107151610376750
+  },
+  {
+   "req": 4,
+   "rid": "arith_04",
+   "prompt_n": 45,
+   "n_gen": 3,
+   "t0_mono_ns": 107151610482458,
+   "first_token_mono_ns": 107152078258416,
+   "t1_mono_ns": 107152939809333
+  },
+  {
+   "req": 5,
+   "rid": "arith_05",
+   "prompt_n": 58,
+   "n_gen": 4,
+   "t0_mono_ns": 107152939899000,
+   "first_token_mono_ns": 107153403765291,
+   "t1_mono_ns": 107154703099500
+  },
+  {
+   "req": 6,
+   "rid": "arith_06",
+   "prompt_n": 47,
+   "n_gen": 3,
+   "t0_mono_ns": 107154703196458,
+   "first_token_mono_ns": 107155158264500,
+   "t1_mono_ns": 107156017368208
+  },
+  {
+   "req": 7,
+   "rid": "extract_01",
+   "prompt_n": 67,
+   "n_gen": 4,
+   "t0_mono_ns": 107156017442750,
+   "first_token_mono_ns": 107156494895166,
+   "t1_mono_ns": 107157779721041
+  },
+  {
+   "req": 8,
+   "rid": "extract_02",
+   "prompt_n": 69,
+   "n_gen": 6,
+   "t0_mono_ns": 107157779809416,
+   "first_token_mono_ns": 107158246426625,
+   "t1_mono_ns": 107160418745333
+  },
+  {
+   "req": 9,
+   "rid": "longopen_01",
+   "prompt_n": 78,
+   "n_gen": 256,
+   "t0_mono_ns": 107160418825791,
+   "first_token_mono_ns": 107160884903750,
+   "t1_mono_ns": 107270083195333
+  }
+ ],
+ "shipping": {
+  "model_sha256": "5926a692b27bc90f12815ce8326593becea3dae459cf5c250579d7ce0ffff8d7",
+  "model_files": {
+   "Qwen2.5-1.5B-Instruct-Q8_0.gguf": "5926a692b27bc90f12815ce8326593becea3dae459cf5c250579d7ce0ffff8d7"
+  },
+  "kind": "gguf",
+  "manifest_s": 1.029214859008789,
+  "slices_hashed": 230,
+  "ranks": {
+   "s1/0": {
+    "manifest_bytes": 497377280,
+    "manifest_slices": 120,
+    "shipped_bytes": 497377280,
+    "shipped_slices": 120,
+    "chunks": 210,
+    "ship_s": 0.7871899604797363,
+    "received_bytes": 497377280,
+    "received_slices": 120,
+    "cache_bytes": 0,
+    "duplicate_bytes": 0,
+    "hash_checks": 120,
+    "cache_verified_slices": 0,
+    "recv_s": 0.7847678661346436,
+    "cache_dir": "/private/tmp/claude-501/-Users-orosentswaig-Library-Mobile-Documents-com-apple-CloudDocs-Documents------------------------nocturne/5a5953c6-361b-4d46-bd6a-8ee1643507e1/scratchpad/s10_cache/5926a692b27bc90f12815ce8326593becea3dae459cf5c250579d7ce0ffff8d7",
+    "loaded_tensor_bytes": 497274880,
+    "planned_weight_bytes": 497274880,
+    "stored_minus_loaded_bytes": 102400
+   },
+   "s2/0": {
+    "manifest_bytes": 695605248,
+    "manifest_slices": 110,
+    "shipped_bytes": 695605248,
+    "shipped_slices": 110,
+    "chunks": 250,
+    "ship_s": 0.9252598285675049,
+    "received_bytes": 695605248,
+    "received_slices": 110,
+    "cache_bytes": 0,
+    "duplicate_bytes": 0,
+    "hash_checks": 110,
+    "cache_verified_slices": 0,
+    "recv_s": 0.922929048538208,
+    "cache_dir": "/private/tmp/claude-501/-Users-orosentswaig-Library-Mobile-Documents-com-apple-CloudDocs-Documents------------------------nocturne/5a5953c6-361b-4d46-bd6a-8ee1643507e1/scratchpad/s10_cache/5926a692b27bc90f12815ce8326593becea3dae459cf5c250579d7ce0ffff8d7",
+    "loaded_tensor_bytes": 695510016,
+    "planned_weight_bytes": 695510016,
+    "stored_minus_loaded_bytes": 95232
+   }
+  },
+  "ship_s": 0.9252598285675049,
+  "agrees_with_preflight": true
+ },
+ "torch_coordinator": "2.14.1",
+ "overlap": {
+  "slots": 1,
+  "prefill_chunk": 0,
+  "tp_interleave": 1,
+  "async_send": false,
+  "on": false
+ },
+ "throughput": {
+  "wall_s": 124.09472107887268,
+  "tokens": 288,
+  "tokens_per_s": 2.320807827247959,
+  "note": "all prompts, prefill included; background (T1)"
+ },
+ "clock": {
+  "s0/0": {
+   "start": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "end": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "drift": null,
+   "host": "m5",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": 0,
+    "disagree": false,
+    "same_host": true
+   }
+  },
+  "s1/0": {
+   "start": {
+    "offset_mono_ns": -2166,
+    "offset_wall_ns": -2500,
+    "rtt_ns": 131000,
+    "rtt_median_ns": 144416,
+    "rounds": 16,
+    "at_mono_ns": 107141646507291,
+    "at_wall_ns": 1795860413285532500
+   },
+   "end": {
+    "offset_mono_ns": -6312,
+    "offset_wall_ns": -5687,
+    "rtt_ns": 177375,
+    "rtt_median_ns": 189583,
+    "rounds": 16,
+    "at_mono_ns": 107270652240478,
+    "at_wall_ns": 1795860542290375687
+   },
+   "drift": {
+    "drift_ns": -4146,
+    "span_s": 129.005733187,
+    "ppm": -0.03213810655988579,
+    "wall_minus_mono_change_ns": 959
+   },
+   "host": "m5",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": -5687,
+    "disagree": false,
+    "same_host": true
+   }
+  },
+  "s2/0": {
+   "start": {
+    "offset_mono_ns": -5208,
+    "offset_wall_ns": -5458,
+    "rtt_ns": 156917,
+    "rtt_median_ns": 194875,
+    "rounds": 16,
+    "at_mono_ns": 107141650470166,
+    "at_wall_ns": 1795860413289495458
+   },
+   "end": {
+    "offset_mono_ns": -2208,
+    "offset_wall_ns": -2458,
+    "rtt_ns": 100917,
+    "rtt_median_ns": 111542,
+    "rounds": 16,
+    "at_mono_ns": 107270654745916,
+    "at_wall_ns": 1795860542292881458
+   },
+   "drift": {
+    "drift_ns": 3000,
+    "span_s": 129.00427575,
+    "ppm": 0.02325504315697071,
+    "wall_minus_mono_change_ns": 0
+   },
+   "host": "m5",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": -2458,
+    "disagree": false,
+    "same_host": true
+   }
+  }
+ },
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 439.32199478149414,
+   "text": "936",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 429.88260587056476,
+   "text": "543",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt_n": 44,
+   "tokens": [
+    19,
+    18,
+    22,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 435.1702531178792,
+   "text": "437",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt_n": 45,
+   "tokens": [
+    16,
+    17,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 430.77194690704346,
+   "text": "12",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_05",
+   "kind": "eval",
+   "prompt_n": 58,
+   "tokens": [
+    16,
+    20,
+    15,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 433.1084092458089,
+   "text": "150",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_06",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 429.54862117767334,
+   "text": "36",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "extract_01",
+   "kind": "eval",
+   "prompt_n": 67,
+   "tokens": [
+    35,
+    3362,
+    55041,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 428.2723267873128,
+   "text": "Dana Levi",
+   "category": "extraction",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "extract_02",
+   "kind": "eval",
+   "prompt_n": 69,
+   "tokens": [
+    14003,
+    220,
+    18,
+    16,
+    16,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 434.4606399536133,
+   "text": "Room 311",
+   "category": "extraction",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "longopen_01",
+   "kind": "long",
+   "prompt_n": 78,
+   "tokens": [
+    32,
+    2114,
+    17220,
+    26299,
+    3922,
+    23377,
+    264,
+    2766,
+    4269,
+    504,
+    279,
+    7602,
+    311,
+    264,
+    20638,
+    1526,
+    264,
+    4013,
+    315,
+    7354,
+    15860,
+    264,
+    9273,
+    11,
+    2615,
+    1459,
+    11,
+    8887,
+    11744,
+    11,
+    323,
+    10151,
+    18368,
+    13,
+    5692,
+    594,
+    264,
+    43799,
+    16148,
+    1447,
+    16,
+    13,
+    3070,
+    9523,
+    323,
+    9549,
+    5126,
+    95518,
+    576,
+    9273,
+    374,
+    279,
+    8622,
+    18719,
+    304,
+    697,
+    2114,
+    17220,
+    26299,
+    3922,
+    13,
+    1084,
+    33061,
+    311,
+    279,
+    7602,
+    323,
+    65098,
+    264,
+    20739,
+    8286,
+    429,
+    1008,
+    7611,
+    646,
+    5258,
+    13,
+    576,
+    2615,
+    1459,
+    374,
+    264,
+    943,
+    315,
+    9273,
+    429,
+    374,
+    3545,
+    1483,
+    304,
+    7482,
+    1075,
+    10415,
+    476,
+    2613,
+    9675,
+    13,
+    1084,
+    594,
+    15791,
+    264,
+    9273,
+    448,
+    264,
+    5798,
+    3419,
+    2615,
+    1459,
+    382,
+    17,
+    13,
+    3070,
+    28203,
+    62900,
+    95518,
+    17220,
+    26299,
+    26057,
+    389,
+    8887,
+    33773,
+    11,
+    892,
+    525,
+    17779,
+    1119,
+    11744,
+    13,
+    8886,
+    5496,
+    374,
+    264,
+    3151,
+    11639,
+    2088,
+    429,
+    6147,
+    7611,
+    311,
+    19032,
+    448,
+    1817,
+    1008,
+    13,
+    576,
+    9273,
+    323,
+    2615,
+    1459,
+    990,
+    1493,
+    11744,
+    311,
+    29282,
+    323,
+    5258,
+    821,
+    382,
+    18,
+    13,
+    3070,
+    16679,
+    47025,
+    95518,
+    3197,
+    498,
+    3624,
+    264,
+    2766,
+    4269,
+    11,
+    432,
+    594,
+    10865,
+    1495,
+    1119,
+    9155,
+    8153,
+    2598,
+    27035,
+    13,
+    4220,
+    27035,
+    525,
+    1221,
+    3208,
+    916,
+    279,
+    3720,
+    57265,
+    1667,
+    279,
+    8887,
+    11744,
+    13,
+    576,
+    9273,
+    323,
+    2615,
+    1459,
+    5258,
+    1493,
+    27035,
+    323,
+    312,
+    69108,
+    1105,
+    1119,
+    279,
+    4024,
+    2766,
+    4269,
+    382,
+    19,
+    13,
+    3070,
+    91201,
+    6065,
+    13484,
+    80458,
+    95518,
+    576,
+    27035,
+    5821,
+    1526,
+    279,
+    3720,
+    57265,
+    11,
+    64028,
+    1007,
+    14285,
+    323,
+    1008,
+    6171,
+    3080,
+    807,
+    5545,
+    279,
+    20638,
+    13,
+    576,
+    20638,
+    594,
+    17220,
+    26299,
+    13964,
+    21895,
+    705,
+    1493,
+    27035,
+    323,
+    312,
+    300,
+    40694,
+    1105
+   ],
+   "finish": "length",
+   "ms_per_step": 428.22565845414704,
+   "text": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving a router, access point, radio channels, and packet transmission. Here's a simplified explanation:\n\n1. **Router and Access Point**: The router is the central hub in your home Wi-Fi network. It connects to the internet and broadcasts a wireless signal that other devices can receive. The access point is a type of router that is often used in places like homes or small businesses. It's essentially a router with a built-in access point.\n\n2. **Radio Channels**: Wi-Fi operates on radio frequencies, which are divided into channels. Each channel is a specific frequency range that allows devices to communicate with each other. The router and access point use these channels to transmit and receive data.\n\n3. **Packet Transmission**: When you send a video stream, it's broken down into smaller units called packets. These packets are then sent over the airwaves using the radio channels. The router and access point receive these packets and reassemble them into the original video stream.\n\n4. **Transmission Over Radio Waves**: The packets travel through the airwaves, bouncing off walls and other objects until they reach the laptop. The laptop's Wi-Fi receiver picks up these packets and reassembles them"
+  }
+ ],
+ "timeline": {
+  "decode_steps": 279,
+  "per_rank_ms_per_step": {
+   "s0/0": {
+    "host": "m5",
+    "device": "mps",
+    "total_ms": 428.63702791756276,
+    "compute": 116.12563365232982,
+    "host_copy": 0.27522474193548385,
+    "send": 0.054467738351254534,
+    "recv_wait": 312.16820744802885,
+    "allreduce_wait": 0.0,
+    "other": 0.013494336917562725,
+    "decode_steps": 279
+   },
+   "s1/0": {
+    "host": "m5",
+    "device": "mps",
+    "total_ms": 429.58810326489686,
+    "compute": 130.24777119298835,
+    "host_copy": 0.5296720712925623,
+    "send": 0.05501736346326164,
+    "recv_wait": 298.7556426371526,
+    "allreduce_wait": 0.0,
+    "other": 0.0,
+    "decode_steps": 279
+   },
+   "s2/0": {
+    "host": "m5",
+    "device": "mps",
+    "total_ms": 428.64462772731866,
+    "compute": 180.69424997367838,
+    "host_copy": 0.2524977467517922,
+    "send": 0.06477076181675637,
+    "recv_wait": 247.63310924507175,
+    "allreduce_wait": 0.0,
+    "other": 0.0,
+    "decode_steps": 279
+   }
+  },
+  "links": {
+   "s0/0 -> s1/0": {
+    "from": "s0/0",
+    "to": "s1/0",
+    "bytes": 863784,
+    "bytes_per_step": 3096.0
+   },
+   "s1/0 -> s2/0": {
+    "from": "s1/0",
+    "to": "s2/0",
+    "bytes": 863784,
+    "bytes_per_step": 3096.0
+   },
+   "s2/0 -> s0/0": {
+    "from": "s2/0",
+    "to": "s0/0",
+    "bytes": 4464,
+    "bytes_per_step": 16.0
+   }
+  },
+  "decode_bytes_total": 1732032,
+  "decode_bytes_per_step": 6208.0,
+  "overlap": {
+   "window_ms": 124094.569501,
+   "per_rank": {
+    "s0/0": {
+     "busy_share": 0.27104022063373984,
+     "overlap_share": 0.0,
+     "overlap_out_share": 0.0,
+     "overlap_in_share": 0.0,
+     "in_flight_share": 0.000829167842955415,
+     "compute_ms": 33634.619497,
+     "host": "m5",
+     "device": "mps"
+    },
+    "s1/0": {
+     "busy_share": 0.3036948476044065,
+     "overlap_share": 0.0,
+     "overlap_out_share": 0.0,
+     "overlap_in_share": 0.0,
+     "in_flight_share": 0.0008046524359780333,
+     "compute_ms": 37686.881373140626,
+     "host": "m5",
+     "device": "mps"
+    },
+    "s2/0": {
+     "busy_share": 0.4215395621332242,
+     "overlap_share": 0.0,
+     "overlap_out_share": 0.0,
+     "overlap_in_share": 0.0,
+     "in_flight_share": 0.0008225538331206141,
+     "compute_ms": 52310.7704905625,
+     "host": "m5",
+     "device": "mps"
+    }
+   },
+   "per_device": {
+    "m5 mps": {
+     "busy_share": 0.9962746303713705,
+     "overlap_share": 0.0,
+     "overlap_out_share": 0.0,
+     "overlap_in_share": 0.0,
+     "in_flight_share": 0.0012281870560270313,
+     "compute_ms": 123632.27136070312,
+     "ranks": [
+      "s0/0",
+      "s1/0",
+      "s2/0"
+     ]
+    }
+   },
+   "links": {
+    "s0/0 -> s1/0": {
+     "frames": 288,
+     "sent": 288,
+     "received": 288,
+     "bytes_match": true,
+     "in_flight_ms_mean": 0.17478083393012153
+    },
+    "s1/0 -> s2/0": {
+     "frames": 288,
+     "sent": 288,
+     "received": 288,
+     "bytes_match": true,
+     "in_flight_ms_mean": 0.17193096343315972
+    },
+    "s2/0 -> s0/0": {
+     "frames": 288,
+     "sent": 288,
+     "received": 288,
+     "bytes_match": true,
+     "in_flight_ms_mean": 0.18249425813802084
+    }
+   },
+   "unmatched_links": [],
+   "async_send": false
+  },
+  "hosts": {
+   "m5": {
+    "ranks": {
+     "s0/0": {
+      "process_cpu_cores": 0.05961245769186124,
+      "samples": 6601,
+      "interval_ms_mean": 20.10044819439394
+     },
+     "s1/0": {
+      "process_cpu_cores": 0.014420366210598428,
+      "samples": 6553,
+      "interval_ms_mean": 20.00060493658425
+     },
+     "s2/0": {
+      "process_cpu_cores": 0.01627879787362698,
+      "samples": 6553,
+      "interval_ms_mean": 20.000194926837704
+     }
+    },
+    "notes": [],
+    "host_cpu_busy_fraction": 0.1588687626489892,
+    "net": {
+     "lo0": {
+      "rx_bytes": 1256460288,
+      "tx_bytes": 1256460288
+     }
+    }
+   }
+  },
+  "events": {
+   "s0/0": 1449,
+   "s1/0": 1440,
+   "s2/0": 1152
+  },
+  "all_bytes": {
+   "s0/0 -> s1/0": 2403072,
+   "s1/0 -> s2/0": 2403072,
+   "s2/0 -> s0/0": 2739492
+  },
+  "files": [
+   "trace.json.gz",
+   "breakdown.csv",
+   "timeline.html",
+   "timeline_s0_0.jsonl.gz",
+   "timeline_s1_0.jsonl.gz",
+   "timeline_s2_0.jsonl.gz",
+   "samples_m5.jsonl",
+   "samples_rank_s0_0.jsonl.gz",
+   "samples_rank_s1_0.jsonl.gz",
+   "samples_rank_s2_0.jsonl.gz"
+  ],
+  "not_aligned": []
+ },
+ "correctness": {
+  "experiments/engine_gguf/runs/B1_q8_1.5b_1rank_r1": {
+   "reference": "B1_q8_1.5b_1rank_r1",
+   "identical": 8,
+   "of": 8,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4,
+    "arith_03": 4,
+    "arith_04": 3,
+    "arith_05": 4,
+    "arith_06": 3,
+    "extract_01": 4,
+    "extract_02": 6,
+    "longopen_01": 256
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.0,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.0,
+    "arith_02": 0.0,
+    "arith_03": 0.0,
+    "arith_04": 0.0,
+    "arith_05": 0.0,
+    "arith_06": 0.0,
+    "extract_01": 0.0,
+    "extract_02": 0.0,
+    "longopen_01": 0.0
+   },
+   "long_first_div": {
+    "longopen_01": 256
+   },
+   "criterion_met": true
+  }
+ }
+}

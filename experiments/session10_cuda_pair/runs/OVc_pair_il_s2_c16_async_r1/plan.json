@@ -1,0 +1,191 @@
+{
+ "ok": true,
+ "specs": [
+  {
+   "gid": 0,
+   "name": "a0/0",
+   "stage": 0,
+   "stage_name": "a0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    7
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": [
+    0,
+    151936
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 1121916928,
+    "kv": 58720256,
+    "workspace": 50659328,
+    "total": 1231296512,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1231296512
+   }
+  },
+  {
+   "gid": 1,
+   "name": "b0/0",
+   "stage": 1,
+   "stage_name": "b0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "pc",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    7,
+    14
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": null,
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 655169536,
+    "kv": 58720256,
+    "workspace": 50659328,
+    "total": 764549120,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 764549120
+   }
+  },
+  {
+   "gid": 2,
+   "name": "a1/0",
+   "stage": 2,
+   "stage_name": "a1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50071,
+   "layers": [
+    14,
+    21
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": null,
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 655169536,
+    "kv": 58720256,
+    "workspace": 50659328,
+    "total": 764549120,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 0,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 764549120
+   }
+  },
+  {
+   "gid": 3,
+   "name": "b1/0",
+   "stage": 3,
+   "stage_name": "b1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "pc",
+   "device": "cuda",
+   "port": 50071,
+   "layers": [
+    21,
+    28
+   ],
+   "q0": 0,
+   "q1": 12,
+   "m0": 0,
+   "m1": 8960,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1121920000,
+    "kv": 58720256,
+    "workspace": 51570944,
+    "total": 1232211200,
+    "layer_bytes": 93595648,
+    "vocab_bytes": 466747392,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1232211200
+   }
+  }
+ ],
+ "frames_predicted": {
+  "token": 0,
+  "embed": 0,
+  "layers": 0,
+  "hops": 3,
+  "head": 1,
+  "total": 4
+ },
+ "model_dir": "/home/ohadr/models/hf/Qwen2.5-1.5B-Instruct",
+ "reduce_dtype": "float32",
+ "table": "| rank | host | device | layers | heads | KV heads | MLP rows | vocab rows | weights MB | KV MB | workspace MB | total MB | budget MB |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|\n| a0/0 | gtx | cuda | 0-7 | 0-12 (12) | 0-2 | 0-8960 (8960) | 0-151936 E | 1121.9 | 58.7 | 50.7 | 1231.3 | - |\n| b0/0 | pc | cuda | 7-14 | 0-12 (12) | 0-2 | 0-8960 (8960) | - | 655.2 | 58.7 | 50.7 | 764.5 | - |\n| a1/0 | gtx | cuda | 14-21 | 0-12 (12) | 0-2 | 0-8960 (8960) | - | 655.2 | 58.7 | 50.7 | 764.5 | - |\n| b1/0 | pc | cuda | 21-28 | 0-12 (12) | 0-2 | 0-8960 (8960) | 0-151936 H | 1121.9 | 58.7 | 51.6 | 1232.2 | - |\n\n| host | rank processes | planned MB | process cost MB | total MB |\n|---|---|---|---|---|\n| gtx | 2 (a0/0, a1/0) | 1995.8 | 314.6 | 2310.4 |\n| pc | 2 (b0/0, b1/0) | 1996.8 | 314.6 | 2311.3 |\n\nFrames per decode step: 4 (token 0, embedding 0, layers 0, hops 3, head 1); bytes per step about 0.009 MB.",
+ "planner_host": "Ohad",
+ "hosts": {
+  "gtx": {
+   "ranks": [
+    "a0/0",
+    "a1/0"
+   ],
+   "planned": 1995845632,
+   "processes": 2,
+   "process_overhead": 314572800,
+   "total": 2310418432,
+   "budget": 7000000000
+  },
+  "pc": {
+   "ranks": [
+    "b0/0",
+    "b1/0"
+   ],
+   "planned": 1996760320,
+   "processes": 2,
+   "process_overhead": 314572800,
+   "total": 2311333120,
+   "budget": 7000000000
+  }
+ }
+}

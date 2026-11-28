@@ -1,0 +1,1202 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "OVc_pair_tp2_pair_r1",
+ "date": "2026-11-28T12:09:07+0200",
+ "placement": {
+  "file": "experiments/session10_cuda_pair/placements/C4_gtx_pc_15b_bf16_tp2.yaml",
+  "sha256": "5a2901e28ccf20d6dc8b995e6762aa77c6991affb42ced977d9ee7931e5ec7e0",
+  "yaml": "# Session 10 part 3, CUDA check (not an experiment row): the pair as one TP group, for the interleaved pair and the async send on two CUDA machines\nmodel: qwen2.5-1.5b-bf16\ncoordinator: {host: gtx}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nstages:\n  - name: s0\n    layers: [0, 28]\n    embed: true\n    lm_head: true\n    ranks:\n      - {host: gtx, device: cuda, port: 50070}\n      - {host: pc, device: cuda, port: 50070}\n"
+ },
+ "git": {
+  "sha": "1d39b45f10a9893992f2dd6696528e57585714af",
+  "dirty": false
+ },
+ "args": {
+  "placement": "experiments/session10_cuda_pair/placements/C4_gtx_pc_15b_bf16_tp2.yaml",
+  "session_dir": "experiments/session10_cuda_pair",
+  "run_id": "OVc_pair_tp2_pair_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 8,
+  "tokens": 32,
+  "long": 1,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "experiments/session7_hetero/runs/R0_qwen2.5-1.5b-bf16_cuda_gtx_r1",
+   "experiments/session10_cuda_pair/runs/OVc_pair_tp2_off_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "transformers_dir": null,
+  "tokenizer_dir": null,
+  "force": false,
+  "mps_fraction_cap": false,
+  "timeline": true,
+  "ship_weights": true,
+  "cache_dir": null,
+  "verify_cache": false,
+  "stall_timeout": 300.0,
+  "slots": 2,
+  "prefill_chunk": 0,
+  "tp_interleave": 2,
+  "async_send": false,
+  "dtype": null
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "qwen2.5-1.5b-bf16",
+  "dir": "~/models/hf/Qwen2.5-1.5B-Instruct",
+  "sha256": {
+   "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  }
+ },
+ "coordinator": {
+  "host": "gtx",
+  "hostname": "Ohad",
+  "operator_hostname": "MMF4FWRG4R",
+  "remote": true,
+  "run_dir": "~/.nocturne/runs/OVc_pair_tp2_pair_r1"
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 2,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 0,
+   "q1": 6,
+   "m0": 0,
+   "m1": 4480,
+   "kv0": 0,
+   "kv1": 1,
+   "embed_rows": [
+    0,
+    76032
+   ],
+   "head_rows": [
+    0,
+    76032
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1543998464,
+    "kv": 117440512,
+    "workspace": 28931584,
+    "total": 1690370560,
+    "layer_bytes": 46800896,
+    "vocab_bytes": 233570304,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1690370560
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s0/1",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 1,
+   "group_size": 2,
+   "host": "pc",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    28
+   ],
+   "q0": 6,
+   "q1": 12,
+   "m0": 4480,
+   "m1": 8960,
+   "kv0": 1,
+   "kv1": 2,
+   "embed_rows": [
+    76032,
+    151936
+   ],
+   "head_rows": [
+    76032,
+    151936
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 1543605248,
+    "kv": 117440512,
+    "workspace": 28930816,
+    "total": 1689976576,
+    "layer_bytes": 46800896,
+    "vocab_bytes": 233177088,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1689976576
+   }
+  }
+ ],
+ "planner_host": "Ohad",
+ "planned_hosts": {
+  "gtx": {
+   "ranks": [
+    "s0/0"
+   ],
+   "planned": 1690370560,
+   "processes": 1,
+   "process_overhead": 157286400,
+   "total": 1847656960,
+   "budget": null
+  },
+  "pc": {
+   "ranks": [
+    "s0/1"
+   ],
+   "planned": 1689976576,
+   "processes": 1,
+   "process_overhead": 157286400,
+   "total": 1847262976,
+   "budget": null
+  }
+ },
+ "frames": {
+  "predicted": {
+   "token": 1,
+   "embed": 2,
+   "layers": 112,
+   "hops": 0,
+   "head": 1,
+   "total": 116
+  },
+  "prefill_predicted": 1044,
+  "prefill_measured": 1044,
+  "prefill_holds": true,
+  "prefill_chunks": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "decode_steps": 279,
+  "measured_per_step": 116.0,
+  "bytes_per_step": 352988.0,
+  "per_link_per_step": {
+   "s0/0->s0/1": {
+    "sent_frames": 57.0,
+    "sent_bytes": 176472.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 176472.0
+   },
+   "s0/0->ctl:s0/1": {
+    "sent_frames": 1.0,
+    "sent_bytes": 28.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s0/1->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 28.0
+   },
+   "s0/1->s0/0": {
+    "sent_frames": 57.0,
+    "sent_bytes": 176472.0,
+    "recv_frames": 57.0,
+    "recv_bytes": 176472.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "gtx": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA GeForce GTX 1070, 8192 MiB, 624 MiB, 582.78",
+    "engine_sha256": "52c12ab5eb76ec069a9a2d564921bf0b00330653d8f677a99c682e1ef870080c",
+    "timesync": {
+     "host": "Ohad",
+     "os": "Linux",
+     "at": "2026-11-28T12:09:13+0200",
+     "at_unix": 1795860553.2045088,
+     "sntp": {
+      "server": "time.apple.com",
+      "server_ip": "17.253.14.37",
+      "stratum": 1,
+      "samples": 4,
+      "asked": 4,
+      "offset_s": 0.13845372200012207,
+      "delay_s": 0.05959510803222656,
+      "bound_s": 0.02979755401611328,
+      "spread_s": 0.008833050727844238
+     },
+     "os_service": {
+      "tool": "chronyc",
+      "source": "PHC0",
+      "offset_s": 2.3e-08,
+      "last_sync_utc": "Sat Nov 28 10:09:04 2026",
+      "wsl": true,
+      "windows": {
+       "tool": "w32tm",
+       "source": "time.windows.com,0x9",
+       "last_sync": "11/28/2026 8:07:31 AM"
+      }
+     },
+     "last_set": null
+    },
+    "psutil": "7.2.2",
+    "transformers": "5.23.0",
+    "model_sha256": {
+     "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+     "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+     "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+     "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+     "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+     "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+   },
+   "pc": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA RTX 2000 Ada Generation Laptop GPU, 8188 MiB, 0 MiB, 596.58",
+    "engine_sha256": "52c12ab5eb76ec069a9a2d564921bf0b00330653d8f677a99c682e1ef870080c",
+    "timesync": {
+     "host": "lioryahel",
+     "os": "Linux",
+     "at": "2026-11-28T12:09:19+0200",
+     "at_unix": 1795860559.177439,
+     "sntp": {
+      "server": "time.apple.com",
+      "server_ip": "17.253.108.125",
+      "stratum": 1,
+      "samples": 4,
+      "asked": 4,
+      "offset_s": -0.21042180061340332,
+      "delay_s": 0.06717491149902344,
+      "bound_s": 0.03358745574951172,
+      "spread_s": 0.017446279525756836
+     },
+     "os_service": {
+      "tool": "timedatectl",
+      "source": "ntp.ubuntu.com",
+      "offset_s": -0.31059,
+      "wsl": true,
+      "windows": {
+       "tool": "w32tm",
+       "source": "Local CMOS Clock",
+       "last_sync": "unspecified"
+      }
+     },
+     "last_set": null
+    },
+    "psutil": "7.2.2"
+   }
+  },
+  "coordinator": "gtx",
+  "ship_weights": true
+ },
+ "collected": {
+  "gtx": [
+   "coordinator_record.json",
+   "first_logits.npz",
+   "job.json",
+   "plan.json",
+   "samples_rank_s0_0.jsonl.gz",
+   "timeline_s0_0.jsonl.gz"
+  ],
+  "pc": [
+   "samples_rank_s0_1.jsonl.gz",
+   "timeline_s0_1.jsonl.gz"
+  ]
+ },
+ "commands": [
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx hostname"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx mkdir -p ~/.nocturne/runs/OVc_pair_tp2_pair_r1 && cat > ~/.nocturne/runs/OVc_pair_tp2_pair_r1/job.json"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job \"$HOME\"/.nocturne/runs/OVc_pair_tp2_pair_r1/job.json --tag OVc_pair_tp2_pair_r1 --plan-only"
+  },
+  {
+   "host": "pc",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 p16v /home/t-lioryahel/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 192.168.1.239 --port 50070 --device cuda --name s0/1 --tag OVc_pair_tp2_pair_r1 --run-dir \"$HOME\"/.nocturne/runs/OVc_pair_tp2_pair_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job \"$HOME\"/.nocturne/runs/OVc_pair_tp2_pair_r1/job.json --tag OVc_pair_tp2_pair_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx cd ~/.nocturne/runs/OVc_pair_tp2_pair_r1 2>/dev/null && tar -cf - ."
+  },
+  {
+   "host": "pc",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 p16v cd ~/.nocturne/runs/OVc_pair_tp2_pair_r1 2>/dev/null && tar -cf - ."
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 gtx pkill -f -- '--tag OVc_pair_tp2_pair_r1( |$)'"
+  },
+  {
+   "host": "pc",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 p16v pkill -f -- '--tag OVc_pair_tp2_pair_r1( |$)'"
+  }
+ ],
+ "load_s": 5.359983682632446,
+ "link_counters": {
+  "s0/0": {
+   "s0/1": {
+    "sent_frames": 16416,
+    "recv_frames": 16417,
+    "sent_bytes": 136975104,
+    "recv_bytes": 136975146,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 49235688,
+     "recv_frames": 15903,
+     "recv_bytes": 49235688
+    },
+    "by_kind_sent": {
+     "allreduce": 16416
+    }
+   },
+   "ctl:s0/1": {
+    "sent_frames": 311,
+    "recv_frames": 307,
+    "sent_bytes": 114942,
+    "recv_bytes": 1374907,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 7812,
+     "recv_frames": 279,
+     "recv_bytes": 4464
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "weights": 2,
+     "clock": 17,
+     "metrics": 2,
+     "token": 288
+    }
+   }
+  },
+  "s0/1": {
+   "ctl": {
+    "sent_frames": 307,
+    "recv_frames": 311,
+    "sent_bytes": 1374907,
+    "recv_bytes": 114942,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 279,
+     "sent_bytes": 4464,
+     "recv_frames": 279,
+     "recv_bytes": 7812
+    },
+    "by_kind_sent": {
+     "weights": 1,
+     "ready": 1,
+     "clock": 16,
+     "metrics_reply": 1,
+     "head": 288
+    }
+   },
+   "s0/0": {
+    "sent_frames": 16417,
+    "recv_frames": 16416,
+    "sent_bytes": 136975146,
+    "recv_bytes": 136975104,
+    "allreduce_frames": 16416,
+    "step_frames": 0,
+    "reconnects": 0,
+    "send_waits": 0,
+    "decode": {
+     "sent_frames": 15903,
+     "sent_bytes": 49235688,
+     "recv_frames": 15903,
+     "recv_bytes": 49235688
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "allreduce": 16416
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "s0/0",
+   "gid": 0,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 27187,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 1543998464,
+   "kv_bytes": 117440512,
+   "idle": {
+    "peak_rss_bytes": 617959424
+   },
+   "planned": {
+    "weights": 1543998464,
+    "kv": 117440512,
+    "workspace": 28931584,
+    "total": 1690370560,
+    "layer_bytes": 46800896,
+    "vocab_bytes": 233570304,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1690370560
+   },
+   "budget": null,
+   "load_s": 2.7287213802337646,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "shipping": null,
+   "slots": 2,
+   "async_send": null,
+   "current_allocated_bytes": 1732901888,
+   "driver_allocated_bytes": 1757413376,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 5773459456,
+   "max_allocated_bytes": 1737325056,
+   "peak_rss_bytes": 2653302784
+  },
+  {
+   "name": "s0/1",
+   "gid": 1,
+   "host": "pc",
+   "device": "cuda",
+   "pid": 4159,
+   "torch": "2.14.1+cu130",
+   "loaded_tensor_bytes": 1543605248,
+   "kv_bytes": 117440512,
+   "idle": {
+    "peak_rss_bytes": 641699840
+   },
+   "planned": {
+    "weights": 1543605248,
+    "kv": 117440512,
+    "workspace": 28930816,
+    "total": 1689976576,
+    "layer_bytes": 46800896,
+    "vocab_bytes": 233177088,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 1689976576
+   },
+   "budget": null,
+   "load_s": 1.2321875095367432,
+   "steps": 288,
+   "allreduce_calls": 16416,
+   "shipping": {
+    "manifest_bytes": 1543605248,
+    "manifest_slices": 338,
+    "received_bytes": 0,
+    "received_slices": 0,
+    "cache_bytes": 1543605248,
+    "duplicate_bytes": 0,
+    "hash_checks": 0,
+    "chunks": 0,
+    "cache_verified_slices": 0,
+    "recv_s": 0.04422616958618164,
+    "cache_dir": "/home/t-lioryahel/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef"
+   },
+   "slots": 2,
+   "async_send": null,
+   "current_allocated_bytes": 1732812800,
+   "driver_allocated_bytes": 1755316224,
+   "cuda_name": "NVIDIA RTX 2000 Ada Generation Laptop GPU",
+   "vram_total_bytes": 8585216000,
+   "vram_free_bytes": 5656018944,
+   "max_allocated_bytes": 1735907840,
+   "peak_rss_bytes": 1368276992
+  }
+ ],
+ "requests": [
+  {
+   "req": 1,
+   "rid": "arith_01",
+   "prompt_n": 46,
+   "n_gen": 4,
+   "t0_mono_ns": 42961271889500,
+   "first_token_mono_ns": 42964037664900,
+   "t1_mono_ns": 42966731948000,
+   "slot": 0
+  },
+  {
+   "req": 2,
+   "rid": "arith_02",
+   "prompt_n": 47,
+   "n_gen": 4,
+   "t0_mono_ns": 42961271946400,
+   "first_token_mono_ns": 42964046846200,
+   "t1_mono_ns": 42967542738400,
+   "slot": 1
+  },
+  {
+   "req": 4,
+   "rid": "arith_04",
+   "prompt_n": 45,
+   "n_gen": 3,
+   "t0_mono_ns": 42967542806600,
+   "first_token_mono_ns": 42969887115300,
+   "t1_mono_ns": 42973155882100,
+   "slot": 1
+  },
+  {
+   "req": 3,
+   "rid": "arith_03",
+   "prompt_n": 44,
+   "n_gen": 4,
+   "t0_mono_ns": 42966732011200,
+   "first_token_mono_ns": 42969031419500,
+   "t1_mono_ns": 42974373122500,
+   "slot": 0
+  },
+  {
+   "req": 6,
+   "rid": "arith_06",
+   "prompt_n": 47,
+   "n_gen": 3,
+   "t0_mono_ns": 42974373197400,
+   "first_token_mono_ns": 42975693429900,
+   "t1_mono_ns": 42977739538100,
+   "slot": 0
+  },
+  {
+   "req": 5,
+   "rid": "arith_05",
+   "prompt_n": 58,
+   "n_gen": 4,
+   "t0_mono_ns": 42973155944300,
+   "first_token_mono_ns": 42975160454000,
+   "t1_mono_ns": 42978735879200,
+   "slot": 1
+  },
+  {
+   "req": 7,
+   "rid": "extract_01",
+   "prompt_n": 67,
+   "n_gen": 4,
+   "t0_mono_ns": 42977739631800,
+   "first_token_mono_ns": 42979785546200,
+   "t1_mono_ns": 42982917784900,
+   "slot": 0
+  },
+  {
+   "req": 8,
+   "rid": "extract_02",
+   "prompt_n": 69,
+   "n_gen": 6,
+   "t0_mono_ns": 42978735946000,
+   "first_token_mono_ns": 42980303963400,
+   "t1_mono_ns": 42986134564500,
+   "slot": 1
+  },
+  {
+   "req": 9,
+   "rid": "longopen_01",
+   "prompt_n": 78,
+   "n_gen": 256,
+   "t0_mono_ns": 42982917845700,
+   "first_token_mono_ns": 42984536076000,
+   "t1_mono_ns": 43135702862400,
+   "slot": 0
+  }
+ ],
+ "shipping": {
+  "model_sha256": "e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef",
+  "model_files": {
+   "config.json": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+   "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+   "model.safetensors": "dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee",
+   "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+   "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+   "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+  },
+  "kind": "safetensors",
+  "manifest_s": 0.006025075912475586,
+  "slices_hashed": 0,
+  "ranks": {
+   "s0/1": {
+    "manifest_bytes": 1543605248,
+    "manifest_slices": 338,
+    "shipped_bytes": 0,
+    "shipped_slices": 0,
+    "chunks": 0,
+    "ship_s": 0.037444114685058594,
+    "received_bytes": 0,
+    "received_slices": 0,
+    "cache_bytes": 1543605248,
+    "duplicate_bytes": 0,
+    "hash_checks": 0,
+    "cache_verified_slices": 0,
+    "recv_s": 0.04422616958618164,
+    "cache_dir": "/home/t-lioryahel/.nocturne/cache/e4f02a8fb321c42ab392f75dee76a55b1463fa8538cea5223415d1eb09f98eef",
+    "loaded_tensor_bytes": 1543605248,
+    "planned_weight_bytes": 1543605248,
+    "stored_minus_loaded_bytes": 0
+   }
+  },
+  "ship_s": 0.037444114685058594,
+  "agrees_with_preflight": true
+ },
+ "torch_coordinator": "2.14.1+cu126",
+ "overlap": {
+  "slots": 2,
+  "prefill_chunk": 0,
+  "tp_interleave": 2,
+  "async_send": false,
+  "on": true
+ },
+ "throughput": {
+  "wall_s": 174.43554759025574,
+  "tokens": 288,
+  "tokens_per_s": 1.6510396188081113,
+  "note": "all prompts, prefill included; background (T1)"
+ },
+ "clock": {
+  "s0/0": {
+   "start": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "end": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "drift": null,
+   "host": "gtx",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": 0,
+    "disagree": false,
+    "same_host": true
+   }
+  },
+  "s0/1": {
+   "start": {
+    "offset_mono_ns": -35283277665024,
+    "offset_wall_ns": 416077800,
+    "rtt_ns": 5284400,
+    "rtt_median_ns": 6043500,
+    "rounds": 16,
+    "at_mono_ns": 42960033218300,
+    "at_wall_ns": 1795860569259007214
+   },
+   "end": {
+    "offset_mono_ns": -35283277372637,
+    "offset_wall_ns": 327662983,
+    "rtt_ns": 5909100,
+    "rtt_median_ns": 6216600,
+    "rounds": 16,
+    "at_mono_ns": 43136590243850,
+    "at_wall_ns": 1795860745816033801
+   },
+   "drift": {
+    "drift_ns": 292387,
+    "span_s": 176.55702555,
+    "ppm": 1.6560485151421946,
+    "wall_minus_mono_change_ns": -88707204
+   },
+   "host": "pc",
+   "os": {
+    "os_predicted_ns": 348875523,
+    "gap_ns": -21212540,
+    "disagree": true,
+    "os_bound_ns": 63385010
+   }
+  }
+ },
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 898.0909983317057,
+   "text": "936",
+   "slot": 0,
+   "chunks": 1,
+   "t0": 1795860570.4976778,
+   "t1": 1795860575.9577246,
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1165.296236673991,
+   "text": "543",
+   "slot": 1,
+   "chunks": 1,
+   "t0": 1795860570.497735,
+   "t1": 1795860576.7685225,
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt_n": 44,
+   "tokens": [
+    19,
+    18,
+    22,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1780.5668512980144,
+   "text": "437",
+   "slot": 0,
+   "chunks": 1,
+   "t0": 1795860575.9578,
+   "t1": 1795860583.5989082,
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt_n": 45,
+   "tokens": [
+    16,
+    17,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1634.3828439712524,
+   "text": "12",
+   "slot": 1,
+   "chunks": 1,
+   "t0": 1795860576.7685952,
+   "t1": 1795860582.381669,
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_05",
+   "kind": "eval",
+   "prompt_n": 58,
+   "tokens": [
+    16,
+    20,
+    15,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1191.8079853057861,
+   "text": "150",
+   "slot": 1,
+   "chunks": 1,
+   "t0": 1795860582.381733,
+   "t1": 1795860587.9616663,
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_06",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1023.0534076690674,
+   "text": "36",
+   "slot": 0,
+   "chunks": 1,
+   "t0": 1795860583.598986,
+   "t1": 1795860586.9653244,
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "extract_01",
+   "kind": "eval",
+   "prompt_n": 67,
+   "tokens": [
+    35,
+    3362,
+    55041,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1044.079303741455,
+   "text": "Dana Levi",
+   "slot": 0,
+   "chunks": 1,
+   "t0": 1795860586.9654205,
+   "t1": 1795860592.1435723,
+   "category": "extraction",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "extract_02",
+   "kind": "eval",
+   "prompt_n": 69,
+   "tokens": [
+    14003,
+    220,
+    18,
+    16,
+    16,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 1166.1201000213623,
+   "text": "Room 311",
+   "slot": 1,
+   "chunks": 1,
+   "t0": 1795860587.9617348,
+   "t1": 1795860595.3603518,
+   "category": "extraction",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "longopen_01",
+   "kind": "long",
+   "prompt_n": 78,
+   "tokens": [
+    32,
+    2114,
+    17220,
+    26299,
+    3922,
+    23377,
+    264,
+    2766,
+    4269,
+    504,
+    279,
+    7602,
+    311,
+    264,
+    20638,
+    1526,
+    264,
+    4013,
+    315,
+    7354,
+    15860,
+    59175,
+    11,
+    2615,
+    3501,
+    11,
+    8887,
+    11744,
+    11,
+    323,
+    10151,
+    18368,
+    13,
+    5692,
+    748,
+    264,
+    43799,
+    16148,
+    1447,
+    16,
+    13,
+    3070,
+    9523,
+    323,
+    9549,
+    5126,
+    95518,
+    576,
+    9273,
+    374,
+    279,
+    8622,
+    18719,
+    315,
+    279,
+    17220,
+    26299,
+    3922,
+    13,
+    1084,
+    33061,
+    311,
+    279,
+    7602,
+    323,
+    65098,
+    264,
+    20739,
+    8286,
+    429,
+    1008,
+    7611,
+    646,
+    5258,
+    13,
+    1527,
+    2615,
+    1459,
+    374,
+    264,
+    943,
+    315,
+    9273,
+    429,
+    374,
+    11689,
+    6188,
+    311,
+    3410,
+    264,
+    20739,
+    3922,
+    369,
+    264,
+    3151,
+    3082,
+    11,
+    1075,
+    264,
+    2114,
+    476,
+    5163,
+    382,
+    17,
+    13,
+    3070,
+    37845,
+    1717,
+    27230,
+    95518,
+    576,
+    9273,
+    65098,
+    264,
+    20739,
+    8286,
+    429,
+    14521,
+    264,
+    3654,
+    3082,
+    13,
+    1096,
+    8286,
+    374,
+    29447,
+    311,
+    279,
+    19020,
+    7912,
+    714,
+    646,
+    387,
+    16507,
+    553,
+    7611,
+    429,
+    525,
+    2878,
+    2088,
+    13,
+    576,
+    8286,
+    374,
+    1075,
+    264,
+    8887,
+    12060,
+    429,
+    23377,
+    821,
+    382,
+    18,
+    13,
+    3070,
+    16679,
+    47025,
+    95518,
+    3197,
+    264,
+    2766,
+    4269,
+    374,
+    3208,
+    504,
+    279,
+    7602,
+    11,
+    432,
+    374,
+    10865,
+    1495,
+    1119,
+    9155,
+    8153,
+    2598,
+    27035,
+    13,
+    8886,
+    10151,
+    5610,
+    264,
+    2613,
+    949,
+    315,
+    279,
+    2766,
+    821,
+    13,
+    576,
+    9273,
+    21189,
+    1493,
+    27035,
+    323,
+    21308,
+    1105,
+    311,
+    279,
+    2615,
+    1459,
+    382,
+    19,
+    13,
+    3070,
+    6054,
+    5126,
+    95518,
+    576,
+    2615,
+    1459,
+    21189,
+    279,
+    27035,
+    323,
+    21308,
+    1105,
+    311,
+    279,
+    20638,
+    13,
+    576,
+    20638,
+    374,
+    8433,
+    311,
+    279,
+    2615,
+    1459,
+    1526,
+    264,
+    52121,
+    476,
+    20739,
+    3633,
+    13,
+    576,
+    20638,
+    646,
+    1221,
+    5258,
+    279,
+    2766,
+    4269,
+    323,
+    3037,
+    432,
+    389,
+    279,
+    4171,
+    382,
+    20,
+    13,
+    3070,
+    28203,
+    62900
+   ],
+   "finish": "length",
+   "ms_per_step": 592.810930925257,
+   "text": "A home Wi-Fi network carries a video stream from the internet to a laptop through a series of steps involving routers, access points, radio channels, and packet transmission. Here\u2019s a simplified explanation:\n\n1. **Router and Access Point**: The router is the central hub of the Wi-Fi network. It connects to the internet and broadcasts a wireless signal that other devices can receive. An access point is a type of router that is specifically designed to provide a wireless network for a specific area, like a home or office.\n\n2. **Wireless Signal**: The router broadcasts a wireless signal that covers a certain area. This signal is invisible to the naked eye but can be detected by devices that are within range. The signal is like a radio wave that carries data.\n\n3. **Packet Transmission**: When a video stream is sent from the internet, it is broken down into smaller units called packets. Each packet contains a small part of the video data. The router receives these packets and sends them to the access point.\n\n4. **Access Point**: The access point receives the packets and sends them to the laptop. The laptop is connected to the access point through a wired or wireless connection. The laptop can then receive the video stream and display it on the screen.\n\n5. **Radio Channels",
+   "slot": 0,
+   "chunks": 1,
+   "t0": 1795860592.1436343,
+   "t1": 1795860744.9286509
+  }
+ ]
+}
