@@ -1,0 +1,15 @@
+# Session 10 part 3, CUDA check (not an experiment row): the pair as one TP group, for the interleaved pair and the async send on two CUDA machines
+model: qwen2.5-1.5b-bf16
+coordinator: {host: gtx}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 28]
+    embed: true
+    lm_head: true
+    ranks:
+      - {host: gtx, device: cuda, port: 50070}
+      - {host: pc, device: cuda, port: 50070}

@@ -1,0 +1,27 @@
+# Session 10 part 3, O5: 7B Q8_0, interleaved stages on the M5 loopback (four rank processes, one host budget)
+model: ~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+host_budget_gb: {m5: 20}
+stages:
+  - name: a0
+    layers: [0, 7]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+  - name: b0
+    layers: [7, 14]
+    ranks:
+      - {host: m5, device: mps, port: 50071}
+  - name: a1
+    layers: [14, 21]
+    ranks:
+      - {host: m5, device: mps, port: 50072}
+  - name: b1
+    layers: [21, 28]
+    lm_head: true
+    ranks:
+      - {host: m5, device: mps, port: 50073}

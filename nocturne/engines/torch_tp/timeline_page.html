@@ -54,8 +54,14 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--text2); }
 <div id="bars"></div>
 <div class="scroll"><table id="bars-table"></table></div>
 
+<h2>Busy share and overlap share</h2>
+<p class="note" id="ov-note"></p>
+<div class="legend" id="legend3"></div>
+<div id="ov"></div>
+<div class="scroll"><table id="ov-table"></table></div>
+
 <h2 id="tl-title">Timeline</h2>
-<p class="note">Each rank has two rows. The compute row is device time, closed by a device sync. The communication row shows sends, waits and copies between the device and the host. A color is the other rank of that send or wait. All times are on the coordinator clock.</p>
+<p class="note" id="tl-note">Each rank has a compute row and a communication row. The compute row is device time, closed by a device sync. The communication row shows sends, waits and copies between the device and the host. The row "in flight" shows every frame from the start of its send to the end of the receiver's wait for it: the upper half is a frame this rank sent, the lower half one addressed to it. A color is the other rank. All times are on the coordinator clock.</p>
 <div class="legend" id="legend2"></div>
 <div class="zoom" id="zoom"></div>
 <div id="tl"></div>
@@ -126,22 +132,63 @@ function legend(el, withShapes) {
 
 function niceTicks(a, b, n) { const span = b - a || 1, raw = span / n, p = Math.pow(10, Math.floor(Math.log10(raw))), m = [1, 2, 5, 10].find(m => m * p >= raw) * p, out = []; for (let t = Math.ceil(a / m) * m; t <= b + 1e-9; t += m) out.push(Math.round(t / m) * m); return out; }
 
+// ---- busy and overlap share ----
+(function () {
+  const o = D.overlap;
+  if (!o) { $("ov").innerHTML = "<p class='note'>No request interval was recorded.</p>"; return; }
+  const pc = x => f(100 * x, 1) + "%";
+  $("legend3").innerHTML = `<span><i class="sw" style="background:var(--text)"></i>computing while a frame of this rank is in flight</span><span><i class="sw" style="background:var(--compute)"></i>computing, nothing in flight</span><span><i class="sw" style="background:var(--other)"></i>not computing</span>`;
+  const W = 1100, L = 190, Rm = 190, rowH = 22, gap = 12, H = R.length * (rowH + gap) + 34, pw = W - L - Rm;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Busy share and overlap share by rank">`;
+  [0, 25, 50, 75, 100].forEach(t => { const x = L + t / 100 * pw; s += `<line x1="${x}" x2="${x}" y1="0" y2="${H - 30}" stroke="var(--grid)"/><text x="${x}" y="${H - 16}" text-anchor="middle">${t}%</text>`; });
+  s += `<text x="${L + pw / 2}" y="${H - 2}" text-anchor="middle">share of the time in which a request was in work</text>`;
+  R.forEach((r, k) => {
+    const v = o.per_rank[r.name] || { busy_share: 0, overlap_share: 0 }, y = k * (rowH + gap) + 2;
+    const a = v.overlap_share * pw, b = (v.busy_share - v.overlap_share) * pw;
+    s += `<rect x="6" y="${y + 5}" width="10" height="12" rx="2" fill="${col(k)}"/><text class="lab" x="22" y="${y + 10}">${esc(r.name)}</text><text x="22" y="${y + 23}">${esc(r.host)} · ${esc(r.device)}</text>`;
+    s += `<rect x="${L}" y="${y}" width="${pw}" height="${rowH}" rx="2" fill="var(--other)"/>`;
+    if (a > 0) s += `<rect data-o="${k},0" x="${L}" y="${y}" width="${Math.max(a - 1, .5)}" height="${rowH}" rx="2" fill="var(--text)"/>`;
+    if (b > 0) s += `<rect data-o="${k},1" x="${L + a + 1}" y="${y}" width="${Math.max(b - 1, .5)}" height="${rowH}" rx="2" fill="var(--compute)"/>`;
+    s += `<text class="lab" x="${L + pw + 8}" y="${y + 15}">busy ${pc(v.busy_share)} · overlap ${pc(v.overlap_share)}</text>`;
+  });
+  $("ov").innerHTML = s + "</svg>";
+  $("ov").addEventListener("mousemove", ev => { const d = ev.target.getAttribute && ev.target.getAttribute("data-o"); if (!d) return hideTip(); const [k, j] = d.split(",").map(Number), v = o.per_rank[R[k].name];
+    showTip(ev, `<b>${esc(R[k].name)}</b><br>${j ? "computing, nothing in flight: " + pc(v.busy_share - v.overlap_share) : "computing with a frame in flight: " + pc(v.overlap_share)}<br>compute ${f(v.compute_ms, 1)} ms of ${f(o.window_ms, 1)} ms`); });
+  $("ov").addEventListener("mouseleave", hideTip);
+  let t = "<tr><th>rank or device</th><th>busy share</th><th>overlap share</th><th>with a frame it sent</th><th>with a frame addressed to it</th><th>a frame in flight</th><th>compute ms</th></tr>";
+  const row = (n, v) => `<tr><td>${esc(n)}</td><td>${pc(v.busy_share)}</td><td>${pc(v.overlap_share)}</td><td>${pc(v.overlap_out_share)}</td><td>${pc(v.overlap_in_share)}</td><td>${pc(v.in_flight_share)}</td><td>${f(v.compute_ms, 1)}</td></tr>`;
+  R.forEach(r => { if (o.per_rank[r.name]) t += row(r.name + " (" + r.host + ")", o.per_rank[r.name]); });
+  Object.entries(o.per_device || {}).forEach(([n, v]) => { t += row("device " + n + ": " + v.ranks.join(", "), v); });
+  $("ov-table").innerHTML = t;
+  $("ov-note").textContent = `Over the ${f(o.window_ms, 1)} ms in which at least one request was in work. Busy: the rank computes. Overlap: it computes while a frame it sent, or one addressed to it, is in flight. A frame is in flight from the start of its send to the end of the receiver's wait for it, on aligned clocks (error at most half a round trip).`
+    + (o.async_send ? " This run sent off the compute thread: a compute span is the time of the compute thread, not of the device." : "")
+    + (o.unmatched_links && o.unmatched_links.length ? " Sends and receives do not match on: " + o.unmatched_links.join(", ") + "." : "");
+})();
+
 // ---- timeline ----
 (function () {
   const w = D.window;
   if (!w) { $("tl").innerHTML = "<p class='note'>No decode steps were recorded.</p>"; return; }
   $("tl-title").textContent = `Timeline of decode steps ${w.first_step} to ${w.last_step} (request ${w.req})`;
   legend($("legend2"), true);
-  const rows = R.map(() => [[], []]);
-  D.spans.forEach(sp => rows[sp[0]][sp[1] === 0 ? 0 : 1].push(sp));
+  if (D.overlap && D.overlap.async_send) $("tl-note").textContent += " This run sent off the compute thread: the compute row is the time of the compute thread, which no longer waits for the device, and the sender thread has its own row.";
+  const K = D.kinds, isTx = k => K[k] === "tx_wait" || K[k] === "tx_send";
+  const hasTx = D.spans.some(sp => isTx(sp[1])), hasFl = (D.flights || []).length > 0;
+  const rowNames = ["compute", "communication"].concat(hasTx ? ["sender thread"] : []).concat(hasFl ? ["in flight"] : []);
+  const txRow = hasTx ? 2 : -1, flRow = hasFl ? rowNames.length - 1 : -1, nr = rowNames.length;
+  const rows = R.map(() => rowNames.map(() => []));
+  D.spans.forEach(sp => rows[sp[0]][K[sp[1]] === "compute" ? 0 : isTx(sp[1]) ? txRow : 1].push(sp));
+  // a frame in flight shows on both ends: [rank, "out" or "in", other rank, t0, t1, bytes, null, request, slot]
+  (D.flights || []).forEach(fl => { rows[fl[0]][flRow].push([fl[0], "out", fl[1], fl[2], fl[3], fl[4], null, fl[5], fl[6]]); rows[fl[1]][flRow].push([fl[1], "in", fl[0], fl[2], fl[3], fl[4], null, fl[5], fl[6]]); });
   rows.forEach(r => r.forEach(x => x.sort((a, b) => a[3] - b[3])));
-  const W = 1100, L = 190, Rm = 14, rh = 20, pair = 2 * rh + 6, gap = 14, top = 6, H = top + R.length * (pair + gap) + 34, pw = W - L - Rm;
+  const W = 1100, L = 190, Rm = 14, rh = 20, pair = nr * rh + (nr - 1) * 6, gap = 14, top = 6, H = top + R.length * (pair + gap) + 34, pw = W - L - Rm;
   const starts = w.step_starts_ms.concat([w.ms]);
   let dom = [0, w.ms];
   const zb = [["all " + (starts.length - 1) + " steps", 0, w.ms]].concat(starts.slice(0, -1).map((s, k) => ["step " + (w.first_step + k), s, starts[k + 1]]));
   $("zoom").innerHTML = zb.map((z, k) => `<button data-z="${k}" aria-pressed="${k === 0}">${z[0]}</button>`).join("");
   $("zoom").addEventListener("click", ev => { const k = ev.target.getAttribute("data-z"); if (k == null) return; dom = [zb[k][1], zb[k][2]]; [...$("zoom").children].forEach((b, j) => b.setAttribute("aria-pressed", j == k)); draw(); });
   const X = t => L + (t - dom[0]) / (dom[1] - dom[0]) * pw;
+  const kindOf = sp => typeof sp[1] === "string" ? sp[1] : K[sp[1]];
   function draw() {
     let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Timeline per rank"><defs><clipPath id="cp"><rect x="${L}" y="0" width="${pw}" height="${H}"/></clipPath></defs>`;
     niceTicks(dom[0], dom[1], 8).forEach(t => { s += `<line x1="${X(t)}" x2="${X(t)}" y1="0" y2="${H - 30}" stroke="var(--grid)"/><text x="${X(t)}" y="${H - 16}" text-anchor="middle">${f(t, (dom[1] - dom[0]) < 20 ? 1 : 0)}</text>`; });
@@ -150,14 +197,16 @@ function niceTicks(a, b, n) { const span = b - a || 1, raw = span / n, p = Math.
     R.forEach((r, k) => {
       const y = top + k * (pair + gap);
       s += `<rect x="6" y="${y + 4}" width="10" height="12" rx="2" fill="${col(k)}"/><text class="lab" x="22" y="${y + 14}">${esc(r.name)}</text><text x="22" y="${y + 27}">${esc(r.host)} · ${esc(r.device)}${r.aligned ? "" : " · clock not aligned"}</text>`;
-      s += `<text x="${L - 6}" y="${y + 14}" text-anchor="end">compute</text><text x="${L - 6}" y="${y + rh + 20}" text-anchor="end">communication</text>`;
-      s += `<rect x="${L}" y="${y}" width="${pw}" height="${rh}" fill="var(--panel)"/><rect x="${L}" y="${y + rh + 6}" width="${pw}" height="${rh}" fill="var(--panel)"/><g clip-path="url(#cp)">`;
+      rowNames.forEach((n, ri) => { s += `<text x="${L - 6}" y="${y + ri * (rh + 6) + 14}" text-anchor="end">${n}</text><rect x="${L}" y="${y + ri * (rh + 6)}" width="${pw}" height="${rh}" fill="var(--panel)"/>`; });
+      s += `<g clip-path="url(#cp)">`;
       rows[k].forEach((row, ri) => row.forEach(sp => {
         if (sp[4] < dom[0] || sp[3] > dom[1]) return;
-        const x = X(sp[3]), wd = Math.max(X(sp[4]) - x, .6), kind = D.kinds[sp[1]], y0 = y + ri * (rh + 6);
+        const x = X(sp[3]), wd = Math.max(X(sp[4]) - x, .6), kind = kindOf(sp), y0 = y + ri * (rh + 6);
         if (kind === "compute") s += `<rect x="${x}" y="${y0}" width="${wd}" height="${rh}" fill="var(--compute)"/>`;
-        else if (kind === "host_copy") s += `<rect x="${x}" y="${y0}" width="${wd}" height="${rh}" fill="var(--copy)"/>`;
-        else if (kind === "send") s += `<rect x="${x}" y="${y0}" width="${wd}" height="${rh}" fill="${col(sp[2])}"/>`;
+        else if (kind === "host_copy" || kind === "tx_wait") s += `<rect x="${x}" y="${y0}" width="${wd}" height="${rh}" fill="var(--copy)"/>`;
+        else if (kind === "send" || kind === "tx_send") s += `<rect x="${x}" y="${y0}" width="${wd}" height="${rh}" fill="${col(sp[2])}"/>`;
+        else if (kind === "out") s += `<rect x="${x}" y="${y0}" width="${wd}" height="${rh / 2 - 1}" fill="${col(sp[2])}"/>`;
+        else if (kind === "in") s += `<rect x="${x}" y="${y0 + rh / 2 + 1}" width="${wd}" height="${rh / 2 - 1}" fill="${col(sp[2])}" opacity=".5"/>`;
         else s += `<rect x="${x}" y="${y0 + rh / 2}" width="${wd}" height="${rh / 2}" fill="${col(sp[2])}" opacity=".5"/>`;
       }));
       s += "</g>";
@@ -165,16 +214,17 @@ function niceTicks(a, b, n) { const span = b - a || 1, raw = span / n, p = Math.
     $("tl").innerHTML = s + "</svg>";
   }
   draw();
-  const label = { compute: "compute", host_copy: "copy between device and host", send: "send to", recv_wait: "wait for", allreduce_wait: "wait for (all-reduce)" };
+  const label = { compute: "compute", host_copy: "copy between device and host", send: "send to", recv_wait: "wait for", allreduce_wait: "wait for (all-reduce)",
+                  tx_wait: "sender thread: wait for the tensor on the host", tx_send: "sender thread: send to", out: "frame in flight to", in: "frame in flight from" };
   $("tl").addEventListener("mousemove", ev => {
     const svg = $("tl").querySelector("svg"), bb = svg.getBoundingClientRect(), sx = W / bb.width, px = (ev.clientX - bb.left) * sx, py = (ev.clientY - bb.top) * sx;
     const k = Math.floor((py - top) / (pair + gap)); if (k < 0 || k >= R.length || px < L) return hideTip();
-    const yy = py - top - k * (pair + gap), ri = yy < rh ? 0 : (yy >= rh + 6 && yy < pair ? 1 : -1); if (ri < 0) return hideTip();
+    const yy = py - top - k * (pair + gap), ri = yy >= 0 && yy < pair && yy % (rh + 6) < rh ? Math.floor(yy / (rh + 6)) : -1; if (ri < 0) return hideTip();
     const t = dom[0] + (px - L) / pw * (dom[1] - dom[0]), tol = (dom[1] - dom[0]) / pw * 2;
     let best = null; for (const sp of rows[k][ri]) { if (sp[3] - tol <= t && t <= sp[4] + tol && (!best || sp[4] - sp[3] < best[4] - best[3])) best = sp; if (sp[3] > t + tol) break; }
     if (!best) return hideTip();
-    const kind = D.kinds[best[1]];
-    showTip(ev, `<b>${esc(R[k].name)}</b> · step ${best[6]}<br>${label[kind]}${best[2] >= 0 ? " " + esc(names[best[2]]) : ""}<br>${f(best[4] - best[3], 3)} ms${best[5] ? " · " + bytes(best[5]) : ""}<br>at ${f(best[3], 3)} ms`);
+    const kind = kindOf(best);
+    showTip(ev, `<b>${esc(R[k].name)}</b>${best[6] != null ? " · step " + best[6] : ""} · request ${best[7]}, slot ${best[8]}<br>${label[kind]}${best[2] >= 0 ? " " + esc(names[best[2]]) : ""}<br>${f(best[4] - best[3], 3)} ms${best[5] ? " · " + bytes(best[5]) : ""}<br>at ${f(best[3], 3)} ms`);
   });
   $("tl").addEventListener("mouseleave", hideTip);
 })();

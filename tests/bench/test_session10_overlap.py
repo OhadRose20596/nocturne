@@ -79,7 +79,8 @@ def boot(model, placement, slots=1, **kw):
     specs = plan(Dims.of(cfg), placement, kv_slots=slots)
     threads = []
     for s in specs[1:]:
-        t = threading.Thread(target=hybrid.rank_main, args=(["127.0.0.1"], s.port, str(model), "cpu"), kwargs={"log": lambda *a: None}, daemon=True)
+        t = threading.Thread(target=hybrid.rank_main, args=(["127.0.0.1"], s.port, str(model), "cpu"),
+                             kwargs={"log": lambda *a: None, "run_dir": kw.get("run_dir")}, daemon=True)
         t.start()
         threads.append(t)
     co = hybrid.Coordinator(specs, str(model), {"h": "127.0.0.1", "g": "127.0.0.1"}, ["127.0.0.1"], placement.max_seq_len, placement.reduce_dtype,
@@ -123,6 +124,8 @@ def same(a, b, logits="equal"):
         assert x["tokens"] == y["tokens"], f"request {i}"
         if logits == "equal":
             assert torch.equal(x["first_logits"], y["first_logits"]), f"request {i}: first step logits differ"
+        elif logits == "close":
+            assert torch.allclose(x["first_logits"], y["first_logits"], atol=1e-4), f"request {i}: first step logits are not close"
 
 
 def data_frames(m):
@@ -386,3 +389,253 @@ def test_planner_sums_all_rank_processes_of_a_host_against_the_host_budget(tiny4
     assert placement_from_dict(y).host_budget_gb == (("g", 7.0), ("h", 7.5))
     more = plan(cfg, cuda, kv_slots=3)
     assert host_totals(more)["h"]["planned"] - hc["h"]["planned"] == 2 * (sc[0].planned["kv"] + sc[2].planned["kv"])
+
+
+# ---- O4: sends off the compute thread ----------------------------------------------------------------------------------------
+@pytest.mark.parametrize("mode", ["inline", "thread"])
+@pytest.mark.parametrize("make", [pp3, tp3, hybrid_tp_first, hybrid_pp_first])
+def test_async_send_gives_the_same_tokens_logits_and_frames(tiny4, make, mode, monkeypatch):
+    monkeypatch.setenv("NOCTURNE_ASYNC_COPY", mode)
+    _, ref, m_ref = alone(tiny4, make)
+    specs, co, th = boot(tiny4, make(free_ports(8)), async_send=True)
+    try:
+        out = [co.generate(list(p), 6, ignore_eos=True, first_logits=True, rid=f"p{i}") for i, p in enumerate(PROMPTS)]
+        m = co.metrics()
+    finally:
+        co.shutdown()
+    for x in th:
+        x.join(timeout=10)
+    same(ref, out)
+    assert data_frames(m) == data_frames(m_ref)
+    for name, r in m["ranks"].items():
+        assert r["async_send"]["copy"] == mode
+        # data links byte for byte; a ctl link also carries metrics replies (JSON of another length), so its decode data counts
+        pick = lambda links: {k: v["decode"] if k.startswith("ctl") else (v["sent_bytes"], v["recv_bytes"]) for k, v in links.items()}
+        assert pick(r["links"]) == pick(m_ref["ranks"][name]["links"]), name
+    assert all(r["async_send"] is None for r in m_ref["ranks"].values())
+    # every data frame a rank sends, except the coordinator's token frames, left through its sender thread
+    tokens = sum(c["by_kind_sent"].get("token", 0) for c in m["ranks"][specs[0].name]["links"].values())
+    local_head = 0          # the coordinator's own head result is not a frame
+    assert sum(r["async_send"]["frames"] for r in m["ranks"].values()) == data_frames(m)[1] - tokens - local_head
+
+
+@pytest.mark.parametrize("make,slots,chunk,interleave", [(pp3, 3, 3, 1), (tp3, 2, 0, 2), (hybrid_tp_first, 3, 3, 2), (hybrid_pp_first, 2, 3, 2)])
+def test_async_send_with_slots_chunks_and_pairs(tiny4, make, slots, chunk, interleave, monkeypatch):
+    monkeypatch.setenv("NOCTURNE_ASYNC_COPY", "thread")
+    _, ref, _ = alone(tiny4, make)
+    _, sync_out, m_sync, m0s, _ = many(tiny4, make, slots, chunk=chunk, interleave=interleave)
+    _, out, m, m0, _ = many(tiny4, make, slots, chunk=chunk, interleave=interleave, async_send=True)
+    same(ref, out, logits="equal" if not chunk else "close")
+    same(sync_out, out)
+    assert data_frames(m) == data_frames(m_sync)
+
+
+def test_head_on_the_device_is_the_head_argmax_also_with_ties(tiny4):
+    from nocturne.engines.torch_tp.model import Qwen2TP
+    m = Qwen2TP.__new__(Qwen2TP)
+    m.head_rows = (40, 52)
+    for lg in ([0.5, 3.0, -1.0, 3.0, 2.0, 3.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0], [7.0] * 12, [-5.0] * 11 + [-4.0]):
+        t = torch.tensor(lg, dtype=torch.bfloat16)
+        m.logits_last = lambda h, t=t: t
+        val, idx, _ = m.head_argmax(None)
+        pair, lgd = m.head_device(None)
+        assert (float(pair[0]), 40 + int(pair[1])) == (val, idx)
+        assert hybrid.f32_bits(float(pair[0])) == hybrid.f32_bits(val)
+        assert torch.equal(lgd, t)
+
+
+class _FakeLink:
+    """A link that writes down what it is asked to send. `slow`: seconds the first frame takes."""
+
+    def __init__(self, slow=0.0):
+        import time as _t
+        self.sent, self.slow, self.last_sent, self._sleep = [], slow, 0, _t.sleep
+        self.lock = threading.Lock()
+
+    def send(self, kind, payload=b"", dtype=None, shape=(), aux0=0, aux1=0, decode=None):
+        with self.lock:
+            first = not self.sent and not getattr(self, "_started", False)
+            self._started = True
+        if first and self.slow:
+            self._sleep(self.slow)
+        self.sent.append((kind, bytes(payload), aux0, aux1))
+
+    def send_async(self, *a, **kw):
+        t = threading.Thread(target=self.send, args=a, kwargs=kw, daemon=True)
+        t.start()
+        return t
+
+
+def test_a_large_pair_keeps_its_order_on_the_link_when_frames_leave_on_threads(monkeypatch):
+    """Frames over SMALL_FRAME leave on a thread each. The second frame of a pair must wait for the first one on its link."""
+    monkeypatch.setattr(transport, "SMALL_FRAME", 8)
+    link = _FakeLink(slow=0.15)
+    comm = hybrid.GroupComm(0, 2, {1: link}, "cpu")
+    a, b = torch.full((4, 8), 1.0), torch.full((1, 8), 2.0)
+    ta = comm.send_partial(a, 0)
+    tb = comm.send_partial(b, 1)            # small enough to go inline if nothing were in front of it... it is not: 32 bytes > 8
+    for t in ta[2] + tb[2]:
+        t.join(timeout=5)
+    assert [len(p) for _, p, _, _ in link.sent] == [a.numel() * 4, b.numel() * 4]
+    # a small frame behind a large one waits too
+    monkeypatch.setattr(transport, "SMALL_FRAME", 64)
+    link = _FakeLink(slow=0.15)
+    comm = hybrid.GroupComm(0, 2, {1: link}, "cpu")
+    ta = comm.send_partial(a, 0)            # 128 bytes: a thread
+    tb = comm.send_partial(b, 1)            # 32 bytes: inline, unless the first is still leaving
+    for t in ta[2] + tb[2]:
+        t.join(timeout=5)
+    assert [len(p) for _, p, _, _ in link.sent] == [a.numel() * 4, b.numel() * 4]
+
+
+def test_large_pairs_through_real_links_give_the_same_tokens(tiny4, monkeypatch):
+    monkeypatch.setattr(transport, "SMALL_FRAME", 16)
+    _, ref, _ = alone(tiny4, tp3)
+    _, out, _, _, _ = many(tiny4, tp3, 2, interleave=2)
+    same(ref, out)
+
+
+def test_sender_keeps_hand_over_order_and_reports_a_failure_to_the_compute_thread():
+    link = _FakeLink(slow=0.1)
+    s = hybrid.Sender("cpu", None)
+    hs = []
+    for k in range(6):
+        h = s.copy(torch.full((1, 4), float(k)))
+        s.send(h, link, transport.KIND_HIDDEN, k, 0, True, "x")
+        s.free(h)
+        hs.append(h)
+    s.flush()
+    assert [a0 for _, _, a0, _ in link.sent] == list(range(6))
+    assert [torch.frombuffer(bytearray(p), dtype=torch.float32)[0].item() for _, p, _, _ in link.sent] == [float(k) for k in range(6)]
+
+    # the compute thread gets its partial only once the copy is done, however long the sender is held up before it
+    slow = _FakeLink(slow=0.3)
+    h0 = s.copy(torch.ones(1, 4))
+    s.send(h0, slow, transport.KIND_HIDDEN, 0, 0, True, "x")
+    s.mode = "thread"
+    h1 = s.copy(torch.full((1, 4), 9.0))
+    got = s.host(h1)
+    assert got is not None and torch.equal(got, torch.full((1, 4), 9.0)) and len(slow.sent) == 1
+    s.mode = "inline"
+
+    class Broken(_FakeLink):
+        def send(self, *a, **kw):
+            raise ConnectionError("peer closed the connection")
+    h = s.copy(torch.zeros(1, 4))
+    s.send(h, Broken(), transport.KIND_HIDDEN, 0, 0, True, "x")
+    with pytest.raises(ConnectionError, match="sender thread failed"):
+        s.flush()
+    with pytest.raises(ConnectionError, match="sender thread failed"):
+        s.copy(torch.zeros(1, 4))
+
+
+def test_async_send_records_sender_spans_and_the_bytes_of_every_link(tiny4, tmp_path, monkeypatch):
+    from nocturne.engines.torch_tp import timeline
+    monkeypatch.setenv("NOCTURNE_ASYNC_COPY", "thread")
+    specs, co, th = boot(tiny4, hybrid_tp_first(free_ports(8)), slots=2, async_send=True, timeline=True, run_dir=str(tmp_path))
+    try:
+        m0 = co.metrics()
+        co.generate_many(reqs(PROMPTS[:3], 5), tp_interleave=2)
+        m = co.metrics()
+    finally:
+        co.shutdown()
+    for x in th:
+        x.join(timeout=10)
+    run = timeline.load(tmp_path)
+    kinds = {e["kind"] for rk in run["ranks"] for e in rk["events"]}
+    assert {"tx_wait", "tx_send"} <= kinds
+    sent = timeline.all_bytes(run)
+    checked = 0
+    for name, r in m["ranks"].items():
+        for peer, c in r["links"].items():
+            if peer.startswith("ctl") or (name, peer) == ("s0/0", "s0/1"):
+                continue        # ctl links carry control frames too; the coordinator's token frames to s0/1 travel on one
+            c0 = m0["ranks"][name]["links"][peer]
+            ctl_n = lambda x: sum(n for k, n in x["by_kind_sent"].items() if k not in ("allreduce", "token", "hidden", "head"))
+            # between the two snapshots a data link carries data frames and forwarded metrics requests (bare headers of 16 bytes)
+            assert sent.get(f"{name} -> {peer}", 0) == c["sent_bytes"] - c0["sent_bytes"] - 16 * (ctl_n(c) - ctl_n(c0)), (name, peer)
+            checked += 1
+    assert checked == 9
+
+
+# ---- the overlap share ----------------------------------------------------------------------------------------------------------
+def _ev(kind, t0, t1, peer=None, nbytes=0, step=0, req=1, slot=0):
+    return {"kind": kind, "t0": float(t0), "t1": float(t1), "step": step, "req": req, "peer": peer, "bytes": nbytes, "tokens": 1, "slot": slot}
+
+
+def _run(a_events, b_events):
+    mk = lambda n, g, ev: {"meta": {"rank": n, "gid": g, "host": "h" + n, "device": "cpu"}, "events": ev, "aligned": True}
+    return {"ranks": [mk("a", 0, a_events), mk("b", 1, b_events)], "samples": []}
+
+
+def test_interval_helpers():
+    from nocturne.engines.torch_tp.timeline import intersect, length, union
+    assert union([(5, 7), (0, 2), (1, 3), (7, 8), (4, 4)]) == [[0, 3], [5, 8]]
+    assert intersect([[0, 3], [5, 8]], [[2, 6], [7, 20]]) == [[2, 3], [5, 6], [7, 8]]
+    assert length([[2, 3], [5, 6], [7, 8]]) == 3
+
+
+def test_a_frame_is_in_flight_from_the_send_start_to_the_end_of_the_wait_matched_by_order():
+    from nocturne.engines.torch_tp.timeline import in_flight
+    a = [_ev("compute", 0, 10), _ev("send", 10, 12, "b", 100), _ev("compute", 12, 40, req=2, slot=1), _ev("send", 40, 41, "b", 100, req=2, slot=1)]
+    b = [_ev("recv_wait", 0, 20, "a", 100), _ev("compute", 20, 60), _ev("recv_wait", 60, 61, "a", 100, req=2, slot=1)]
+    fl = in_flight(_run(a, b))["a -> b"]
+    assert (fl["sent"], fl["received"], fl["bytes_match"]) == (2, 2, True)
+    assert fl["frames"] == [[10.0, 20.0, 100, 1, 0], [40.0, 61.0, 100, 2, 1]]
+    # a receive that ends before its send started (clock error) gives an empty interval, never a negative one
+    b2 = [_ev("recv_wait", 0, 5, "a", 100)]
+    assert in_flight(_run(a[:2], b2))["a -> b"]["frames"] == [[10.0, 10.0, 100, 1, 0]]
+
+
+def test_overlap_share_is_compute_time_with_a_frame_in_flight_over_the_request_window():
+    from nocturne.engines.torch_tp.timeline import overlap
+    # rank a: computes 0-10, sends 10-12 (in flight until b's wait ends at 20), computes 12-40 for the next request
+    a = [_ev("compute", 0, 10), _ev("send", 10, 12, "b", 100), _ev("compute", 12, 40, req=2, slot=1)]
+    b = [_ev("recv_wait", 0, 20, "a", 100), _ev("compute", 20, 60), _ev("other", 60, 100)]
+    o = overlap(_run(a, b), [{"t0_mono_ns": 0, "t1_mono_ns": 100}])
+    ra, rb = o["per_rank"]["a"], o["per_rank"]["b"]
+    assert o["window_ms"] == pytest.approx(100 / 1e6)
+    assert ra["busy_share"] == pytest.approx(0.38)                     # 10 + 28 of 100
+    assert ra["overlap_share"] == pytest.approx(0.08)                  # computing 12-20 while its frame is in flight
+    assert ra["overlap_out_share"] == pytest.approx(0.08) and ra["overlap_in_share"] == 0
+    assert rb["busy_share"] == pytest.approx(0.40) and rb["overlap_share"] == 0
+    assert ra["in_flight_share"] == pytest.approx(0.10)
+    assert o["unmatched_links"] == [] and o["async_send"] is False
+    # the window is the union of the request intervals: time outside it does not count
+    o2 = overlap(_run(a, b), [{"t0_mono_ns": 0, "t1_mono_ns": 20}, {"t0_mono_ns": 15, "t1_mono_ns": 50}])
+    assert o2["window_ms"] == pytest.approx(50 / 1e6)
+    assert o2["per_rank"]["a"]["busy_share"] == pytest.approx(38 / 50)
+    assert o2["per_rank"]["b"]["busy_share"] == pytest.approx(30 / 50)
+    # two ranks on one device: the device is busy when either computes
+    r = _run(a, b)
+    for rk in r["ranks"]:
+        rk["meta"]["host"], rk["meta"]["device"] = "h", "cuda:0"
+    od = overlap(r, [{"t0_mono_ns": 0, "t1_mono_ns": 100}])["per_device"]["h cuda:0"]
+    assert od["ranks"] == ["a", "b"] and od["busy_share"] == pytest.approx(0.58)      # 0-10, 12-60
+    # a send without its receive is reported
+    assert overlap(_run(a + [_ev("send", 41, 42, "b", 7)], b), None)["unmatched_links"] == ["a -> b"]
+
+
+@pytest.mark.parametrize("async_send", [False, True])
+def test_a_recorded_run_with_slots_matches_every_send_with_a_receive(tiny4, tmp_path, async_send, monkeypatch):
+    from nocturne.engines.torch_tp import timeline
+    monkeypatch.setenv("NOCTURNE_ASYNC_COPY", "thread")
+    specs, co, th = boot(tiny4, hybrid_tp_first(free_ports(8)), slots=3, async_send=async_send, timeline=True, run_dir=str(tmp_path))
+    try:
+        out = co.generate_many(reqs(PROMPTS, 5), prefill_chunk=3, tp_interleave=2)
+        requests = list(co.requests)
+    finally:
+        co.shutdown()
+    for x in th:
+        x.join(timeout=10)
+    summ = timeline.build(tmp_path, co.clock_record(), requests)
+    o = summ["overlap"]
+    assert o["unmatched_links"] == [], o["links"]
+    assert o["async_send"] is async_send
+    assert set(o["per_rank"]) == {s.name for s in specs}
+    assert all(0 <= v["overlap_share"] <= v["busy_share"] <= 1 for v in o["per_rank"].values())
+    assert sum(l["frames"] for l in o["links"].values()) > 0
+    slots = {e.get("slot") for rk in timeline.load(tmp_path)["ranks"] for e in rk["events"] if e["step"] >= 0}
+    assert slots == {0, 1, 2}
+    page = (tmp_path / "timeline.html").read_text()
+    assert '"overlap":{' in page and '"flights":[[' in page

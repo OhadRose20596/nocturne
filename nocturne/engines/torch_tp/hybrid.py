@@ -137,12 +137,167 @@ def bits_f32(b: int) -> float:
     return struct.unpack("<f", struct.pack("<I", b))[0]
 
 
+# ---- sending off the compute thread (--async-send) -------------------------------------------------------------------------
+ASYNC_COPY = {"cuda": "pinned", "mps": "thread", "cpu": "inline"}
+POOL_MAX_BYTES = 256 << 20
+
+
+class Handoff:
+    """One tensor on its way to the host. `host` is valid once `ready` is set."""
+    __slots__ = ("host", "ready", "x", "event", "ctx", "pooled")
+
+    def __init__(self, ctx):
+        self.host = self.x = self.event = None
+        self.ready, self.ctx, self.pooled = threading.Event(), ctx, False
+
+
+class AsyncHead:
+    """A head result still on the device: [max logit, local index] and the local logits."""
+    __slots__ = ("pair", "logits")
+
+    def __init__(self, pair, logits):
+        self.pair, self.logits = pair, logits
+
+
+class Sender:
+    """One thread per rank. It takes work in the order it was handed over: wait until a tensor is on the host, then
+    send its frames. So frames leave every link in hand-over order, and the compute thread never waits for the device
+    or the socket. Where the copy to the host runs (`mode`): CUDA `pinned` (a non blocking copy into pinned memory,
+    queued by the compute thread; this thread waits for its event), MPS `thread` (this thread copies), CPU `inline`
+    (nothing to copy). NOCTURNE_ASYNC_COPY=inline forces the copy back onto the compute thread, for a comparison."""
+
+    def __init__(self, device: str, rec: Recorder | None):
+        self.device, self.rec = device, rec
+        self.mode = os.environ.get("NOCTURNE_ASYNC_COPY") or ASYNC_COPY.get(device.split(":")[0], "inline")
+        if self.mode not in ("pinned", "thread", "inline"):
+            raise ValueError(f"NOCTURNE_ASYNC_COPY must be pinned, thread or inline, got {self.mode}")
+        self.q: queue.SimpleQueue = queue.SimpleQueue()
+        self.error: BaseException | None = None
+        self.pool: dict[tuple, list] = {}
+        self.pool_bytes = 0
+        self.pool_lock = threading.Lock()
+        self.frames = 0
+        self.thread = threading.Thread(target=self._loop, daemon=True, name="nocturne-sender")
+        self.thread.start()
+
+    # ---- compute thread ----
+    def check(self) -> None:
+        if self.error is not None:
+            raise ConnectionError(f"the sender thread failed: {type(self.error).__name__}: {self.error}") from self.error
+
+    def copy(self, x: torch.Tensor) -> Handoff:
+        """Start bringing `x` to the host. Returns at once, except in `inline` mode."""
+        self.check()
+        rec = self.rec
+        h = Handoff((rec.step, rec.req, rec.tokens, rec.slot) if rec else None)
+        x = x.contiguous()
+        if self.mode == "pinned":
+            with self.pool_lock:
+                free = self.pool.get((tuple(x.shape), x.dtype))
+                buf = free.pop() if free else None
+                if buf is not None:
+                    self.pool_bytes -= buf.numel() * buf.element_size()
+            if buf is None:
+                buf = torch.empty(x.shape, dtype=x.dtype, pin_memory=True)
+            buf.copy_(x, non_blocking=True)
+            h.event = torch.cuda.Event()
+            h.event.record(torch.cuda.current_stream(self.device))
+            h.host, h.pooled = buf, True
+        elif self.mode == "thread":
+            h.x = x
+        else:
+            h.host = x.cpu()
+        self.q.put(("copy", h))
+        return h
+
+    def send(self, h: Handoff, link: transport.Link, kind: int, aux0: int, aux1: int, decode: bool, peer: str | None) -> None:
+        self.q.put(("send", h, link, kind, aux0, aux1, decode, peer))
+
+    def head(self, pair: Handoff, logits: Handoff | None, link: transport.Link, slot: int, rows: tuple[int, int], decode: bool,
+             peer: str | None) -> None:
+        self.q.put(("head", pair, logits, link, slot, rows, decode, peer))
+
+    def free(self, h: Handoff) -> None:
+        """The compute thread is done with `h.host`; the buffer returns to the pool after the frames queued so far."""
+        self.q.put(("free", h))
+
+    def host(self, h: Handoff) -> torch.Tensor:
+        while not h.ready.wait(0.2):
+            self.check()
+        return h.host
+
+    def flush(self) -> None:
+        """Wait until everything handed over so far has left."""
+        done = threading.Event()
+        self.q.put(("flush", done))
+        while not done.wait(0.2):
+            self.check()
+
+    def stop(self) -> None:
+        self.q.put(("stop",))
+        self.thread.join(timeout=3)
+
+    # ---- sender thread ----
+    def _loop(self) -> None:
+        rec = self.rec
+        try:
+            while True:
+                job = self.q.get()
+                op = job[0]
+                t0 = clock.now_ns()
+                if op == "copy":
+                    h = job[1]
+                    if h.event is not None:
+                        h.event.synchronize()
+                        h.event = None
+                    elif h.x is not None:
+                        h.host, h.x = h.x.cpu(), None
+                    h.ready.set()
+                    if rec:
+                        rec.span("tx_wait", t0, clock.now_ns(), h.ctx)
+                elif op == "send":
+                    _, h, link, kind, aux0, aux1, decode, peer = job
+                    wire, dt = _host_bytes(h.host)
+                    link.send(kind, wire, dt, tuple(h.host.shape), aux0=aux0, aux1=aux1, decode=decode)
+                    self.frames += 1
+                    if rec:
+                        rec.span("tx_send", t0, clock.now_ns(), h.ctx, peer, link.last_sent)
+                elif op == "head":
+                    _, pair, logits, link, slot, rows, decode, peer = job
+                    val, i = float(pair.host[0]), int(pair.host[1])
+                    idx = rows[0] + i
+                    if i >= rows[1] - rows[0] or idx > IDX_MASK:
+                        raise ValueError(f"head index {i} is out of range (no maximum among the logits, or it does not fit the frame)")
+                    aux0 = idx | slot << SLOT_SHIFT
+                    if logits is not None:
+                        wire, dt = _host_bytes(logits.host)
+                        link.send(transport.KIND_HEAD, wire, dt, tuple(logits.host.shape), aux0=aux0, aux1=f32_bits(val), decode=decode)
+                    else:
+                        link.send(transport.KIND_HEAD, aux0=aux0, aux1=f32_bits(val), decode=decode)
+                    self.frames += 1
+                    if rec:
+                        rec.span("tx_send", t0, clock.now_ns(), pair.ctx, peer, link.last_sent)
+                elif op == "free":
+                    h = job[1]
+                    with self.pool_lock:
+                        if h.pooled and self.pool_bytes < POOL_MAX_BYTES:
+                            self.pool.setdefault((tuple(h.host.shape), h.host.dtype), []).append(h.host)
+                            self.pool_bytes += h.host.numel() * h.host.element_size()
+                    h.host = None
+                elif op == "flush":
+                    job[1].set()
+                else:
+                    return
+        except BaseException as e:      # noqa: BLE001 - the compute thread raises it at its next call (check)
+            self.error = e
+
+
 # ---- all-reduce ----------------------------------------------------------------------------------------------------------
 class GroupComm(Comm):
     """All-to-all all-reduce over a group of n ranks. `links` maps every other group rank to its Link."""
 
     def __init__(self, me: int, n: int, links: dict[int, transport.Link], device: str, reduce_dtype: str = "float32",
-                 rec: Recorder | None = None, names: dict[int, str] | None = None):
+                 rec: Recorder | None = None, names: dict[int, str] | None = None, sender: "Sender | None" = None):
         if reduce_dtype not in REDUCE_DTYPES:
             raise ValueError(f"reduce_dtype must be one of {REDUCE_DTYPES}")
         self.me, self.n, self.links, self.device = me, n, links, device
@@ -150,6 +305,8 @@ class GroupComm(Comm):
         self.calls = 0
         self.rec, self.names = rec, names or {}
         self.ctx: list | None = None        # recorder contexts of the two requests of a pair, by tag
+        self.sender = sender
+        self._tail: dict[int, threading.Thread] = {}      # per peer: the latest threaded send that may still be running
 
     def all_reduce(self, x: torch.Tensor) -> torch.Tensor:
         return self.recv_sum(self.send_partial(x))
@@ -161,9 +318,14 @@ class GroupComm(Comm):
             return x
         self.calls += 1
         rec = self.rec
+        if rec and tag is not None and self.ctx:
+            rec.use(self.ctx[tag])
+        if self.sender is not None:         # --async-send: the copy and the sends are handed over, this thread goes on
+            h = self.sender.copy(x)
+            for r in sorted(self.links):
+                self.sender.send(h, self.links[r], transport.KIND_ALLREDUCE, 0, 0, x.shape[0] == 1, self.names.get(r))
+            return (x.dtype, h, None, tag)
         if rec:
-            if tag is not None and self.ctx:
-                rec.use(self.ctx[tag])
             sync(self.device)
             rec.lap("compute")
         xc = x.contiguous().cpu()
@@ -174,13 +336,28 @@ class GroupComm(Comm):
         dec = xc.shape[0] == 1
         pending = []
         for r in sorted(self.links):
-            if len(wire) <= transport.SMALL_FRAME:
+            prev = self._tail.get(r)
+            if prev is not None and not prev.is_alive():
+                prev = None
+            if len(wire) <= transport.SMALL_FRAME and prev is None:
                 self.links[r].send(transport.KIND_ALLREDUCE, wire, dt, tuple(xc.shape), decode=dec)
+            elif prev is None:
+                self._tail[r] = self.links[r].send_async(transport.KIND_ALLREDUCE, bytes(wire), dt, tuple(xc.shape), decode=dec)
+                pending.append(self._tail[r])
             else:
-                pending.append(self.links[r].send_async(transport.KIND_ALLREDUCE, bytes(wire), dt, tuple(xc.shape), decode=dec))
+                # the first frame of a pair is still leaving on a thread: this one must not overtake it on the link
+                self._tail[r] = threading.Thread(target=self._send_after, daemon=True,
+                                                 args=(prev, self.links[r], bytes(wire), dt, tuple(xc.shape), dec))
+                self._tail[r].start()
+                pending.append(self._tail[r])
             if rec:
                 rec.lap("send", self.names.get(r), nb)
         return (x.dtype, xc, pending, tag)
+
+    @staticmethod
+    def _send_after(prev: threading.Thread, link: transport.Link, data: bytes, dt: str, shape: tuple, dec: bool) -> None:
+        prev.join()
+        link.send(transport.KIND_ALLREDUCE, data, dt, shape, decode=dec)
 
     def recv_sum(self, ticket) -> torch.Tensor:
         """Second half: receive every peer's partial and add all partials in group rank order."""
@@ -190,7 +367,7 @@ class GroupComm(Comm):
         rec = self.rec
         if rec and tag is not None and self.ctx:
             rec.use(self.ctx[tag])
-        parts = {self.me: xc}
+        parts = {}
         for r in sorted(self.links):
             kind, payload, pdt, shape, _, _ = self.links[r].recv()
             if kind != transport.KIND_ALLREDUCE:
@@ -198,8 +375,12 @@ class GroupComm(Comm):
             if rec:
                 rec.lap("allreduce_wait", self.names.get(r), self.links[r].last_recv)
             parts[r] = _from_wire(payload, shape, pdt)
-        for t in pending:
-            t.join()
+        if pending is None:                 # handed to the sender thread: my partial is on the host once its copy is done
+            parts[self.me] = self.sender.host(xc)
+        else:
+            parts[self.me] = xc
+            for t in pending:
+                t.join()
         if self.fp32:
             acc = parts[0].float()
             for r in range(1, self.n):
@@ -210,8 +391,11 @@ class GroupComm(Comm):
             for r in range(1, self.n):
                 out = out + parts[r]
         out = out.to(self.device)
+        if pending is None:
+            self.sender.free(xc)
         if rec:
-            sync(self.device)
+            if self.sender is None:
+                sync(self.device)
             rec.lap("host_copy")
         return out
 
@@ -220,11 +404,12 @@ class GroupComm(Comm):
 class RankRuntime:
     def __init__(self, spec: RankSpec, specs: list[RankSpec], cfg: Qwen2Config, model_dir: str, device: str, max_seq: int,
                  reduce_dtype: str, phase: transport.Phase, log=_flush_print, enforce_budget: bool = True,
-                 dtype: str = "bfloat16", timeline: bool = False, slots: int = 1):
+                 dtype: str = "bfloat16", timeline: bool = False, slots: int = 1, async_send: bool = False):
         if not 1 <= slots <= MAX_SLOTS:
             raise ValueError(f"slots must be 1 to {MAX_SLOTS}, got {slots}")
         self.slots = slots
         self.rec = Recorder(spec.name, spec.gid, spec.host, device) if timeline else None
+        self.sender = Sender(device, self.rec) if async_send else None
         self.sampler: Sampler | None = None
         self.source = None                  # a shipping.CacheSource when the weights were shipped
         self.shipping: dict | None = None
@@ -295,7 +480,7 @@ class RankRuntime:
         self.down_names = [s.name for s in self.down_specs]
         self.up_name = self.specs[0].name if self.spec.stage == 0 else self.up_spec.name
         self.comm = GroupComm(self.spec.group_rank, self.spec.group_size, grp, self.device, self.reduce_dtype, rec=self.rec,
-                              names={s.group_rank: s.name for s in self.group})
+                              names={s.group_rank: s.name for s in self.group}, sender=self.sender)
 
     @torch.inference_mode()
     def step(self, ids: list[int] | None = None, h: torch.Tensor | None = None, pos0: int = 0, flags: int = 0):
@@ -314,6 +499,19 @@ class RankRuntime:
         """The end of a step: the hidden state to the next stage, and the head result when this rank holds head rows
         and the frame asks for one."""
         rec = self.rec
+        if self.sender is not None:         # --async-send: nothing here waits for the device, except a head result this process needs itself
+            if self.down_order:
+                hd = self.sender.copy(h)
+                for link, name in zip(self.down_order, self.down_names):
+                    self.sender.send(hd, link, transport.KIND_HIDDEN, pos0, flags, h.shape[0] == 1, name)
+                self.sender.free(hd)
+            self.steps += 1
+            res = None
+            if self.spec.head_rows is not None and not flags & FLAG_NOHEAD:
+                res = AsyncHead(*self.model.head_device(h)) if self.spec.gid else self.model.head_argmax(h)
+            if rec:
+                rec.lap("compute")
+            return res
         if self.down_order:
             if rec:
                 sync(self.device)
@@ -369,7 +567,13 @@ class RankRuntime:
         rb = self._finish(hb, pos_b, fl_b)
         return ra, rb
 
+    def flush(self) -> None:
+        """With --async-send: wait until every frame handed over has left (before a control frame or a counter read)."""
+        if self.sender is not None:
+            self.sender.flush()
+
     def forward_control(self, kind: int, aux1: int = 0) -> None:
+        self.flush()
         for link in self.down_order:
             link.send(kind, aux1=aux1)
 
@@ -384,15 +588,19 @@ class RankRuntime:
             if run_dir:
                 self.sampler.write(run_dir)
             self.sampler = None
+        if self.sender is not None:
+            self.sender.stop()
         if self.rec is not None and run_dir:
             self.rec.write(run_dir)
 
     def metrics(self) -> dict:
+        self.flush()
         m = {"name": self.spec.name, "gid": self.spec.gid, "host": self.spec.host, "device": self.device,
              "pid": os.getpid(), "torch": torch.__version__, "loaded_tensor_bytes": self.loaded_bytes,
              "kv_bytes": self.kv_bytes, "idle": self.idle, "planned": self.spec.planned, "budget": self.spec.budget, "load_s": self.load_s,
              "steps": self.steps, "allreduce_calls": self.comm.calls, "links": {k: l.counters.snapshot() for k, l in self.links.items()},
-             "shipping": self.shipping}
+             "shipping": self.shipping, "slots": self.slots,
+             "async_send": {"copy": self.sender.mode, "frames": self.sender.frames} if self.sender else None}
         m.update(mem_metrics(self.device))
         m.update(cuda_metrics(self.device))
         m.update(footprint())
@@ -411,10 +619,18 @@ class RankRuntime:
         """A head rank's answer for one step, on its ctl link: the best value and its index, with the slot."""
         if res is None:
             return
+        dec = (len(unit[0]) if unit[0] is not None else unit[1].shape[0]) == 1
+        if isinstance(res, AsyncHead):
+            pair = self.sender.copy(res.pair)
+            lg = self.sender.copy(res.logits) if flags & FLAG_LOGITS else None
+            self.sender.head(pair, lg, self.ctl, flags >> SLOT_SHIFT, self.spec.head_rows, dec, self.specs[0].name)
+            self.sender.free(pair)
+            if lg is not None:
+                self.sender.free(lg)
+            return
         val, idx, lg = res
         if idx > IDX_MASK:
             raise ValueError(f"token index {idx} does not fit the head frame ({IDX_MASK} at most)")
-        dec = (len(unit[0]) if unit[0] is not None else unit[1].shape[0]) == 1
         aux0 = idx | (flags >> SLOT_SHIFT) << SLOT_SHIFT
         if flags & FLAG_LOGITS:
             lc = lg.contiguous().cpu()
@@ -436,6 +652,7 @@ class RankRuntime:
                 kind, _, _, _, _, aux1 = self.ctl.recv()
                 if kind != transport.KIND_CLOCK or aux1 != clock.BEGIN:
                     raise RuntimeError(f"{self.spec.name}: unexpected frame {transport.KIND_NAMES.get(kind, kind)} on the ctl link")
+                self.flush()
                 clock.answer(self.ctl)
                 continue
             kind, payload, dtype, shape, aux0, aux1 = up.recv()
@@ -467,6 +684,7 @@ class RankRuntime:
                 else:
                     self._send_head(self.step(ids=one[0], h=one[1], pos0=one[2], flags=one[3]), aux1, one)
             elif kind == transport.KIND_CLOCK and up is self.ctl:        # a rank of the first stage: its upstream link is its ctl link
+                self.flush()
                 clock.answer(self.ctl)
             elif kind == transport.KIND_METRICS:
                 self.forward_control(kind)
@@ -602,7 +820,7 @@ def rank_main(addrs: list[str], port: int, model_dir: str | None, device: str | 
     out_dir = (run_dir or default_run_dir(pl.get("run_tag"))) if timeline else None
     rt = RankRuntime(spec, specs, cfg, model_dir, device, pl["max_seq_len"], pl["reduce_dtype"], phase, log,
                      enforce_budget=pl.get("enforce_budget", True), dtype=pl.get("dtype", "bfloat16"), timeline=timeline,
-                     slots=int(pl.get("slots") or 1))
+                     slots=int(pl.get("slots") or 1), async_send=bool(pl.get("async_send")))
     if timeline:
         rt.start_sampler(addrs, spec.gid in host_samplers(specs))
     try:
@@ -644,9 +862,10 @@ class Coordinator:
                  max_seq_len: int, reduce_dtype: str, prefill_max: int, device: str | None = None, log=_flush_print,
                  enforce_budget: bool = True, mps_fraction_cap: bool = False, ready_timeout_s: float = 1800.0,
                  dtype: str = "bfloat16", timeline: bool = False, run_dir: str | None = None, run_tag: str | None = None,
-                 ship_weights: bool = False, cache_dir: str | None = None, verify_cache: bool = False, slots: int = 1):
+                 ship_weights: bool = False, cache_dir: str | None = None, verify_cache: bool = False, slots: int = 1,
+                 async_send: bool = False):
         self.log, self.specs, self.max_seq_len, self.prefill_max = log, specs, max_seq_len, prefill_max
-        self.slots = slots
+        self.slots, self.async_send = slots, async_send
         self.ship_weights, self.cache_dir, self.verify_cache = ship_weights, cache_dir, verify_cache
         self.shipping: dict | None = None
         self.run_dir = (run_dir or default_run_dir(run_tag)) if timeline else None
@@ -660,7 +879,8 @@ class Coordinator:
         me = specs[0]
         self.device = pick_device(device or me.device)
         self.rank = RankRuntime(me, specs, self.cfg, model_dir, self.device, max_seq_len, reduce_dtype, self.phase, log,
-                                enforce_budget=enforce_budget, dtype=dtype, timeline=timeline, slots=slots)
+                                enforce_budget=enforce_budget, dtype=dtype, timeline=timeline, slots=slots,
+                                async_send=async_send)
         self.listener = Listener(listen_addrs, me.port, self.phase, log)
         self.ctl: dict[int, transport.Link] = {}
         if timeline:
@@ -697,7 +917,7 @@ class Coordinator:
         plan_msg = {"specs": [s.to_json() for s in specs], "hosts": hosts, "max_seq_len": max_seq_len,
                     "reduce_dtype": reduce_dtype, "enforce_budget": enforce_budget, "mps_fraction_cap": mps_fraction_cap,
                     "dtype": dtype, "timeline": timeline, "run_tag": run_tag, "ship": ship, "cfg": config_to_json(self.cfg),
-                    "verify_cache": self.verify_cache, "slots": self.slots}
+                    "verify_cache": self.verify_cache, "slots": self.slots, "async_send": self.async_send}
         for s in specs[1:]:
             link = connect_link(address(s, me.host, hosts), s.port, {"role": "ctl"}, self.phase)
             link.sock.settimeout(CTL_TIMEOUT_S)
@@ -861,7 +1081,7 @@ class Coordinator:
             chunks = chunk_ranges(len(ids), prefill_chunk)
             st = {"i": i, "r": r, "req": self.req_seq, "out": [], "pos": len(ids), "units": collections.deque(), "chunks": len(chunks),
                   "t0": time.time(), "m0": clock.now_ns(), "t1": None, "m1": None, "logits": None, "cands": None, "parts": None,
-                  "want_logits": False, "decode": False}
+                  "want_logits": False, "decode": False, "ctx": None}
             for k, (a, b) in enumerate(chunks):
                 last = k == len(chunks) - 1
                 flags = (0 if last else FLAG_NOHEAD) | (FLAG_LOGITS if last and r.get("first_logits") else 0)
@@ -878,7 +1098,7 @@ class Coordinator:
             st["decode"] = len(ids) == 1
             ctx = None
             if rec:
-                ctx = rec.begin(st["req"], len(ids), s)
+                ctx = st["ctx"] = rec.begin(st["req"], len(ids), s)
                 rec.lap("other")
             data = np.asarray(ids, dtype=np.int64).tobytes()
             for sp in self.stage0_remote:
@@ -964,6 +1184,7 @@ class Coordinator:
                     if st is None or st["cands"] is None:
                         raise RuntimeError(f"head frame from {sp.name} for slot {s}, which waits for none")
                     if rec:
+                        rec.use(st["ctx"])
                         rec.lap("recv_wait", sp.name, link.last_recv)
                     st["cands"].append((bits_f32(aux1), aux0 & IDX_MASK))
                     if st["want_logits"]:
@@ -1007,6 +1228,7 @@ class Coordinator:
 
     # ---- control ----------------------------------------------------------------------------------------------------------
     def metrics(self) -> dict:
+        self.rank.flush()
         for s in self.stage0_remote:
             self.ctl[s.gid].send(transport.KIND_METRICS)
         self.rank.forward_control(transport.KIND_METRICS)
@@ -1055,6 +1277,14 @@ class Coordinator:
             link.close()
         self.listener.close()
         self.rank.close(self.run_dir)
+
+
+DATA_KIND_NAMES = ("step", "allreduce", "token", "hidden", "head")
+
+
+def data_frames(metrics: dict) -> int:
+    """All data frames sent by every process (prefill and decode), from a metrics snapshot."""
+    return sum(c["by_kind_sent"].get(k, 0) for r in metrics["ranks"].values() for c in r["links"].values() for k in DATA_KIND_NAMES)
 
 
 def decode_frames(metrics: dict) -> dict:

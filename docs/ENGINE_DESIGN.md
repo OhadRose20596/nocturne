@@ -243,7 +243,8 @@ Session 10 changed three things on the wire, and nothing else:
 
 1. The WEIGHTS kind (section 3.8).
 2. The CLOCK kind (section 3.9).
-3. In TOKEN and HIDDEN frames the second 32 bit field holds flags in its low byte. In a run with `--timeline` its upper 24 bits carry the request number, which the recorder reads. Without `--timeline` they are zero, so those frames are byte for byte what they were before session 10. The frame size and every other field are unchanged.
+3. In TOKEN and HIDDEN frames the second 32 bit field holds flags in its low byte. In a run with `--timeline` bits 8 to 23 carry the request number, which the recorder reads. Without `--timeline` they are zero, so those frames are byte for byte what they were before session 10. The frame size and every other field are unchanged.
+4. Part 3 (section 11.7): two more flag bits in that low byte (no head for this chunk, first of a pair), the slot in bits 24 to 31 of the same field, and the slot in bits 24 to 31 of the first field of a HEAD frame. All of them are zero when every overlap option is off.
 
 CLOCK and WEIGHTS frames travel only on control links, never on a group or pipeline link. A rank of a later stage waits on its upstream link and on its control link at the same time, so the coordinator can reach it for the end clock measurement without using the data path.
 
@@ -284,7 +285,7 @@ A TP group may mix Metal and CUDA only with `allow_mixed_devices: true`, because
 
 ## 11. Overlap: compute while data is on the network
 
-Status: design, written on 2026-11-28 before the code (session 10, part 3). It is kept in step with the code as the code lands.
+Status: built (session 10, part 3). The design was written on 2026-11-28 before the code and then kept in step with it. Verification: `experiments/session10_cuda_pair/VERIFY_overlap.md`.
 
 ### 11.1 The problem and the rule
 
@@ -357,17 +358,34 @@ A's transfer happens behind B's compute. This repeats for every all-reduce: the 
 
 ### 11.5 O4. Send without blocking the device (`--async-send`)
 
-Today a rank waits for the device, copies the tensor to the host, and sends, all on the compute thread.
-With the option:
+Without the option a rank waits for the device, copies the tensor to the host, and sends, all on the compute thread.
+With the option every rank has one more thread, the sender (`hybrid.Sender`). The compute thread hands over a tensor and the frames that carry it, and goes on. The sender takes the work in the order it was handed over: it waits until the tensor is on the host, then it sends.
 
-- CUDA: the tensor is copied into pinned host memory with a non blocking copy, and a device event marks the end of the copy. The compute thread goes on. A sender thread waits for the event and sends.
-- MPS: PyTorch has no non blocking copy. The sender thread does the copy, if that proves stable on the M5. If not, the copy stays on the compute thread and only the send moves. The record says which.
-- Per link, frames leave in the order they were handed over.
+Where the copy to the host runs, per device (recorded per rank in `record.json`, `ranks[].async_send.copy`):
+
+| device | mode | what happens |
+|---|---|---|
+| CUDA | `pinned` | The compute thread queues a non blocking copy into pinned host memory and records a device event after it. The sender waits for that event. Pinned buffers are reused per shape |
+| MPS | `thread` | PyTorch has no non blocking copy on MPS. The sender thread does the copy. This was tested on the M5 before it was chosen: 12,000 copies on a second thread while the first kept queueing work, no error, every result bit equal |
+| CPU | `inline` | The tensor is already on the host |
+
+`NOCTURNE_ASYNC_COPY=inline` puts the copy back on the compute thread, for a comparison.
+
+What goes through the sender: the all-reduce partials, the hidden state to the next stage, and the head result of a rank that is not the coordinator. For the head result the best value and its index stay on the device as two numbers (`Qwen2TP.head_device`: the first index of the maximum, the same choice as `head_argmax`), so the compute thread does not read the device. The coordinator's own head result is read at once, because the coordinator needs it to choose the token. Token frames leave the coordinator on its compute thread.
+
+Rules:
+
+- One sender per rank and one queue, so frames leave every link in the order they were handed over.
+- The second half of an all-reduce needs the rank's own partial on the host. It waits for the copy of that partial, not for its send.
+- Before a control frame (metrics, clock, reset, shutdown) and before the counters are read, the rank waits until the sender is empty.
+- A failure in the sender (a closed link) is raised on the compute thread at its next call.
 
 It gives nothing alone: a rank with one request has nothing else to compute. It is meant for O1, O2 and O3.
 Tokens are identical with and without: the same bytes leave in the same order.
 
-**The recorder.** The sender thread records its own spans: the wait for the device and the copy, then the send. So the timeline shows where the device sync now happens. On the compute thread a `compute` span then measures handing work to the device, not the device finishing it; `docs/MEASUREMENT.md` says so.
+**The recorder.** The sender thread records its own spans: `tx_wait` (it waits for a tensor to reach the host) and `tx_send` (bytes and destination). They overlap the spans of the compute thread. With the option the compute thread does no device sync, so its `compute` span is thread time: handing work to the device, not the device finishing it. `docs/MEASUREMENT.md` says so.
+
+**Found while building this.** A frame over 1 MiB leaves on a helper thread (section 5). In a pair, two such frames could be handed to two threads for the same link, and nothing fixed their order. Now the second waits for the first on its link (`GroupComm._send_after`). With one request there is never a second frame, so the old path is unchanged.
 
 ### 11.6 O5. Interleaved pipeline stages
 
@@ -403,13 +421,20 @@ Changes on the wire, all inside fields that exist (also listed in section 6 and 
 | HEAD | first 32 bit field | index of the best token | bits 0 to 23 index, bits 24 to 31 slot |
 
 With every option off the new bits are zero. A vocabulary must stay under 16.7 million tokens and a run under 256 slots; both are checked.
-The PLAN message gains the number of slots, the chunk size, and the two switches.
+The PLAN message gains the number of slots and the async send switch. The chunk size and the interleave switch stay on the coordinator: a rank never schedules, it only follows the frames.
 
 ### 11.8 What is measured
 
-The recorder already writes per rank spans with the request number. It adds the slot.
-A new figure in `timeline.html`, per device: **the share of time in which the device computes while it also has data in flight.**
-A transfer is in flight from the start of the sender's send to the end of the receiver's wait for that frame. The two are matched by their order on the link, which needs no new field. The clocks are aligned as in section 3.9.
+The recorder writes per rank spans with the request number. It adds the slot (a ninth column; files of older runs have eight and still load).
+
+A frame is **in flight** from the start of its send to the end of the receiver's wait for it. The two are matched by their order on the link: the k-th send from A to B is the k-th receive at B from A. That needs no new field. The clocks are aligned as in section 3.9.
+
+`timeline.html` gains a figure and a row:
+
+- **Busy share and overlap share**, per rank and per device. Busy: the share of time in which it computes. Overlap: the share of time in which it computes while a frame it sent, or a frame addressed to it, is in flight. The time base is the time in which at least one request is in work.
+- A row **in flight** under each rank in the timeline: frames it sent in the upper half, frames addressed to it in the lower half, colored by the other rank.
+
+`record.json` gains `timeline.overlap` (the shares, and per link the frame count and whether sends and receives match), `overlap` (the options of the run), `throughput` (tokens per second of the whole system), and `frames.prefill_predicted` against `frames.prefill_measured`.
 
 ### 11.9 Not in this part
 

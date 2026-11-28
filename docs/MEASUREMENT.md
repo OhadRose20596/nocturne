@@ -95,6 +95,29 @@ What a reader must know:
 
 Overhead and identity, measured: section 6.
 
+### 3.1 Several requests, the sender thread, and the overlap share (session 10, part 3)
+
+Every span also carries the slot of its request. With several requests in flight the spans of two steps of one rank interleave; each still belongs to exactly one step.
+
+With `--async-send` a rank has a second thread, the sender. It records two more kinds, which overlap the kinds above and are kept out of the per step bar:
+
+| kind | what it covers |
+|---|---|
+| `tx_wait` | The sender waits until a tensor has reached the host (CUDA: the event after the non blocking copy; MPS: the copy itself) |
+| `tx_send` | The sender hands a frame to the kernel. With the destination and the bytes |
+
+In such a run the compute thread does no device sync. So `compute` is the time of the compute thread, which hands work to the device and goes on. The device time shows in `tx_wait` and in the GPU sampler. Compare `compute` between a run with the option and a run without it only with this in mind.
+
+**In flight.** A frame is in flight from the start of its send span (`send` or `tx_send`) to the end of the receiver's wait span for it (`recv_wait` or `allreduce_wait`). The k-th send on a directed link is matched with the k-th receive on it. `timeline.in_flight` does this, and `record.json` `timeline.overlap.unmatched_links` lists any link where the counts or the bytes do not agree (empty in every verified run).
+
+**Busy share and overlap share**, per rank and per device (`timeline.overlap`):
+
+- Time base: the time in which at least one request is in work (the union of the request intervals, coordinator clock).
+- Busy share: the length of the `compute` spans inside the time base, divided by it. For a device, the union over its ranks.
+- Overlap share: the length of the `compute` time during which a frame the rank sent, or a frame addressed to it, is in flight, divided by the time base. The record also gives the two parts alone (`overlap_out_share`, `overlap_in_share`).
+
+Limits. The start of a frame is on the sender's clock and its end on the receiver's, so each in flight interval carries the alignment error of section 2.2 (half a control link round trip, a few ms on Wi-Fi, well under 0.1 ms on loopback). On a fast link a frame is in flight for a short time, so the overlap share is small even when the busy share is high. The busy share is the number that shows whether a machine still waits.
+
 ## 4. The sampler
 
 Code: `recorder.Sampler`, a thread in every rank process, on with `--timeline`.
@@ -131,6 +154,9 @@ Bytes of shipped weights are separate: `record.json`, `shipping.ranks.<rank>`.
 | planned and loaded bytes, memory | `record.json` `planned[]`, `ranks[]` | `plan.plan`; `RankRuntime.metrics` | none | As in engine GGUF part 1 |
 | CPU busy, process CPU, network bytes per host | `record.json` `timeline.hosts`; `samples_<host>.jsonl` | `timeline.write_host_samples` | coordinator monotonic clock | OS tick of 10 ms; whole run averages in the record |
 | GPU utilization (CUDA) | same | same | same | `nvidia-smi`, 100 ms. Not on Metal |
+| busy share and overlap share, per rank and per device | `record.json` `timeline.overlap`; figure and table in `timeline.html` | `timeline.overlap` | coordinator monotonic clock | Section 3.1. In flight intervals carry the alignment error; with `--async-send` compute is thread time |
+| tokens per second of the whole system | `record.json` `throughput` | `coordinate.run_job` | coordinator wall clock | All prompts, prefill included. Background (T1) |
+| prefill frames | `record.json` `frames.prefill_measured`, `.prefill_predicted` | link counters; `plan.frames_prefill` | none | Exact counts. `prefill_holds` says whether they agree |
 | tokens, identical prompts, accuracy | `record.json` `prompts[]`, `correctness` | the coordinator; `hybrid_run.compare` | none | Exact |
 
 Recorder overhead and identity, measured on 2026-11-28 (`experiments/session10_cuda_pair/VERIFY.md`): on the M5, 1.5B with TP over three ranks, a decode step took 417.5 ms without the recorder and 426.7 ms with it (four and three runs), so the recorder costs 9.3 ms per step, 2.2 percent. On 7B the difference is inside the day to day spread. Tokens were identical with the recorder on and off in every pair.

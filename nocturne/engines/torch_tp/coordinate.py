@@ -60,12 +60,14 @@ def plan_job(job: dict) -> dict:
     """The planner's answer for a job: the rank specs and the predicted frames, or the rejection text."""
     from .plan import PlanError, format_plan, frames_per_step, plan
     p, path, cfg, dims = model_info(job)
+    from .plan import host_totals
     try:
-        specs = plan(dims, p, check_budget=not job.get("force"))
+        specs = plan(dims, p, check_budget=not job.get("force"), kv_slots=int(job.get("slots") or 1))
     except PlanError as e:
         return {"ok": False, "error": str(e)}
     return {"ok": True, "specs": [s.to_json() for s in specs], "frames_predicted": frames_per_step(specs), "model_dir": path,
-            "reduce_dtype": p.reduce_dtype, "table": format_plan(specs, dims), "planner_host": short_hostname()}
+            "reduce_dtype": p.reduce_dtype, "table": format_plan(specs, dims), "planner_host": short_hostname(),
+            "hosts": host_totals(specs, p.host_budget_gb)}
 
 
 def run_job(job: dict, run_dir: str | Path, log=print) -> dict:
@@ -74,8 +76,8 @@ def run_job(job: dict, run_dir: str | Path, log=print) -> dict:
     import torch
     from .engine import chat_ids
     from .gguf_source import load_tokenizer
-    from .hybrid import Coordinator, RankFailed, decode_frames
-    from .plan import PlanError, RankSpec, frames_per_step, listen_addrs, plan
+    from .hybrid import Coordinator, RankFailed, data_frames, decode_frames
+    from .plan import PlanError, chunk_ranges, frames_per_step, frames_prefill, host_totals, listen_addrs, plan
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
     rec = {"outcome": None, "host": short_hostname(), "torch_coordinator": torch.__version__, "pid": os.getpid(),
@@ -88,8 +90,11 @@ def run_job(job: dict, run_dir: str | Path, log=print) -> dict:
     try:
         check_host(job)
         p, path, cfg, dims = model_info(job)
-        specs = plan(dims, p, check_budget=not job.get("force"))
+        ov = overlap_options(job)
+        specs = plan(dims, p, check_budget=not job.get("force"), kv_slots=ov["slots"])
         rec["planned"] = [s.to_json() for s in specs]
+        rec["planned_hosts"] = host_totals(specs, p.host_budget_gb)
+        rec["overlap"] = ov
         rec["reduce_dtype"] = p.reduce_dtype
         pred = frames_per_step(specs)
         rec["frames"] = {"predicted": pred}
@@ -97,25 +102,41 @@ def run_job(job: dict, run_dir: str | Path, log=print) -> dict:
         co = Coordinator(specs, path, job["hosts"], listen_addrs(specs, job["hosts"])[0], p.max_seq_len, p.reduce_dtype, p.prefill_max,
                          device=specs[0].device, log=log, enforce_budget=True, mps_fraction_cap=bool(job.get("mps_fraction_cap")),
                          dtype=job.get("dtype") or "bfloat16", timeline=bool(job.get("timeline")), run_dir=str(run_dir),
-                         run_tag=job.get("tag"), **shipping_args(job))
+                         run_tag=job.get("tag"), slots=ov["slots"], async_send=ov["async_send"], **shipping_args(job))
         rec["load_s"] = time.time() - t0
         tok = None
         if any("prompt" in q for q in job["prompts"]):
             tok = load_tokenizer(os.path.expanduser(job["tokenizer_dir"]) if job.get("tokenizer_dir") else path)
         m0 = co.metrics()
         out, logits = [], {}
-        for q in job["prompts"]:
-            ids = [int(x) for x in q["ids"]] if "ids" in q else chat_ids(tok, [{"role": "user", "content": q["prompt"]}])
-            res = co.generate(ids, int(q["n"]), ignore_eos=bool(q.get("ignore_eos")), rid=q["id"], first_logits=True)
+        all_ids = [[int(x) for x in q["ids"]] if "ids" in q else chat_ids(tok, [{"role": "user", "content": q["prompt"]}]) for q in job["prompts"]]
+        t_gen = time.time()
+        if ov["on"]:        # several requests in flight, chunks or pairs: the scheduler takes all prompts at once
+            many = co.generate_many([{"ids": ids, "max_tokens": int(q["n"]), "ignore_eos": bool(q.get("ignore_eos")), "rid": q["id"],
+                                      "first_logits": True} for q, ids in zip(job["prompts"], all_ids)],
+                                    prefill_chunk=ov["prefill_chunk"], tp_interleave=ov["tp_interleave"])
+        for k, (q, ids) in enumerate(zip(job["prompts"], all_ids)):
+            res = many[k] if ov["on"] else co.generate(ids, int(q["n"]), ignore_eos=bool(q.get("ignore_eos")), rid=q["id"], first_logits=True)
             logits[q["id"]] = res["first_logits"].numpy().astype(np.float32)
             item = {"id": q["id"], "kind": q.get("kind", "eval"), "prompt_n": len(ids), "tokens": res["tokens"],
                     "finish": res["finish_reason"], "ms_per_step": res["timings"]["predicted_per_token_ms"], "text": None}
+            if ov["on"]:
+                item.update({"slot": res["slot"], "chunks": res["chunks"], "t0": res["t0"], "t1": res["t1"]})
             if tok is not None:
                 keep = res["tokens"] if q.get("ignore_eos") else [t for t in res["tokens"][:int(q.get("cap") or q["n"])] if t not in cfg.eos_token_ids]
                 item["text"] = tok.decode(keep, skip_special_tokens=True)
             out.append(item)
             log(f"[run] {q['id']}: {len(res['tokens'])} tokens")
+        wall = time.time() - t_gen
         m1 = co.metrics()
+        n_tok = sum(len(o["tokens"]) for o in out)
+        rec["throughput"] = {"wall_s": wall, "tokens": n_tok, "tokens_per_s": n_tok / wall if wall > 0 else None,
+                             "note": "all prompts, prefill included; background (T1)"}
+        chunks = [len(chunk_ranges(len(ids), ov["prefill_chunk"])) for ids in all_ids]
+        pre_pred = sum(frames_prefill(specs, c) for c in chunks)
+        pre_meas = (data_frames(m1) - data_frames(m0)) - (decode_frames(m1)["sent_frames"] - decode_frames(m0)["sent_frames"])
+        rec["frames"].update({"prefill_predicted": pre_pred, "prefill_measured": pre_meas, "prefill_holds": pre_pred == pre_meas,
+                              "prefill_chunks": chunks})
         steps = m1["decode_steps"] - m0["decode_steps"]
         f0, f1 = decode_frames(m0), decode_frames(m1)
         rec["frames"].update({"decode_steps": steps, "measured_per_step": (f1["sent_frames"] - f0["sent_frames"]) / steps if steps else None,
@@ -168,6 +189,14 @@ def exit_on_sigterm() -> None:
 
 def shipping_args(job: dict) -> dict:
     return {"ship_weights": bool(job.get("ship_weights")), "cache_dir": job.get("cache_dir"), "verify_cache": bool(job.get("verify_cache"))}
+
+
+def overlap_options(job: dict) -> dict:
+    """The overlap options of a job (docs/ENGINE_DESIGN.md section 11) with their off values."""
+    o = {"slots": int(job.get("slots") or 1), "prefill_chunk": int(job.get("prefill_chunk") or 0),
+         "tp_interleave": int(job.get("tp_interleave") or 1), "async_send": bool(job.get("async_send"))}
+    o["on"] = o["slots"] > 1 or o["prefill_chunk"] > 0 or o["tp_interleave"] > 1
+    return o
 
 
 def main(argv=None) -> int:

@@ -1,0 +1,28 @@
+# Session 10 part 3, O5: 1.5B Q8_0, interleaved stages: machine A holds layers 0 to 6 and 14 to 20, machine B 7 to 13 and 21 to 27.
+# On the M5 loopback both machines are the M5; the planner sums the four rank processes against the host budget.
+model: ~/models/gguf/Qwen2.5-1.5B-Instruct-Q8_0.gguf
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+host_budget_gb: {m5: 12}
+stages:
+  - name: a0
+    layers: [0, 7]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+  - name: b0
+    layers: [7, 14]
+    ranks:
+      - {host: m5, device: mps, port: 50071}
+  - name: a1
+    layers: [14, 21]
+    ranks:
+      - {host: m5, device: mps, port: 50072}
+  - name: b1
+    layers: [21, 28]
+    lm_head: true
+    ranks:
+      - {host: m5, device: mps, port: 50073}

@@ -29,7 +29,7 @@ class Comm:
     def all_reduce(self, x: torch.Tensor) -> torch.Tensor:
         return x
 
-    def send_partial(self, x: torch.Tensor):
+    def send_partial(self, x: torch.Tensor, tag: int | None = None):
         return x
 
     def recv_sum(self, ticket) -> torch.Tensor:
@@ -105,12 +105,12 @@ class Layer:
     def forward_pair(self, ha, a, hb, b, comm: Comm) -> tuple[torch.Tensor, torch.Tensor]:
         """Two requests in lockstep. a and b are (pos0, cos, sin, slot). Each all-reduce: A's partial is sent, then B's
         is computed and sent, then A's sum is received, then B's. Every rank of the group keeps this order."""
-        ta = comm.send_partial(self.attn_partial(ha, *a))
-        tb = comm.send_partial(self.attn_partial(hb, *b))
+        ta = comm.send_partial(self.attn_partial(ha, *a), 0)
+        tb = comm.send_partial(self.attn_partial(hb, *b), 1)
         ha = ha + comm.recv_sum(ta)
         hb = hb + comm.recv_sum(tb)
-        ta = comm.send_partial(self.mlp_partial(ha))
-        tb = comm.send_partial(self.mlp_partial(hb))
+        ta = comm.send_partial(self.mlp_partial(ha), 0)
+        tb = comm.send_partial(self.mlp_partial(hb), 1)
         return ha + comm.recv_sum(ta), hb + comm.recv_sum(tb)
 
     def _attention(self, x: torch.Tensor, pos0: int, cos: torch.Tensor, sin: torch.Tensor, slot: int = 0) -> torch.Tensor:
@@ -210,6 +210,18 @@ class Qwen2TP:
         m = lg.max()
         i = int(torch.nonzero(lg == m)[0, 0].item())
         return float(m.float().item()), self.head_rows[0] + i, lg
+
+
+    def head_device(self, h: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """head_argmax without reading the device (--async-send): ([max logit, local index of its first occurrence] as
+        two float32 values on the device, local logits). The index is exact in float32 below 2**24 rows."""
+        lg = self.logits_last(h)
+        n = lg.shape[0]
+        if n >= 1 << 24:
+            raise ValueError(f"{n} head rows do not fit a float32 index")
+        m = lg.max()
+        i = torch.where(lg == m, torch.arange(n, device=lg.device), n).min()
+        return torch.stack([m.float(), i.float()]), lg
 
 
 def pick_global(cands: list[tuple[float, int]]) -> int:

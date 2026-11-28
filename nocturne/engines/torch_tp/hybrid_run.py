@@ -284,6 +284,10 @@ def main(argv=None) -> int:
                     "(one sequential read of the cached bytes) and asks again for any that differ")
     ap.add_argument("--stall-timeout", type=float, default=300.0, help="end the run when the coordinator process gives no sign of life "
                     "(output or its 20 s heartbeat) for this many seconds; 0 waits for ever. A liveness check, not a time limit")
+    ap.add_argument("--slots", type=int, default=1, help="requests in flight (1: one at a time, as before). Each slot has its own KV cache")
+    ap.add_argument("--prefill-chunk", type=int, default=0, help="tokens per prefill chunk (0: the whole prompt at once, as before)")
+    ap.add_argument("--tp-interleave", type=int, default=1, choices=[1, 2], help="2: two requests share a TP group in lockstep (needs --slots 2 or more)")
+    ap.add_argument("--async-send", action="store_true", help="copy to the host and send off the compute thread")
     ap.add_argument("--dtype", default=None, help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     global OUT, RUNS, HASHES
@@ -340,7 +344,8 @@ def main(argv=None) -> int:
                           "remote": bool(op.peer(op.coord).get("ssh")), "run_dir": op.host_dir(op.coord)}
     job = op.job(load_prompts(a.subset, a.tokens, a.long, a.fixed), force=a.force, mps_fraction_cap=a.mps_fraction_cap,
                  reduce_dtype=a.reduce_dtype, timeline=a.timeline, tokenizer_dir=a.tokenizer_dir, dtype=a.dtype,
-                 verify_cache=a.verify_cache)
+                 verify_cache=a.verify_cache, slots=a.slots, prefill_chunk=a.prefill_chunk, tp_interleave=a.tp_interleave,
+                 async_send=a.async_send)
     meta = {q["id"]: q for q in job["prompts"]}
     try:
         op.push_job(job)
@@ -356,6 +361,7 @@ def main(argv=None) -> int:
     rec["reduce_dtype"] = pl["reduce_dtype"]
     rec["planned"] = pl["specs"]
     rec["planner_host"] = pl.get("planner_host")
+    rec["planned_hosts"] = pl.get("hosts")
     pred = pl["frames_predicted"]
     rec["frames"] = {"predicted": pred}
     try:
@@ -396,7 +402,7 @@ def main(argv=None) -> int:
         except Exception as e:      # noqa: BLE001
             log(f"[run] stop: {e}")
         rec["commands"] = op.commands()
-    for k in ("load_s", "link_counters", "ranks", "requests", "shipping", "torch_coordinator", "error"):
+    for k in ("load_s", "link_counters", "ranks", "requests", "shipping", "torch_coordinator", "error", "overlap", "throughput"):
         if k in crec:
             rec[k] = crec[k]
     rec["frames"].update({k: v for k, v in (crec.get("frames") or {}).items() if k != "predicted"})
@@ -450,7 +456,12 @@ def main(argv=None) -> int:
         log(f"[run] vs {r}: identical {c['identical']}/{c['of']}, accuracy {c['accuracy']} (reference {c['ref_accuracy']}), "
             f"max first step logit diff {c['logit_maxdiff']:.4g}, long prompt first divergence {c['long_first_div']}, "
             f"criterion {'met' if c['criterion_met'] else 'NOT met'}")
-    log(f"[run] frames per decode step: measured {rec['frames']['measured_per_step']}, predicted {pred['total']}")
+    log(f"[run] frames per decode step: measured {rec['frames']['measured_per_step']}, predicted {pred['total']}; "
+        f"prefill frames: measured {rec['frames'].get('prefill_measured')}, predicted {rec['frames'].get('prefill_predicted')}")
+    if (rec.get("overlap") or {}).get("on"):
+        o, t = rec["overlap"], rec.get("throughput") or {}
+        log(f"[run] overlap: slots {o['slots']}, prefill chunk {o['prefill_chunk']}, tp interleave {o['tp_interleave']}, async send {o['async_send']}; "
+            f"{t.get('tokens')} tokens in {t.get('wall_s', 0):.1f} s")
     save()
     return 0
 

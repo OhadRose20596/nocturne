@@ -3,6 +3,8 @@ Recorder: a cursor on the raw monotonic clock (clock.now_ns, not slewed by the O
 instant of a step belongs to exactly one span. Kinds: compute (ends after a device sync, so it is real device time),
 host_copy (tensor to the host, sum, tensor back to the device), send (bytes, destination), recv_wait (blocked on the
 upstream link or on a head rank, with source), allreduce_wait (blocked on a group peer), other (Python between steps).
+With --async-send the sender thread adds its own spans, which overlap those: tx_wait (it waits for a tensor to reach the
+host) and tx_send (bytes, destination). The compute thread then does no device sync, so its spans are thread time.
 Events stay in memory and are written once, at shutdown, as timeline_<rank>.jsonl.gz: a header line, then one JSON
 array per event in the order of COLS (gzip: a TP run of 500 steps is 7 MB per rank as plain text).
 Sampler: a thread that reads cumulative counters every 20 ms (process CPU seconds; for the host sampler also host busy
@@ -23,6 +25,7 @@ from .clock import now_ns
 
 COLS = ("kind", "t0_ns", "t1_ns", "step", "req", "peer", "bytes", "tokens", "slot")
 KINDS = ("compute", "host_copy", "send", "recv_wait", "allreduce_wait", "other")
+ASYNC_KINDS = ("tx_wait", "tx_send")      # spans of the sender thread (--async-send); they overlap the spans above
 INTERVAL_S = 0.02
 GPU_INTERVAL_MS = 100
 
@@ -59,6 +62,11 @@ class Recorder:
         t = now_ns()
         self.ev.append((kind, self.t, t, self.step, self.req, peer, nbytes, self.tokens, self.slot))
         self.t = t
+
+    def span(self, kind: str, t0: int, t1: int, ctx: tuple | None, peer: str | None = None, nbytes: int = 0) -> None:
+        """A span of another thread (the sender), with its own times and the context of the step it serves."""
+        step, req, tokens, slot = ctx or (-1, 0, 0, 0)
+        self.ev.append((kind, t0, t1, step, req, peer, nbytes, tokens, slot))
 
     def write(self, run_dir: str | Path) -> Path:
         d = Path(run_dir)

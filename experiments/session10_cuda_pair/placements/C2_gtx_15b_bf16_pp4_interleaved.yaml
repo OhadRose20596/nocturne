@@ -1,0 +1,27 @@
+# Session 10 part 3, CUDA check (not an experiment row): 1.5B bf16, four rank processes on gtx (one GPU): the memory cost of virtual stages
+model: qwen2.5-1.5b-bf16
+coordinator: {host: gtx}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+host_budget_gb: {gtx: 7}
+stages:
+  - name: a0
+    layers: [0, 7]
+    embed: true
+    ranks:
+      - {host: gtx, device: cuda, port: 50070}
+  - name: b0
+    layers: [7, 14]
+    ranks:
+      - {host: gtx, device: cuda, port: 50071}
+  - name: a1
+    layers: [14, 21]
+    ranks:
+      - {host: gtx, device: cuda, port: 50072}
+  - name: b1
+    layers: [21, 28]
+    lm_head: true
+    ranks:
+      - {host: gtx, device: cuda, port: 50073}
