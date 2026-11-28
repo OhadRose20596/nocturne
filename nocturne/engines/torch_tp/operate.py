@@ -49,6 +49,12 @@ def shell_argv(peer: dict, cmd: str) -> list[str]:
     return ["bash", "-lc", cmd]
 
 
+def kill_argv(tag: str) -> list[str]:
+    """pkill for every process of one run. `--` ends pkill's own options (the pattern starts with two dashes), and the
+    pattern ends at a space or at the end, so tag X_r1 does not match the processes of X_r13."""
+    return ["pkill", "-f", "--", f"--tag {re.escape(tag)}( |$)"]
+
+
 def safe_extract(data: bytes, dest: Path) -> list[str]:
     """Unpack a tar stream of plain files into dest. Names with a path, links and devices are skipped."""
     out = []
@@ -112,9 +118,15 @@ class Operator:
             return subprocess.CompletedProcess(full, 0, b"", b"")
         return subprocess.run(full, input=stdin, capture_output=True, timeout=timeout)
 
+    def hostname(self, host: str) -> str | None:
+        """The name the host gives itself now (a Mac's changes with the network); the peers.yaml entry when it does not answer."""
+        r = self.sh(host, "hostname", 20)
+        name = r.stdout.decode(errors="replace").strip().splitlines()[-1:] if r.returncode == 0 and r.stdout else []
+        return name[0] if name else self.peer(host).get("host")
+
     # ---- job and plan ---------------------------------------------------------------------------------------------------
     def job(self, prompts: list[dict], **opts) -> dict:
-        return {"run_id": self.tag, "tag": self.tag, "coordinator": self.coord, "coordinator_hostname": self.peer(self.coord).get("host"),
+        return {"run_id": self.tag, "tag": self.tag, "coordinator": self.coord, "coordinator_hostname": self.hostname(self.coord),
                 "placement": self.yaml, "model_dir": self.model_dir, "hosts": self.hosts, "prompts": prompts,
                 "ship_weights": self.ship_weights, "cache_dir": self.cache_dir, **opts}
 
@@ -198,12 +210,16 @@ class Operator:
         got = {}
         for host in self.collected_hosts():
             d = shell_path(self.host_dir(host))
-            r = self.sh(host, f"cd {d} 2>/dev/null && tar -cf - .", 600)
-            if r.returncode or not r.stdout:
-                self.log(f"[run] no run files from {host} ({self.host_dir(host)}): {r.stderr.decode(errors='replace')[-200:]}")
+            try:
+                r = self.sh(host, f"cd {d} 2>/dev/null && tar -cf - .", 600)
+                if r.returncode or not r.stdout:
+                    self.log(f"[run] no run files from {host} ({self.host_dir(host)}): {r.stderr.decode(errors='replace')[-200:]}")
+                    got[host] = []
+                    continue
+                got[host] = safe_extract(r.stdout, self.run_dir)
+            except (OSError, subprocess.SubprocessError, tarfile.TarError) as e:      # a host that fails here must not lose the others
+                self.log(f"[run] collecting the run files of {host} failed: {type(e).__name__}: {e}")
                 got[host] = []
-                continue
-            got[host] = safe_extract(r.stdout, self.run_dir)
         return got
 
     def commands(self) -> list[dict]:
@@ -216,4 +232,6 @@ class Operator:
                 time.sleep(0.2)
         self.runner.stop_all()
         for h in sorted({s.host for s in self.slots}):
-            self.runner.run(self.peer(h), ["pkill", "-f", f"--tag {self.tag}"], timeout=30)
+            r = self.runner.run(self.peer(h), kill_argv(self.tag), timeout=30)
+            if r.returncode not in (0, 1):
+                self.log(f"[run] pkill on {h} failed (rc {r.returncode}): {(r.stderr or '').strip()[-200:]}")

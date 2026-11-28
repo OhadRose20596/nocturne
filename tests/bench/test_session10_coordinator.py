@@ -101,7 +101,7 @@ def test_operator_starts_the_coordinator_on_the_placement_host_and_ranks_on_thei
     assert op.coord == "gtx" and op.model_dir == "/mnt/d/models/Qwen2.5-7B-Instruct-Q8_0.gguf"
     assert op.host_dir("gtx") == op.host_dir("pc") == "~/.nocturne/runs/R1_test" and op.collected_hosts() == ["gtx", "pc"]
     job = op.job([{"id": "p", "ids": [1], "n": 2}], timeline=True)
-    assert job["coordinator_hostname"] == "Ohad" and job["hosts"] == {"gtx": "192.168.1.168", "pc": "192.168.1.77"}
+    assert job["coordinator_hostname"] == "Ohad" and job["hosts"] == {"gtx": "192.168.1.168", "pc": "192.168.1.77"}    # dry run: the peers.yaml name
     op.push_job(job)
     assert op.plan()["ok"]
     op.start_ranks()
@@ -110,7 +110,8 @@ def test_operator_starts_the_coordinator_on_the_placement_host_and_ranks_on_thei
     cmds = op.commands()
     by = {h: [c["cmd"] for c in cmds if c["host"] == h] for h in ("m5", "gtx", "pc")}
     assert by["m5"] == []                                              # the operator's own machine runs nothing
-    assert "ssh" in by["gtx"][0] and "gtx" in by["gtx"][0] and "cat > ~/.nocturne/runs/R1_test/job.json" in by["gtx"][0]
+    assert by["gtx"][0].endswith("gtx hostname")                       # the coordinator host is asked for its own name
+    assert "ssh" in by["gtx"][1] and "gtx" in by["gtx"][1] and "cat > ~/.nocturne/runs/R1_test/job.json" in by["gtx"][1]
     coord = [c for c in by["gtx"] if "torch_tp.coordinate" in c]
     assert len(coord) == 2 and "--plan-only" in coord[0] and "--plan-only" not in coord[1]
     assert all("/home/ohadr/venv/bin/python" in c and "R1_test/job.json" in c and "--tag R1_test" in c for c in coord)
@@ -122,7 +123,7 @@ def test_operator_starts_the_coordinator_on_the_placement_host_and_ranks_on_thei
     assert "--model /mnt/d/models/Qwen2.5-7B-Instruct-Q8_0.gguf" in rank_gtx[0]
     assert "--model" in rank_pc[0] and "models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf" in rank_pc[0]
     assert "0.0.0.0" not in json.dumps(cmds)
-    assert any("pkill" in c for c in by["pc"]) and any("pkill" in c for c in by["gtx"])
+    assert any("pkill -f -- '--tag R1_test( |$)'" in c for c in by["pc"]) and any("pkill -f -- " in c for c in by["gtx"])
 
 
 def test_operator_gives_no_model_to_ranks_when_weights_are_shipped(tmp_path):
@@ -280,7 +281,6 @@ def test_loopback_run_with_the_coordinator_under_a_second_name(tmp_path, tiny):
     finally:
         op.stop()
     assert rc == 0, "\n".join(lines)
-    assert not (run_dir / "coordinator_record.json").exists() or "coordinator_record.json" in got["co2"]
     assert {"coordinator_record.json", "first_logits.npz", "plan.json", "job.json", "timeline_s0_0.jsonl.gz", "samples_rank_s0_0.jsonl.gz"} <= set(got["co2"])
     assert (run_dir / "timeline_s0_1.jsonl.gz").exists() and (run_dir / "timeline_s1_0.jsonl.gz").exists()     # ranks of the operator's host
     crec = json.loads((run_dir / "coordinator_record.json").read_text())
@@ -289,8 +289,99 @@ def test_loopback_run_with_the_coordinator_under_a_second_name(tmp_path, tiny):
     assert crec["frames"]["formula_holds"] and set(crec["clock"]) == {"s0/0", "s0/1", "s1/0"}
     assert [r["rid"] for r in crec["requests"]] == ["p0", "p1"]
     assert all(c["host"] in ("co2", "opx") for c in op.commands())
-    left = subprocess.run(["pgrep", "-f", "--tag B3_loop"], capture_output=True, text=True).stdout.split()
-    assert left == [], f"processes left running: {left}"
+    left = subprocess.run(["pgrep", "-f", "--", "--tag B3_loop( |$)"], capture_output=True, text=True)
+    assert left.returncode == 1 and left.stdout.split() == [], f"processes left running: {left.stdout} {left.stderr}"
+
+
+def test_stop_kills_what_is_left_of_this_run_and_nothing_of_another(tmp_path, tiny):
+    """Review F1: the pattern starts with two dashes; without `--` pkill reads it as an option and kills nothing."""
+    pl, peers = two_name_setup(tmp_path, tiny, free_ports(3))
+    sleeper = [sys.executable, "-c", "import time; time.sleep(120)", "--tag"]
+    mine = subprocess.Popen(sleeper + ["B3_kill_r1"])
+    other = subprocess.Popen(sleeper + ["B3_kill_r13"])
+    try:
+        op = operate.Operator(pl, peers, tmp_path / "run", tag="B3_kill_r1", log=lambda *a: None)
+        op.stop()
+        assert mine.wait(timeout=10) != 0
+        assert other.poll() is None, "a run whose tag only starts with this tag must survive"
+    finally:
+        mine.kill(); other.kill()
+
+
+def test_operator_run_with_shipped_weights_ranks_get_no_model(tmp_path, tiny):
+    """Review F16: operator, coordinator process and ranks started without --model, shipping on, in separate processes."""
+    pl, peers = two_name_setup(tmp_path, tiny, free_ports(3))
+    run_dir, lines = tmp_path / "run", []
+    op = operate.Operator(pl, peers, run_dir, tag="B3_ship", log=lines.append, ship_weights=True, cache_dir=str(tmp_path / "cache"))
+    assert all("--model" not in op.rank_argv(s) for s in op.slots[1:])
+    try:
+        op.push_job(op.job(PROMPTS, dtype="float32"))
+        assert op.plan()["ok"]
+        op.start_ranks()
+        rc = op.run_coordinator()
+        op.collect()
+    finally:
+        op.stop()
+    assert rc == 0, "\n".join(lines)
+    crec = json.loads((run_dir / "coordinator_record.json").read_text())
+    assert crec["outcome"] == "completed" and [q["tokens"] for q in crec["prompts"]] == reference_tokens(tiny)
+    sh = crec["shipping"]
+    assert set(sh["ranks"]) == {"s0/1", "s1/0"} and all(r["shipped_bytes"] > 0 and r["hash_checks"] > 0 for r in sh["ranks"].values())
+    assert any((tmp_path / "cache").glob("*/*")) and not list((tmp_path / "cache").glob("*/*.part*"))
+
+
+def test_hybrid_run_main_end_to_end_on_a_tiny_gguf(tmp_path, monkeypatch):
+    """Review F16: the whole operator path of hybrid_run.main, with shipping and the timeline, on two local peer names."""
+    from . import gguf_tiny
+    pytest.importorskip("gguf")
+    pytest.importorskip("psutil")
+    if not gguf_tiny.available():
+        pytest.skip("llama.cpp converter or tokenizer files missing")
+    model = gguf_tiny.build("qwen2")["q8_0"]
+    pts = free_ports(2)
+    peers = {"models": {}, "peers": {
+        "opx": {"host": "stale-name-in-peers", "ssh": None, "python": sys.executable, "bind": "127.0.0.1", "os": "macos" if sys.platform == "darwin" else "linux"},
+        "co2": {"host": "stale-name-in-peers", "ssh": None, "python": sys.executable, "bind": "127.0.0.1", "run_root": str(tmp_path / "co2_runs"),
+                "os": "macos" if sys.platform == "darwin" else "linux"}}}
+    y = {"model": str(model), "coordinator": {"host": "co2"}, "max_seq_len": 128, "granule": 64, "stages": [
+        {"name": "s0", "layers": [0, 2], "embed": True, "lm_head": True, "ranks": [{"host": "co2", "device": "cpu", "port": pts[0]},
+                                                                                 {"host": "opx", "device": "cpu", "port": pts[1]}]}]}
+    pl, pf = write(tmp_path, y, peers)
+    monkeypatch.setattr(hr, "host_state", lambda *a, **k: {"os": "test"})          # no caffeinate from a test
+    args = ["--placement", pl, "--peers", pf, "--session-dir", str(tmp_path / "sess"), "--subset", "2", "--tokens", "3", "--long", "0",
+            "--reference", "--timeline", "--cache-dir", str(tmp_path / "cache"), "--dtype", "float32"]
+    assert hr.main(args + ["--run-id", "E2E_r1"]) == 0
+    d = tmp_path / "sess" / "runs" / "E2E_r1"
+    rec = json.loads((d / "record.json").read_text())
+    assert rec["outcome"] == "completed" and rec["coordinator"]["host"] == "co2" and rec["planner_host"] == HOSTNAME
+    assert len(rec["prompts"]) == 2 and all("score" in p and isinstance(p["text"], str) and p["category"] for p in rec["prompts"])
+    assert rec["frames"]["formula_holds"] and rec["correctness"] == {}
+    sh = rec["shipping"]
+    assert sh["agrees_with_preflight"] is True and sh["ranks"]["s0/1"]["shipped_bytes"] > 0
+    assert sh["ranks"]["s0/1"]["manifest_bytes"] - sh["ranks"]["s0/1"]["stored_minus_loaded_bytes"] == sh["ranks"]["s0/1"]["loaded_tensor_bytes"]
+    assert set(rec["clock"]) == {"s0/0", "s0/1"} and rec["clock"]["s0/0"]["os"]["same_host"]
+    c = rec["clock"]["s0/1"]                                   # another peer name: compared through the two OS measurements
+    assert c["start"]["rounds"] == c["end"]["rounds"] == 16 and abs(c["end"]["offset_mono_ns"]) <= c["end"]["rtt_ns"] and "gap_ns" in c["os"]
+    assert rec["timeline"]["decode_bytes_per_step"] == rec["frames"]["bytes_per_step"]
+    for f in ("timeline.html", "breakdown.csv", "trace.json.gz", "timeline_s0_0.jsonl.gz", "timeline_s0_1.jsonl.gz", "first_logits.npz", "coordinator.log"):
+        assert (d / f).exists(), f
+    assert rec["preflight"]["hosts"]["co2"]["timesync"] and "model_sha256" not in rec["preflight"]["hosts"]["opx"]
+    assert hr.main(args + ["--run-id", "E2E_r1"]) == 2                                  # a run id is never reused
+    assert hr.main(args + ["--run-id", "E2E_r2"]) == 0
+    rec2 = json.loads((tmp_path / "sess" / "runs" / "E2E_r2" / "record.json").read_text())
+    assert rec2["shipping"]["ranks"]["s0/1"]["shipped_bytes"] == 0                      # the second run finds every slice in the cache
+    assert [p["tokens"] for p in rec2["prompts"]] == [p["tokens"] for p in rec["prompts"]]
+
+
+def test_setup_errors_leave_a_record(tmp_path, tiny):
+    """Review F14: a bad peers entry ends the run with a record, not with a traceback."""
+    pl, peers = two_name_setup(tmp_path, tiny, free_ports(3))
+    bad = yaml.safe_load(open(peers))
+    bad["peers"]["opx"]["bind"] = "0.0.0.0"
+    open(peers, "w").write(yaml.safe_dump(bad))
+    rc = hr.main(["--placement", pl, "--peers", peers, "--session-dir", str(tmp_path / "sess"), "--run-id", "bad_r1"])
+    rec = json.loads((tmp_path / "sess" / "runs" / "bad_r1" / "record.json").read_text())
+    assert rc == 4 and rec["outcome"] == "setup_failed" and "0.0.0.0" in rec["error"]
 
 
 def test_coordinator_process_reports_a_rejected_plan_and_a_wrong_host(tmp_path, tiny):

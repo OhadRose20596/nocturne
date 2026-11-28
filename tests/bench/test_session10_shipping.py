@@ -74,8 +74,8 @@ def test_model_identity_of_a_file_and_of_a_directory(tmp_path, tiny):
     sha, sums = shipping.model_identity(f, tmp_path / "memo.json")
     assert sha == hashlib.sha256(b"abc" * 1000).hexdigest() and sums == {"m.gguf": sha}
     assert json.loads((tmp_path / "memo.json").read_text())[str(f.resolve())]["sha256"] == sha
-    f.write_bytes(b"abd" * 1000)                           # a changed file is hashed again
-    assert shipping.model_identity(f, tmp_path / "memo.json")[0] != sha
+    f.write_bytes(b"abd" * 1001)                           # a changed file (another size or mtime) is hashed again
+    assert shipping.model_identity(f, tmp_path / "memo.json")[0] == hashlib.sha256(b"abd" * 1001).hexdigest() != sha
     dsha, dsums = shipping.model_identity(tiny)
     assert set(dsums) == {"config.json", "model.safetensors"} and dsha == shipping.model_id(dsums) != dsums["model.safetensors"]
     assert shipping.model_id({"b": "2", "a": "1"}) == hashlib.sha256(b"a 1\nb 2").hexdigest()
@@ -219,10 +219,57 @@ def test_a_slice_whose_sha256_differs_from_the_manifest_is_rejected(tiny, tmp_pa
     assert not (tmp_path / m["model_sha256"] / ("f" * 64)).exists() and not list((tmp_path / m["model_sha256"]).glob("*.part*"))
 
 
+def test_a_transfer_that_ends_early_is_rejected_and_leaves_no_partial_file(tiny, tmp_path):
+    """Review F5 and F6: DONE before every needed slice arrived, and a link that drops inside a slice."""
+    cfg, specs, src, ms, _ = manifests_for(tiny, tp_pp(free_ports(3)))
+    m = ms[1]
+    d = tmp_path / m["model_sha256"]
+    for ending in ("done", "close"):
+        a, b = tcp_pair()
+        res = {}
+
+        def recv():
+            try:
+                shipping.receive_slices(b, tmp_path, lambda *x: None)
+            except Exception as e:      # noqa: BLE001
+                res["err"] = e
+        t = threading.Thread(target=recv, daemon=True)
+        t.start()
+        a.send(transport.KIND_WEIGHTS, json.dumps(m).encode(), "uint8", aux0=shipping.OP_MANIFEST)
+        need = json.loads(bytes(a.recv()[1]).decode())
+        a.send(transport.KIND_WEIGHTS, b"12345678", "uint8", aux0=shipping.OP_CHUNK | need[0] << 8, aux1=zlib.crc32(b"12345678"))
+        if ending == "done":
+            a.send(transport.KIND_WEIGHTS, aux0=shipping.OP_DONE)
+        else:
+            a.close()
+        t.join(timeout=10)
+        assert not t.is_alive()
+        if ending == "done":
+            assert isinstance(res["err"], shipping.ShipRejected) and "before" in str(res["err"])
+        else:
+            assert isinstance(res["err"], (ConnectionError, OSError))
+        assert list(d.iterdir()) == [], ending
+        b.close()
+        if ending == "done":
+            a.close()
+
+
+def test_hash_memo_is_dropped_when_the_slicing_code_changes(tmp_path, monkeypatch):
+    """Review F4: the memo maps a range to a sha256; it is only valid for the code that cut the slice."""
+    memo, path = shipping.load_memo(tmp_path, "a" * 64)
+    assert memo == {}
+    memo["k"] = {"sha256": "b" * 64, "nbytes": 1}
+    shipping.save_memo(memo, path)
+    assert shipping.load_memo(tmp_path, "a" * 64)[0] == memo
+    monkeypatch.setattr(shipping, "code_stamp", lambda: "another version of the slicing code")
+    assert shipping.load_memo(tmp_path, "a" * 64)[0] == {}
+
+
 def test_manifest_hashes_must_be_hex_before_they_name_a_file(tmp_path):
     ok = {"model_sha256": "a" * 64, "kind": "gguf", "total_bytes": 0, "slices": [{"name": "x", "sha256": "b" * 64, "nbytes": 0}]}
     shipping.check_manifest(ok)
     for bad in (dict(ok, model_sha256="../../etc"), dict(ok, slices=[{"name": "x", "sha256": "../evil", "nbytes": 0}]),
+                dict(ok, model_sha256="a" * 64 + "\n"), dict(ok, slices=[{"name": "x", "sha256": "b" * 64 + "\n", "nbytes": 0}]),
                 dict(ok, slices=[{"name": "x", "sha256": "b" * 64, "nbytes": -1}])):
         with pytest.raises(shipping.ShipRejected):
             shipping.check_manifest(bad)

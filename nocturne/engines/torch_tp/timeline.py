@@ -154,8 +154,13 @@ def write_host_samples(run: dict, d: Path) -> dict:
                 h["net"] = net
         gpu = [r for r in s["rows"] if "gu" in r]
         if gpu:
-            h["gpu_util_mean_percent"] = sum(r["gu"] for r in gpu) / len(gpu)
-            h["gpu_mem_used_max_mib"] = max(r["gm"] for r in gpu)
+            per = {}
+            for r in gpu:
+                per.setdefault(str(r.get("gi", 0)), []).append(r)
+            h["gpu"] = {i: {"util_mean_percent": sum(r["gu"] for r in rs) / len(rs), "mem_used_max_mib": max(r["gm"] for r in rs),
+                            "samples": len(rs)} for i, rs in sorted(per.items())}
+            h["gpu_util_mean_percent"] = sum(v["util_mean_percent"] for v in h["gpu"].values()) / len(h["gpu"])
+            h["gpu_mem_used_max_mib"] = max(v["mem_used_max_mib"] for v in h["gpu"].values())
             h["gpu_samples"] = len(gpu)
     return out
 

@@ -2,7 +2,9 @@
 Usage: python3 nocturne/bench/probes/timesync.py [--server time.apple.com] [--samples 8] [--json]
 Measures the offset to one NTP server with SNTP (RFC 4330): offset = ((t2 - t1) + (t3 - t4)) / 2, the server clock minus
 this clock, taken from the sample with the smallest round trip delay. Also reports what the OS time service says
-(macOS: sntp; Linux and WSL2: chronyc or timedatectl; WSL2 also asks Windows through w32tm.exe). Sets nothing."""
+(macOS: sntp; Linux and WSL2: chronyc or timedatectl; WSL2 also asks Windows through w32tm.exe). Sets nothing.
+The time of the last sync is what the OS tool tells: chronyc "Ref time", w32tm "Last Successful Sync Time". macOS has no
+such line; there the report holds only the time of this measurement (`at`), and of a `--set` when the script made one."""
 from __future__ import annotations
 
 import argparse
@@ -89,9 +91,11 @@ def parse_chronyc(text: str) -> dict | None:
     if not m:
         return None
     ref = re.search(r"Reference ID\s*:\s*\S+ \(([^)]*)\)", text)
+    last = re.search(r"Ref time \(UTC\)\s*:\s*(.+?)\s*$", text, re.M)
     v = float(m.group(1))
     # "fast of NTP time": this clock is ahead, so server minus local is negative
-    return {"tool": "chronyc", "source": ref.group(1) if ref else None, "offset_s": -v if m.group(2) == "fast" else v}
+    return {"tool": "chronyc", "source": ref.group(1) if ref else None, "offset_s": -v if m.group(2) == "fast" else v,
+            "last_sync_utc": last.group(1) if last else None}
 
 
 def parse_timedatectl(text: str) -> dict | None:
@@ -136,9 +140,20 @@ def os_status(server: str, run=_run) -> dict:
     return st
 
 
+SET_STATE = os.path.expanduser("~/.nocturne/timesync_set.json")
+
+
+def last_set() -> dict | None:
+    """What `17_timesync.sh --set` wrote the last time it stepped this clock: {"at": ..., "server": ...}."""
+    try:
+        return json.loads(open(SET_STATE).read())
+    except (OSError, ValueError):
+        return None
+
+
 def report(server: str = DEFAULT_SERVER, samples: int = 8) -> dict:
     return {"host": socket.gethostname().split(".")[0], "os": platform.system(), "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-            "at_unix": time.time(), "sntp": measure(server, samples), "os_service": os_status(server)}
+            "at_unix": time.time(), "sntp": measure(server, samples), "os_service": os_status(server), "last_set": last_set()}
 
 
 def main(argv=None) -> int:

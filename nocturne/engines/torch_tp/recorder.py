@@ -8,6 +8,7 @@ array per event in the order of COLS (gzip: a TP run of 500 steps is 7 MB per ra
 Sampler: a thread that reads cumulative counters every 20 ms (process CPU seconds; for the host sampler also host busy
 CPU seconds and bytes per network interface) and, on a CUDA rank, nvidia-smi every 100 ms. Written as
 samples_rank_<rank>.jsonl.gz (timeline.py merges them into samples_<host>.jsonl). Rates are formed later from differences (timeline.py)."""
+import atexit
 import gzip
 import json
 import os
@@ -73,22 +74,33 @@ def ifaces_for(addrs: list[str]) -> list[str]:
     return out
 
 
-def parse_smi(line: str) -> tuple[float, float] | None:
-    """"37, 2048" (utilization percent, memory used MiB) from nvidia-smi csv,noheader,nounits."""
+def parse_smi(line: str) -> tuple[int, float, float] | None:
+    """"0, 37, 2048" (GPU index, utilization percent, memory used MiB) from nvidia-smi csv,noheader,nounits."""
     parts = [x.strip() for x in line.split(",")]
     try:
-        return float(parts[0]), float(parts[1])
+        return int(parts[0]), float(parts[1]), float(parts[2])
     except (ValueError, IndexError):
         return None
 
 
-def smi_argv(device: str) -> list[str]:
-    idx = device.split(":")[1] if ":" in device else "0"
-    return ["nvidia-smi", "-i", idx, "--query-gpu=utilization.gpu,memory.used", "--format=csv,noheader,nounits", "-lms", str(GPU_INTERVAL_MS)]
+def smi_argv() -> list[str]:
+    """Every GPU of the host, one line per GPU per interval."""
+    return ["nvidia-smi", "--query-gpu=index,utilization.gpu,memory.used", "--format=csv,noheader,nounits", "-lms", str(GPU_INTERVAL_MS)]
+
+
+def _die_with_parent() -> None:
+    """Linux: the child gets SIGTERM when this process dies, however it dies (prctl PR_SET_PDEATHSIG)."""
+    try:
+        import ctypes
+        import signal
+        ctypes.CDLL("libc.so.6", use_errno=True).prctl(1, signal.SIGTERM)
+    except Exception:      # noqa: BLE001 - not Linux, or no libc: atexit still stops the child on a normal exit
+        pass
 
 
 class Sampler:
-    def __init__(self, rank: str, host: str, device: str, ifaces: list[str], host_level: bool, interval_s: float = INTERVAL_S):
+    def __init__(self, rank: str, host: str, device: str, ifaces: list[str], host_level: bool, interval_s: float = INTERVAL_S,
+                 gpu: bool | None = None):
         self.meta = {"rank": rank, "host": host, "device": device, "pid": os.getpid(), "ifaces": ifaces, "host_level": host_level,
                      "interval_s": interval_s, "clock": "monotonic_ns", "notes": []}
         self.rows: list[dict] = []
@@ -96,7 +108,8 @@ class Sampler:
         self._stop = threading.Event()
         self._threads: list[threading.Thread] = []
         self._smi = None
-        self.gpu = host_level and device.split(":")[0] == "cuda"
+        self.gpu = host_level and (device.split(":")[0] == "cuda" if gpu is None else gpu)      # gpu: the host has a CUDA rank
+        self._stopped = False
 
     def start(self) -> "Sampler":
         try:
@@ -109,12 +122,14 @@ class Sampler:
             self.meta["notes"].append("psutil missing: no CPU and network samples")
         if self.gpu:
             if shutil.which("nvidia-smi"):
-                self._smi = subprocess.Popen(smi_argv(self.meta["device"]), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+                self._smi = subprocess.Popen(smi_argv(), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+                                             preexec_fn=_die_with_parent if os.uname().sysname == "Linux" else None)
                 self._threads.append(threading.Thread(target=self._gpu_loop, daemon=True))
             else:
                 self.meta["notes"].append("nvidia-smi not found: no GPU samples")
         for t in self._threads:
             t.start()
+        atexit.register(self.stop)
         return self
 
     def _sample(self) -> dict:
@@ -144,11 +159,14 @@ class Sampler:
         for line in self._smi.stdout:
             v = parse_smi(line)
             if v:
-                self.rows.append({"t": time.monotonic_ns(), "gu": v[0], "gm": v[1]})
+                self.rows.append({"t": time.monotonic_ns(), "gi": v[0], "gu": v[1], "gm": v[2]})
             if self._stop.is_set():
                 return
 
     def stop(self) -> None:
+        if self._stopped:
+            return
+        self._stopped = True
         self._stop.set()
         if self._smi is not None:
             self._smi.terminate()

@@ -123,6 +123,11 @@ The coordinator serves all ranks at once, one thread per control link, and loads
 A second run of the same placement ships 0 bytes. A different placement of the same model ships only the slices whose cut changed.
 Per rank the record holds: manifest bytes, shipped bytes, bytes found in the cache, shipping time, and the number of hash checks.
 
+Shipped bytes against planned bytes. The manifest counts stored bytes. For safetensors they equal the planned weight bytes exactly.
+For a GGUF file two things differ, and the record names both per rank (`loaded_tensor_bytes`, `planned_weight_bytes`, `stored_minus_loaded_bytes`):
+norm and bias vectors are stored as float32 and shipped as stored, while the loader holds them as bf16 and the planner counts them so; and the planner averages bytes per row over the layers of a stage, which can leave a few bytes of rounding.
+Manifest bytes minus `stored_minus_loaded_bytes` equal the loaded bytes exactly.
+
 Model identity: the sha256 of the GGUF file, or for a safetensors directory the sha256 over the sorted names and hashes of its files.
 
 ### 3.9 Ready and clocks
@@ -154,7 +159,8 @@ With `--timeline` every rank also records what it does in every step: compute, c
 ### 3.12 Shutdown
 
 The coordinator measures the clocks again, then sends SHUTDOWN along the data path. Every rank writes its timeline files and exits.
-The coordinator writes `coordinator_record.json`. The operator copies the files of every host into the run folder, stops what is left, and writes `record.json`.
+The coordinator writes `coordinator_record.json`. The operator copies the files of every host into the run folder and writes `record.json`.
+Then it stops what is left on every host: `pkill` for every process that carries this run's tag. A rank that is blocked on a dead link ends this way.
 
 ## 4. Control plane
 
@@ -228,7 +234,11 @@ A frame is a 16 byte header (payload length, kind, dtype code, number of dims, t
 | HEAD | last stage to coordinator | best value and index, or logits |
 | METRICS, RESET, SHUTDOWN | coordinator, then along the data path | none or JSON |
 
-Session 10 added CLOCK and WEIGHTS. No other frame changed.
+Session 10 changed three things on the wire, and nothing else:
+
+1. The WEIGHTS kind (section 3.8).
+2. The CLOCK kind (section 3.9).
+3. In TOKEN and HIDDEN frames the second 32 bit field held only flags in its low byte. Its upper 24 bits now carry the request number, in every run. The recorder reads it. The frame size and every other field are unchanged.
 
 ## 7. Why the result does not depend on the split
 
@@ -258,5 +268,7 @@ A TP group may mix Metal and CUDA only with `allow_mixed_devices: true`, because
 - The placement structure is written by hand. The planner splits inside it.
 - Greedy decoding only. One request at a time per stage.
 - The slice cache is never cleaned. A rank on the coordinator's own host still gets its slices through the cache, so that host holds those bytes twice on disk.
-- A cached slice is trusted by its name and size. It was checked by sha256 when it was written.
+- A cached slice is trusted by its name and size. It was checked by sha256 when it was written, and it got its name only after its bytes were on the disk.
+- The coordinator remembers slice hashes per model. That memo is dropped when the code that cuts slices changes.
+- The raw recorder files are gzipped (`timeline_<rank>.jsonl.gz`, `trace.json.gz`): a TP run of 500 steps is 7 MB per rank and a 60 MB trace as plain text.
 - A native Windows peer is not supported (WSL2 only).

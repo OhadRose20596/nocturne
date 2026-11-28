@@ -20,6 +20,7 @@ import ctypes
 import json
 import os
 import queue
+import re
 import resource
 import struct
 import threading
@@ -285,6 +286,9 @@ class RankRuntime:
                 sync(self.device)
                 rec.lap("compute")
             return res
+        if rec and not self.down_order:      # neither forwards nor holds the head: the residual add after the last all-reduce
+            sync(self.device)
+            rec.lap("compute")
         return None
 
     def forward_control(self, kind: int, aux1: int = 0) -> None:
@@ -292,7 +296,8 @@ class RankRuntime:
             link.send(kind, aux1=aux1)
 
     def start_sampler(self, listen_addrs: list[str], host_level: bool) -> None:
-        self.sampler = Sampler(self.spec.name, self.spec.host, self.device, ifaces_for(listen_addrs), host_level).start()
+        cuda = any(s.host == self.spec.host and s.device.split(":")[0] == "cuda" for s in self.specs)
+        self.sampler = Sampler(self.spec.name, self.spec.host, self.device, ifaces_for(listen_addrs), host_level, gpu=cuda).start()
 
     def close(self, run_dir: str | None) -> None:
         """Stop the sampler and write the timeline and the samples (only when the run asked for a timeline)."""
@@ -436,8 +441,14 @@ def build_links(rt: RankRuntime, hosts: dict[str, str], listener: Listener, pend
     return links
 
 
+RUN_TAG = re.compile(r"[A-Za-z0-9._-]+")
+
+
 def default_run_dir(tag: str | None) -> str:
-    return os.path.join(os.path.expanduser("~/.nocturne/runs"), tag or "untagged")
+    """~/.nocturne/runs/<tag>. The tag may come from the wire (the PLAN message), so anything that is not a plain name
+    (letters, digits, dot, underscore, dash) becomes `untagged`."""
+    ok = isinstance(tag, str) and RUN_TAG.fullmatch(tag) and tag not in (".", "..")
+    return os.path.join(os.path.expanduser("~/.nocturne/runs"), tag if ok else "untagged")
 
 
 def host_samplers(specs: list[RankSpec]) -> set[int]:
@@ -539,6 +550,9 @@ class Coordinator:
                            timeline, run_tag, ready_timeout_s)
         except BaseException:
             self.rank.close(None)
+            for link in list(self.ctl.values()):      # ranks blocked on their ctl link see the close and exit
+                link.close()
+            self.listener.close()
             raise
 
     def _bring_up(self, specs, hosts, model_dir, max_seq_len, reduce_dtype, enforce_budget, mps_fraction_cap, dtype,

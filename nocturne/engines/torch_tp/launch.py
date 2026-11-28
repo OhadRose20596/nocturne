@@ -4,6 +4,7 @@ Addresses (CLAUDE.md rule 7): a rank listens on 127.0.0.1 when a peer on its own
 host's `bind` address from peers.yaml when a peer on another host does. Never 0.0.0.0. The ports accept any peer
 without authentication: security is deferred by ADR-009."""
 import os
+import re
 import socket
 import tempfile
 import threading
@@ -16,7 +17,7 @@ from ...bench.runner import Runner
 from .config import load_config
 from .hybrid import Coordinator
 from .gguf_source import weight_meta
-from .plan import Dims, Placement, listen_addrs, placement_from_dict, plan
+from .plan import Dims, Placement, coordinator_host, listen_addrs, placement_from_dict, plan
 
 PEERS = "~/.nocturne/peers.yaml"
 
@@ -64,7 +65,7 @@ class Launch:
         if reduce_dtype:
             self.placement = Placement(**{**self.placement.__dict__, "reduce_dtype": reduce_dtype})
         self.peers = load_peers(peers_path)
-        self.model_dir = model_dir_of(self.placement.model, self.peers)
+        self.model_dir = model_dir_of(self.placement.model, self.peers, coordinator_host(self.placement))
         self.local_model_dir = os.path.expanduser(self.model_dir)
         self.cfg = load_config(self.local_model_dir)
         self.dims = Dims.of(self.cfg, weight_meta(self.local_model_dir))
@@ -100,7 +101,8 @@ class Launch:
         for s in self.specs[1:]:
             peer = self._peer(s.host)
             argv = [peer["python"], "-u", "-m", "nocturne.engines.torch_tp", "rank", "--listen", ",".join(self.listen[s.gid]),
-                    "--port", str(s.port), "--model", self.model_dir, "--device", s.device, "--name", s.name, "--tag", self.tag]
+                    "--port", str(s.port), "--model", model_dir_of(self.placement.model, self.peers, s.host), "--device", s.device,
+                    "--name", s.name, "--tag", self.tag]
             p = self.runner.spawn(peer, argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             self.procs.append((s, p))
             path = self.log_dir / f"rank_{s.name.replace('/', '_')}.log"
@@ -132,4 +134,4 @@ class Launch:
                 time.sleep(0.2)
         self.runner.stop_all()
         for h in sorted({s.host for s, _ in self.procs}):
-            self.runner.run(self._peer(h), ["pkill", "-f", f"--tag {self.tag}"], timeout=30)
+            self.runner.run(self._peer(h), ["pkill", "-f", "--", f"--tag {re.escape(self.tag)}( |$)"], timeout=30)

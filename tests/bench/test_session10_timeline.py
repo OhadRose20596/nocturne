@@ -50,7 +50,10 @@ def test_ntp_reply_parsing():
 
 def test_os_tool_parsers_and_their_sign():
     c = timesync.parse_chronyc("Reference ID    : A9FEA97B (time.apple.com)\nSystem time     : 0.000120000 seconds fast of NTP time\n")
-    assert c == {"tool": "chronyc", "source": "time.apple.com", "offset_s": -0.00012}       # ahead: server minus local < 0
+    assert c == {"tool": "chronyc", "source": "time.apple.com", "offset_s": -0.00012, "last_sync_utc": None}       # ahead: server minus local < 0
+    real = "Reference ID    : 65D8456C (ntp-nts-3.ps5.canonical.com)\nStratum         : 3\nRef time (UTC)  : Sat Nov 28 06:18:21 2026\nSystem time     : 0.010830267 seconds slow of NTP time\n"
+    assert timesync.parse_chronyc(real) == {"tool": "chronyc", "source": "ntp-nts-3.ps5.canonical.com", "offset_s": 0.010830267,
+                                            "last_sync_utc": "Sat Nov 28 06:18:21 2026"}                # the output of gtx on 2026-11-28
     assert timesync.parse_chronyc("System time     : 0.5 seconds slow of NTP time")["offset_s"] == 0.5
     t = timesync.parse_timedatectl("       Server: 17.253.14.125 (time.apple.com)\n       Offset: -1.250ms\n")
     assert t["tool"] == "timedatectl" and t["source"] == "time.apple.com" and t["offset_s"] == pytest.approx(-0.00125)
@@ -149,9 +152,20 @@ def test_recorder_cursor_leaves_no_gap_inside_a_step(tmp_path):
 
 
 def test_nvidia_smi_line_parsing_and_command():
-    assert recorder.parse_smi("37, 2048\n") == (37.0, 2048.0)
-    assert recorder.parse_smi("[N/A], 12") is None and recorder.parse_smi("") is None
-    assert recorder.smi_argv("cuda:1")[:3] == ["nvidia-smi", "-i", "1"] and recorder.smi_argv("cuda")[2] == "0"
+    assert recorder.parse_smi("1, 37, 2048\n") == (1, 37.0, 2048.0)
+    assert recorder.parse_smi("0, [N/A], 12") is None and recorder.parse_smi("") is None and recorder.parse_smi("37, 2048") is None
+    argv = recorder.smi_argv()
+    assert argv[0] == "nvidia-smi" and "-i" not in argv and "--query-gpu=index,utilization.gpu,memory.used" in argv      # every GPU of the host
+
+
+def test_run_tag_from_the_plan_cannot_leave_the_runs_folder():
+    """Review F7: the tag comes from the wire when a rank was started without --run-dir."""
+    import os
+    from nocturne.engines.torch_tp.hybrid import default_run_dir
+    root = os.path.expanduser("~/.nocturne/runs")
+    assert default_run_dir("R1_ok-2.x") == os.path.join(root, "R1_ok-2.x")
+    for bad in ("../../etc", "/abs/path", "a/b", "", None, "x\n"):
+        assert default_run_dir(bad) == os.path.join(root, "untagged"), bad
 
 
 def test_sampler_writes_cumulative_counters(tmp_path):
@@ -244,6 +258,13 @@ def test_recorded_spans_tile_every_step_and_bytes_equal_the_transport_counters(t
     kinds = {rk["meta"]["rank"]: {e["kind"] for e in rk["events"]} for rk in r["ranks"]}
     assert {"compute", "host_copy", "send", "allreduce_wait"} <= kinds["s0/1"] and "recv_wait" in kinds["s0/1"]
     assert "allreduce_wait" not in kinds["s1/0"] and {"recv_wait", "compute", "send"} <= kinds["s1/0"]
+    for name in ("s0/1", "s0/2"):       # review F17: a rank that neither forwards nor holds the head ends its step with compute
+        ev = next(x["events"] for x in r["ranks"] if x["meta"]["rank"] == name)
+        last = {}
+        for e in ev:
+            if e["step"] >= 0:
+                last[e["step"]] = e["kind"]
+        assert set(last.values()) == {"compute"}, name
     assert "other" in kinds["s0/0"] and "recv_wait" in kinds["s0/0"]          # the coordinator waits for the head rank
     rows = timeline.breakdown(r, co.requests)
     s = timeline.summary(rows)

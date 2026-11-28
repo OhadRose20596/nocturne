@@ -31,7 +31,8 @@ warnings.filterwarnings("ignore", message="The given NumPy array is not writable
 CHUNK = 4 << 20
 OP_MANIFEST, OP_NEED, OP_CHUNK, OP_END, OP_ACK, OP_DONE = range(1, 7)
 OP_NAMES = {OP_MANIFEST: "manifest", OP_NEED: "need", OP_CHUNK: "chunk", OP_END: "end", OP_ACK: "ack", OP_DONE: "done"}
-HEX64 = re.compile(r"^[0-9a-f]{64}$")
+HEX64 = re.compile(r"[0-9a-f]{64}")
+CODE_FILES = ("shipping.py", "gguf_source.py", "loader.py", "shard.py", "quant.py", "arch.py")
 DEFAULT_CACHE = "~/.nocturne/cache"
 DISK_MARGIN = 64 << 20
 NP_DTYPE = {"torch.uint8": np.uint8, "torch.bfloat16": np.int16, "torch.float16": np.float16, "torch.float32": np.float32,
@@ -181,18 +182,28 @@ def build_manifest(source, cfg, load_spec: LoadSpec, model_sha: str, memo: dict 
     return {"model_sha256": model_sha, "kind": source.kind, "slices": slices, "total_bytes": total}
 
 
+def code_stamp() -> str:
+    """sha256 over the files that decide which bytes a slice key means. A remembered hash is valid only for this code."""
+    h = hashlib.sha256()
+    for name in CODE_FILES:
+        h.update(name.encode() + Path(__file__).with_name(name).read_bytes())
+    return h.hexdigest()
+
+
 def load_memo(root: Path, model_sha: str) -> tuple[dict, Path]:
+    """{slice key: entry} remembered for this model, empty when it was written by other slicing code."""
     p = root / model_sha / "slice_hashes.json"
     try:
-        return (json.loads(p.read_text()) if p.exists() else {}), p
+        d = json.loads(p.read_text()) if p.exists() else {}
     except ValueError:
-        return {}, p
+        d = {}
+    return (d.get("slices") or {} if d.get("code") == code_stamp() else {}), p
 
 
 def save_memo(memo: dict, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(f".tmp{os.getpid()}")
-    tmp.write_text(json.dumps(memo))
+    tmp.write_text(json.dumps({"code": code_stamp(), "slices": memo}))
     os.replace(tmp, path)
 
 
@@ -237,10 +248,10 @@ def send_slices(link: transport.Link, source, manifest: dict, rank: str = "") ->
 
 # ---- rank: receive ---------------------------------------------------------------------------------------------------------------
 def check_manifest(m: dict) -> None:
-    if not HEX64.match(str(m.get("model_sha256"))):
+    if not HEX64.fullmatch(str(m.get("model_sha256"))):
         raise ShipRejected("manifest: the model sha256 is not 64 hex digits")
     for sl in m["slices"]:
-        if not HEX64.match(str(sl.get("sha256"))) or not isinstance(sl.get("nbytes"), int) or sl["nbytes"] < 0:
+        if not HEX64.fullmatch(str(sl.get("sha256"))) or not isinstance(sl.get("nbytes"), int) or sl["nbytes"] < 0:
             raise ShipRejected(f"manifest: bad sha256 or size for slice {sl.get('name')}")
 
 
@@ -276,48 +287,59 @@ def receive_slices(link: transport.Link, root: Path, log=print) -> tuple[dict, d
         raise ShipRejected(f"cache {d} has {free / 1e9:.2f} GB free, the missing slices need {missing / 1e9:.2f} GB")
     link.send(transport.KIND_WEIGHTS, json.dumps(need).encode(), "uint8", aux0=OP_NEED)
     received = chunks = checks = 0
-    cur = None          # (index, file, sha, bytes, error)
-    while True:
-        kind, payload, _, _, aux0, aux1 = link.recv()
-        if kind != transport.KIND_WEIGHTS:
-            raise ShipRejected(f"expected a weights frame, got {transport.KIND_NAMES.get(kind, kind)}")
-        op, i = aux0 & 0xFF, aux0 >> 8
-        if op == OP_DONE:
-            break
-        if op not in (OP_CHUNK, OP_END) or i not in need:
-            raise ShipRejected(f"unexpected weights frame {OP_NAMES.get(op, op)} for slice {i}")
-        sl = slices[i]
-        if cur is None:
-            tmp = d / f"{sl['sha256']}.part{os.getpid()}_{threading.get_ident()}"      # two ranks of one host may fetch the same slice
-            cur = {"i": i, "tmp": tmp, "f": tmp.open("wb"), "sha": hashlib.sha256(), "n": 0, "err": None}
-        elif cur["i"] != i:
-            cur["err"] = cur["err"] or f"a frame of slice {i} arrived inside slice {cur['i']}"
-        if op == OP_CHUNK:
-            chunks += 1
-            if zlib.crc32(payload) != aux1:
-                cur["err"] = cur["err"] or f"chunk {chunks} failed its CRC32"
-            elif not cur["err"]:
-                cur["f"].write(payload)
-                cur["sha"].update(payload)
-                cur["n"] += len(payload)
-            continue
-        cur["f"].close()
-        checks += 1
-        err = cur["err"]
-        if not err and cur["n"] != sl["nbytes"]:
-            err = f"{cur['n']} bytes arrived, the manifest says {sl['nbytes']}"
-        if not err and cur["sha"].hexdigest() != sl["sha256"]:
-            err = "sha256 differs from the manifest"
-        if err:
+    accepted: set[int] = set()
+    cur = None          # the slice being received: index, temporary file, sha256, bytes, first error
+    try:
+        while True:
+            kind, payload, _, _, aux0, aux1 = link.recv()
+            if kind != transport.KIND_WEIGHTS:
+                raise ShipRejected(f"expected a weights frame, got {transport.KIND_NAMES.get(kind, kind)}")
+            op, i = aux0 & 0xFF, aux0 >> 8
+            if op == OP_DONE:
+                missing_now = [slices[k]["name"] for k in need if k not in accepted]
+                if cur is not None or missing_now:
+                    raise ShipRejected(f"the transfer ended before {len(missing_now)} needed slices arrived (first: {missing_now[0]})")
+                break
+            if op not in (OP_CHUNK, OP_END) or i not in need or i in accepted:
+                raise ShipRejected(f"unexpected weights frame {OP_NAMES.get(op, op)} for slice {i}")
+            sl = slices[i]
+            if cur is None:
+                tmp = d / f"{sl['sha256']}.part{os.getpid()}_{threading.get_ident()}"      # two ranks of one host may fetch the same slice
+                cur = {"i": i, "tmp": tmp, "f": tmp.open("wb"), "sha": hashlib.sha256(), "n": 0, "err": None}
+            elif cur["i"] != i:
+                cur["err"] = cur["err"] or f"a frame of slice {i} arrived inside slice {cur['i']}"
+            if op == OP_CHUNK:
+                chunks += 1
+                if zlib.crc32(payload) != aux1:
+                    cur["err"] = cur["err"] or f"chunk {chunks} failed its CRC32"
+                elif not cur["err"]:
+                    cur["f"].write(payload)
+                    cur["sha"].update(payload)
+                    cur["n"] += len(payload)
+                continue
+            checks += 1
+            err = cur["err"]
+            if not err and cur["n"] != sl["nbytes"]:
+                err = f"{cur['n']} bytes arrived, the manifest says {sl['nbytes']}"
+            if not err and cur["sha"].hexdigest() != sl["sha256"]:
+                err = "sha256 differs from the manifest"
+            if err:
+                link.send(transport.KIND_WEIGHTS, err.encode(), "uint8", aux0=OP_ACK | i << 8, aux1=1)
+                raise ShipRejected(f"slice {sl['name']} rejected: {err}")
+            cur["f"].flush()
+            os.fsync(cur["f"].fileno())          # the file gets its cache name only when its bytes are on the disk
+            cur["f"].close()
+            os.replace(cur["tmp"], d / sl["sha256"])
+            received += cur["n"]
+            accepted.add(i)
+            cur = None
+            link.send(transport.KIND_WEIGHTS, aux0=OP_ACK | i << 8, aux1=0)
+    finally:
+        if cur is not None:      # any abnormal end: a rejected slice, a lost link, a full disk
+            cur["f"].close()
             cur["tmp"].unlink(missing_ok=True)
-            link.send(transport.KIND_WEIGHTS, err.encode(), "uint8", aux0=OP_ACK | i << 8, aux1=1)
-            raise ShipRejected(f"slice {sl['name']} rejected: {err}")
-        os.replace(cur["tmp"], d / sl["sha256"])
-        received += cur["n"]
-        cur = None
-        link.send(transport.KIND_WEIGHTS, aux0=OP_ACK | i << 8, aux1=0)
     total, unique = m["total_bytes"], unique_bytes(m)
-    stats = {"manifest_bytes": total, "manifest_slices": len(slices), "received_bytes": received, "received_slices": len(need),
+    stats = {"manifest_bytes": total, "manifest_slices": len(slices), "received_bytes": received, "received_slices": len(accepted),
              "cache_bytes": unique - received, "duplicate_bytes": total - unique, "hash_checks": checks, "chunks": chunks,
              "recv_s": time.time() - t0, "cache_dir": str(d)}
     log(f"[ship] {received / 1e9:.3f} GB received in {len(need)} slices, {(unique - received) / 1e9:.3f} GB from the cache, {stats['recv_s']:.1f} s")
@@ -364,8 +386,19 @@ def ship_all(links: dict, source, manifests: dict, names: dict) -> tuple[dict, l
             with lock:
                 stats[names[gid]] = s
         except Exception as e:      # noqa: BLE001 - reported with the rank's name by the caller
+            text = str(e) if isinstance(e, ShipRejected) else f"{names[gid]}: {type(e).__name__}: {e}"
+            if not isinstance(e, ShipRejected):      # a rank that failed on its own (disk full) sent its reason before it closed
+                try:
+                    links[gid].sock.settimeout(3.0)
+                    while True:
+                        kind, payload, *_ = links[gid].recv()
+                        if kind == transport.KIND_ERROR:
+                            text += f" (the rank said: {bytes(payload).decode(errors='replace')})"
+                            break
+                except (OSError, ValueError):
+                    pass
             with lock:
-                errors.append(str(e) if isinstance(e, ShipRejected) else f"{names[gid]}: {type(e).__name__}: {e}")
+                errors.append(text)
 
     threads = [threading.Thread(target=one, args=(gid,), daemon=True) for gid in manifests]
     for t in threads:

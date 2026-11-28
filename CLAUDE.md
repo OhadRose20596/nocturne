@@ -25,12 +25,14 @@ scripts/      bash, numbered; all source scripts/common.sh. Each file starts wit
   12_rpc_trace.py        per-step RPC command/bytes trace -> experiments/r3/trace/
   14_build_he_html.sh    docs/he/*.md -> docs/he/html/ (RTL)
   15_join.sh, 15_join.ps1  run on a new machine: check, fix, write a report (docs/JOIN.md)
-  16_join_apply.py       coordinator side: invite | listen | apply a join report to ssh config and peers.yaml
+  16_join_apply.py       operator side: invite | listen | apply a join report to ssh config and peers.yaml
+  17_timesync.sh, .ps1   clock offset of this host to one NTP server; --set steps the clock (sudo). docs/MEASUREMENT.md
 nocturne/     Python package (O5): tracker/, worker_agent/, requester/, placement/ (stubs)
   bench/                 experiment matrix runner (cells x decode x network). README.md there; run with .venv (uv, Python 3.12)
 experiments/  RESULTS.md (append-only), R0_PROTOCOL.md, r0/, r3/, inventory/. Raw run folders are evidence; never edit them
 docs/         CURRENT_CONTEXT, GOAL_AND_OBJECTIVES (v4), FLOW, PLATFORM, BACKGROUND_AND_DESIGN, ARCHITECTURE,
               DECISIONS, SETUP_GUIDE, LEARNING_RESOURCES, BACKENDS (background), archive/ (superseded versions)
+              ENGINE_DESIGN (how a run of our torch engine works, step by step), MEASUREMENT (where every number comes from), JOIN
 docs/he/      Hebrew: MEETING_CHEN_2026-10-11, NEXT_STEPS_2026-10-17, CONNECTIVITY, RUNBOOK_R0, GUIDE_R0_TO_R3,
               STATUS/ONE_PAGER (11.10 snapshots), PARTITIONING_DEEP_DIVE, SHARED_RESEARCH_AND_DECISIONS (private, gitignored)
 third_party/  llama.cpp checkout (gitignored)

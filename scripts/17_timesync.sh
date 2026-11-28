@@ -25,6 +25,7 @@ if [ "$SET" = 1 ]; then
         echo "WSL2 follows the Windows clock: run 17_timesync.ps1 on Windows first, then this reads the hardware clock" >&2
         sudo hwclock -s >&2 || echo "hwclock -s failed" >&2
       elif command -v chronyc >/dev/null 2>&1; then
+        sudo chronyc add server "$SERVER" iburst >&2 || true
         sudo chronyc -a "burst 4/4" >&2; sleep 4; sudo chronyc -a makestep >&2 || echo "chronyc makestep failed" >&2
       elif command -v timedatectl >/dev/null 2>&1; then
         sudo timedatectl set-ntp true >&2 && sudo systemctl restart systemd-timesyncd >&2 || echo "systemd-timesyncd restart failed" >&2
@@ -34,5 +35,6 @@ if [ "$SET" = 1 ]; then
       fi ;;
     *) echo "unsupported OS: $(uname -s)" >&2; exit 2 ;;
   esac
+  mkdir -p "$HOME/.nocturne" && printf '{"at": "%s", "server": "%s"}\n' "$(date +%Y-%m-%dT%H:%M:%S%z)" "$SERVER" > "$HOME/.nocturne/timesync_set.json"
 fi
 exec "$PY" "$HERE/../nocturne/bench/probes/timesync.py" --server "$SERVER" $JSON

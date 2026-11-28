@@ -100,7 +100,6 @@ def run_job(job: dict, run_dir: str | Path, log=print) -> dict:
             out.append(item)
             log(f"[run] {q['id']}: {len(res['tokens'])} tokens")
         m1 = co.metrics()
-        co.clock_sync()
         steps = m1["decode_steps"] - m0["decode_steps"]
         f0, f1 = decode_frames(m0), decode_frames(m1)
         rec["frames"].update({"decode_steps": steps, "measured_per_step": (f1["sent_frames"] - f0["sent_frames"]) / steps if steps else None,
@@ -115,6 +114,12 @@ def run_job(job: dict, run_dir: str | Path, log=print) -> dict:
         rec["eos_token_ids"] = list(cfg.eos_token_ids)
         np.savez_compressed(run_dir / "first_logits.npz", **logits)
         rec["outcome"] = "completed"
+        try:        # the results are stored; a link that drops now costs only the end clock measurement
+            co.clock_sync()
+        except (OSError, RuntimeError) as e:
+            co.clock["end"] = {}
+            rec["clock_end_error"] = f"{type(e).__name__}: {e}"
+            log(f"[run] end clock measurement failed: {e}")
     except PlanError as e:
         rec["outcome"], rec["error"] = "plan_rejected", str(e)
         log(f"[run] planner rejected the placement: {e}")
@@ -139,6 +144,12 @@ def run_job(job: dict, run_dir: str | Path, log=print) -> dict:
     return rec
 
 
+def exit_on_sigterm() -> None:
+    """SIGTERM becomes a normal exit, so `finally` blocks and atexit handlers run (the sampler stops its nvidia-smi)."""
+    import signal
+    signal.signal(signal.SIGTERM, lambda *a: sys.exit(143))
+
+
 def shipping_args(job: dict) -> dict:
     return {"ship_weights": bool(job.get("ship_weights")), "cache_dir": job.get("cache_dir")}
 
@@ -149,6 +160,7 @@ def main(argv=None) -> int:
     ap.add_argument("--plan-only", action="store_true")
     ap.add_argument("--tag", default="", help="run tag, lets the operator find the process")
     a = ap.parse_args(argv)
+    exit_on_sigterm()
     job_path = Path(os.path.expanduser(a.job))
     job = json.loads(job_path.read_text())
 

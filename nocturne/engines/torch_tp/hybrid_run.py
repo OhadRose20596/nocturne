@@ -171,7 +171,7 @@ def preflight(op, log, run=None, ship: bool = False, timeline: bool = False) -> 
         osname = peer_os(peer, run)
         has_cuda = any(s.host == host and s.device.split(":")[0] == "cuda" for s in op.slots)
         info = host_state(peer, not peer.get("ssh"), osname, has_cuda, run, log)
-        py = op.python(host)
+        py = shell_path(op.python(host))
         r = run(peer, f"{py} -c \"{ENGINE_HASH_REMOTE}\"")
         remote = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else ""
         if remote != local_hash:
@@ -322,6 +322,11 @@ def main(argv=None) -> int:
         log(f"[run] the placement is rejected: {e}")
         save()
         return 3
+    except Exception as e:      # noqa: BLE001 - a bad tag, a peers entry without bind or backend, a missing file
+        rec["outcome"], rec["error"] = "setup_failed", f"{type(e).__name__}: {e}"
+        log(f"[run] setup failed: {rec['error']}")
+        save()
+        return 4
     import socket
     rec["model"] = {"key": op.placement.model, "dir": op.model_dir}
     rec["coordinator"] = {"host": op.coord, "hostname": op.peer(op.coord).get("host"), "operator_hostname": socket.gethostname().split(".")[0],
@@ -382,6 +387,12 @@ def main(argv=None) -> int:
     rec["outcome"] = crec.get("outcome") or "error"
     if rec.get("shipping"):       # two hashes of the model: the coordinator's own, and the operator's shell command on that host
         rec["shipping"]["agrees_with_preflight"] = rec["shipping"].get("model_files") == rec["preflight"]["hosts"][op.coord].get("model_sha256")
+        by_name = {r["name"]: r for r in rec.get("ranks") or []}
+        for name, sh in rec["shipping"].get("ranks", {}).items():      # shipped bytes are stored bytes; the loader narrows 1-D float tensors
+            r = by_name.get(name)
+            if r and "manifest_bytes" in sh:
+                sh.update({"loaded_tensor_bytes": r["loaded_tensor_bytes"], "planned_weight_bytes": r["planned"]["weights"],
+                           "stored_minus_loaded_bytes": sh["manifest_bytes"] - r["loaded_tensor_bytes"]})
     if crec.get("clock"):
         rec["clock"] = clock_report(crec["clock"], rec["preflight"], op.coord)
     out = crec.get("prompts") or []

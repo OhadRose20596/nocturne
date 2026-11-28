@@ -49,7 +49,9 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.cmd == "rank":
         import os
+        from .coordinate import exit_on_sigterm
         from .hybrid import rank_main
+        exit_on_sigterm()
         return rank_main(a.listen.split(","), a.port, os.path.expanduser(a.model) if a.model else None, a.device,
                          run_dir=os.path.expanduser(a.run_dir) if a.run_dir else None,
                          cache_dir=os.path.expanduser(a.cache_dir) if a.cache_dir else None)
@@ -60,7 +62,11 @@ def main(argv=None):
         from .plan import Dims, PlanError, format_plan, placement_from_dict, plan
         import yaml
         p = placement_from_dict(yaml.safe_load(open(a.placement)))
-        path = os.path.expanduser(model_dir_of(p.model, load_peers(a.peers)))
+        import socket
+        peers = load_peers(a.peers)
+        me = socket.gethostname().split(".")[0].lower()
+        here = next((n for n, v in (peers.get("peers") or {}).items() if str(v.get("host", "")).split(".")[0].lower() == me), None)
+        path = os.path.expanduser(model_dir_of(p.model, peers, here))
         cfg = load_config(path)
         from .gguf_source import weight_meta
         cfg = Dims.of(cfg, weight_meta(path))

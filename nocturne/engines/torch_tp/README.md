@@ -3,6 +3,8 @@
 Our own PyTorch tensor parallel engine for Qwen2, Llama and Qwen3 (bf16 safetensors, or quantized GGUF kept quantized on the device), with our own TCP transport.
 Session 3 built the two rank engine (`serve`, `worker`, cell B1t of the bench).
 Session 6 added hybrid placement: PP stages, each a TP group of any size with uneven shares.
+Session 10 added: any host as coordinator, weights shipped by the coordinator, clock alignment, and a recorder with a timeline.
+The whole flow of a run is in `docs/ENGINE_DESIGN.md`. Where every number comes from is in `docs/MEASUREMENT.md`.
 Nothing here is evidence about llama.cpp, and nothing here picks the product engine (ADR-007 symmetric rule).
 
 ## Files
@@ -20,7 +22,13 @@ Nothing here is evidence about llama.cpp, and nothing here picks the product eng
 | `transport.py` | Framed TCP links; per link counters, split into prefill and decode frames. |
 | `hybrid.py` | N rank all-reduce, the rank runtime, the coordinator, link setup. |
 | `launch.py` | Starts every rank (local or over ssh), runs the coordinator, stops everything. |
-| `hybrid_run.py` | One recorded run: preflight, prompts, correctness against the R0 reference, frames, memory. |
+| `hybrid_run.py` | One recorded run, as the operator: job, preflight, start, collect, correctness against the R0 reference, record. |
+| `operate.py` | The operator: starts every rank and the coordinator on their hosts (ssh or local), collects their run files. Never loads the model. |
+| `coordinate.py` | The coordinator of a recorded run, on the host the placement names: plans, links, ships, runs the prompts. |
+| `shipping.py` | Weight shipping: manifest per rank, chunks with CRC32, the slice cache by sha256, `CacheSource` for the loader. |
+| `clock.py` | Clock offset of every rank on the control link, at start and end. |
+| `recorder.py` | Per rank spans (compute, copy, send, waits) and the host sampler. |
+| `timeline.py`, `timeline_page.html` | Aligns the spans and writes `trace.json.gz`, `breakdown.csv`, `timeline.html`. |
 | `engine.py`, `server.py`, `compare.py` | Session 3 two rank engine and the HTTP server (shared by `launch`). |
 
 ## Weight sources and architectures (engine GGUF, 2026-11-21)
@@ -52,7 +60,7 @@ YAML. One file per placement, under `experiments/session6_hybrid/placements/`.
 
 ```yaml
 model: qwen2.5-7b-bf16       # a model key of peers.yaml (torch_model), or a safetensors directory
-coordinator: {host: m5}      # must be the host of rank 0 of the first stage; that process is the coordinator
+coordinator: {host: m5}      # must be the host of rank 0 of the first stage; any joined host, macOS or Linux
 reduce_dtype: float32        # float32 (default) or bfloat16: where the partials are summed
 max_seq_len: 4096            # KV cache length per rank
 prefill_max: 256             # longest prompt; sizes the workspace estimate; longer prompts are refused
@@ -74,7 +82,7 @@ stages:                      # in order; layer ranges are half open, contiguous,
       - {host: air, device: mps, port: 50071}
 ```
 
-Per rank fields: `host` (a peers.yaml host), `device` (`mps`, `cpu`, `cuda`), `port`, and optionally:
+Per rank fields: `host` (a peers.yaml host), `device` (`mps`, `cpu`, `cuda`; left out, it follows the host's `backend` in peers.yaml), `port`, and optionally:
 - `weight`: share of the group's bytes. Without weights, `budget_gb` sets the shares; without both, shares are equal.
 - `budget_gb`: tensor bytes plus workspace allowed on this rank (runtime overhead is outside it). The planner rejects a placement with any rank over its budget, naming each one. The rank enforces it again while loading.
 - `heads`: number of query heads, to force a split (for example a KV aligned one). Give it for every rank of the group or for none.
@@ -119,7 +127,21 @@ python -m nocturne.engines.torch_tp launch --placement experiments/session6_hybr
 
 `hybrid_run --session-dir DIR` writes runs and the model hash cache under DIR (default `experiments/session6_hybrid`); references are looked up in DIR first, then in session 6.
 
-`launch` starts the ranks of other hosts over ssh with the `python` of that host in peers.yaml. Each host keeps the model files locally at the same path.
+`launch` (the HTTP server) starts the ranks of other hosts over ssh with the `python` of that host in peers.yaml, and each host keeps the model files locally. Run it on the coordinator host.
+
+## Operator, coordinator, shipped weights (session 10)
+
+`hybrid_run` is the operator. It runs on the machine that has `peers.yaml` and ssh to every host. It starts one `rank` process per rank and one `coordinate` process on the coordinator host, then copies every host's run files into the run folder.
+The coordinator host is the one the placement names. It needs the model file, `transformers` and `gguf`. It needs no ssh and no peers.yaml.
+
+| option | default | what |
+|---|---|---|
+| `--ship-weights` / `--no-ship-weights` | on | The coordinator sends every rank its slices. Only the coordinator host holds the model. Off: every host reads its own copy, as before session 10 |
+| `--cache-dir DIR` | `~/.nocturne/cache` on each host | Where a rank keeps shipped slices: `<dir>/<model sha256>/<slice sha256>` |
+| `--timeline` | off | Record spans and samples, write the timeline files |
+
+peers.yaml keys added: `peers.<host>.models.<key>` (the model path on that host), `peers.<host>.run_root` (where that host writes its run files; default `~/.nocturne/runs`).
+The slice cache is never cleaned. Delete `~/.nocturne/cache/<model sha256>` by hand when a model is no longer used.
 
 ## Network exposure
 
@@ -138,6 +160,9 @@ The record holds:
 - **Host state:** OS, caffeinate, AWDL and VPN state per host ("n/a" on Linux), and `nvidia-smi` name, memory and driver for hosts with a CUDA rank.
 - **Memory per rank (CUDA ranks add `cuda_name`, `vram_total_bytes`, `vram_free_bytes`, `max_allocated_bytes`):** planned bytes, loaded tensor bytes, KV bytes, MPS current and driver allocations, the process footprint (idle, current, lifetime maximum) and peak RSS.
 - **Frames:** predicted and measured decode frames per step, per link.
+- **Clocks (session 10):** per host the offset to one NTP server and the OS tool's report; per rank the offset to the coordinator at start and end, the drift, and the gap between the two methods.
+- **Shipping (session 10):** the model sha256, and per rank the manifest bytes, shipped bytes, bytes from the cache, the time and the number of hash checks.
+- **Timeline (session 10, with `--timeline`):** per rank the mean ms per decode step by kind, bytes per link, host samples.
 - **Correctness:** greedy tokens, graded accuracy, first-step logit differences against the R0 reference.
 - **Background only:** ms per step (T1).
 
