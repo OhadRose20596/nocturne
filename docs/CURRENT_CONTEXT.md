@@ -2,6 +2,11 @@
 
 Updated: 2026-11-02. This is a handoff note. It is not an ADR and not an experiment report. Older context is kept below.
 
+## What changed on 2026-11-28 (session 10, part 3, overlap options of our torch engine)
+
+1. Built and verified, all off by default: `--slots K` (several requests in flight), `--prefill-chunk C`, `--tp-interleave 2`, `--async-send`, and a host in several pipeline stages with a per host sum in the planner. With every option off the engine sends the same frames and bytes as before; that gate held on 1.5B and 7B. Record: `experiments/session10_cuda_pair/VERIFY_overlap.md`. Design: `docs/ENGINE_DESIGN.md` section 11.
+2. Next is one session on the CUDA pair: part 2 with the options off, then part 4. Open before it: the pc is off and was not prepared for remote use, the pairing policy with two slots is Ohad's call, and the Codex review has not run (`REVIEW_REQUEST_CODEX_overlap.md`). Found on the way: Linux grants 426 kB socket buffers, not the 8 MiB asked for; the engine now reads the grant back and adapts.
+
 ## What changed on 2026-11-28 (session 10, part 1, our torch engine)
 
 1. Any joined host can be the coordinator and planner (`coordinator: {host: ...}` in the placement), and the coordinator ships every worker its slices, so only the coordinator host holds the model. `hybrid_run` is now only the operator. Design: `docs/ENGINE_DESIGN.md`.
