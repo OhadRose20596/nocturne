@@ -148,7 +148,7 @@ The slice cache is never cleaned. Delete `~/.nocturne/cache/<model sha256>` by h
 
 ## Overlap options (session 10, part 3)
 
-Design: `docs/ENGINE_DESIGN.md` section 11. Every option is off by default, and with every option off the engine sends the same frames and the same bytes as before.
+Design: `docs/ENGINE_DESIGN.md` section 11. Every option is off by default, and with every option off the engine sends the same data frames and the same PLAN frame as before, byte for byte. READY and the METRICS reply are JSON reports and gained three fields.
 The rule: the tokens of a request do not depend on how the work was scheduled.
 
 | option of `hybrid_run` | default | what |
@@ -160,8 +160,8 @@ The rule: the tokens of a request do not depend on how the work was scheduled.
 
 A host in several stages is a placement, not a flag: name the host in more than one stage. Each stage is its own rank process and port. `host_budget_gb: {host: GB}` in the placement gives the planner a budget for all rank processes of a host together; it adds 150 MiB per CUDA process and 200 MiB per MPS process, and rejects a placement that goes over.
 
-With any of the first three options on, the coordinator takes all prompts of the run at once (`Coordinator.generate_many`). With all of them off it runs the prompts one by one, as before (`Coordinator.generate`).
-A run folder of a completed run can be a `--reference`. So a run with options is compared with the options-off run of the same placement.
+With any of the first three options on, the coordinator takes all prompts of the run at once (`Coordinator.generate_many`). A thread of the coordinator then reads the HEAD frames (`HeadReader`), so a large HEAD frame never blocks a head rank while the coordinator's own rank is busy. With all of them off it runs the prompts one by one, as before (`Coordinator.generate`).
+A run folder of a completed run can be a `--reference`. So a run with options is compared with the options-off run of the same placement. Against a reference with the same placement file, dtype and prefill chunk every token must match (`rule: every token` in the record); against any other reference the rule is seven of eight evaluation prompts.
 
 Added to the record: `overlap` (the options), `throughput` (tokens per second of the whole system), `frames.prefill_measured` against `frames.prefill_predicted`, `planned_hosts`, per rank `slots` and `async_send`, per prompt its slot and number of chunks, and with `--timeline` the busy share and the overlap share per rank and per device (`timeline.overlap`, `docs/MEASUREMENT.md` section 3.1).
 
@@ -195,4 +195,6 @@ The record holds:
 - **Linux grants small socket buffers.** The engine asks for 8 MiB per direction and gets 425984 bytes with the default `net.core.wmem_max` and `rmem_max` (212992). It reads the granted size back and sends a frame on the caller's thread only when it fits; larger frames leave on a helper thread. Raising the two sysctls needs sudo and is not required.
 - **With two slots, `--tp-interleave 2` seldom pairs behind a later stage.** Use four slots, and read `overlap.pair_steps` in the record.
 - **On a Mac `--async-send` moves only the socket send.** Two threads may not use the MPS device at once, so the copy to the host stays on the compute thread.
+- **A prompt of one token.** Its frames are counted as decode frames by every rank (a decode frame is told by its one token), on the old path as well, so the frame check of such a run does not hold.
+- **With `--timeline`, a frame carries the request number modulo 65536.** The record keeps the full numbers; from request 65536 of one run on, the recorded frames differ from those of the engine before part 3 in that field.
 - **No recovery.** A broken link ends the run.

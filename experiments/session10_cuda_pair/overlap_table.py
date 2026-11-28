@@ -60,7 +60,7 @@ def shares(r):
         return "-", "-", "-"
     pr = o["per_rank"]
     busy = ", ".join(f"{k} {100 * v['busy_share']:.0f}" for k, v in pr.items())
-    over = ", ".join(f"{k} {100 * v['overlap_share']:.1f} ({100 * v['overlap_out_share']:.1f})" for k, v in pr.items())
+    over = ", ".join(f"{k} n/a" if v["overlap_share"] is None else f"{k} {100 * v['overlap_share']:.1f} ({100 * v['overlap_out_share']:.1f})" for k, v in pr.items())
     dev = ", ".join(f"{k}: {100 * v['busy_share']:.0f}" for k, v in o["per_device"].items())
     return busy, over, dev
 

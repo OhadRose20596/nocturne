@@ -298,7 +298,11 @@ Two goals:
 2. With several units of work in the pipeline, no machine waits long. For that a machine may hold several layer ranges that are not adjacent (the Megatron interleaved schedule).
 
 The rule that does not move: **the tokens of a request do not depend on how the work was scheduled.**
-Every feature is an option. Every option is off by default. An option at its off value gives the old behaviour byte for byte: the same frames, the same bytes per link, the same tokens.
+Every feature is an option. Every option is off by default. An option at its off value gives the old behaviour: the same tokens, and byte for byte the same data frames (TOKEN, HIDDEN, HEAD, ALLREDUCE) and the same PLAN frame on every link.
+Two things are not byte for byte the same, and the Codex review of part 3 named both (`experiments/session10_cuda_pair/REVIEW_CODEX_overlap.md`):
+
+- READY and the METRICS reply are JSON reports. They gained three fields (`slots`, `socket_buffers`, `async_send`), so they are longer. They carry no data.
+- With `--timeline` a frame carries the request number modulo 65536 (before part 3: modulo 16.7 million). So from request 65536 of one run on, a recorded frame differs from the frame of the old engine in that field. A rank rebuilds the full number from the last one it saw (`Recorder.full_req`), so the record keeps the requests apart.
 
 | option | off value | what it does | for |
 |---|---|---|---|
@@ -320,7 +324,9 @@ Every feature is an option. Every option is off by default. An option at its off
 
 1. While a slot is ready, the coordinator runs the first stage for it (it is rank 0 of that stage) and the hidden state leaves for the next stage.
 2. Between steps it reads the HEAD frames that have arrived, without blocking. When all head ranks have answered for a slot, it chooses the token of that slot. The slot is ready again, or its request is finished and the slot takes the next waiting request.
-3. When no slot is ready it blocks on the head links.
+3. When no slot is ready it waits for a HEAD frame.
+
+**The head reader.** HEAD frames are read from the sockets by a thread of their own (`hybrid.HeadReader`), which lives only inside `generate_many`. The scheduler takes them from its queue in steps 2 and 3. The reason is a cycle that the Codex review found. A HEAD frame with first step logits can be larger than the socket buffers (0.3 MiB in bf16 for Qwen2.5, 0.6 MiB in float32, against about 0.4 MiB granted on Linux). The head rank then cannot finish sending it until the coordinator reads. With one thread the coordinator could be blocked at that moment: in a TP group it waits for that rank's partial of the next slot, on a pipeline it is sending the prefill of the next request to a stage that cannot take it. Both then wait for good. Reproduced on loopback in both forms, with and without `--async-send`. With the reader the coordinator always takes a HEAD frame, whatever its own rank is doing. The thread touches sockets only, never the device. The old path (one request, `generate`) has no such cycle and no reader: it never starts a step before the head result of the step before.
 
 So stage 1 works on request A while stage 0 works on request B.
 Order of service is first ready, first served.
@@ -356,6 +362,7 @@ A's transfer happens behind B's compute. This repeats for every all-reduce: the 
 - The coordinator forms the pair when two slots are ready. The first frame of a pair carries a "pair" flag, and the receiver then reads the partner before it starts. The flag travels with the pair through later stages. A stage with one rank just computes A, then B. With one slot ready, the step runs alone as today.
 - It needs `--slots` of 2 or more.
 - **How often a pair forms.** A pair needs two slots ready at the same moment. In a pure TP group the two head results come back together, so with two slots most steps are pairs. Behind a later stage they come back one step apart, and with two slots almost every step then runs alone (measured on loopback: 12 of 80 steps in pairs). With four requests in flight two are always ready. A real prompt set is uneven: in the hybrid verification run with four slots, eight short prompts and three long ones, 36 of 352 steps were pairs (`OVf_15b_hybrid_all_l3_r1`). The scheduler does not wait for a partner, because the first stage would then idle while a later stage works. The record says what happened: `overlap.pair_steps`, `overlap.single_steps`, and `overlap.max_in_flight`, the most requests that waited for a head result at the same time. A prefill chunk that is not the last waits for none, so chunks in the pipeline are not in that number.
+- **A frame that cannot be sent.** A large all-reduce frame leaves on a thread (`hybrid.FrameThread`), the second frame of a pair behind the first on its link. The peer tells all-reduce frames apart by their order alone. So when a frame fails, the frame behind it is not sent, the link is closed, and the all-reduce raises the failure. No later all-reduce starts on that link.
 - **Memory.** A rank of a group holds the work space of two requests during a pair. The planner doubles the work space of group ranks when the option is on.
 - **Socket buffers.** Every rank sends before it receives, so what it sends on its own thread must fit the kernel's send buffer without the peer reading. A pair doubles that. The engine asks for 8 MiB and reads back what it got: 8 MiB on the Macs, 425984 bytes on Linux with the default `net.core.wmem_max` (measured on gtx). A frame goes inline only when it fits half the granted size together with every frame the rank sent on that link and has no answer for yet. That count includes a pair partner's frame that left on a helper thread: once its thread has ended, the frame sits unread in the same buffers. Any other frame leaves on a helper thread, in order. Before this rule a pair of 7B prefill frames could have blocked both Linux ranks for good, and so could a single frame between about 0.4 and 1 MiB in the old path.
 
@@ -382,7 +389,7 @@ Rules:
 
 - One sender per rank and one queue, so frames leave every link in the order they were handed over.
 - The second half of an all-reduce needs the rank's own partial on the host. In `inline` mode it is there at once. In `pinned` mode the sender marks it ready when it reaches that partial in its queue, so behind the sends handed over before it.
-- Before a control frame (metrics, clock, reset, shutdown) and before the counters are read, the rank waits until the sender is empty.
+- Before a control frame (metrics, clock, reset, shutdown) and before the counters are read, the rank waits until the sender is empty. The coordinator does the same for its own sender before it sends CLOCK or SHUTDOWN. At shutdown that wait gives up after 20 s, so a sender that is stuck does not hold the shutdown.
 - A failure in the sender is raised on the compute thread at its next call. A compute thread that is blocked on a link makes no such call, so the failing sender also sends its error text on its control link and closes every link of its rank: the rank and its peers then see a closed link at once, and the run ends within a moment. The rank's log always names the real error. The record names it only when the coordinator is reading that control link at that moment, which is the case for the head frame of a head rank; in every other case the record says that a link was lost.
 
 It gives nothing alone: a rank with one request has nothing else to compute. It is meant for O1, O2 and O3.
@@ -390,7 +397,7 @@ Tokens are identical with and without: the same bytes leave in the same order.
 
 **The recorder.** The sender thread records its own spans: `tx_wait` (it waits for a tensor to reach the host) and `tx_send` (bytes and destination). They overlap the spans of the compute thread. With the option the compute thread does no device sync, so its `compute` span is thread time: handing work to the device, not the device finishing it. `docs/MEASUREMENT.md` says so.
 
-**Found while building this.** A large all-reduce frame leaves on a helper thread (section 11.4, "Socket buffers"). In a pair, two such frames could be handed to two threads for the same link, and nothing fixed their order. Now the second waits for the first on its link (`GroupComm._send_after`). With one request there is never a second frame, so the old path is unchanged.
+**Found while building this.** A large all-reduce frame leaves on a helper thread (section 11.4, "Socket buffers"). In a pair, two such frames could be handed to two threads for the same link, and nothing fixed their order. Now the second waits for the first on its link (`hybrid.FrameThread`). With one request there is never a second frame, so the old path is unchanged.
 
 ### 11.6 O5. Interleaved pipeline stages
 
@@ -427,7 +434,7 @@ Changes on the wire, all inside fields that exist (also listed in section 6 and 
 | HEAD | first 32 bit field | index of the best token | bits 0 to 23 index, bits 24 to 31 slot |
 
 With every option off the new bits are zero. A vocabulary must stay under 16.7 million tokens and a run may have at most 256 slots; both are checked. The option values are checked before any process starts (`plan.check_overlap`): slots 1 to 256, a chunk size of 0 or of 2 and more, interleave 1 or 2.
-The PLAN message gains the number of slots and the async send switch. The chunk size and the interleave switch stay on the coordinator: a rank never schedules, it only follows the frames.
+The PLAN message names the number of slots and the async send switch only when they are set, so with the options off it is the PLAN message of before. The chunk size and the interleave switch stay on the coordinator: a rank never schedules, it only follows the frames.
 
 ### 11.8 What is measured
 
@@ -439,6 +446,12 @@ A frame is **in flight** from the start of its send until the receiver has read 
 
 - **Busy share and overlap share**, per rank and per device. Busy: the share of time in which it computes. Overlap: the share of time in which it computes while a frame it sent, or a frame addressed to it, is in flight. The time base is the time in which at least one request is in work.
 - A row **in flight** under each rank in the timeline: frames it sent in the upper half, frames addressed to it in the lower half, colored by the other rank.
+
+When the sends and receives of a socket do not match in count or bytes, the frames in flight of the run are not known: one missing receive shifts every later match on that socket. Such a run has a busy share and no overlap share (`null` in the record, "n/a" on the page), and the links are named.
+
+**The correctness rule of a run with options.** A run is compared with every reference it names. When the reference is a run of the same placement file (same content hash), the same dtype and the same prefill chunk, the two differ in scheduling only, and every token of every prompt must match, the long prompts included (`correctness.<ref>.rule` is "every token"). Against any other reference the rule of the placements holds: seven of eight evaluation prompts and the same accuracy.
+
+**A prompt of one token.** Every rank tells a decode frame from a prefill frame by its token count, on the old path as well. So the frames of a one token prompt are counted as decode frames, and the frame check of such a run does not hold. The step counts are right (one prefill step). No prompt of the project has one token.
 
 `record.json` gains `timeline.overlap` (the shares, and per link the frame count and whether sends and receives match), `overlap` (the options of the run, and how the scheduler ran: steps in pairs, steps alone, the most requests in flight), per rank the granted socket buffers, `throughput` (tokens per second of the whole system), and `frames.prefill_predicted` against `frames.prefill_measured`.
 
