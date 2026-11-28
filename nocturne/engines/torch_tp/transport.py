@@ -1,8 +1,8 @@
 """Our TCP transport: one connection, length prefixed frames, bf16 payload, TCP_NODELAY, large socket buffers.
 Frame: 16 byte header (u32 payload length, u8 kind, u8 dtype code, u16 ndim, u32 aux0, u32 aux1) + dims (u32 each) +
 raw bytes. For two ranks an all-reduce is one frame each way plus a local add: both sides send first and then
-receive. A frame is sent inline on the caller's thread when it is at most SMALL_FRAME and when everything sent inline
-and not yet answered fits half the send buffer the kernel really granted (Link.fits_inline). Other frames (prefill) go
+receive. A frame is sent inline on the caller's thread when it is at most SMALL_FRAME and when it fits half the send
+buffer the kernel really granted, together with everything sent on the link and not yet answered (Link.fits_inline). Other frames (prefill) go
 through a thread. The kernel may grant far less than SOCK_BUF: Linux caps the request at net.core.wmem_max without an
 error (425984 bytes on gtx, 8 MiB on the Macs), so the granted size is read back and kept on the Link. recv(into=...) fills a caller's
 buffer when the payload length matches, so the decode path makes no copies. Frame and byte counters per direction
@@ -192,8 +192,9 @@ class Link:
 
     def fits_inline(self, nbytes: int, outstanding: int = 0) -> bool:
         """May a frame of nbytes be sent on the caller's thread, when the peer does the same and reads afterwards?
-        `outstanding`: bytes already sent inline on this link that the peer has not been seen to answer. The frame must
-        be small, and all of it must fit half the granted send buffer (Linux reports twice the usable size)."""
+        `outstanding`: bytes of the frames already sent on this link, inline or on a helper thread, whose answer has not
+        been received. The frame must be small, and all of it must fit half the granted send buffer (Linux reports twice
+        the usable size)."""
         return nbytes <= SMALL_FRAME and outstanding + nbytes <= self.sndbuf // 2
 
     def send_async(self, *a, **kw) -> threading.Thread:

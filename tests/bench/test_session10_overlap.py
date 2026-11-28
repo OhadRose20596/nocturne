@@ -920,6 +920,20 @@ def test_overlap_options_are_checked_before_anything_starts(tmp_path):
     with pytest.raises(SystemExit):         # pass 2, P3: a reference that cannot be read stops the run before it starts
         hybrid_run.main(["--placement", "none.yaml", "--run-id", "x", "--session-dir", str(tmp_path), "--reference", str(tmp_path / "no_such_run")])
     assert not list(tmp_path.iterdir())
+    # pass 3, Q4: a reference with an empty logits file, and one without prompts, stop the run with a message too
+    import numpy as np
+    for name, rec, npz in (("empty_logits", {"run_id": "r", "outcome": "completed", "prompts": [{"id": "a", "kind": "eval", "tokens": [1]}]}, b""),
+                           ("no_prompts", {"run_id": "r", "outcome": "completed", "prompts": []}, None)):
+        d = tmp_path / "refs" / name
+        d.mkdir(parents=True)
+        (d / "record.json").write_text(json.dumps(rec))
+        if npz is None:
+            np.savez(d / "first_logits.npz", a=np.zeros(2, np.float32))
+        else:
+            (d / "first_logits.npz").write_bytes(npz)
+        with pytest.raises(SystemExit):
+            hybrid_run.main(["--placement", "none.yaml", "--run-id", "x", "--session-dir", str(tmp_path / "s"), "--reference", str(d)])
+    assert not (tmp_path / "s").exists()
 
 
 def test_a_host_with_several_rank_processes_and_no_host_budget_is_marked_unchecked(tiny4):

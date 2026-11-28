@@ -230,3 +230,16 @@ Mine: 3 caught, 5 not caught.
 - Anything on CUDA or MPS, and the real runs.
 - `test_session10_coordinator.py` as a whole. It ran inside the three mutation runs up to the new test, which failed there as it should.
 - The uncommitted edits of `overlap_table.py` and `docs/ENGINE_DESIGN.md` that appeared during the review, commit `511fd68` (a placement file), and everything outside the diff.
+
+## Disposition (by the author of the code, 2026-11-28)
+
+The reviewer's text above is unchanged. The test, table and document changes are in `be73eed`; the comments and the early reference check are in the commit after it.
+
+| id | decision | what was done |
+|---|---|---|
+| Q1 | fixed | Two tests without a kernel: `test_the_small_partner_of_a_threaded_frame_that_has_ended_does_not_go_inline` (the reviewer's test) and `test_in_a_group_of_three_every_link_keeps_its_own_count`. The socket test now measures the capacity until nothing more goes in for 0.4 s. All three fail on the engine of `cfab15e` and pass on `c352d39` (ran both) |
+| Q2 | documented | Section 11.5 of the design now says when the record names the sender's error (the head frame of a head rank) and that otherwise the record says a link was lost, with the error in the rank's log. Waiting on every control link after a lost link was not built |
+| Q3 | fixed | `VERIFY_overlap.md` is in the repository, and the results of the "pass 2" mutations are in `mutations_overlap_round3.json` and `round3b.json` |
+| Q4 | fixed | The early check catches every exception and refuses a reference without prompts. The options test has the two cases. Not pinned by a test: `bool(ev)` in `criterion_met`, the guard of the log line, the `try` in `_sender_failed` |
+| Q5 | fixed | The first comparison column names the prompts the one rank reference lacks |
+| Q6 | fixed | The three texts say what the count holds, and the comment gives the reviewer's reason for the moment of lowering |

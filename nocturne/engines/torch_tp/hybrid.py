@@ -390,7 +390,10 @@ class GroupComm(Comm):
             if rec:
                 rec.lap("allreduce_wait", self.names.get(r), self.links[r].last_recv, CH_GROUP)
             parts[r] = _from_wire(payload, shape, pdt)
-            if sent:                        # the peer answered this all-reduce: it has read, or is reading, what was sent for it
+            # The count falls at this rank's own receive of the all-reduce, the same place in the sequence for both sides.
+            # A peer that is blocked in a send has finished every receive before that send, so the link holds only frames
+            # whose receive is still to come here, and the count is their sum.
+            if sent:
                 self._out[r] = self._out.get(r, 0) - sent
         if pending is None:                 # handed to the sender thread: my partial is on the host once its copy is done
             parts[self.me] = self.sender.host(xc)

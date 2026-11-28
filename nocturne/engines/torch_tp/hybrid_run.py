@@ -252,6 +252,8 @@ def load_reference(run_id: str) -> tuple[dict, dict]:
         if rec.get("outcome") != "completed":
             raise ValueError(f"reference run {run_id} did not complete (outcome {rec.get('outcome')})")
         ref = {"run_id": rec["run_id"], "prompts": {p["id"]: p for p in rec["prompts"]}}
+    if not isinstance(ref.get("prompts"), dict) or not ref["prompts"]:
+        raise ValueError(f"reference run {run_id} holds no prompts")
     lg = dict(np.load(d / "first_logits.npz"))
     return ref, lg
 
@@ -309,7 +311,7 @@ def main(argv=None) -> int:
     for r in a.reference or []:             # a reference that cannot be read costs a moment here, not a run
         try:
             load_reference(r)
-        except (OSError, ValueError, KeyError) as e:
+        except Exception as e:              # noqa: BLE001 - whatever is wrong with a reference, say it before the run
             ap.error(f"--reference {r}: {type(e).__name__}: {e}")
 
     from ...bench.check.graders import grade
