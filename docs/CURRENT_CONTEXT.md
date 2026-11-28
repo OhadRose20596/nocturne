@@ -2,6 +2,11 @@
 
 Updated: 2026-11-02. This is a handoff note. It is not an ADR and not an experiment report. Older context is kept below.
 
+## What changed on 2026-11-28 (session 10, part 1, our torch engine)
+
+1. Any joined host can be the coordinator and planner (`coordinator: {host: ...}` in the placement), and the coordinator ships every worker its slices, so only the coordinator host holds the model. `hybrid_run` is now only the operator. Design: `docs/ENGINE_DESIGN.md`.
+2. Clocks are measured before every run (`scripts/17_timesync.sh`) and by the engine on the control link; `--timeline` records compute, copies, sends and waits per rank and writes `timeline.html`. Where every number comes from: `docs/MEASUREMENT.md`. Record: `experiments/session10_cuda_pair/VERIFY.md`.
+
 ## What changed on 2026-11-02
 
 1. Bench schema v3 (`nocturne/bench/schema/record.schema.json`, v2 kept). The number to cite is `decode_ms_per_step_pooled`, the pooled ms per decode step over prompts. The old per prompt median counted the first token as a step. Existing records are not changed; their v3 values are in `results/derived_v3.json`.

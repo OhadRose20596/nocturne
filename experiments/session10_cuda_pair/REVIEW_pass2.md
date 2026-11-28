@@ -199,3 +199,24 @@ Suggested fix: three short edits.
 - The behaviour of a socket after a reset (can the coordinator still read the rank's ERROR frame) is from knowledge of the two kernels, not tested.
 - `timeline_page.html` and the README text of the diff were only skimmed for consistency with the code.
 - Seen while reading, outside the fix diff, not followed up: `hybrid_run.main` calls `op.collect()` right after the coordinator process ends, before the rank processes are known to have finished writing their timeline files. GNU `tar` returns 1 when a file changes while it is read, and `collect` then drops every file of that host. Worth one look in a pass on the operator.
+
+## Disposition (author, after pass 2)
+
+Commit `82e6b25`. No high or medium finding was open, so the gate held before these changes.
+
+| finding | disposition |
+|---|---|
+| N1 SIGTERM only | Left. A rank inside a long C call ends when the call returns; the operator's own process group still gets SIGKILL after 5 s for local processes. A remote rank that ignores SIGTERM for long would stay; not seen |
+| N2 two shell calls could raise | Fixed. The hostname query falls back to the peers.yaml name, and the final `pkill` goes on to the next host. Test: `test_a_host_that_does_not_answer_does_not_end_the_operator` |
+| N3 the host check cannot fail in an operator run | Left on purpose, and said so in `docs/MEASUREMENT.md` 2.2. The operator starts the process on that host, so the check is for a coordinator started by hand. The change was made because the Air now calls itself `Mac.lan` while peers.yaml holds an older name |
+| N4 one failed end clock exchange drops all end values | Left. Without an end value a rank is aligned with its start offset only, and the record says so (`clock_end_error`) |
+| N5 `close()` could skip the `unlink` | Fixed |
+| N6 `stored_minus_loaded_bytes` is a plain difference | Accepted. The independent facts are `loaded_tensor_bytes` (from the rank) against `planned_weight_bytes` (from the planner): equal in every run of `VERIFY.md` |
+| N7 lost error text | Fixed (any exception in the extra read is ignored) |
+| N8 `preexec_fn` with threads | Left. Linux, CUDA host, `--timeline` only; the function makes one `prctl` call. It ran on gtx in three checks |
+| N9 one GPU assumed in the trace | Fixed for the trace (one counter per GPU). The host mean stays a mean over GPUs, with the per GPU numbers next to it |
+| N10 `timesync_set.json` written after a failed step | Fixed. On WSL2 the common server belongs to the Windows side; `docs/MEASUREMENT.md` 2.1 says so |
+| N11 tests that touch the network | Left. The end to end test records a time sync error and still passes when offline |
+| N12 fixes without a test | Partly. Tests added for N2 and for the collect path. F9, F13 on two GPUs, F15 and the SIGTERM handler have none |
+| N13 documents out of step | Fixed: `docs/MEASUREMENT.md`, the recorder docstring, design section 3.12 |
+| collect before the ranks have written (seen outside the diff) | Fixed. `Operator.wait_ranks` before `collect`, and a tar stream that ends with rc 1 is kept. Test: `test_collect_keeps_the_files_when_tar_reports_a_changed_file` |

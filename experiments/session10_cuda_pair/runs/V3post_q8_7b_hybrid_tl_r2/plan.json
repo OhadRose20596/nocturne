@@ -1,0 +1,134 @@
+{
+ "ok": true,
+ "specs": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 2,
+   "host": "m5",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    0,
+    14
+   ],
+   "q0": 0,
+   "q1": 14,
+   "m0": 0,
+   "m1": 9472,
+   "kv0": 0,
+   "kv1": 2,
+   "embed_rows": [
+    0,
+    76032
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 2023074816,
+    "kv": 58720256,
+    "workspace": 467501056,
+    "total": 2549296128,
+    "layer_bytes": 123824640,
+    "vocab_bytes": 289529856,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 2549296128
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s0/1",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 1,
+   "group_size": 2,
+   "host": "m5",
+   "device": "mps",
+   "port": 50071,
+   "layers": [
+    0,
+    14
+   ],
+   "q0": 14,
+   "q1": 28,
+   "m0": 9472,
+   "m1": 18944,
+   "kv0": 2,
+   "kv1": 4,
+   "embed_rows": [
+    76032,
+    152064
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 2023074816,
+    "kv": 58720256,
+    "workspace": 467501056,
+    "total": 2549296128,
+    "layer_bytes": 123824640,
+    "vocab_bytes": 289529856,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 2549296128
+   }
+  },
+  {
+   "gid": 2,
+   "name": "s1/0",
+   "stage": 1,
+   "stage_name": "s1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "m5",
+   "device": "mps",
+   "port": 50072,
+   "layers": [
+    14,
+    28
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    152064
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 4045956096,
+    "kv": 117440512,
+    "workspace": 518581248,
+    "total": 4681977856,
+    "layer_bytes": 247634944,
+    "vocab_bytes": 579059712,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 4681977856
+   }
+  }
+ ],
+ "frames_predicted": {
+  "token": 1,
+  "embed": 2,
+  "layers": 56,
+  "hops": 1,
+  "head": 1,
+  "total": 61
+ },
+ "model_dir": "/Users/orosentswaig/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf",
+ "reduce_dtype": "float32",
+ "table": "| rank | host | device | layers | heads | KV heads | MLP rows | vocab rows | weights MB | KV MB | workspace MB | total MB | budget MB |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|\n| s0/0 | m5 | mps | 0-14 | 0-14 (14) | 0-2 | 0-9472 (9472) | 0-76032 E | 2023.1 | 58.7 | 467.5 | 2549.3 | - |\n| s0/1 | m5 | mps | 0-14 | 14-28 (14) | 2-4 | 9472-18944 (9472) | 76032-152064 E | 2023.1 | 58.7 | 467.5 | 2549.3 | - |\n| s1/0 | m5 | mps | 14-28 | 0-28 (28) | 0-4 | 0-18944 (18944) | 0-152064 H | 4046.0 | 117.4 | 518.6 | 4682.0 | - |\n\nFrames per decode step: 61 (token 1, embedding 2, layers 56, hops 1, head 1); bytes per step about 0.424 MB.",
+ "planner_host": "MMF4FWRG4R"
+}

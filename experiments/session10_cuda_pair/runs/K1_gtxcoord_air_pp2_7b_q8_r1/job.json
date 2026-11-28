@@ -1,0 +1,83 @@
+{
+ "run_id": "K1_gtxcoord_air_pp2_7b_q8_r1",
+ "tag": "K1_gtxcoord_air_pp2_7b_q8_r1",
+ "coordinator": "gtx",
+ "coordinator_hostname": "Ohad",
+ "placement": {
+  "model": "~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf",
+  "coordinator": {
+   "host": "gtx"
+  },
+  "reduce_dtype": "float32",
+  "max_seq_len": 4096,
+  "prefill_max": 256,
+  "granule": 128,
+  "stages": [
+   {
+    "name": "s0",
+    "layers": [
+     0,
+     10
+    ],
+    "embed": true,
+    "ranks": [
+     {
+      "host": "gtx",
+      "device": "cuda",
+      "port": 50070
+     }
+    ]
+   },
+   {
+    "name": "s1",
+    "layers": [
+     10,
+     28
+    ],
+    "lm_head": true,
+    "ranks": [
+     {
+      "host": "air",
+      "device": "mps",
+      "port": 50070
+     }
+    ]
+   }
+  ]
+ },
+ "model_dir": "~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf",
+ "hosts": {
+  "air": "192.168.1.219",
+  "gtx": "192.168.1.168"
+ },
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt": "Compute 347 + 589. Reply with the number only.",
+   "n": 32,
+   "ignore_eos": false,
+   "cap": 16,
+   "category": "arithmetic",
+   "expected": 936
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt": "Compute 1000 - 457. Reply with the number only.",
+   "n": 32,
+   "ignore_eos": false,
+   "cap": 16,
+   "category": "arithmetic",
+   "expected": 543
+  }
+ ],
+ "ship_weights": true,
+ "cache_dir": null,
+ "force": false,
+ "mps_fraction_cap": false,
+ "reduce_dtype": null,
+ "timeline": true,
+ "tokenizer_dir": null,
+ "dtype": null
+}

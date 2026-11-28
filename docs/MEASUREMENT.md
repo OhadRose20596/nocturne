@@ -116,7 +116,7 @@ Bytes of shipped weights are separate: `record.json`, `shipping.ranks.<rank>`.
 | number | file and key | written by | clock | precision and limits |
 |---|---|---|---|---|
 | ms per decode step, per prompt | `record.json` `prompts[].ms_per_step` | `Coordinator.generate` | coordinator wall clock | Whole step, everything included. Background only (T1) |
-| ms per step by kind, per rank | `record.json` `timeline.per_rank_ms_per_step`; `breakdown.csv` | `timeline.summary`, `timeline.breakdown` | each rank's monotonic clock; durations need no alignment | Microsecond stamps. With the recorder a step is 1 to 2 percent slower (see below) |
+| ms per step by kind, per rank | `record.json` `timeline.per_rank_ms_per_step`; `breakdown.csv` | `timeline.summary`, `timeline.breakdown` | each rank's monotonic clock; durations need no alignment | Microsecond stamps. With the recorder a step is about 2 percent slower (see below) |
 | when a span happened, across ranks | `trace.json.gz`, `timeline.html` | `timeline.load` | coordinator monotonic clock | Half the control link round trip of that rank (section 2.2) |
 | frames per decode step | `record.json` `frames.measured_per_step`, `.predicted` | `coordinate.run_job` from `transport.Counters`; `plan.frames_per_step` | none | Exact counts. `formula_holds` says whether they agree |
 | bytes per decode step | `record.json` `frames.bytes_per_step`; `timeline.decode_bytes_per_step` | link counters; recorder | none | Exact frame bytes, no TCP or IP overhead |
@@ -129,7 +129,7 @@ Bytes of shipped weights are separate: `record.json`, `shipping.ranks.<rank>`.
 | GPU utilization (CUDA) | same | same | same | `nvidia-smi`, 100 ms. Not on Metal |
 | tokens, identical prompts, accuracy | `record.json` `prompts[]`, `correctness` | the coordinator; `hybrid_run.compare` | none | Exact |
 
-Recorder overhead and identity, measured on 2026-11-28 (`experiments/session10_cuda_pair/VERIFY.md`): OVERHEAD_SENTENCE Tokens were identical with the recorder on and off in every pair.
+Recorder overhead and identity, measured on 2026-11-28 (`experiments/session10_cuda_pair/VERIFY.md`): on the M5, 1.5B with TP over three ranks, a decode step took 417.5 ms without the recorder and 426.7 ms with it (four and three runs), so the recorder costs 9.3 ms per step, 2.2 percent. On 7B the difference is inside the day to day spread. Tokens were identical with the recorder on and off in every pair.
 
 Measured between machines on the home Wi-Fi on 2026-11-28 (same file): the control link round trip was 5 to 8 ms, so the alignment between machines is good to about 3 to 4 ms. The wall clocks differed by 24 to 82 ms. The offset drifted by 6 to 14 ppm during a run, which is why it is measured twice and interpolated.
 

@@ -1,0 +1,762 @@
+{
+ "schema": "session6_hybrid/1",
+ "run_id": "K1_gtxcoord_air_pp2_7b_q8_r1",
+ "date": "2026-11-28T08:44:52+0200",
+ "placement": {
+  "file": "experiments/session10_cuda_pair/placements/K1_gtxcoord_air_pp2_7b_q8.yaml",
+  "sha256": "8120dc6f6c8a90b07c60bfea5d2b7121f936a618d213d3d1490e8cf2d25fb84a",
+  "yaml": "# Session 10 part 1 check (not an experiment row): gtx (CUDA, WSL2) is the coordinator and planner, the Air gets its slices shipped.\nmodel: ~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf\ncoordinator: {host: gtx}\nreduce_dtype: float32\nmax_seq_len: 4096\nprefill_max: 256\ngranule: 128\nstages:\n  - name: s0\n    layers: [0, 10]\n    embed: true\n    ranks:\n      - {host: gtx, device: cuda, port: 50070}\n  - name: s1\n    layers: [10, 28]\n    lm_head: true\n    ranks:\n      - {host: air, device: mps, port: 50070}\n"
+ },
+ "git": {
+  "sha": "efad24d9dfe9dca81106b119d939f6fbea66672c",
+  "dirty": false
+ },
+ "args": {
+  "placement": "experiments/session10_cuda_pair/placements/K1_gtxcoord_air_pp2_7b_q8.yaml",
+  "session_dir": "experiments/session10_cuda_pair",
+  "run_id": "K1_gtxcoord_air_pp2_7b_q8_r1",
+  "peers": "~/.nocturne/peers.yaml",
+  "subset": 2,
+  "tokens": 32,
+  "long": 0,
+  "fixed": 256,
+  "reduce_dtype": null,
+  "reference": [
+   "experiments/engine_gguf/runs/B2_q8_7b_1rank_r1"
+  ],
+  "save_reference": false,
+  "transformers": false,
+  "transformers_dir": null,
+  "tokenizer_dir": null,
+  "force": false,
+  "mps_fraction_cap": false,
+  "timeline": true,
+  "ship_weights": true,
+  "cache_dir": null,
+  "dtype": null
+ },
+ "outcome": "completed",
+ "model": {
+  "key": "~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf",
+  "dir": "~/models/gguf/Qwen2.5-7B-Instruct-Q8_0.gguf",
+  "sha256": {
+   "Qwen2.5-7B-Instruct-Q8_0.gguf": "862574978752413e9d54e4d104c455797f9c7e477ee256a46e2d8a31f9242cd9"
+  }
+ },
+ "coordinator": {
+  "host": "gtx",
+  "hostname": "Ohad",
+  "operator_hostname": "MMF4FWRG4R",
+  "remote": true,
+  "run_dir": "~/.nocturne/runs/K1_gtxcoord_air_pp2_7b_q8_r1"
+ },
+ "reduce_dtype": "float32",
+ "planned": [
+  {
+   "gid": 0,
+   "name": "s0/0",
+   "stage": 0,
+   "stage_name": "s0",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "gtx",
+   "device": "cuda",
+   "port": 50070,
+   "layers": [
+    0,
+    10
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": [
+    0,
+    152064
+   ],
+   "head_rows": null,
+   "final_norm": false,
+   "budget": null,
+   "planned": {
+    "weights": 3055409152,
+    "kv": 83886080,
+    "workspace": 517668864,
+    "total": 3656964096,
+    "layer_bytes": 247634944,
+    "vocab_bytes": 579059712,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 3656964096
+   }
+  },
+  {
+   "gid": 1,
+   "name": "s1/0",
+   "stage": 1,
+   "stage_name": "s1",
+   "group_rank": 0,
+   "group_size": 1,
+   "host": "air",
+   "device": "mps",
+   "port": 50070,
+   "layers": [
+    10,
+    28
+   ],
+   "q0": 0,
+   "q1": 28,
+   "m0": 0,
+   "m1": 18944,
+   "kv0": 0,
+   "kv1": 4,
+   "embed_rows": null,
+   "head_rows": [
+    0,
+    152064
+   ],
+   "final_norm": true,
+   "budget": null,
+   "planned": {
+    "weights": 5036495872,
+    "kv": 150994944,
+    "workspace": 518581248,
+    "total": 5706072064,
+    "layer_bytes": 247634944,
+    "vocab_bytes": 579059712,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 5706072064
+   }
+  }
+ ],
+ "planner_host": "Ohad",
+ "frames": {
+  "predicted": {
+   "token": 0,
+   "embed": 0,
+   "layers": 0,
+   "hops": 1,
+   "head": 1,
+   "total": 2
+  },
+  "decode_steps": 6,
+  "measured_per_step": 2.0,
+  "bytes_per_step": 7208.0,
+  "per_link_per_step": {
+   "s0/0->s1/0": {
+    "sent_frames": 1.0,
+    "sent_bytes": 7192.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s0/0->ctl:s1/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 16.0
+   },
+   "s1/0->ctl": {
+    "sent_frames": 1.0,
+    "sent_bytes": 16.0,
+    "recv_frames": 0.0,
+    "recv_bytes": 0.0
+   },
+   "s1/0->s0/0": {
+    "sent_frames": 0.0,
+    "sent_bytes": 0.0,
+    "recv_frames": 1.0,
+    "recv_bytes": 7192.0
+   }
+  },
+  "formula_holds": true
+ },
+ "preflight": {
+  "hosts": {
+   "air": {
+    "os": "Darwin",
+    "caffeinate": "on",
+    "awdl": "down",
+    "vpn_state": "disconnected",
+    "engine_sha256": "7a9beb46d0f9df250f26a34c637f0747f005ab75e681526b3917ed2c1a6369ce",
+    "timesync": {
+     "host": "Mac",
+     "os": "Darwin",
+     "at": "2026-11-28T08:45:06+0200",
+     "at_unix": 1795848306.47136,
+     "sntp": {
+      "server": "time.apple.com",
+      "server_ip": "17.253.108.125",
+      "stratum": 1,
+      "samples": 3,
+      "asked": 4,
+      "offset_s": 0.0057953596115112305,
+      "delay_s": 0.07339692115783691,
+      "bound_s": 0.03669846057891846,
+      "spread_s": 0.048542022705078125
+     },
+     "os_service": {
+      "tool": "sntp",
+      "source": "time.apple.com",
+      "offset_s": 0.006067,
+      "err_s": 0.063459
+     },
+     "last_set": null
+    },
+    "psutil": "7.2.2"
+   },
+   "gtx": {
+    "os": "Linux",
+    "caffeinate": "n/a",
+    "awdl": "n/a",
+    "vpn_state": "n/a",
+    "nvidia_smi": "NVIDIA GeForce GTX 1070, 8192 MiB, 647 MiB, 582.78",
+    "engine_sha256": "7a9beb46d0f9df250f26a34c637f0747f005ab75e681526b3917ed2c1a6369ce",
+    "timesync": {
+     "host": "Ohad",
+     "os": "Linux",
+     "at": "2026-11-28T08:45:11+0200",
+     "at_unix": 1795848311.3964572,
+     "sntp": {
+      "server": "time.apple.com",
+      "server_ip": "17.253.14.37",
+      "stratum": 1,
+      "samples": 4,
+      "asked": 4,
+      "offset_s": 0.022682547569274902,
+      "delay_s": 0.059873342514038086,
+      "bound_s": 0.029936671257019043,
+      "spread_s": 0.0028935670852661133
+     },
+     "os_service": {
+      "tool": "chronyc",
+      "source": "ntp-nts-3.ps5.canonical.com",
+      "offset_s": 0.02514004,
+      "last_sync_utc": "Sat Nov 28 06:42:03 2026",
+      "wsl": true,
+      "windows": {
+       "tool": "w32tm",
+       "source": "time.windows.com,0x9",
+       "last_sync": "11/28/2026 8:07:31 AM"
+      }
+     },
+     "last_set": null
+    },
+    "psutil": "7.2.2",
+    "transformers": "5.23.0",
+    "model_sha256": {
+     "Qwen2.5-7B-Instruct-Q8_0.gguf": "862574978752413e9d54e4d104c455797f9c7e477ee256a46e2d8a31f9242cd9"
+    }
+   }
+  },
+  "coordinator": "gtx",
+  "ship_weights": true
+ },
+ "collected": {
+  "air": [
+   "samples_rank_s1_0.jsonl.gz",
+   "timeline_s1_0.jsonl.gz"
+  ],
+  "gtx": [
+   "coordinator_record.json",
+   "first_logits.npz",
+   "job.json",
+   "plan.json",
+   "samples_rank_s0_0.jsonl.gz",
+   "timeline_s0_0.jsonl.gz"
+  ]
+ },
+ "commands": [
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx hostname"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx mkdir -p ~/.nocturne/runs/K1_gtxcoord_air_pp2_7b_q8_r1 && cat > ~/.nocturne/runs/K1_gtxcoord_air_pp2_7b_q8_r1/job.json"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job \"$HOME\"/.nocturne/runs/K1_gtxcoord_air_pp2_7b_q8_r1/job.json --tag K1_gtxcoord_air_pp2_7b_q8_r1 --plan-only"
+  },
+  {
+   "host": "air",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 /Users/ohadrosentswaig/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp rank --listen 192.168.1.219 --port 50070 --device mps --name s1/0 --tag K1_gtxcoord_air_pp2_7b_q8_r1 --run-dir \"$HOME\"/.nocturne/runs/K1_gtxcoord_air_pp2_7b_q8_r1"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx /home/ohadr/dev/nocturne-torch/bin/python -u -m nocturne.engines.torch_tp.coordinate --job \"$HOME\"/.nocturne/runs/K1_gtxcoord_air_pp2_7b_q8_r1/job.json --tag K1_gtxcoord_air_pp2_7b_q8_r1"
+  },
+  {
+   "host": "air",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 cd ~/.nocturne/runs/K1_gtxcoord_air_pp2_7b_q8_r1 2>/dev/null && tar -cf - ."
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx cd ~/.nocturne/runs/K1_gtxcoord_air_pp2_7b_q8_r1 2>/dev/null && tar -cf - ."
+  },
+  {
+   "host": "air",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 ohadrosentswaig@192.168.1.219 pkill -f -- '--tag K1_gtxcoord_air_pp2_7b_q8_r1( |$)'"
+  },
+  {
+   "host": "gtx",
+   "cmd": "ssh -o BatchMode=yes -o ConnectTimeout=10 gtx pkill -f -- '--tag K1_gtxcoord_air_pp2_7b_q8_r1( |$)'"
+  }
+ ],
+ "load_s": 261.4508316516876,
+ "link_counters": {
+  "s0/0": {
+   "s1/0": {
+    "sent_frames": 10,
+    "recv_frames": 1,
+    "sent_bytes": 709856,
+    "recv_bytes": 42,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 6,
+     "sent_bytes": 43152,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "metrics": 2,
+     "hidden": 8
+    }
+   },
+   "ctl:s1/0": {
+    "sent_frames": 1621,
+    "recv_frames": 245,
+    "sent_bytes": 5037018658,
+    "recv_bytes": 616740,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 6,
+     "recv_bytes": 96
+    },
+    "by_kind_sent": {
+     "hello": 1,
+     "plan": 1,
+     "weights": 1602,
+     "clock": 17
+    }
+   }
+  },
+  "s1/0": {
+   "ctl": {
+    "sent_frames": 245,
+    "recv_frames": 1621,
+    "sent_bytes": 616740,
+    "recv_bytes": 5037018658,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 6,
+     "sent_bytes": 96,
+     "recv_frames": 0,
+     "recv_bytes": 0
+    },
+    "by_kind_sent": {
+     "weights": 219,
+     "ready": 1,
+     "clock": 16,
+     "metrics_reply": 1,
+     "head": 8
+    }
+   },
+   "s0/0": {
+    "sent_frames": 1,
+    "recv_frames": 10,
+    "sent_bytes": 42,
+    "recv_bytes": 709856,
+    "allreduce_frames": 0,
+    "step_frames": 0,
+    "reconnects": 0,
+    "decode": {
+     "sent_frames": 0,
+     "sent_bytes": 0,
+     "recv_frames": 6,
+     "recv_bytes": 43152
+    },
+    "by_kind_sent": {
+     "hello": 1
+    }
+   }
+  }
+ },
+ "ranks": [
+  {
+   "name": "s0/0",
+   "gid": 0,
+   "host": "gtx",
+   "device": "cuda",
+   "pid": 19764,
+   "torch": "2.14.1+cu126",
+   "loaded_tensor_bytes": 3055409152,
+   "kv_bytes": 83886080,
+   "idle": {
+    "peak_rss_bytes": 926846976
+   },
+   "planned": {
+    "weights": 3055409152,
+    "kv": 83886080,
+    "workspace": 517668864,
+    "total": 3656964096,
+    "layer_bytes": 247634944,
+    "vocab_bytes": 579059712,
+    "kv_heads_replicated": 0,
+    "mps_floor": 0,
+    "footprint": 3656964096
+   },
+   "budget": null,
+   "load_s": 5.985484600067139,
+   "steps": 8,
+   "allreduce_calls": 0,
+   "shipping": null,
+   "current_allocated_bytes": 3161238528,
+   "driver_allocated_bytes": 3531603968,
+   "cuda_name": "NVIDIA GeForce GTX 1070",
+   "vram_total_bytes": 8589803520,
+   "vram_free_bytes": 3999268864,
+   "max_allocated_bytes": 3369542144,
+   "peak_rss_bytes": 5067845632
+  },
+  {
+   "name": "s1/0",
+   "gid": 1,
+   "host": "air",
+   "device": "mps",
+   "pid": 56837,
+   "torch": "2.15.0",
+   "loaded_tensor_bytes": 5036495872,
+   "kv_bytes": 150994944,
+   "idle": {
+    "peak_rss_bytes": 348012544,
+    "phys_footprint_bytes": 215237664,
+    "lifetime_max_phys_footprint_bytes": 215237664
+   },
+   "planned": {
+    "weights": 5036495872,
+    "kv": 150994944,
+    "workspace": 518581248,
+    "total": 5706072064,
+    "layer_bytes": 247634944,
+    "vocab_bytes": 579059712,
+    "kv_heads_replicated": 0,
+    "mps_floor": 1073741824,
+    "footprint": 5706072064
+   },
+   "budget": null,
+   "load_s": 3.4510767459869385,
+   "steps": 8,
+   "allreduce_calls": 0,
+   "shipping": {
+    "manifest_bytes": 5036926976,
+    "manifest_slices": 218,
+    "received_bytes": 5036926976,
+    "received_slices": 218,
+    "cache_bytes": 0,
+    "duplicate_bytes": 0,
+    "hash_checks": 218,
+    "chunks": 1382,
+    "recv_s": 217.8652138710022,
+    "cache_dir": "/Users/ohadrosentswaig/.nocturne/cache/862574978752413e9d54e4d104c455797f9c7e477ee256a46e2d8a31f9242cd9"
+   },
+   "current_allocated_bytes": 5275346432,
+   "driver_allocated_bytes": 5973426176,
+   "peak_rss_bytes": 379568128,
+   "phys_footprint_bytes": 6224135320,
+   "lifetime_max_phys_footprint_bytes": 6243746968
+  }
+ ],
+ "requests": [
+  {
+   "req": 1,
+   "rid": "arith_01",
+   "prompt_n": 46,
+   "n_gen": 4,
+   "t0_mono_ns": 31033650580609,
+   "first_token_mono_ns": 31037569081063,
+   "t1_mono_ns": 31044214719888
+  },
+  {
+   "req": 2,
+   "rid": "arith_02",
+   "prompt_n": 47,
+   "n_gen": 4,
+   "t0_mono_ns": 31044215869188,
+   "first_token_mono_ns": 31046777937760,
+   "t1_mono_ns": 31053231827190
+  }
+ ],
+ "shipping": {
+  "model_sha256": "862574978752413e9d54e4d104c455797f9c7e477ee256a46e2d8a31f9242cd9",
+  "model_files": {
+   "Qwen2.5-7B-Instruct-Q8_0.gguf": "862574978752413e9d54e4d104c455797f9c7e477ee256a46e2d8a31f9242cd9"
+  },
+  "kind": "gguf",
+  "manifest_s": 39.49345421791077,
+  "slices_hashed": 218,
+  "ranks": {
+   "s1/0": {
+    "manifest_bytes": 5036926976,
+    "manifest_slices": 218,
+    "shipped_bytes": 5036926976,
+    "shipped_slices": 218,
+    "chunks": 1382,
+    "ship_s": 217.84865951538086,
+    "received_bytes": 5036926976,
+    "received_slices": 218,
+    "cache_bytes": 0,
+    "duplicate_bytes": 0,
+    "hash_checks": 218,
+    "recv_s": 217.8652138710022,
+    "cache_dir": "/Users/ohadrosentswaig/.nocturne/cache/862574978752413e9d54e4d104c455797f9c7e477ee256a46e2d8a31f9242cd9",
+    "loaded_tensor_bytes": 5036495872,
+    "planned_weight_bytes": 5036495872,
+    "stored_minus_loaded_bytes": 431104
+   }
+  },
+  "ship_s": 217.84865951538086,
+  "agrees_with_preflight": true
+ },
+ "torch_coordinator": "2.14.1+cu126",
+ "clock": {
+  "s0/0": {
+   "start": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "end": {
+    "offset_mono_ns": 0,
+    "offset_wall_ns": 0,
+    "rtt_ns": 0,
+    "rtt_median_ns": 0,
+    "rounds": 0,
+    "at_mono_ns": 0,
+    "at_wall_ns": 0
+   },
+   "drift": null,
+   "host": "gtx",
+   "os": {
+    "os_predicted_ns": 0,
+    "gap_ns": 0,
+    "disagree": false,
+    "same_host": true
+   }
+  },
+  "s1/0": {
+   "start": {
+    "offset_mono_ns": 60608035030001,
+    "offset_wall_ns": 24229247,
+    "rtt_ns": 5305500,
+    "rtt_median_ns": 7882900,
+    "rounds": 16,
+    "at_mono_ns": 31018415083957,
+    "at_wall_ns": 1795848635797404753
+   },
+   "end": {
+    "offset_mono_ns": 60608035528978,
+    "offset_wall_ns": 24605016,
+    "rtt_ns": 5771600,
+    "rtt_median_ns": 6637000,
+    "rounds": 16,
+    "at_mono_ns": 31053455109188,
+    "at_wall_ns": 1795848670837429984
+   },
+   "drift": {
+    "drift_ns": 498977,
+    "span_s": 35.040025231,
+    "ppm": 14.240200933375863,
+    "wall_minus_mono_change_ns": -123208
+   },
+   "host": "air",
+   "os": {
+    "os_predicted_ns": 16887188,
+    "gap_ns": 7717828,
+    "disagree": true,
+    "os_bound_ns": 66635132
+   }
+  }
+ },
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt_n": 46,
+   "tokens": [
+    24,
+    18,
+    21,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 2215.2086098988852,
+   "text": "936",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt_n": 47,
+   "tokens": [
+    20,
+    19,
+    18,
+    151645
+   ],
+   "finish": "stop",
+   "ms_per_step": 2151.294549306234,
+   "text": "543",
+   "category": "arithmetic",
+   "cap": 16,
+   "score": 1.0
+  }
+ ],
+ "timeline": {
+  "decode_steps": 6,
+  "per_rank_ms_per_step": {
+   "s0/0": {
+    "host": "gtx",
+    "device": "cuda",
+    "total_ms": 2184.1978424999998,
+    "compute": 354.631996,
+    "host_copy": 0.2737,
+    "send": 0.07263333333333334,
+    "recv_wait": 1828.2395798333334,
+    "allreduce_wait": 0.0,
+    "other": 0.9799333333333333,
+    "decode_steps": 6
+   },
+   "s1/0": {
+    "host": "air",
+    "device": "mps",
+    "total_ms": 2194.4729795963544,
+    "compute": 1781.5790607890624,
+    "host_copy": 1.5669635195312501,
+    "send": 0.048742305989583325,
+    "recv_wait": 411.2782129817708,
+    "allreduce_wait": 0.0,
+    "other": 0.0,
+    "decode_steps": 6
+   }
+  },
+  "links": {
+   "s0/0 -> s1/0": {
+    "from": "s0/0",
+    "to": "s1/0",
+    "bytes": 43152,
+    "bytes_per_step": 7192.0
+   },
+   "s1/0 -> s0/0": {
+    "from": "s1/0",
+    "to": "s0/0",
+    "bytes": 96,
+    "bytes_per_step": 16.0
+   }
+  },
+  "decode_bytes_total": 43248,
+  "decode_bytes_per_step": 7208.0,
+  "hosts": {
+   "gtx": {
+    "ranks": {
+     "s0/0": {
+      "process_cpu_cores": 0.22289984708727495,
+      "samples": 14513,
+      "interval_ms_mean": 20.443793353362732
+     }
+    },
+    "notes": [],
+    "host_cpu_busy_fraction": 0.12314882297303241,
+    "net": {
+     "eth0": {
+      "rx_bytes": 10121814,
+      "tx_bytes": 5043720974
+     }
+    },
+    "gpu": {
+     "0": {
+      "util_mean_percent": 1.9585457016649677,
+      "mem_used_max_mib": 4702.0,
+      "samples": 2943
+     }
+    },
+    "gpu_util_mean_percent": 1.9585457016649677,
+    "gpu_mem_used_max_mib": 4702.0,
+    "gpu_samples": 2943
+   },
+   "air": {
+    "ranks": {
+     "s1/0": {
+      "process_cpu_cores": 0.12234274878772645,
+      "samples": 12823,
+      "interval_ms_mean": 20.00467929905509
+     }
+    },
+    "notes": [],
+    "host_cpu_busy_fraction": 0.05321150139530104,
+    "net": {
+     "en0": {
+      "rx_bytes": 5269009408,
+      "tx_bytes": 10163200
+     }
+    }
+   }
+  },
+  "events": {
+   "s0/0": 42,
+   "s1/0": 32
+  },
+  "all_bytes": {
+   "s0/0 -> s1/0": 709824,
+   "s1/0 -> s0/0": 608392
+  },
+  "files": [
+   "trace.json.gz",
+   "breakdown.csv",
+   "timeline.html",
+   "timeline_s0_0.jsonl.gz",
+   "timeline_s1_0.jsonl.gz",
+   "samples_air.jsonl",
+   "samples_gtx.jsonl",
+   "samples_rank_s0_0.jsonl.gz",
+   "samples_rank_s1_0.jsonl.gz"
+  ],
+  "not_aligned": []
+ },
+ "correctness": {
+  "experiments/engine_gguf/runs/B2_q8_7b_1rank_r1": {
+   "reference": "B2_q8_7b_1rank_r1",
+   "identical": 2,
+   "of": 2,
+   "first_div": {
+    "arith_01": 4,
+    "arith_02": 4
+   },
+   "accuracy": 1.0,
+   "ref_accuracy": 1.0,
+   "logit_maxdiff": 0.34375,
+   "logit_maxdiff_per_prompt": {
+    "arith_01": 0.25,
+    "arith_02": 0.34375
+   },
+   "long_first_div": {},
+   "criterion_met": true
+  }
+ }
+}
