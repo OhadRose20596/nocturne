@@ -25,7 +25,7 @@ Every run: `--timeline`, `--ship-weights`, clocks synced just before, coordinato
 | B2 | 7B Q8_0, PP over the pair, coordinator gtx | 7 of 8 identical against the one rank run. Timeline complete |
 | B3 | 7B Q8_0, TP over the pair | same |
 | B4 | B2 again with the coordinator on pc | same tokens as B2. Shows the requester can be any machine |
-| B5 | Repeated prompts: 3 consecutive prompts and 1 follow-up in one session, PP and TP, our engine and llama.cpp | the setup phase (weight shipping, cache saves) per prompt, from the recorder |
+| B5 | Repeated prompts: 3 consecutive prompts and 1 follow-up in one run (one set of processes), PP and TP, our engine and llama.cpp on the same file and the same two machines | Report per prompt, from the recorder and the packet counters: time and bytes before the first prefill step (setup), prefill, decode. Pre-register: our engine has setup only before prompt 1 (shipping, links, clocks) and none between prompts; llama.cpp moves the previous KV cache before every prompt (seen on 23.11, 8.2 MB). Also report what a follow-up costs: our engine does not keep the previous conversation's KV cache, so it prefills the whole history again. Say this plainly, it is a known limit |
 | B6 | The largest model the pair can hold, chosen by the planner (candidates: 14B Q4_K_M, 14B Q5_K_M, 7B bf16). PP, then TP if the planner accepts | 7 of 8 against llama.cpp on the same file where a one-rank reference cannot exist |
 | B7 | Charts for Chen from the recorder: per device compute and communication rows, total bytes per link, B2 and B3 side by side, CUDA pair against the earlier Mac pair (23.11 numbers) | files exist and parse |
 
