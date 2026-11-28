@@ -1,0 +1,18 @@
+# Session 10 part 1 readiness check (not an experiment row): the CUDA pair. gtx is the coordinator and planner, the pc gets its slices shipped.
+model: qwen2.5-1.5b-bf16
+coordinator: {host: gtx}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 14]
+    embed: true
+    ranks:
+      - {host: gtx, device: cuda, port: 50070}
+  - name: s1
+    layers: [14, 28]
+    lm_head: true
+    ranks:
+      - {host: pc, device: cuda, port: 50070}

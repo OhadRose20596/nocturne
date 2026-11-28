@@ -1,5 +1,5 @@
 """Recorder and sampler of one rank process (session 10, A3). Off unless the run asks for a timeline.
-Recorder: a cursor on time.monotonic_ns(). lap(kind) closes the span from the cursor to now with that kind, so every
+Recorder: a cursor on the raw monotonic clock (clock.now_ns, not slewed by the OS time service). lap(kind) closes the span from the cursor to now with that kind, so every
 instant of a step belongs to exactly one span. Kinds: compute (ends after a device sync, so it is real device time),
 host_copy (tensor to the host, sum, tensor back to the device), send (bytes, destination), recv_wait (blocked on the
 upstream link or on a head rank, with source), allreduce_wait (blocked on a group peer), other (Python between steps).
@@ -19,6 +19,8 @@ import threading
 import time
 from pathlib import Path
 
+from .clock import now_ns
+
 COLS = ("kind", "t0_ns", "t1_ns", "step", "req", "peer", "bytes", "tokens")
 KINDS = ("compute", "host_copy", "send", "recv_wait", "allreduce_wait", "other")
 INTERVAL_S = 0.02
@@ -31,10 +33,10 @@ def file_name(prefix: str, rank: str) -> str:
 
 class Recorder:
     def __init__(self, name: str, gid: int, host: str, device: str):
-        self.meta = {"rank": name, "gid": gid, "host": host, "device": device, "pid": os.getpid(), "clock": "monotonic_ns",
+        self.meta = {"rank": name, "gid": gid, "host": host, "device": device, "pid": os.getpid(), "clock": "monotonic_raw_ns",
                      "cols": list(COLS)}
         self.ev: list[tuple] = []
-        self.t = time.monotonic_ns()
+        self.t = now_ns()
         self.step, self.req, self.tokens = -1, 0, 0
 
     def begin(self, req: int, tokens: int) -> None:
@@ -44,10 +46,10 @@ class Recorder:
 
     def skip(self) -> None:
         """Move the cursor to now without a span (the time between requests on the coordinator)."""
-        self.t = time.monotonic_ns()
+        self.t = now_ns()
 
     def lap(self, kind: str, peer: str | None = None, nbytes: int = 0) -> None:
-        t = time.monotonic_ns()
+        t = now_ns()
         self.ev.append((kind, self.t, t, self.step, self.req, peer, nbytes, self.tokens))
         self.t = t
 
@@ -103,7 +105,7 @@ class Sampler:
     def __init__(self, rank: str, host: str, device: str, ifaces: list[str], host_level: bool, interval_s: float = INTERVAL_S,
                  gpu: bool | None = None):
         self.meta = {"rank": rank, "host": host, "device": device, "pid": os.getpid(), "ifaces": ifaces, "host_level": host_level,
-                     "interval_s": interval_s, "clock": "monotonic_ns", "notes": []}
+                     "interval_s": interval_s, "clock": "monotonic_raw_ns", "notes": []}
         self.rows: list[dict] = []
         self.ifaces, self.host_level, self.interval = ifaces, host_level, interval_s
         self._stop = threading.Event()
@@ -136,7 +138,7 @@ class Sampler:
     def _sample(self) -> dict:
         ps = self._ps
         c = self._proc.cpu_times()
-        row = {"t": time.monotonic_ns(), "pc": c.user + c.system}
+        row = {"t": now_ns(), "pc": c.user + c.system}
         if self.host_level:
             h = ps.cpu_times()
             row["hb"] = sum(h) - h.idle - getattr(h, "iowait", 0.0)
@@ -160,7 +162,7 @@ class Sampler:
         for line in self._smi.stdout:
             v = parse_smi(line)
             if v:
-                self.rows.append({"t": time.monotonic_ns(), "gi": v[0], "gu": v[1], "gm": v[2]})
+                self.rows.append({"t": now_ns(), "gi": v[0], "gu": v[1], "gm": v[2]})
             if self._stop.is_set():
                 return
 

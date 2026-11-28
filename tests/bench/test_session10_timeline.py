@@ -308,6 +308,57 @@ def test_build_writes_trace_breakdown_samples_and_html(tiny, tmp_path):
     assert timeline.main([str(tmp_path)]) == 0
 
 
+def test_time_stamps_come_from_the_raw_monotonic_clock(monkeypatch):
+    """The pc, 2026-11-28: its time service ran CLOCK_MONOTONIC 1.9 percent fast while it corrected a wall clock that was
+    370 ms off. time.monotonic_ns() follows that. The raw clock does not."""
+    import time
+    if hasattr(time, "CLOCK_MONOTONIC_RAW"):
+        asked = []
+        real = time.clock_gettime_ns
+        monkeypatch.setattr(time, "clock_gettime_ns", lambda c: (asked.append(c), real(c))[1])
+        a = clock.now_ns()
+        assert asked == [time.CLOCK_MONOTONIC_RAW] and a > 0
+        monkeypatch.undo()
+    ticks = iter(range(1000, 100000, 1000))
+    monkeypatch.setattr(recorder, "now_ns", lambda: next(ticks))
+    monkeypatch.setattr(clock, "now_ns", lambda: 777)
+    r = recorder.Recorder("s0/0", 0, "h", "cpu")
+    r.begin(1, 1)
+    r.lap("compute")
+    r.skip()
+    r.lap("other")
+    assert [(e[1], e[2]) for e in r.ev] == [(1000, 2000), (3000, 4000)] and r.meta["clock"] == "monotonic_raw_ns"
+    assert clock._PAIR.unpack(clock.stamp())[1] == 777
+
+
+def test_a_send_waits_out_a_moment_without_kernel_buffers(monkeypatch):
+    """V3 after the Codex fixes: a rank's 16 byte ack failed with ENOBUFS on the macOS loopback while GBs were in flight."""
+    import errno
+
+    class Sock:
+        def __init__(self, plan):
+            self.plan, self.got = list(plan), bytearray()
+
+        def send(self, view):
+            step = self.plan.pop(0) if self.plan else len(view)
+            if isinstance(step, Exception):
+                raise step
+            self.got += bytes(view[:step])
+            return min(step, len(view))
+
+    monkeypatch.setattr(transport.time, "sleep", lambda s: None)
+    data = bytes(range(256)) * 4
+    c = transport.Counters()
+    s = Sock([OSError(errno.ENOBUFS, "No buffer space available"), 100, OSError(errno.ENOBUFS, "x"), OSError(errno.ENOBUFS, "x"), 7])
+    transport._send_all(s, data, c)
+    assert bytes(s.got) == data and c.send_waits == 3 and c.snapshot()["send_waits"] == 3       # every byte once, in order
+    with pytest.raises(BrokenPipeError):
+        transport._send_all(Sock([10, BrokenPipeError(errno.EPIPE, "gone")]), data)
+    monkeypatch.setattr(transport, "ENOBUFS_WAIT_S", -1.0)
+    with pytest.raises(OSError, match="No buffer space"):
+        transport._send_all(Sock([OSError(errno.ENOBUFS, "No buffer space available")] * 3), data)
+
+
 def test_device_sync_waits_for_the_ranks_own_cuda_device(monkeypatch):
     """Codex F4: torch.cuda.synchronize() without a device waits for the current device, GPU 0."""
     from nocturne.engines.torch_tp import hybrid

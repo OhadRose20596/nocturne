@@ -14,10 +14,14 @@ WEIGHTS (shipping.py): aux0 = operation | slice index << 8. Operations: 1 MANIFE
   6 DONE (no more slices). One slice at a time, in manifest order; the rank answers every END with an ACK.
 In TOKEN and HIDDEN frames aux1 holds the flags in bits 0 to 7. When the run records a timeline, bits 8 to 31 carry
 the request number; without the recorder they are zero and the frames are byte for byte what they were before.
+A send waits and goes on when the kernel has no buffer space for a moment (ENOBUFS; seen on the macOS loopback while
+GBs of weights were in flight to two ranks). The bytes and their order on the wire do not change.
 Security: the listening side accepts any peer; deferred by ADR-009, never bind 0.0.0.0 (CLAUDE.md rule 7)."""
+import errno
 import socket
 import struct
 import threading
+import time
 
 HEADER = struct.Struct("<IBBHII")
 KIND_STEP, KIND_ALLREDUCE, KIND_RESET, KIND_METRICS, KIND_METRICS_REPLY, KIND_SHUTDOWN, KIND_HELLO = range(1, 8)
@@ -57,6 +61,7 @@ class Counters:
         self.allreduce_frames = 0      # all-reduce frames sent (one per all-reduce for two ranks)
         self.step_frames = 0
         self.reconnects = 0
+        self.send_waits = 0            # times a send waited for kernel buffer space (ENOBUFS)
         self.decode = {"sent_frames": 0, "sent_bytes": 0, "recv_frames": 0, "recv_bytes": 0}
         self.by_kind: dict[str, int] = {}
 
@@ -81,7 +86,8 @@ class Counters:
         with self.lock:
             return {"sent_frames": self.sent_frames, "recv_frames": self.recv_frames, "sent_bytes": self.sent_bytes,
                     "recv_bytes": self.recv_bytes, "allreduce_frames": self.allreduce_frames, "step_frames": self.step_frames,
-                    "reconnects": self.reconnects, "decode": dict(self.decode), "by_kind_sent": dict(self.by_kind)}
+                    "reconnects": self.reconnects, "send_waits": self.send_waits, "decode": dict(self.decode),
+                    "by_kind_sent": dict(self.by_kind)}
 
 
 def _tune(sock: socket.socket) -> None:
@@ -91,6 +97,30 @@ def _tune(sock: socket.socket) -> None:
             sock.setsockopt(socket.SOL_SOCKET, opt, SOCK_BUF)
         except OSError:
             pass
+
+
+ENOBUFS_WAIT_S = 30.0
+
+
+def _send_all(sock: socket.socket, data, counters=None) -> None:
+    """sock.sendall, except that ENOBUFS is waited out: send what fits, sleep 5 ms, go on from the same byte. sendall
+    cannot be retried, because it does not say how much it sent. Gives up after ENOBUFS_WAIT_S without progress."""
+    view = memoryview(data)
+    sent, since = 0, None
+    while sent < len(view):
+        try:
+            sent += sock.send(view[sent:])
+            since = None
+        except OSError as e:
+            if e.errno != errno.ENOBUFS:
+                raise
+            now = time.monotonic()
+            since = now if since is None else since
+            if now - since > ENOBUFS_WAIT_S:
+                raise
+            if counters is not None:
+                counters.send_waits += 1
+            time.sleep(0.005)
 
 
 def _recv_into(sock: socket.socket, view: memoryview) -> None:
@@ -124,7 +154,7 @@ class Link:
         n = len(payload)
         head = HEADER.pack(n, kind, DTYPE_CODES[dtype], len(shape), aux0, aux1) + struct.pack(f"<{len(shape)}I", *shape)
         with self._send_lock:
-            self.sock.sendall(head + payload)
+            _send_all(self.sock, head + payload, self.counters)
         self.last_sent = len(head) + n
         self.counters.add(True, kind, len(head) + n, bool(self.phase and self.phase.decode))
 

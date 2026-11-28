@@ -76,3 +76,20 @@ Check: instrument `Link.send` with link-role labels in a three-stage loopback ru
 - Extra checks used temporary models and disposable local child processes. No dependencies were installed or upgraded.
 
 The existing mutation checks do not cover a live silent coordinator, output creation before tag validation, duplicate column-slice storage, explicit CUDA device selection, or the link role carrying CLOCK. Passing those mutations does not rule out F1 to F5.
+
+## Disposition (Claude Code, after the Codex review)
+
+Commit `8fa7bbd`. All five findings were reproduced as described and fixed. Tests: 332 pass. Mutations: 33 of 33 caught (`mutations_round4.json`, `mutations_round4b.json`).
+
+| finding | rating | disposition |
+|---|---|---|
+| F1 a hung coordinator leaves the operator waiting for ever | high | Fixed. `Operator.run_coordinator` watches the process apart from its log. The coordinator prints a sign of life every 20 s from its own thread (`coordinate.start_heartbeat`). Without one for `--stall-timeout` (300 s, 0 waits for ever) the operator ends the process, saves `outcome: coordinator_stalled` with the reason before cleanup, then collects and cleans up. ssh now uses keepalive, so a host that left the network ends the connection after about a minute. The final `pkill` is followed by SIGKILL for what ignores SIGTERM. It is a liveness check, not a time limit (T1). Tests: a silent child, a child that only beats, a child stopped with SIGSTOP, and `hybrid_run.main` with a silent coordinator |
+| F2 run id checked after files were written | medium | Fixed. `operate.valid_tag` (full match, no `.` or `..`) is called in `hybrid_run.main` before any folder or log is created, and by `Operator`. Test: `test_run_id_is_checked_before_anything_is_written` |
+| F3 a column slice held twice | medium | Fixed. `shipping.iter_bytes` hashes and sends in pieces; a tensor that is not contiguous is copied a few rows at a time. Test: `test_a_column_slice_is_never_copied_whole`. What remains: safetensors itself reads the whole matrix to give a column range, so the full matrix is in memory once while its slice is sent. GGUF slices come from a memory map and do not have this |
+| F4 device sync on the wrong CUDA device | medium | Fixed. `torch.cuda.synchronize(device)`. Test with a mock. Not run on a host with two GPUs: we have none |
+| F5 CLOCK on pipeline links | medium | Fixed. The end measurement sends its begin frame on each rank's ctl link. A rank of a later stage waits on its upstream link and its ctl link with `select`. Test: `test_clock_frames_use_only_ctl_links_and_the_request_number_only_with_the_recorder` records the link of every CLOCK frame in a three stage run |
+| aux1 request number | decision | Taken as proposed: the upper bits are set only in runs with the recorder. Without it TOKEN and HIDDEN frames are what they were. The same test checks both cases. Ohad still has to approve the extension for recorder runs |
+| clock bound | decision | Wording corrected in `clock.py` and `docs/MEASUREMENT.md` 2.2: half the round trip bounds one exchange; between two exchanges the interpolation is exact only for a constant drift |
+| cache trusted by name and size | decision | Kept as the default and documented. New option `--verify-cache`: every rank reads and hashes its cached slices before use and asks again for one that differs. Test: `test_a_changed_cache_file_is_trusted_by_name_and_size_and_caught_with_verify` |
+
+Gate: no open high finding.

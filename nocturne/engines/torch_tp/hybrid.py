@@ -677,12 +677,12 @@ class Coordinator:
         rec = self.rank.rec
         if rec:
             rec.skip()
-        m0 = time.monotonic_ns()
+        m0 = clock.now_ns()
         try:
             t0 = time.time()
             nxt, lg = self._step(ids, 0, want_logits=first_logits)
             t1 = time.time()
-            m1 = time.monotonic_ns()
+            m1 = clock.now_ns()
             self.prefill_steps += 1
             out = [nxt]
             if on_token:
@@ -706,7 +706,7 @@ class Coordinator:
         except (ConnectionError, OSError) as e:
             raise LinkLost(str(e)) from e
         self.requests.append({"req": self.req_seq, "rid": rid, "prompt_n": len(ids), "n_gen": len(out), "t0_mono_ns": m0,
-                              "first_token_mono_ns": m1, "t1_mono_ns": time.monotonic_ns()})
+                              "first_token_mono_ns": m1, "t1_mono_ns": clock.now_ns()})
         self.tokens_generated += len(out)
         steps = len(out) - 1
         tm = {"prompt_n": len(ids), "prompt_ms": (t1 - t0) * 1000, "predicted_n": len(out), "predicted_ms": (t2 - t1) * 1000,

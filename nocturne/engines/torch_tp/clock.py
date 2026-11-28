@@ -5,20 +5,29 @@ with a zero server hold time). Two offsets come out: monotonic (aligns recorder 
 time sync). The error of one exchange is at most half its round trip. Measured at the start and at the end of a run;
 an event time is converted with the offset interpolated between the two, which removes a constant drift. Two
 measurements cannot bound a drift that is not constant, so for events between them the bound is an estimate.
-Every CLOCK frame travels on the ctl link of its rank, never on a data link."""
+Every CLOCK frame travels on the ctl link of its rank, never on a data link.
+The monotonic clock is the raw one (CLOCK_MONOTONIC_RAW): the OS time service does not touch it. Python's
+time.monotonic_ns() on Linux is CLOCK_MONOTONIC, which the time service runs faster or slower while it corrects the wall
+clock. On a host whose wall clock was 370 ms off that was 1.9 percent, 110 ms in 6 s (the pc, 2026-11-28)."""
 import struct
 import time
 
 from . import transport
 
 ROUNDS = 16
+_RAW = getattr(time, "CLOCK_MONOTONIC_RAW", None)
+
+
+def now_ns() -> int:
+    """The clock of every recorder time stamp and of the monotonic offset: raw monotonic ns, never slewed."""
+    return time.clock_gettime_ns(_RAW) if _RAW is not None else time.monotonic_ns()
 REQ, REPLY, DONE, BEGIN = 0, 1, 2, 3
 _PAIR = struct.Struct("<qq")
 DISAGREE_NS = 2_000_000
 
 
 def stamp() -> bytes:
-    return _PAIR.pack(time.time_ns(), time.monotonic_ns())
+    return _PAIR.pack(time.time_ns(), now_ns())
 
 
 def estimate(samples: list[tuple[int, int, int, int, int]]) -> dict:
@@ -35,10 +44,10 @@ def measure(link: transport.Link, rounds: int = ROUNDS) -> dict:
     """Coordinator side. The rank must be in answer()."""
     samples = []
     for i in range(rounds):
-        w0, t0 = time.time_ns(), time.monotonic_ns()
+        w0, t0 = time.time_ns(), now_ns()
         link.send(transport.KIND_CLOCK, aux0=i, aux1=REQ)
         kind, payload, *_ = link.recv()
-        t1 = time.monotonic_ns()
+        t1 = now_ns()
         if kind != transport.KIND_CLOCK:
             raise RuntimeError(f"expected a clock reply, got {transport.KIND_NAMES.get(kind, kind)}")
         rw, rm = _PAIR.unpack(bytes(payload))
