@@ -136,7 +136,8 @@ function niceTicks(a, b, n) { const span = b - a || 1, raw = span / n, p = Math.
 (function () {
   const o = D.overlap;
   if (!o) { $("ov").innerHTML = "<p class='note'>No request interval was recorded.</p>"; return; }
-  const pc = x => f(100 * x, 1) + "%";
+  const pc = x => x == null ? "n/a" : f(100 * x, 1) + "%";
+  const known = !(o.unmatched_links && o.unmatched_links.length);
   $("legend3").innerHTML = `<span><i class="sw" style="background:var(--text)"></i>computing while a frame of this rank is in flight</span><span><i class="sw" style="background:var(--compute)"></i>computing, nothing in flight</span><span><i class="sw" style="background:var(--other)"></i>not computing</span>`;
   const W = 1100, L = 190, Rm = 190, rowH = 22, gap = 12, H = R.length * (rowH + gap) + 34, pw = W - L - Rm;
   let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Busy share and overlap share by rank">`;
@@ -144,7 +145,7 @@ function niceTicks(a, b, n) { const span = b - a || 1, raw = span / n, p = Math.
   s += `<text x="${L + pw / 2}" y="${H - 2}" text-anchor="middle">share of the time in which a request was in work</text>`;
   R.forEach((r, k) => {
     const v = o.per_rank[r.name] || { busy_share: 0, overlap_share: 0 }, y = k * (rowH + gap) + 2;
-    const a = v.overlap_share * pw, b = (v.busy_share - v.overlap_share) * pw;
+    const a = (v.overlap_share || 0) * pw, b = (v.busy_share - (v.overlap_share || 0)) * pw;
     s += `<rect x="6" y="${y + 5}" width="10" height="12" rx="2" fill="${col(k)}"/><text class="lab" x="22" y="${y + 10}">${esc(r.name)}</text><text x="22" y="${y + 23}">${esc(r.host)} · ${esc(r.device)}</text>`;
     s += `<rect x="${L}" y="${y}" width="${pw}" height="${rowH}" rx="2" fill="var(--other)"/>`;
     if (a > 0) s += `<rect data-o="${k},0" x="${L}" y="${y}" width="${Math.max(a - 1, .5)}" height="${rowH}" rx="2" fill="var(--text)"/>`;
@@ -153,7 +154,7 @@ function niceTicks(a, b, n) { const span = b - a || 1, raw = span / n, p = Math.
   });
   $("ov").innerHTML = s + "</svg>";
   $("ov").addEventListener("mousemove", ev => { const d = ev.target.getAttribute && ev.target.getAttribute("data-o"); if (!d) return hideTip(); const [k, j] = d.split(",").map(Number), v = o.per_rank[R[k].name];
-    showTip(ev, `<b>${esc(R[k].name)}</b><br>${j ? "computing, nothing in flight: " + pc(v.busy_share - v.overlap_share) : "computing with a frame in flight: " + pc(v.overlap_share)}<br>compute ${f(v.compute_ms, 1)} ms of ${f(o.window_ms, 1)} ms`); });
+    showTip(ev, `<b>${esc(R[k].name)}</b><br>${!known ? "computing: " + pc(v.busy_share) : j ? "computing, nothing in flight: " + pc(v.busy_share - v.overlap_share) : "computing with a frame in flight: " + pc(v.overlap_share)}<br>compute ${f(v.compute_ms, 1)} ms of ${f(o.window_ms, 1)} ms`); });
   $("ov").addEventListener("mouseleave", hideTip);
   let t = "<tr><th>rank or device</th><th>busy share</th><th>overlap share</th><th>with a frame it sent</th><th>with a frame addressed to it</th><th>a frame in flight</th><th>compute ms</th></tr>";
   const row = (n, v) => `<tr><td>${esc(n)}</td><td>${pc(v.busy_share)}</td><td>${pc(v.overlap_share)}</td><td>${pc(v.overlap_out_share)}</td><td>${pc(v.overlap_in_share)}</td><td>${pc(v.in_flight_share)}</td><td>${f(v.compute_ms, 1)}</td></tr>`;
@@ -162,7 +163,7 @@ function niceTicks(a, b, n) { const span = b - a || 1, raw = span / n, p = Math.
   $("ov-table").innerHTML = t;
   $("ov-note").textContent = `Over the ${f(o.window_ms, 1)} ms in which at least one request was in work. Busy: the rank computes. Overlap: it computes while a frame it sent, or one addressed to it, is in flight. A frame is in flight from the start of its send until the receiver has read it (so a frame that waits in the buffer of a busy receiver counts), on aligned clocks (error at most half a round trip).`
     + (o.async_send ? " This run sent off the compute thread: a compute span is the time of the compute thread, not of the device." : "")
-    + (o.unmatched_links && o.unmatched_links.length ? " Sends and receives do not match on: " + o.unmatched_links.join(", ") + "." : "");
+    + (known ? "" : " Sends and receives do not match on: " + o.unmatched_links.join(", ") + ". The frames in flight of this run are therefore not known, and it has no overlap share: the bars show the busy share only.");
 })();
 
 // ---- timeline ----

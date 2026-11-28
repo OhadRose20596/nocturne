@@ -251,11 +251,26 @@ def load_reference(run_id: str) -> tuple[dict, dict]:
         rec = json.loads((d / "record.json").read_text())
         if rec.get("outcome") != "completed":
             raise ValueError(f"reference run {run_id} did not complete (outcome {rec.get('outcome')})")
-        ref = {"run_id": rec["run_id"], "prompts": {p["id"]: p for p in rec["prompts"]}}
+        ref = {"run_id": rec["run_id"], "prompts": {p["id"]: p for p in rec["prompts"]}, "numerics": numerics_of(rec)}
     if not isinstance(ref.get("prompts"), dict) or not ref["prompts"]:
         raise ValueError(f"reference run {run_id} holds no prompts")
     lg = dict(np.load(d / "first_logits.npz"))
     return ref, lg
+
+
+def numerics_of(rec: dict) -> list | None:
+    """What decides the numbers of a run: the placement file and its content hash, the dtype, the prefill chunk. Two runs
+    that agree on all of it differ in scheduling only (slots, pairs, where the sends run), and must give the same tokens."""
+    pl, args = rec.get("placement") or {}, rec.get("args") or {}
+    if not pl.get("file"):
+        return None
+    return [pl["file"], pl.get("sha256"), args.get("dtype"), int(args.get("prefill_chunk") or 0)]
+
+
+def scheduling_only(rec: dict, ref: dict) -> bool:
+    """Is `ref` a run with the numerics of this run? Then the comparison asks for every token."""
+    mine = numerics_of(rec)
+    return mine is not None and ref.get("numerics") == mine
 
 
 def first_div(a: list[int], b: list[int]) -> int:
@@ -475,12 +490,13 @@ def main(argv=None) -> int:
         devs = sorted({s.device.split(":")[0] for s in op.slots})
         refs = [latest_reference(op.placement.model, d) for d in devs]
         refs = [r for r in refs if r and r != a.run_id]
-    rec["correctness"] = {r: compare(out, logits, *load_reference(r)) for r in refs}
+    loaded = {r: load_reference(r) for r in refs}
+    rec["correctness"] = {r: compare(out, logits, ref, lg, exact=scheduling_only(rec, ref)) for r, (ref, lg) in loaded.items()}
     for r, c in rec["correctness"].items():
         ld = "not compared" if c["logit_maxdiff"] is None else f"{c['logit_maxdiff']:.4g}"
         log(f"[run] vs {r}: identical {c['identical']}/{c['of']}, accuracy {c['accuracy']} (reference {c['ref_accuracy']}), "
             f"max first step logit diff {ld}, long prompt first divergence {c['long_first_div']}, "
-            f"criterion {'met' if c['criterion_met'] else 'NOT met'}"
+            f"criterion ({c['rule']}) {'met' if c['criterion_met'] else 'NOT met'}"
             + (f"; not in the reference: {c['not_in_reference']}" if c["not_in_reference"] else ""))
     log(f"[run] frames per decode step: measured {rec['frames']['measured_per_step']}, predicted {pred['total']}; "
         f"prefill frames: measured {rec['frames'].get('prefill_measured')}, predicted {rec['frames'].get('prefill_predicted')}")
@@ -501,7 +517,10 @@ def latest_reference(model: str, device: str) -> str | None:
     return c[-1].parent.name if c else None
 
 
-def compare(out: list[dict], logits: dict, ref: dict, ref_logits: dict) -> dict:
+def compare(out: list[dict], logits: dict, ref: dict, ref_logits: dict, exact: bool = False) -> dict:
+    """`exact`: the reference is a run with the same numerics (numerics_of), so the two differ in scheduling only. Then
+    every token of every prompt must match, the long prompts included. Otherwise the rule of the placements holds:
+    seven of eight evaluation prompts and the same accuracy."""
     rp = ref["prompts"]
     missing = [p["id"] for p in out if p["id"] not in rp]       # a reference recorded with fewer prompts: compare what it has
     ev_ids = {p["id"] for p in out if p["kind"] == "eval"}
@@ -515,13 +534,19 @@ def compare(out: list[dict], logits: dict, ref: dict, ref_logits: dict) -> dict:
     acc = sum(scores) / len(scores) if scores else None
     racc = sum(rscores) / len(rscores) if rscores else None
     longs = [p for p in out if p["kind"] == "long"]
-    return {"reference": ref["run_id"], "identical": sum(same), "of": len(ev), "first_div": divs, "accuracy": acc,
+    complete = bool(ev) and not any(i in ev_ids for i in missing)
+    if exact:
+        met = complete and all(same) and all(p["tokens"] == rp[p["id"]]["tokens"] for p in longs)
+    else:
+        met = complete and sum(same) >= min(7, len(ev)) and acc == racc
+    return {"rule": "every token" if exact else "seven of eight",
+            "reference": ref["run_id"], "identical": sum(same), "of": len(ev), "first_div": divs, "accuracy": acc,
             "ref_accuracy": racc, "logit_maxdiff": max(ld.values()) if ld else None, "logit_maxdiff_per_prompt": ld,
             "long_first_div": {p["id"]: divs[p["id"]] for p in longs},
             # None when the reference holds no long prompt of this run: nothing was compared, which is not "identical"
             "long_identical": all(p["tokens"] == rp[p["id"]]["tokens"] for p in longs) if longs else None,
             "long_compared": len(longs), "not_in_reference": missing,
-            "criterion_met": bool(ev) and not any(i in ev_ids for i in missing) and sum(same) >= min(7, len(ev)) and acc == racc}
+            "criterion_met": met}
 
 
 def transformers_check(L, out: list[dict], a, log) -> dict:

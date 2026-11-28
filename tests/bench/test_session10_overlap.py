@@ -21,10 +21,11 @@ from .test_torch_tp import TINY  # noqa: E402
 PROMPTS = [[5, 17, 99, 3, 42], [8, 61], [7, 7, 23, 90, 11, 4, 100], [33, 2, 64], [120, 19, 6, 55, 71, 12]]
 
 
-def write_tiny(d, layers=4, seed=3):
-    """The tiny Qwen2 of test_torch_tp with a chosen number of layers (interleaved stages need four)."""
+def write_tiny(d, layers=4, seed=3, **over):
+    """The tiny Qwen2 of test_torch_tp with a chosen number of layers (interleaved stages need four). `over`: other
+    config values (a large vocabulary makes a large head frame)."""
     g = torch.Generator().manual_seed(seed)
-    c = dict(TINY, num_hidden_layers=layers)
+    c = dict(TINY, num_hidden_layers=layers, **over)
     hd = c["hidden_size"] // c["num_attention_heads"]
     r = lambda *s: torch.randn(*s, generator=g) * 0.1
     w = {"model.embed_tokens.weight": torch.randn(c["vocab_size"], c["hidden_size"], generator=g) * 0.5,
@@ -463,10 +464,8 @@ class _FakeLink:
             self._sleep(self.slow)
         self.sent.append((kind, bytes(payload), aux0, aux1))
 
-    def send_async(self, *a, **kw):
-        t = threading.Thread(target=self.send, args=a, kwargs=kw, daemon=True)
-        t.start()
-        return t
+    def close(self):
+        self.closed = True
 
     def recv(self, *a, **kw):
         """The peer's partial for the next all-reduce: zeros of the shape given in `answers` (a list the test fills)."""
@@ -818,7 +817,7 @@ def test_a_chunk_leaves_the_first_stage_before_the_head_result_of_the_prompt(tin
 
     def recv(self, *a, **kw):
         out = real_recv(self, *a, **kw)
-        if out[0] == transport.KIND_HEAD and threading.get_ident() == me:
+        if out[0] == transport.KIND_HEAD:        # only the coordinator receives head frames (on its reader thread)
             ev.append("r")
         return out
     transport.Link.send, transport.Link.recv = send, recv
@@ -1146,3 +1145,319 @@ def test_in_a_group_of_three_every_link_keeps_its_own_count():
     comm.recv_sum(tb)
     assert comm._out == {1: 0, 2: 0}
     assert [len(p) for _, p, _, _ in slow.sent] == [300_000, 40_000] and [len(p) for _, p, _, _ in fast.sent] == [300_000, 40_000]
+
+
+# ---- after the Codex review (REVIEW_CODEX_overlap.md) ---------------------------------------------------------------------------
+@pytest.fixture(scope="module")
+def big_vocab(tmp_path_factory):
+    """Two layers, hidden size 8, a vocabulary of 524288: with float32 logits a head rank of two sends 1 MiB per first step."""
+    return write_tiny(tmp_path_factory.mktemp("s10o_big") / "big", layers=2, hidden_size=8, intermediate_size=32, num_attention_heads=2,
+                      num_key_value_heads=2, vocab_size=1 << 19)
+
+
+def tp2(p):
+    return Placement("m", (StageIn("s0", (0, 2), (R(p[0]), R(p[1])), embed=True, lm_head=True),), max_seq_len=64, granule=16)
+
+
+@pytest.mark.parametrize("async_send", [False, True])
+def test_a_large_head_frame_does_not_block_the_work_of_the_next_slot(big_vocab, monkeypatch, async_send):
+    """Codex 1 (high). The peer's head frame for slot A (first step logits, larger than the socket buffers) meets the
+    coordinator's all-reduce for slot B. The peer cannot finish the head frame unless the coordinator reads it, and the
+    coordinator waits for the peer's partial, which comes after the head frame. The head frame is held until the
+    coordinator has started slot B, so the order does not depend on timing."""
+    prompts = [[5, 17, 99], [8, 61, 7]]
+    monkeypatch.setattr(transport, "SOCK_BUF", 4096)
+    _, ref, _ = alone(big_vocab, tp2, prompts, 2)
+    gate, seen = threading.Event(), {"token": 0, "head": 0}
+    real = transport.Link.send
+
+    def send(self, kind, *a, **kw):
+        if kind == transport.KIND_TOKEN:
+            seen["token"] += 1
+            if seen["token"] == 2:
+                gate.set()
+        if kind == transport.KIND_HEAD:
+            seen["head"] += 1
+            if seen["head"] == 1:
+                gate.wait(10)
+        return real(self, kind, *a, **kw)
+    monkeypatch.setattr(transport.Link, "send", send)
+    specs, co, th = boot(big_vocab, tp2(free_ports(8)), slots=2, async_send=async_send)
+    assert specs[1].head_rows[1] - specs[1].head_rows[0] == 1 << 18         # a head frame of 1 MiB from the peer
+    out = []
+    w = threading.Thread(target=lambda: out.append(co.generate_many(reqs(prompts, 2))), daemon=True)
+    w.start()
+    w.join(30)
+    stuck = w.is_alive()
+    if stuck:                               # free the threads of this test
+        for link in list(co.rank.links.values()):
+            link.close()
+    else:
+        co.shutdown()
+    assert not stuck, "the coordinator and its peer wait for each other"
+    same(ref, out[0])
+
+
+def test_head_frames_are_read_while_the_scheduler_is_busy_and_the_reader_ends_with_the_call(tiny4):
+    """Codex 1. The reader thread lives only inside generate_many, and the control links are free for metrics afterwards."""
+    specs, co, th = boot(tiny4, pp3(free_ports(8)), slots=2)
+    names = lambda: {t.name for t in threading.enumerate()}
+    try:
+        seen = []
+        r = reqs(PROMPTS[:3], 4)
+        r[0]["on_token"] = lambda tok: seen.append("nocturne-head-reader" in names())
+        out = co.generate_many(r)
+        assert seen and all(seen) and "nocturne-head-reader" not in names()
+        m = co.metrics()                    # the control links answer: no reader is left on them
+        assert m["ranks"]["s2/0"]["steps"] > 0
+        out2 = co.generate_many(reqs(PROMPTS[:3], 4))       # a second call starts its own reader
+        same(out, out2)
+    finally:
+        co.shutdown()
+
+
+def test_a_lost_control_link_ends_a_run_with_slots(tiny4):
+    """Codex 1. The reader thread hands a failure on its link to the scheduler, which raises it."""
+    from nocturne.engines.torch_tp.engine import LinkLost
+    specs, co, th = boot(tiny4, pp3(free_ports(8)), slots=2)
+    r = reqs(PROMPTS[:2], 40)
+    r[0]["on_token"] = lambda tok: co.ctl[2].sock.shutdown(2)       # the head rank's control link breaks at the first token
+    try:
+        with pytest.raises(LinkLost):
+            co.generate_many(r)
+    finally:
+        for link in list(co.rank.links.values()):
+            link.close()
+        co.listener.close()
+
+
+PLAN_KEYS_BEFORE = ["specs", "hosts", "max_seq_len", "reduce_dtype", "enforce_budget", "mps_fraction_cap", "dtype", "timeline", "run_tag",
+                    "ship", "cfg", "verify_cache", "gid"]       # the plan frame of commit 965385f, in its order
+
+
+def _plans(model, monkeypatch, **kw):
+    real, got = transport.Link.send, []
+
+    def send(self, kind, payload=b"", *a, **k):
+        if kind == transport.KIND_PLAN:
+            got.append(json.loads(bytes(payload).decode()))
+        return real(self, kind, payload, *a, **k)
+    monkeypatch.setattr(transport.Link, "send", send)
+    specs, co, th = boot(model, pp3(free_ports(8)), **kw)
+    co.shutdown()
+    monkeypatch.setattr(transport.Link, "send", real)
+    return got
+
+
+def test_the_plan_frame_names_an_overlap_option_only_when_it_is_set(tiny4, monkeypatch):
+    """Codex 2. With the options off the plan frame has the fields of before part 3, in their order: no added bytes."""
+    off = _plans(tiny4, monkeypatch)
+    assert len(off) == 2 and all(list(p) == PLAN_KEYS_BEFORE for p in off)
+    on = _plans(tiny4, monkeypatch, slots=2, async_send=True)
+    assert all(p["slots"] == 2 and p["async_send"] is True for p in on)
+    only_slots = _plans(tiny4, monkeypatch, slots=3)
+    assert all(p["slots"] == 3 and "async_send" not in p for p in only_slots)
+
+
+def test_a_request_number_past_the_bits_of_the_frame_stays_apart_in_the_record(tiny4, tmp_path, monkeypatch):
+    """Codex 3. The frame carries the request number modulo 65536. A rank rebuilds the full number from the last one it
+    saw, so the requests past 65535 of one run stay apart on every rank. The engine part runs with 3 bits (modulo 8)."""
+    from nocturne.engines.torch_tp import timeline
+    from nocturne.engines.torch_tp.recorder import Recorder
+    r = Recorder("x", 1, "h", "cpu")
+    full = [1, 2, 1, 3] + list(range(4, 16)) + [16, 15, 17, 18, 16, 19]          # two requests in flight take turns across the wrap
+    assert [r.full_req(v % 16, 16) for v in full] == full
+    r = Recorder("x", 1, "h", "cpu")
+    seq = list(range(1, 200000, 7))                                              # a long run, far past 65536
+    assert [r.full_req(v % 65536, 1 << 16) for v in seq] == seq
+    monkeypatch.setattr(hybrid, "REQ_MASK", 7)
+    specs, co, th = boot(tiny4, pp3(free_ports(8)), timeline=True, run_dir=str(tmp_path))
+    try:
+        for k in range(12):
+            co.generate(list(PROMPTS[k % 5]), 2, ignore_eos=True)
+    finally:
+        co.shutdown()
+    for t in th:
+        t.join(timeout=10)
+    run = timeline.load(tmp_path)
+    assert len(run["ranks"]) == 3
+    for rk in run["ranks"]:
+        assert {e["req"] for e in rk["events"] if e["step"] >= 0} == set(range(1, 13)), rk["meta"]["rank"]
+
+
+class _FailingLink(_FakeLink):
+    """The first frame cannot be sent; every later one can."""
+
+    def send(self, kind, payload=b"", dtype=None, shape=(), aux0=0, aux1=0, decode=None):
+        with self.lock:
+            first = not getattr(self, "_started", False)
+            self._started = True
+        if first:
+            self._sleep(self.slow)
+            raise OSError("no route")
+        self.sent.append((kind, bytes(payload), aux0, aux1))
+
+
+def test_a_frame_behind_one_that_failed_is_not_sent_and_the_all_reduce_raises(monkeypatch):
+    """Codex 4. Two frames of a pair leave on threads. The first fails. The second must not take its place on the link
+    (the peer tells all-reduce frames apart by order), the link is closed, and the all-reduce raises the failure."""
+    monkeypatch.setattr(transport, "SMALL_FRAME", 8)
+    link = _FailingLink(slow=0.2)           # the second frame is queued while the first is still on its way to failing
+    link.answers = [(4, 8), (1, 8)]
+    comm = hybrid.GroupComm(0, 2, {1: link}, "cpu")
+    ta = comm.send_partial(torch.full((4, 8), 1.0), 0)
+    tb = comm.send_partial(torch.full((1, 8), 2.0), 1)
+    for t in ta[2] + tb[2]:
+        t.join(timeout=5)
+    assert link.sent == [] and link.closed is True
+    assert isinstance(ta[2][0].error, OSError) and isinstance(tb[2][0].error, ConnectionError)
+    with pytest.raises(ConnectionError, match="an all-reduce frame could not be sent: OSError: no route"):
+        comm.recv_sum(ta)
+    with pytest.raises(ConnectionError, match="could not be sent"):
+        comm.recv_sum(tb)
+    # a later all-reduce on that link does not start: its frame would be read as the one that never left
+    with pytest.raises(ConnectionError, match="could not be sent"):
+        comm.send_partial(torch.full((1, 8), 3.0))
+    assert link.sent == []
+
+
+def test_a_run_that_differs_in_scheduling_only_must_give_every_token(tmp_path):
+    """Codex 5. Against a run of the same placement, dtype and prefill chunk, one changed token is a failure; the rule
+    of seven of eight stays for a reference with other numerics."""
+    import numpy as np
+    from nocturne.engines.torch_tp import hybrid_run
+    ev = [{"id": f"e{k}", "kind": "eval", "tokens": [k, k + 1, k + 2], "score": 1.0} for k in range(8)]
+    lng = {"id": "L", "kind": "long", "tokens": list(range(40)), "score": None}
+    ref = {"run_id": "ref", "prompts": {p["id"]: p for p in ev + [lng]}}
+    one_off = [dict(p) for p in ev] + [dict(lng)]
+    one_off[3] = dict(one_off[3], tokens=[3, 4, 99])
+    assert hybrid_run.compare(one_off, {}, ref, {})["criterion_met"] is True              # seven of eight, same scores
+    c = hybrid_run.compare(one_off, {}, ref, {}, exact=True)
+    assert (c["identical"], c["of"], c["criterion_met"], c["rule"]) == (7, 8, False, "every token")
+    long_off = [dict(p) for p in ev] + [dict(lng, tokens=list(range(39)) + [7])]
+    assert hybrid_run.compare(long_off, {}, ref, {})["criterion_met"] is True
+    assert hybrid_run.compare(long_off, {}, ref, {}, exact=True)["criterion_met"] is False
+    assert hybrid_run.compare([dict(p) for p in ev] + [dict(lng)], {}, ref, {}, exact=True)["criterion_met"] is True
+    # what makes a comparison exact: the reference is a run folder with the same placement file and hash, dtype and prefill chunk
+    d = tmp_path / "X_off_r1"
+    d.mkdir()
+    rec = {"run_id": "X_off_r1", "outcome": "completed", "prompts": ev, "placement": {"file": "p.yaml", "sha256": "abc"},
+           "args": {"dtype": None, "prefill_chunk": 0, "slots": 1}}
+    (d / "record.json").write_text(json.dumps(rec))
+    np.savez(d / "first_logits.npz", e0=np.zeros(4, np.float32))
+    got, _ = hybrid_run.load_reference(str(d))
+    mine = lambda **a: hybrid_run.numerics_of({"placement": {"file": "p.yaml", "sha256": "abc"}, "args": dict({"dtype": None, "prefill_chunk": 0}, **a)})
+    assert got["numerics"] == mine(slots=3, tp_interleave=2, async_send=True)             # scheduling options do not count
+    assert got["numerics"] != mine(prefill_chunk=16) and got["numerics"] != mine(dtype="float32")
+    assert got["numerics"] != hybrid_run.numerics_of({"placement": {"file": "p.yaml", "sha256": "other"}, "args": {}})
+    assert hybrid_run.numerics_of({"run_id": "old"}) is None
+    me = {"placement": {"file": "p.yaml", "sha256": "abc"}, "args": {"dtype": None, "prefill_chunk": 0, "slots": 4}}
+    assert hybrid_run.scheduling_only(me, got) is True
+    assert hybrid_run.scheduling_only(dict(me, args={"dtype": None, "prefill_chunk": 16}), got) is False
+    assert hybrid_run.scheduling_only(me, {"run_id": "R0", "prompts": {}}) is False          # a reference.json of another placement
+    assert hybrid_run.scheduling_only({"run_id": "old"}, {"numerics": None}) is False
+
+
+def test_a_prompt_of_one_token_is_a_prefill_step(tiny4):
+    """Codex 6. The step counts follow the scheduled unit, as on the old path, not the number of tokens in it."""
+    specs, co, th = boot(tiny4, tp3(free_ports(8)), slots=2)
+    try:
+        out = co.generate_many([{"ids": [5], "max_tokens": 3, "ignore_eos": True, "rid": "one", "first_logits": True}])
+        assert (co.prefill_steps, co.decode_steps) == (1, 2) and len(out[0]["tokens"]) == 3
+    finally:
+        co.shutdown()
+    specs, co, th = boot(tiny4, tp3(free_ports(8)))
+    try:
+        ref = co.generate([5], 3, ignore_eos=True, first_logits=True)
+        assert (co.prefill_steps, co.decode_steps) == (1, 2) and ref["tokens"] == out[0]["tokens"]
+    finally:
+        co.shutdown()
+
+
+def test_a_kv_tensor_of_many_slots_opens_the_mps_heap(tiny4):
+    """Codex 7. One K tensor holds every slot. At 256 slots it is 16 MiB here, over the 10 MiB at which MPS opens its
+    1 GiB heap, although every weight matrix is small: the host total must not pass a budget below that heap."""
+    from nocturne.engines.torch_tp.plan import MPS_HEAP
+    cfg = Dims.of(load_config(tiny4))
+    pl = Placement("m", (StageIn("s0", (0, 4), (RankIn("h", "mps", 1),), embed=True, lm_head=True),), max_seq_len=1024, prefill_max=16, granule=16)
+    assert plan(cfg, pl)[0].planned["mps_floor"] == 0                   # one slot: a K tensor of 64 KiB
+    assert plan(cfg, pl, kv_slots=128)[0].planned["mps_floor"] == 0     # 8 MiB
+    sp = plan(cfg, pl, kv_slots=256)[0]
+    assert sp.planned["kv"] // (2 * 4) == 16 << 20 and sp.planned["mps_floor"] == MPS_HEAP == sp.planned["footprint"]
+    with pytest.raises(PlanError, match="host budget"):
+        plan(cfg, Placement(**{**pl.__dict__, "host_budget_gb": (("h", 0.65),)}), kv_slots=256)
+    cpu = Placement(**{**pl.__dict__, "stages": (StageIn("s0", (0, 4), (RankIn("h", "cpu", 1),), embed=True, lm_head=True),)})
+    assert plan(cfg, cpu, kv_slots=256)[0].planned["mps_floor"] == 0
+
+
+def test_a_run_with_an_unmatched_link_has_a_busy_share_and_no_overlap_share():
+    """Codex 8. One receive is missing, so every later frame of that socket would be matched to the wrong receive."""
+    from nocturne.engines.torch_tp.timeline import overlap
+    a = [_ev("send", 2, 2.5, "b", 100), _ev("send", 3, 3.5, "b", 100), _ev("compute", 4, 7)]
+    b = [_ev("recv_wait", 7.5, 8, "a", 100)]
+    o = overlap(_run(a, b), [{"t0_mono_ns": 0, "t1_mono_ns": 10}])
+    assert o["unmatched_links"] == ["a -> b"]
+    for v in list(o["per_rank"].values()) + list(o["per_device"].values()):
+        assert v["overlap_share"] is None and v["overlap_out_share"] is None and v["overlap_in_share"] is None and v["in_flight_share"] is None
+    assert o["per_rank"]["a"]["busy_share"] == pytest.approx(0.3) and o["per_rank"]["b"]["busy_share"] == 0
+    full = overlap(_run(a, b + [_ev("recv_wait", 8, 9, "a", 100)]), [{"t0_mono_ns": 0, "t1_mono_ns": 10}])
+    assert full["unmatched_links"] == [] and full["per_rank"]["a"]["overlap_share"] == pytest.approx(0.3)
+
+
+def test_the_pool_of_pinned_buffers_stays_within_its_limit(monkeypatch):
+    """Codex 9. The limit counts the buffer that returns: one large buffer is not kept past it."""
+    monkeypatch.setattr(hybrid, "POOL_MAX_BYTES", 96)
+    s = hybrid.Sender("cpu", None)
+    try:
+        for n in (16, 16, 16):              # 64 bytes each
+            h = hybrid.Handoff(None)
+            h.host, h.pooled = torch.zeros(n, dtype=torch.float32), True
+            s.free(h)
+        s.flush()
+        assert s.pool_bytes == 64 and sum(len(v) for v in s.pool.values()) == 1
+        h = hybrid.Handoff(None)
+        h.host, h.pooled = torch.zeros(8, dtype=torch.float32), True         # 32 bytes: fits beside the 64
+        s.free(h)
+        s.flush()
+        assert s.pool_bytes == 96
+    finally:
+        s.stop()
+
+
+def test_the_coordinator_empties_its_sender_before_a_clock_or_shutdown_frame(tiny4):
+    """Codex 10. Design section 11.5: no control frame overtakes a data frame. The coordinator's own sender is flushed
+    before CLOCK and before SHUTDOWN, and a sender that is stuck does not hold the shutdown."""
+    specs, co, th = boot(tiny4, pp3(free_ports(8)), slots=2, async_send=True)
+    ev = []
+    real_flush = co.rank.flush
+    co.rank.flush = lambda *a: (ev.append("flush"), real_flush(*a))[1]
+    real = transport.Link.send
+
+    def send(self, kind, *a, **kw):
+        if threading.current_thread() is threading.main_thread() and kind in (transport.KIND_CLOCK, transport.KIND_SHUTDOWN):
+            ev.append(transport.KIND_NAMES[kind])
+        return real(self, kind, *a, **kw)
+    transport.Link.send = send
+    try:
+        co.generate_many(reqs(PROMPTS[:2], 3))
+        del ev[:]
+        co.clock_sync()
+        assert ev[0] == "flush" and "clock" in ev
+        del ev[:]
+        co.shutdown()                       # the end clock is measured already: the next control frame is SHUTDOWN
+        assert ev[0] == "flush" and ev.index("flush") < ev.index("shutdown")
+    finally:
+        transport.Link.send = real
+    # a sender that never finishes: flush gives up after its timeout
+    hold = threading.Event()
+
+    class Stuck(_FakeLink):
+        def send(self, *a, **kw):
+            hold.wait(10)
+    s = hybrid.Sender("cpu", None)
+    h = s.copy(torch.zeros(1, 4))
+    s.send(h, Stuck(), transport.KIND_HIDDEN, 0, 0, True, "x")
+    with pytest.raises(TimeoutError, match="still holds frames"):
+        s.flush(0.5)
+    hold.set()
+    s.stop()

@@ -465,6 +465,7 @@ def plan(cfg, p: Placement, check_budget: bool = True, kv_slots: int = 1, pair: 
             budget = int(r.budget_gb * 1e9) if r.budget_gb is not None else None
             biggest = d.matrix_elems(q1 - q0, kv1 - kv0, m1 - m0, v1 - v0)         # elements of the largest matrix
             big = (min(biggest, CHUNK_ELEMS) if d.quant is not None else biggest) * BF16 >= MPS_BIG_TENSOR     # a tensor of 10 MiB or more
+            big = big or (L > 0 and kv // (2 * L) >= MPS_BIG_TENSOR)       # the K tensor of one layer holds every slot (model.py)
             planned = {"weights": w, "kv": kv, "workspace": ws, "total": w + kv + ws,
                        "layer_bytes": round(attn[i] + (m1 - m0) * u.mlp_row + u.norms) if L else 0,
                        "vocab_bytes": round(vb[i]), "kv_heads_replicated": 0}

@@ -43,6 +43,7 @@ class Recorder:
         self.t = now_ns()
         self.step, self.req, self.tokens, self.slot = -1, 0, 0, 0
         self._steps = 0
+        self._req_seen = 0
 
     def begin(self, req: int, tokens: int, slot: int = 0) -> tuple:
         """A new step starts; the cursor stays where the previous step left it. Returns the step's context, for use()."""
@@ -50,6 +51,15 @@ class Recorder:
         self._steps += 1
         self.req, self.tokens, self.slot = req, tokens, slot
         return (self.step, req, tokens, slot)
+
+    def full_req(self, low: int, mod: int) -> int:
+        """The request number of a frame from its low bits (the frame carries it modulo `mod`): the number nearest to the
+        last one seen. Right while the requests in flight are fewer than mod / 2 apart, so a long run keeps its numbers."""
+        d = (low - self._req_seen) % mod
+        if d >= mod // 2:
+            d -= mod
+        self._req_seen = max(0, self._req_seen + d)
+        return self._req_seen
 
     def use(self, ctx: tuple) -> None:
         """Spans from now on belong to this step (two interleaved requests take turns on one cursor)."""

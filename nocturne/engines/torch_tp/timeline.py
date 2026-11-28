@@ -203,12 +203,18 @@ def overlap(run: dict, requests: list[dict] | None = None, flights: dict | None 
     total = length(win)
     if not total:
         return None
+    # One send without its receive shifts every later match on that socket, so the in flight intervals of the run are not
+    # known: the run then has a busy share and no overlap share (None).
+    unmatched = sorted(k for k, l in flights.items() if l["sent"] != l["received"] or not l["bytes_match"])
 
     def shares(comp: list, out_iv: list, in_iv: list) -> dict:
         comp = intersect(union(comp), win)
+        c = length(comp)
+        if unmatched:
+            return {"busy_share": c / total, "overlap_share": None, "overlap_out_share": None, "overlap_in_share": None,
+                    "in_flight_share": None, "compute_ms": c / 1e6}
         o, i = intersect(union(out_iv), win), intersect(union(in_iv), win)
         both = union(o + i)
-        c = length(comp)
         return {"busy_share": c / total, "overlap_share": length(intersect(comp, both)) / total,
                 "overlap_out_share": length(intersect(comp, o)) / total, "overlap_in_share": length(intersect(comp, i)) / total,
                 "in_flight_share": length(both) / total, "compute_ms": c / 1e6}
@@ -230,7 +236,7 @@ def overlap(run: dict, requests: list[dict] | None = None, flights: dict | None 
                  "in_flight_ms_mean": length([(f[0], f[1]) for f in l["frames"]]) / len(l["frames"]) / 1e6 if l["frames"] else None}
              for k, l in flights.items()}
     return {"window_ms": total / 1e6, "per_rank": per_rank, "per_device": per_device, "links": links,
-            "unmatched_links": sorted(k for k, l in flights.items() if l["sent"] != l["received"] or not l["bytes_match"]),
+            "unmatched_links": unmatched,
             "async_send": any(e["kind"] in ASYNC_KINDS for rk in run["ranks"] for e in rk["events"])}
 
 

@@ -30,6 +30,7 @@ import queue
 import re
 import select
 import resource
+import socket
 import struct
 import threading
 import time
@@ -231,12 +232,15 @@ class Sender:
             self.check()
         return h.host
 
-    def flush(self) -> None:
-        """Wait until everything handed over so far has left."""
+    def flush(self, timeout: float | None = None) -> None:
+        """Wait until everything handed over so far has left. `timeout`: give up after that many seconds (shutdown)."""
         done = threading.Event()
         self.q.put(("flush", done))
+        t0 = time.monotonic()
         while not done.wait(0.2):
             self.check()
+            if timeout is not None and time.monotonic() - t0 > timeout:
+                raise TimeoutError(f"the sender thread still holds frames after {timeout:.0f} s")
 
     def stop(self) -> None:
         self.q.put(("stop",))
@@ -284,10 +288,11 @@ class Sender:
                         rec.span("tx_send", t0, clock.now_ns(), pair.ctx, peer, link.last_sent, CH_CTL)
                 elif op == "free":
                     h = job[1]
+                    nb = h.host.numel() * h.host.element_size() if h.pooled else 0
                     with self.pool_lock:
-                        if h.pooled and self.pool_bytes < POOL_MAX_BYTES:
+                        if h.pooled and self.pool_bytes + nb <= POOL_MAX_BYTES:
                             self.pool.setdefault((tuple(h.host.shape), h.host.dtype), []).append(h.host)
-                            self.pool_bytes += h.host.numel() * h.host.element_size()
+                            self.pool_bytes += nb
                     h.host = None
                 elif op == "flush":
                     job[1].set()
@@ -300,6 +305,39 @@ class Sender:
 
 
 # ---- all-reduce ----------------------------------------------------------------------------------------------------------
+class FrameThread(threading.Thread):
+    """One all-reduce frame leaving on its own thread, after `prev`, the frame before it on the same link. The peer tells
+    all-reduce frames apart by their order alone, so a frame behind one that failed is not sent. A failure is kept in
+    `error` and closes the link: a receive blocked on it wakes on both sides, and recv_sum raises the error."""
+
+    def __init__(self, prev: "FrameThread | None", link: transport.Link, data: bytes, dt: str, shape: tuple, dec: bool):
+        super().__init__(daemon=True)
+        self.prev, self.link, self.frame = prev, link, (data, dt, shape, dec)
+        self.error: BaseException | None = None
+        self.start()
+
+    def run(self) -> None:
+        data, dt, shape, dec = self.frame
+        try:
+            if self.prev is not None:
+                self.prev.join()
+                if self.prev.error is not None:
+                    raise ConnectionError("the frame before this one on the link was not sent") from self.prev.error
+            self.link.send(transport.KIND_ALLREDUCE, data, dt, shape, decode=dec)
+        except BaseException as e:      # noqa: BLE001 - kept for the compute thread; the closed link wakes it
+            self.error = e
+            self.link.close()
+        finally:
+            self.prev = self.frame = None
+
+
+def raise_failed(frames) -> None:
+    """Raise the failure of the first frame thread that has one."""
+    for t in frames or ():
+        if t.error is not None:
+            raise ConnectionError(f"an all-reduce frame could not be sent: {type(t.error).__name__}: {t.error}") from t.error
+
+
 class GroupComm(Comm):
     """All-to-all all-reduce over a group of n ranks. `links` maps every other group rank to its Link."""
 
@@ -313,7 +351,7 @@ class GroupComm(Comm):
         self.rec, self.names = rec, names or {}
         self.ctx: list | None = None        # recorder contexts of the two requests of a pair, by tag
         self.sender = sender
-        self._tail: dict[int, threading.Thread] = {}      # per peer: the latest threaded send that may still be running
+        self._tail: dict[int, FrameThread] = {}      # per peer: the latest threaded send that may still be running
         self._out: dict[int, int] = {}      # per peer: bytes of all-reduce frames sent (inline or on a thread) and not yet answered
 
     def all_reduce(self, x: torch.Tensor) -> torch.Tensor:
@@ -348,6 +386,7 @@ class GroupComm(Comm):
         for r in sorted(self.links):
             prev = self._tail.get(r)
             if prev is not None and not prev.is_alive():
+                raise_failed((prev,))       # a frame after one that never left would take its place at the peer
                 prev = None
             # Inline only when this frame fits the granted buffer together with everything this rank sent on the link and
             # has no answer for yet. Every rank sends before it receives, so the peer is not reading. A frame of a pair
@@ -356,23 +395,13 @@ class GroupComm(Comm):
             self._out[r] = out + len(wire)
             if prev is None and self.links[r].fits_inline(len(wire), out):
                 self.links[r].send(transport.KIND_ALLREDUCE, wire, dt, tuple(xc.shape), decode=dec)
-            elif prev is None:
-                self._tail[r] = self.links[r].send_async(transport.KIND_ALLREDUCE, bytes(wire), dt, tuple(xc.shape), decode=dec)
-                pending.append(self._tail[r])
             else:
-                # the first frame of a pair is still leaving on a thread: this one must not overtake it on the link
-                self._tail[r] = threading.Thread(target=self._send_after, daemon=True,
-                                                 args=(prev, self.links[r], bytes(wire), dt, tuple(xc.shape), dec))
-                self._tail[r].start()
+                # on a thread; behind `prev` when the first frame of a pair is still leaving: it must not be overtaken on the link
+                self._tail[r] = FrameThread(prev, self.links[r], bytes(wire), dt, tuple(xc.shape), dec)
                 pending.append(self._tail[r])
             if rec:
                 rec.lap("send", self.names.get(r), nb, CH_GROUP)
         return (x.dtype, xc, pending, tag, len(wire))
-
-    @staticmethod
-    def _send_after(prev: threading.Thread, link: transport.Link, data: bytes, dt: str, shape: tuple, dec: bool) -> None:
-        prev.join()
-        link.send(transport.KIND_ALLREDUCE, data, dt, shape, decode=dec)
 
     def recv_sum(self, ticket) -> torch.Tensor:
         """Second half: receive every peer's partial and add all partials in group rank order."""
@@ -384,7 +413,11 @@ class GroupComm(Comm):
             rec.use(self.ctx[tag])
         parts = {}
         for r in sorted(self.links):
-            kind, payload, pdt, shape, _, _ = self.links[r].recv()
+            try:
+                kind, payload, pdt, shape, _, _ = self.links[r].recv()
+            except OSError:
+                raise_failed(pending)       # a frame thread that failed closed the link: name that failure
+                raise
             if kind != transport.KIND_ALLREDUCE:
                 raise RuntimeError(f"expected an all-reduce frame from group rank {r}, got {transport.KIND_NAMES.get(kind, kind)}")
             if rec:
@@ -401,6 +434,7 @@ class GroupComm(Comm):
             parts[self.me] = xc
             for t in pending:
                 t.join()
+            raise_failed(pending)
         if self.fp32:
             acc = parts[0].float()
             for r in range(1, self.n):
@@ -601,10 +635,10 @@ class RankRuntime:
         rb = self._finish(hb, pos_b, fl_b)
         return ra, rb
 
-    def flush(self) -> None:
+    def flush(self, timeout: float | None = None) -> None:
         """With --async-send: wait until every frame handed over has left (before a control frame or a counter read)."""
         if self.sender is not None:
-            self.sender.flush()
+            self.sender.flush(timeout)
 
     def forward_control(self, kind: int, aux1: int = 0) -> None:
         self.flush()
@@ -695,7 +729,7 @@ class RankRuntime:
             if kind in (transport.KIND_TOKEN, transport.KIND_HIDDEN):
                 ctx = None
                 if rec:
-                    ctx = rec.begin((aux1 >> REQ_SHIFT) & REQ_MASK, shape[0], aux1 >> SLOT_SHIFT)
+                    ctx = rec.begin(rec.full_req((aux1 >> REQ_SHIFT) & REQ_MASK, REQ_MASK + 1), shape[0], aux1 >> SLOT_SHIFT)
                     rec.lap("recv_wait", self.up_name, up.last_recv, up_ch)
                 one = self._unit(kind, payload, dtype, shape, aux0, aux1)
                 if aux1 & FLAG_PAIR and self.spec.group_size > 1:
@@ -705,7 +739,7 @@ class RankRuntime:
                         raise RuntimeError(f"{self.spec.name}: a pair was announced, got {transport.KIND_NAMES.get(kind, kind)}")
                     ctx_b = None
                     if rec:
-                        ctx_b = rec.begin((aux1b >> REQ_SHIFT) & REQ_MASK, shape[0], aux1b >> SLOT_SHIFT)
+                        ctx_b = rec.begin(rec.full_req((aux1b >> REQ_SHIFT) & REQ_MASK, REQ_MASK + 1), shape[0], aux1b >> SLOT_SHIFT)
                         rec.lap("recv_wait", self.up_name, up.last_recv, up_ch)
                     two = self._unit(kind, payload, dtype, shape, aux0b, aux1b)
                     if rec:
@@ -891,6 +925,44 @@ def rank_main(addrs: list[str], port: int, model_dir: str | None, device: str | 
 
 
 # ---- coordinator -------------------------------------------------------------------------------------------------------
+class HeadReader:
+    """With several requests in flight the coordinator must take a head frame whenever one comes, also while its own
+    rank is blocked on a group link or a pipeline link. Otherwise a head rank that cannot finish a large head frame
+    (first step logits) stops reading, the frame the coordinator waits for never leaves, and both wait for good (Codex
+    review of part 3, finding 1). This thread reads the control links of the remote head ranks into a queue; the
+    scheduler takes the frames from the queue. It touches sockets only, never the device."""
+
+    def __init__(self, links: dict, decode):
+        self.links, self.decode = links, decode       # {socket: (rank spec, Link)}; decode(kind, aux0, aux1) for the counters
+        self.q: queue.Queue = queue.Queue()
+        self._wake_r, self._wake_w = socket.socketpair()
+        self.thread = threading.Thread(target=self._loop, daemon=True, name="nocturne-head-reader")
+        self.thread.start()
+
+    def _loop(self) -> None:
+        socks = list(self.links) + [self._wake_r]
+        try:
+            while True:
+                got = select.select(socks, [], [])[0]
+                if self._wake_r in got:
+                    return
+                for sock in got:
+                    sp, link = self.links[sock]
+                    frame = link.recv(decode=self.decode)
+                    self.q.put((sp, link.last_recv, frame))
+        except BaseException as e:      # noqa: BLE001 - raised by the scheduler when it takes this entry
+            self.q.put((None, 0, e))
+
+    def stop(self) -> None:
+        try:
+            self._wake_w.send(b"x")
+        except OSError:
+            pass
+        self.thread.join(timeout=5)
+        self._wake_r.close()
+        self._wake_w.close()
+
+
 class Coordinator:
     """Rank 0 of the first stage plus the generation loop. Same interface as engine.Rank0 for server.py."""
 
@@ -953,7 +1025,11 @@ class Coordinator:
         plan_msg = {"specs": [s.to_json() for s in specs], "hosts": hosts, "max_seq_len": max_seq_len,
                     "reduce_dtype": reduce_dtype, "enforce_budget": enforce_budget, "mps_fraction_cap": mps_fraction_cap,
                     "dtype": dtype, "timeline": timeline, "run_tag": run_tag, "ship": ship, "cfg": config_to_json(self.cfg),
-                    "verify_cache": self.verify_cache, "slots": self.slots, "async_send": self.async_send}
+                    "verify_cache": self.verify_cache}
+        if self.slots != 1:                 # named only when set: with the options off the plan is the plan of before part 3
+            plan_msg["slots"] = self.slots
+        if self.async_send:
+            plan_msg["async_send"] = True
         for s in specs[1:]:
             link = connect_link(address(s, me.host, hosts), s.port, {"role": "ctl"}, self.phase)
             link.sock.settimeout(CTL_TIMEOUT_S)
@@ -1122,7 +1198,7 @@ class Coordinator:
             for k, (a, b) in enumerate(chunks):
                 last = k == len(chunks) - 1
                 flags = (0 if last else FLAG_NOHEAD) | (FLAG_LOGITS if last and r.get("first_logits") else 0)
-                st["units"].append((ids[a:b], a, flags))
+                st["units"].append((ids[a:b], a, flags, False))
             table[s] = st
             ready.append(s)
             self.log(f"[hybrid] request {r.get('rid', i)} prompt_n={len(ids)} max_tokens={r['max_tokens']} slot={s} chunks={len(chunks)}")
@@ -1130,9 +1206,9 @@ class Coordinator:
         def launch(s: int, pair_first: bool = False) -> tuple:
             """Take the next unit of a slot and send its token ids to the other ranks of the first stage."""
             st = table[s]
-            ids, pos0, flags = st["units"].popleft()
+            ids, pos0, flags, dec_step = st["units"].popleft()
             aux = pack_aux(flags | (FLAG_PAIR if pair_first else 0), st["req"] if rec else 0, s)
-            st["decode"] = len(ids) == 1
+            st["decode"] = len(ids) == 1        # for the frame counters: every rank tells a decode frame by its one token, as on the old path
             ctx = None
             if rec:
                 ctx = st["ctx"] = rec.begin(st["req"], len(ids), s)
@@ -1142,7 +1218,7 @@ class Coordinator:
                 self.ctl[sp.gid].send(transport.KIND_TOKEN, data, "int64", (len(ids),), aux0=pos0, aux1=aux, decode=len(ids) == 1)
                 if rec:
                     rec.lap("send", sp.name, self.ctl[sp.gid].last_sent, CH_CTL)
-            if st["decode"]:
+            if dec_step:                        # the step counts follow the unit: a prompt of one token is a prefill step
                 self.decode_steps += 1
             else:
                 self.prefill_steps += 1
@@ -1194,47 +1270,52 @@ class Coordinator:
                 self.log(f"[hybrid] done {r.get('rid', st['i'])} n_gen={len(st['out'])} finish={'stop' if stop else 'length'} slot={s}")
                 start(s)
             else:
-                st["units"].append(([tok], st["pos"], 0))
+                st["units"].append(([tok], st["pos"], 0, True))
                 st["pos"] += 1
                 ready.append(s)
 
+        def head_is_decode(kind: int, aux0: int, aux1: int) -> bool:
+            """For the link counters. Read on the reader thread: a slot's entry does not change while its head frame is due."""
+            s = aux0 >> SLOT_SHIFT
+            st = table[s] if s < len(table) else None
+            return bool(st and st["decode"])
+
         def drain(block: bool) -> None:
-            """Read the head results that have arrived, from every head rank. block: wait until at least one came."""
-            links = {self.ctl[sp.gid].sock: sp for sp in self.head_remote}
-            if not links:
+            """Take the head results the reader thread has read, from every head rank. block: wait until at least one came."""
+            if reader is None:
                 if block:
                     raise RuntimeError("no slot is ready and no head rank is remote: the scheduler has nothing to wait for")
                 return
-            wait = CTL_TIMEOUT_S if block else 0
+            first = block
             while True:
-                got = select.select(list(links), [], [], wait)[0]
-                if not got:
-                    if block and wait:
-                        raise TimeoutError(f"no head result in {CTL_TIMEOUT_S:.0f} s")
+                try:
+                    sp, nbytes, frame = reader.q.get(first, CTL_TIMEOUT_S if first else None)
+                except queue.Empty:
+                    if first:
+                        raise TimeoutError(f"no head result in {CTL_TIMEOUT_S:.0f} s") from None
                     return
-                for sock in got:
-                    sp = links[sock]
-                    link = self.ctl[sp.gid]
-                    kind, payload, dtype, shape, aux0, aux1 = link.recv(
-                        decode=lambda k, a0, a1: bool(a0 >> SLOT_SHIFT < len(table) and table[a0 >> SLOT_SHIFT] and table[a0 >> SLOT_SHIFT]["decode"]))
-                    if kind == transport.KIND_ERROR:
-                        raise RankFailed(bytes(payload).decode())
-                    if kind != transport.KIND_HEAD:
-                        raise RuntimeError(f"expected a head frame from {sp.name}, got {transport.KIND_NAMES.get(kind, kind)}")
-                    s = aux0 >> SLOT_SHIFT
-                    st = table[s] if s < len(table) else None
-                    if st is None or st["cands"] is None:
-                        raise RuntimeError(f"head frame from {sp.name} for slot {s}, which waits for none")
-                    if rec:
-                        rec.use(st["ctx"])
-                        rec.lap("recv_wait", sp.name, link.last_recv, CH_CTL)
-                    st["cands"].append((bits_f32(aux1), aux0 & IDX_MASK))
-                    if st["want_logits"]:
-                        st["parts"].append((sp.head_rows[0], _from_wire(payload, shape, dtype).float()))
-                    if len(st["cands"]) == n_heads:
-                        complete(s)
-                wait = 0                         # after the first frames, take only what is already there
+                first = False                    # after the first frame, take only what is already there
+                if sp is None:                   # the reader thread failed: a lost link, or a frame that could not be read
+                    raise frame
+                kind, payload, dtype, shape, aux0, aux1 = frame
+                if kind == transport.KIND_ERROR:
+                    raise RankFailed(bytes(payload).decode())
+                if kind != transport.KIND_HEAD:
+                    raise RuntimeError(f"expected a head frame from {sp.name}, got {transport.KIND_NAMES.get(kind, kind)}")
+                s = aux0 >> SLOT_SHIFT
+                st = table[s] if s < len(table) else None
+                if st is None or st["cands"] is None:
+                    raise RuntimeError(f"head frame from {sp.name} for slot {s}, which waits for none")
+                if rec:
+                    rec.use(st["ctx"])
+                    rec.lap("recv_wait", sp.name, nbytes, CH_CTL)
+                st["cands"].append((bits_f32(aux1), aux0 & IDX_MASK))
+                if st["want_logits"]:
+                    st["parts"].append((sp.head_rows[0], _from_wire(payload, shape, dtype).float()))
+                if len(st["cands"]) == n_heads:
+                    complete(s)
 
+        reader = HeadReader({self.ctl[sp.gid].sock: (sp, self.ctl[sp.gid]) for sp in self.head_remote}, head_is_decode) if self.head_remote else None
         try:
             for s in range(self.slots):
                 start(s)
@@ -1268,6 +1349,9 @@ class Coordinator:
                 rec.lap("other")
         except (ConnectionError, OSError) as e:
             raise LinkLost(str(e)) from e
+        finally:
+            if reader is not None:
+                reader.stop()
         return results
 
     # ---- control ----------------------------------------------------------------------------------------------------------
@@ -1285,9 +1369,10 @@ class Coordinator:
         return {"world": self.world, "ranks": ranks, "decode_steps": self.decode_steps, "prefill_steps": self.prefill_steps,
                 "tokens_generated": self.tokens_generated, "torch": torch.__version__, "reduce_dtype": self.reduce_dtype}
 
-    def clock_sync(self) -> dict:
+    def clock_sync(self, flush_timeout: float | None = None) -> dict:
         """Measure every rank's clock offset again (the end measurement). Every frame of it, the begin frame included,
-        travels on that rank's ctl link and on no data link."""
+        travels on that rank's ctl link and on no data link. As before any control frame, this rank's sender is empty first."""
+        self.rank.flush(flush_timeout)
         for gid, link in self.ctl.items():
             link.send(transport.KIND_CLOCK, aux1=clock.BEGIN)
             self.clock["end"][self.specs[gid].name] = clock.measure(link)
@@ -1306,11 +1391,12 @@ class Coordinator:
             if not self.clock["end"] and self.ctl and getattr(self, "stage0_remote", None) is not None:
                 for link in self.ctl.values():       # a dead rank must not hold the shutdown for the ctl timeout
                     link.sock.settimeout(END_CLOCK_TIMEOUT_S)
-                self.clock_sync()
+                self.clock_sync(END_CLOCK_TIMEOUT_S)
         except (OSError, RuntimeError) as e:
             self.clock["end"] = {}
             self.log(f"[hybrid] end clock measurement failed: {e}")
         try:
+            self.rank.flush(END_CLOCK_TIMEOUT_S)      # a sender that is stuck must not hold the shutdown: the links are closed below
             for s in self.stage0_remote:
                 self.ctl[s.gid].send(transport.KIND_SHUTDOWN)
             self.rank.forward_control(transport.KIND_SHUTDOWN)
