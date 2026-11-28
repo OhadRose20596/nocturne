@@ -468,6 +468,12 @@ class _FakeLink:
         t.start()
         return t
 
+    def recv(self, *a, **kw):
+        """The peer's partial for the next all-reduce: zeros of the shape given in `answers` (a list the test fills)."""
+        shape = self.answers.pop(0)
+        self.last_recv = 0
+        return transport.KIND_ALLREDUCE, bytearray(4 * shape[0] * shape[1]), "float32", shape, 0, 0
+
 
 def test_a_large_pair_keeps_its_order_on_the_link_when_frames_leave_on_threads(monkeypatch):
     """Frames over SMALL_FRAME leave on a thread each. The second frame of a pair must wait for the first one on its link."""
@@ -989,13 +995,16 @@ def _socket_pair(monkeypatch, buf=212992):
 def _capacity(monkeypatch) -> int:
     """Bytes the two kernels take on one tuned link while nobody reads (it differs per kernel, so it is measured)."""
     a, b = _socket_pair(monkeypatch)
+    import time
     a.sock.setblocking(False)
-    n, chunk = 0, b"x" * 8192
-    try:
-        while True:
+    n, chunk, quiet = 0, b"x" * 8192, None
+    while quiet is None or time.monotonic() - quiet < 0.4:      # the receive side takes more a moment after the first refusal
+        try:
             n += a.sock.send(chunk)
-    except BlockingIOError:
-        pass
+            quiet = None
+        except BlockingIOError:
+            quiet = quiet or time.monotonic()
+            time.sleep(0.01)
     a.close()
     b.close()
     return n
@@ -1087,3 +1096,39 @@ def test_the_plan_command_shows_the_host_budget_it_checked(tmp_path, tiny4, caps
     assert cli.main(["plan", "--placement", str(tmp_path / "pl.yaml")]) == 0
     text = capsys.readouterr().out
     assert "host budget MB" in text and "not checked" not in text and "| 1000 |" in text
+
+
+# ---- after the third review (REVIEW_overlap_pass3.md) --------------------------------------------------------------------------
+def test_the_small_partner_of_a_threaded_frame_that_has_ended_does_not_go_inline():
+    """Pass 3, Q1: the decision of P1 without a kernel. A leaves on a thread and the thread ends, so A sits unread in the
+    buffers. B is small. It must count A and leave on a thread too. (The socket test above depends on what a kernel takes.)"""
+    link = _FakeLink(sndbuf=425984)
+    comm = hybrid.GroupComm(0, 2, {1: link}, "cpu")
+    ta = comm.send_partial(torch.ones(1, 75_000), 0)        # 300 kB: over half the granted buffer, a thread
+    assert len(ta[2]) == 1
+    ta[2][0].join(timeout=5)                                # the thread has ended
+    tb = comm.send_partial(torch.ones(1, 25_000), 1)        # 100 kB: alone it would fit
+    assert len(tb[2]) == 1, "the small partner of a threaded frame went inline on top of it"
+    tb[2][0].join(timeout=5)
+    assert [len(p) for _, p, _, _ in link.sent] == [300_000, 100_000] and comm._out == {1: 400_000}
+
+
+def test_in_a_group_of_three_every_link_keeps_its_own_count():
+    """Pass 3, Q1 (P2 of pass 2): link 1 is fast, link 2 is slow, so the second frame of a pair goes inline to peer 1 and
+    behind the first frame to peer 2. After both all-reduces are received both counts are zero; the old code subtracted
+    the inline amount from link 2 as well and left it negative."""
+    fast, slow = _FakeLink(sndbuf=425984), _FakeLink(slow=0.4, sndbuf=425984)
+    comm = hybrid.GroupComm(0, 3, {1: fast, 2: slow}, "cpu")
+    a, b = torch.ones(1, 75_000), torch.ones(1, 10_000)     # 300 kB (threads), 40 kB
+    ta = comm.send_partial(a, 0)
+    for t in ta[2]:
+        if not slow._started or t is not comm._tail.get(2):
+            t.join(timeout=2)                               # the thread to the fast peer ends; the one to the slow peer is alive
+    tb = comm.send_partial(b, 1)
+    assert comm._out == {1: 340_000, 2: 340_000}
+    for l in (fast, slow):
+        l.answers = [(1, 75_000), (1, 10_000)]
+    comm.recv_sum(ta)
+    comm.recv_sum(tb)
+    assert comm._out == {1: 0, 2: 0}
+    assert [len(p) for _, p, _, _ in slow.sent] == [300_000, 40_000] and [len(p) for _, p, _, _ in fast.sent] == [300_000, 40_000]

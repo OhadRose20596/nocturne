@@ -45,7 +45,8 @@ def ranks(r):
 
 def against(c):
     lg = list(c["long_first_div"].values())
-    return f"{c['identical']}/{c['of']}; {', '.join(str(x) for x in lg) if lg else 'no long prompt'}"
+    miss = f" ({len(c['not_in_reference'])} prompts not in the reference)" if c.get("not_in_reference") else ""
+    return f"{c['identical']}/{c['of']}; {', '.join(str(x) for x in lg) if lg else 'no long prompt compared'}{miss}"
 
 
 def comparisons(r):
@@ -61,7 +62,7 @@ def shares(r):
     busy = ", ".join(f"{k} {100 * v['busy_share']:.0f}" for k, v in pr.items())
     over = ", ".join(f"{k} {100 * v['overlap_share']:.1f} ({100 * v['overlap_out_share']:.1f})" for k, v in pr.items())
     dev = ", ".join(f"{k}: {100 * v['busy_share']:.0f}" for k, v in o["per_device"].items())
-    return busy, over, dev + ("" if not o["unmatched_links"] else f"; UNMATCHED {o['unmatched_links']}")
+    return busy, over, dev
 
 
 def main():
@@ -69,14 +70,19 @@ def main():
     for pre in sys.argv[1:] or [""]:
         for d in sorted(RUNS.glob(f"{pre}*/record.json")):
             recs.append(json.loads(d.read_text()))
-    print("| run | placement | options | identical to the one rank run (8; long first divergence) | against the options-off run of the placement "
+    print("| run | placement | options | commit | identical to the one rank run (8; long first divergence) | against the options-off run of the placement "
           "(8; long; largest first step logit difference) | frames per step measured / predicted | prefill frames measured / predicted | "
-          "bytes per decode step | tokens per s | busy % per rank | overlap % per rank (sent part) | busy % per device |")
-    print("|---|---|---|---|---|---|---|---|---|---|---|---|")
+          "bytes per decode step | tokens per s | steps in pairs / alone; most requests in flight | busy % per device | "
+          "overlap % per rank (sent part) | links where sends and receives do not match |")
+    print("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for r in recs:
         pl = Path(r["placement"]["file"]).name
+        sha = r["git"]["sha"][:7]
         if r.get("outcome") != "completed":
-            print(f"| {r['run_id']} | {pl} | {options(r)} | outcome: {r.get('outcome')} | | | | | | | | |")
+            print(f"| {r['run_id']} | {pl} | {options(r)} | {sha} | outcome: {r.get('outcome')} | | | | | | | | | |")
+            continue
+        if "prompts" not in r or "frames" not in r or "measured_per_step" not in r.get("frames", {}):
+            print(f"| {r['run_id']} | {pl} | {options(r)} | {sha} | completed, record incomplete | | | | | | | | | |")
             continue
         cs = comparisons(r)
         if len(cs) > 1:
@@ -90,9 +96,13 @@ def main():
         f = r["frames"]
         busy, over, dev = shares(r)
         t = r.get("throughput") or {}
-        print(f"| {r['run_id']} | {pl} | {options(r)} | {against(cs[0])} | {off} | {f['measured_per_step']:.1f} / {f['predicted']['total']} | "
-              f"{f.get('prefill_measured')} / {f.get('prefill_predicted')} | {f['bytes_per_step']:.0f} | {t.get('tokens_per_s', 0):.2f} | {busy} | {over} | {dev} |")
-    gate = [r for r in recs if r.get("outcome") == "completed" and not (r.get("overlap") or {}).get("on") and not (r.get("overlap") or {}).get("async_send")
+        o = r.get("overlap") or {}
+        sched = f"{o['pair_steps']} / {o['single_steps']}; {o['max_in_flight']}" if "pair_steps" in o else "-"
+        tl = (r.get("timeline") or {}).get("overlap")
+        unm = "-" if not tl else (", ".join(tl["unmatched_links"]) or "none")
+        print(f"| {r['run_id']} | {pl} | {options(r)} | {sha} | {against(cs[0]) if cs else '-'} | {off} | {f['measured_per_step']:.1f} / {f['predicted']['total']} | "
+              f"{f.get('prefill_measured')} / {f.get('prefill_predicted')} | {f['bytes_per_step']:.0f} | {t.get('tokens_per_s', 0):.2f} | {sched} | {dev} | {over} | {unm} |")
+    gate = [r for r in recs if r.get("outcome") == "completed" and "prompts" in r and not (r.get("overlap") or {}).get("on") and not (r.get("overlap") or {}).get("async_send")
             and (Path(r["placement"]["file"]).name, bool(r["args"].get("timeline"))) in PART1
             and (r["args"].get("long"), r["args"].get("fixed"), r["args"].get("dtype")) == (1, 256, None)]      # the prompt set and dtype of part 1
     if gate:
