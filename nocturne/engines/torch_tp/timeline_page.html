@@ -61,7 +61,7 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--text2); }
 <div class="scroll"><table id="ov-table"></table></div>
 
 <h2 id="tl-title">Timeline</h2>
-<p class="note" id="tl-note">Each rank has a compute row and a communication row. The compute row is device time, closed by a device sync. The communication row shows sends, waits and copies between the device and the host. The row "in flight" shows every frame from the start of its send to the end of the receiver's wait for it: the upper half is a frame this rank sent, the lower half one addressed to it. A color is the other rank. All times are on the coordinator clock.</p>
+<p class="note" id="tl-note">Each rank has a compute row and a communication row. The compute row is device time, closed by a device sync. The communication row shows sends, waits and copies between the device and the host. The row "in flight" shows every frame from the start of its send until the receiver has read it: the upper half is a frame this rank sent, the lower half one addressed to it. A color is the other rank. All times are on the coordinator clock.</p>
 <div class="legend" id="legend2"></div>
 <div class="zoom" id="zoom"></div>
 <div id="tl"></div>
@@ -160,7 +160,7 @@ function niceTicks(a, b, n) { const span = b - a || 1, raw = span / n, p = Math.
   R.forEach(r => { if (o.per_rank[r.name]) t += row(r.name + " (" + r.host + ")", o.per_rank[r.name]); });
   Object.entries(o.per_device || {}).forEach(([n, v]) => { t += row("device " + n + ": " + v.ranks.join(", "), v); });
   $("ov-table").innerHTML = t;
-  $("ov-note").textContent = `Over the ${f(o.window_ms, 1)} ms in which at least one request was in work. Busy: the rank computes. Overlap: it computes while a frame it sent, or one addressed to it, is in flight. A frame is in flight from the start of its send to the end of the receiver's wait for it, on aligned clocks (error at most half a round trip).`
+  $("ov-note").textContent = `Over the ${f(o.window_ms, 1)} ms in which at least one request was in work. Busy: the rank computes. Overlap: it computes while a frame it sent, or one addressed to it, is in flight. A frame is in flight from the start of its send until the receiver has read it (so a frame that waits in the buffer of a busy receiver counts), on aligned clocks (error at most half a round trip).`
     + (o.async_send ? " This run sent off the compute thread: a compute span is the time of the compute thread, not of the device." : "")
     + (o.unmatched_links && o.unmatched_links.length ? " Sends and receives do not match on: " + o.unmatched_links.join(", ") + "." : "");
 })();

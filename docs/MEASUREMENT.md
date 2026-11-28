@@ -103,10 +103,10 @@ With `--async-send` a rank has a second thread, the sender. It records two more 
 
 | kind | what it covers |
 |---|---|
-| `tx_wait` | The sender waits until a tensor has reached the host (CUDA: the event after the non blocking copy; MPS: the copy itself) |
+| `tx_wait` | The sender waits until a tensor has reached the host (CUDA: the event after the non blocking copy; MPS and CPU: nothing to wait for, the compute thread made the copy) |
 | `tx_send` | The sender hands a frame to the kernel. With the destination and the bytes |
 
-In such a run the compute thread does no device sync. So `compute` is the time of the compute thread, which hands work to the device and goes on. The device time shows in `tx_wait` and in the GPU sampler. Compare `compute` between a run with the option and a run without it only with this in mind.
+In such a run the compute thread does no device sync. On CUDA `compute` is then the time of the compute thread, which hands work to the device and goes on; the device time shows in `tx_wait` and in the GPU sampler. On MPS the compute thread still makes the copy, which waits for the device, so the device time is inside `compute` as before. Compare `compute` between a run with the option and a run without it only with this in mind.
 
 **In flight.** A frame is in flight from the start of its send span (`send` or `tx_send`) to the end of the receiver's wait span for it (`recv_wait` or `allreduce_wait`). The k-th send on a directed link is matched with the k-th receive on it. `timeline.in_flight` does this, and `record.json` `timeline.overlap.unmatched_links` lists any link where the counts or the bytes do not agree (empty in every verified run).
 
@@ -116,7 +116,12 @@ In such a run the compute thread does no device sync. So `compute` is the time o
 - Busy share: the length of the `compute` spans inside the time base, divided by it. For a device, the union over its ranks.
 - Overlap share: the length of the `compute` time during which a frame the rank sent, or a frame addressed to it, is in flight, divided by the time base. The record also gives the two parts alone (`overlap_out_share`, `overlap_in_share`).
 
-Limits. The start of a frame is on the sender's clock and its end on the receiver's, so each in flight interval carries the alignment error of section 2.2 (half a control link round trip, a few ms on Wi-Fi, well under 0.1 ms on loopback). On a fast link a frame is in flight for a short time, so the overlap share is small even when the busy share is high. The busy share is the number that shows whether a machine still waits.
+Limits.
+
+- "In flight" ends when the receiver reads the frame, not when the frame reaches the receiver's machine. The recorder cannot see the arrival. So a frame that waits in the receiver's socket buffer while the receiver computes still counts as in flight. When the receiver is already waiting, the two moments are the same.
+- Because of that, a run with every option off already shows an overlap share in a TP group: both ranks compute their partials at the same time, the faster one sends first, and its frame waits until the slower one has finished. In the check `OVc_pair_tp2_off_r1` (gtx and pc, one TP group, Wi-Fi, options off) the overlap share was 24 and 30 percent, most of it the "addressed to it" part. The part that answers "does a machine compute while its own data travels" is `overlap_out_share`.
+- The start of a frame is on the sender's clock and its end on the receiver's, so each in flight interval carries the alignment error of section 2.2 (half a control link round trip, a few ms on Wi-Fi, well under 0.1 ms on loopback).
+- On a fast link a frame is in flight for a short time, so the overlap share is small even when the busy share is high. The busy share is the number that shows whether a machine still waits.
 
 ## 4. The sampler
 

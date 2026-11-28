@@ -366,10 +366,12 @@ Where the copy to the host runs, per device (recorded per rank in `record.json`,
 | device | mode | what happens |
 |---|---|---|
 | CUDA | `pinned` | The compute thread queues a non blocking copy into pinned host memory and records a device event after it. The sender waits for that event. Pinned buffers are reused per shape |
-| MPS | `thread` | PyTorch has no non blocking copy on MPS. The sender thread does the copy. This was tested on the M5 before it was chosen: 12,000 copies on a second thread while the first kept queueing work, no error, every result bit equal |
+| MPS | `inline` | The copy stays on the compute thread, which waits for the device as before. Only the send moves to the sender |
 | CPU | `inline` | The tensor is already on the host |
 
-`NOCTURNE_ASYNC_COPY=inline` puts the copy back on the compute thread, for a comparison.
+`NOCTURNE_ASYNC_COPY` (`pinned`, `thread`, `inline`) overrides the mode, for a comparison. `thread` means the sender thread does the copy.
+
+**Why MPS is `inline`.** PyTorch has no non blocking copy on MPS, so the first choice was `thread`. A probe passed: 12,000 copies on a second thread while the first kept queueing work, no error, every result bit equal. The first engine run with it did not: a rank died after seconds with a Metal assertion (`failed assertion _status < MTLCommandBufferStatusCommitted`, run `OVs_15b_pp3_s2_c16_async_r1`, kept as evidence). Two threads may not work on the MPS device at once. So on a Mac the option moves only the socket send off the compute thread, which is a small gain. The design named this fallback before the code.
 
 What goes through the sender: the all-reduce partials, the hidden state to the next stage, and the head result of a rank that is not the coordinator. For the head result the best value and its index stay on the device as two numbers (`Qwen2TP.head_device`: the first index of the maximum, the same choice as `head_argmax`), so the compute thread does not read the device. The coordinator's own head result is read at once, because the coordinator needs it to choose the token. Token frames leave the coordinator on its compute thread.
 

@@ -138,7 +138,7 @@ def bits_f32(b: int) -> float:
 
 
 # ---- sending off the compute thread (--async-send) -------------------------------------------------------------------------
-ASYNC_COPY = {"cuda": "pinned", "mps": "thread", "cpu": "inline"}
+ASYNC_COPY = {"cuda": "pinned", "mps": "inline", "cpu": "inline"}
 POOL_MAX_BYTES = 256 << 20
 
 
@@ -163,8 +163,9 @@ class Sender:
     """One thread per rank. It takes work in the order it was handed over: wait until a tensor is on the host, then
     send its frames. So frames leave every link in hand-over order, and the compute thread never waits for the device
     or the socket. Where the copy to the host runs (`mode`): CUDA `pinned` (a non blocking copy into pinned memory,
-    queued by the compute thread; this thread waits for its event), MPS `thread` (this thread copies), CPU `inline`
-    (nothing to copy). NOCTURNE_ASYNC_COPY=inline forces the copy back onto the compute thread, for a comparison."""
+    queued by the compute thread; this thread waits for its event), MPS and CPU `inline` (the compute thread copies, so
+    only the send moves here). `thread` (this thread copies) is not used: on MPS two threads may not work on the device
+    at once, a rank died with a Metal assertion (run OVs_15b_pp3_s2_c16_async_r1). NOCTURNE_ASYNC_COPY overrides the mode."""
 
     def __init__(self, device: str, rec: Recorder | None):
         self.device, self.rec = device, rec

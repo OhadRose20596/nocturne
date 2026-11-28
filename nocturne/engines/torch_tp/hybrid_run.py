@@ -242,8 +242,16 @@ def find_run(run_id: str) -> Path:
 
 
 def load_reference(run_id: str) -> tuple[dict, dict]:
+    """Prompts and first step logits of a reference run. A run saved with --save-reference has reference.json; any other
+    completed run folder serves as well, from its record.json (the options-off run of a placement, for a run with options)."""
     d = find_run(run_id)
-    ref = json.loads((d / "reference.json").read_text())
+    if (d / "reference.json").exists():
+        ref = json.loads((d / "reference.json").read_text())
+    else:
+        rec = json.loads((d / "record.json").read_text())
+        if rec.get("outcome") != "completed":
+            raise ValueError(f"reference run {run_id} did not complete (outcome {rec.get('outcome')})")
+        ref = {"run_id": rec["run_id"], "prompts": {p["id"]: p for p in rec["prompts"]}}
     lg = dict(np.load(d / "first_logits.npz"))
     return ref, lg
 
@@ -476,8 +484,10 @@ def latest_reference(model: str, device: str) -> str | None:
 
 
 def compare(out: list[dict], logits: dict, ref: dict, ref_logits: dict) -> dict:
-    ev = [p for p in out if p["kind"] == "eval"]
     rp = ref["prompts"]
+    missing = [p["id"] for p in out if p["id"] not in rp]       # a reference recorded with fewer prompts: compare what it has
+    out = [p for p in out if p["id"] in rp]
+    ev = [p for p in out if p["kind"] == "eval"]
     same = [p["tokens"] == rp[p["id"]]["tokens"] for p in ev]
     divs = {p["id"]: first_div(p["tokens"], rp[p["id"]]["tokens"]) for p in out}
     scores = [p["score"] for p in ev if p["score"] is not None]
@@ -489,6 +499,7 @@ def compare(out: list[dict], logits: dict, ref: dict, ref_logits: dict) -> dict:
     return {"reference": ref["run_id"], "identical": sum(same), "of": len(ev), "first_div": divs, "accuracy": acc,
             "ref_accuracy": racc, "logit_maxdiff": max(ld.values()) if ld else None, "logit_maxdiff_per_prompt": ld,
             "long_first_div": {p["id"]: divs[p["id"]] for p in longs},
+            "long_identical": all(p["tokens"] == rp[p["id"]]["tokens"] for p in longs), "not_in_reference": missing,
             "criterion_met": sum(same) >= min(7, len(ev)) and acc == racc}
 
 

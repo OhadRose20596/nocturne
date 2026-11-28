@@ -639,3 +639,32 @@ def test_a_recorded_run_with_slots_matches_every_send_with_a_receive(tiny4, tmp_
     assert slots == {0, 1, 2}
     page = (tmp_path / "timeline.html").read_text()
     assert '"overlap":{' in page and '"flights":[[' in page
+
+
+def test_default_copy_mode_per_device_and_the_override(monkeypatch):
+    monkeypatch.delenv("NOCTURNE_ASYNC_COPY", raising=False)
+    assert hybrid.ASYNC_COPY == {"cuda": "pinned", "mps": "inline", "cpu": "inline"}      # MPS: two threads may not use the device at once
+    s = hybrid.Sender("cpu", None)
+    assert s.mode == "inline"
+    s.stop()
+    monkeypatch.setenv("NOCTURNE_ASYNC_COPY", "sideways")
+    with pytest.raises(ValueError, match="NOCTURNE_ASYNC_COPY"):
+        hybrid.Sender("cpu", None)
+
+
+def test_a_plain_run_folder_is_a_reference_and_missing_prompts_are_named(tmp_path):
+    import numpy as np
+    from nocturne.engines.torch_tp import hybrid_run
+    d = tmp_path / "X_off_r1"
+    d.mkdir()
+    prompts = [{"id": "a", "kind": "eval", "tokens": [1, 2, 3], "score": 1.0}, {"id": "L", "kind": "long", "tokens": [5, 6, 7, 8], "score": None}]
+    (d / "record.json").write_text(json.dumps({"run_id": "X_off_r1", "outcome": "completed", "prompts": prompts}))
+    np.savez(d / "first_logits.npz", a=np.zeros(4, np.float32), L=np.ones(4, np.float32))
+    ref, lg = hybrid_run.load_reference(str(d))
+    out = [dict(prompts[0]), {"id": "L", "kind": "long", "tokens": [5, 6, 9, 8], "score": None}, {"id": "new", "kind": "long", "tokens": [1], "score": None}]
+    c = hybrid_run.compare(out, {"a": np.zeros(4, np.float32), "L": np.full(4, 1.5, np.float32), "new": np.zeros(4, np.float32)}, ref, lg)
+    assert (c["identical"], c["of"], c["long_first_div"], c["long_identical"], c["not_in_reference"]) == (1, 1, {"L": 2}, False, ["new"])
+    assert c["logit_maxdiff"] == pytest.approx(0.5)
+    (d / "record.json").write_text(json.dumps({"run_id": "X_off_r1", "outcome": "error", "prompts": prompts}))
+    with pytest.raises(ValueError, match="did not complete"):
+        hybrid_run.load_reference(str(d))
