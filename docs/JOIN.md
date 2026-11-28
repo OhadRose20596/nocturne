@@ -1,7 +1,12 @@
 # Joining a machine to a run
 
 One script runs on the new machine. It checks the machine, fixes what is safe to fix, and writes one report file.
-The coordinator (the M5) reads that report and updates its own configuration. Nobody copies commands from a guide.
+The operator machine (today the M5) reads that report and updates its own configuration. Nobody copies commands from a guide.
+
+Words, since session 10: the **operator** is the machine that holds `peers.yaml` and has ssh to every host. In this tool and in its
+flags (`--coordinator`, the `coordinator` check) the word "coordinator" means that operator machine.
+The **coordinator of a run** is something else: the host a placement names, which plans and holds the model (`docs/ENGINE_DESIGN.md`).
+It can be any joined machine. It needs the model file and `transformers`; it does not need ssh to the others.
 
 Status on 2026-11-20: `15_join.sh` ran on the M5 in check mode. `16_join_apply.py` ran in dry-run mode and on synthetic files.
 `15_join.sh` ran in fix mode on the Air and delivered its report. The Windows half of `15_join.ps1` ran on one Windows 11 machine with no WSL distro and stopped there, as designed. The fix paths that need `sudo`, and `--install`, have not run yet.
@@ -52,7 +57,7 @@ On Linux and WSL2 the coordinator address (`lan_ip()`) is read from `ip route` a
 | repo | fast-forward pull. With `--install`: clone and `pip install -e` | diverged history |
 | link | none. Reports the type of the LAN interface: `wifi`, `wired` or `unknown` | `unknown` when the OS does not say (the check is then SKIP) |
 | llama_cpp | none, nothing is built. Looks for `llama-server` and `ggml-rpc-server` in `$LLAMA_DIR/build/bin` (default `~/dev/llama.cpp`) or on the PATH. Reports the commit from `llama-server --version` and the backend (Metal, CUDA or CPU) | binaries missing: FAIL, build with `scripts/00_build_llamacpp.sh`. A commit that differs from the pinned `1e7bcf3` still passes and says so in the message |
-| models | none. The coordinator copies models. Lists `~/models/hf/*` and the GGUF files `~/models/*.gguf` and `~/models/gguf/*.gguf` with their sizes | nothing found in either place |
+| models | none. Lists `~/models/hf/*` and the GGUF files `~/models/*.gguf` and `~/models/gguf/*.gguf` with their sizes. Nothing found is SKIP, not FAIL: a worker of the torch engine gets its slices from the coordinator of the run. llama.cpp cells and a coordinator host still need the file | |
 | firewall | macOS: allows the venv python. Linux: opens the ports in ufw or firewalld | other firewalls |
 | coordinator | none, opens a TCP connection to the receiver on port 50079 | receiver not running |
 

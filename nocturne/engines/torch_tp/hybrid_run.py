@@ -1,9 +1,12 @@
-"""Session 6 run driver: one recorded run of a placement.
+"""Run driver: one recorded run of a placement (session 6; since session 10 this process is only the operator).
 Usage: python -m nocturne.engines.torch_tp.hybrid_run --placement experiments/session6_hybrid/placements/P1_loopback.yaml
          --run-id P1_loopback_qwen2.5-7b-bf16_r1 [--reduce-dtype bfloat16] [--reference R0_qwen2.5-7b-bf16_mps_r1 ...]
-         [--save-reference] [--transformers] [--force] [--mps-fraction-cap] [--session-dir DIR]
-Writes <session-dir>/runs/<run_id>/record.json (default session dir experiments/session6_hybrid) and the launcher and rank logs next to it. R0 runs
-(--save-reference) also write reference.json and first_logits.npz (first step logits, fp32)."""
+         [--save-reference] [--transformers] [--force] [--mps-fraction-cap] [--session-dir DIR] [--timeline]
+The operator starts the rank processes and the coordinator process on their hosts (operate.py); the coordinator is the
+host named in the placement and may be another machine, on macOS or Linux. It plans there, with its model file.
+Writes <session-dir>/runs/<run_id>/record.json (default session dir experiments/session6_hybrid) and the logs next to it.
+--timeline adds timeline_<rank>.jsonl.gz, samples_<host>.jsonl, trace.json.gz, breakdown.csv, timeline.html (docs/MEASUREMENT.md).
+R0 runs (--save-reference) also write reference.json; first_logits.npz (first step logits, fp32) is always written."""
 import argparse
 import hashlib
 import json
@@ -23,6 +26,7 @@ RUNS = OUT / "runs"
 HASHES = OUT / "model_hashes.json"
 ENGINE = Path(__file__).resolve().parent
 PROMPTS = ROOT / "nocturne" / "bench" / "prompts"
+SHIP_DEFAULT = True
 
 
 def sh(peer: dict, cmd: str, timeout: float = 120) -> subprocess.CompletedProcess:
@@ -54,10 +58,7 @@ def peer_os(peer: dict, run=None) -> str:
     return "Darwin" if r.stdout.strip() == "Darwin" else "Linux"
 
 
-def shell_path(p: str) -> str:
-    """Quote a path for a remote shell, keeping a leading ~/ expandable."""
-    import shlex
-    return "~/" + shlex.quote(p[2:]) if p.startswith("~/") else shlex.quote(p)
+from .operate import shell_path  # noqa: E402
 
 
 def _model_files(mdir: str) -> tuple[str, str]:
@@ -136,38 +137,104 @@ def host_state(peer: dict, local: bool, osname: str, has_cuda: bool, run=None, l
     return info
 
 
-def preflight(L, log, run=None) -> dict:
-    """Sleep prevention (Mac) and ssh on every host of the placement, the same engine files, the same model files."""
+TIMESYNC = "-m nocturne.bench.probes.timesync --json --samples 4"
+
+
+def _json_line(text: str) -> dict | None:
+    for line in reversed(text.splitlines()):
+        if line.startswith("{"):
+            try:
+                return json.loads(line)
+            except ValueError:
+                return None
+    return None
+
+
+def model_hosts(op, ship: bool) -> list[str]:
+    """Hosts that must hold the model file: only the coordinator host when the weights are shipped, else every host."""
+    return [op.coord] if ship else sorted({s.host for s in op.slots})
+
+
+def preflight(op, log, run=None, ship: bool = False, timeline: bool = False) -> dict:
+    """ssh, sleep prevention (Mac), the same engine files and the clock state on every host of the placement; the model
+    files on every host that needs them (all the same); what the coordinator host needs to tokenize."""
     run = run or sh
-    out = {"hosts": {}}
+    out = {"hosts": {}, "coordinator": op.coord, "ship_weights": ship}
     local_hash = engine_hash_local()
     sums = {}
-    for host in sorted({s.host for s in L.specs}):
-        peer = L._peer(host)
+    for host in sorted({s.host for s in op.slots}):
+        peer = op.peer(host)
         if peer.get("ssh"):
             r = run(peer, "true", 20)
             if r.returncode:
                 raise RuntimeError(f"ssh to {host} failed: {r.stderr.strip()[-200:]}")
         osname = peer_os(peer, run)
-        has_cuda = any(s.host == host and s.device.split(":")[0] == "cuda" for s in L.specs)
+        has_cuda = any(s.host == host and s.device.split(":")[0] == "cuda" for s in op.slots)
         info = host_state(peer, not peer.get("ssh"), osname, has_cuda, run, log)
-        if peer.get("ssh"):
-            r = run(peer, f"{peer['python']} -c \"{ENGINE_HASH_REMOTE}\"")
-            remote = r.stdout.strip()
-            if remote != local_hash:
-                raise RuntimeError(f"engine files on {host} differ from this machine ({remote[:12]} vs {local_hash[:12]}); "
-                                   f"git pull on {host} (same SHA) or copy them")
+        py = op.python(host)
+        r = run(peer, f"{py} -c \"{ENGINE_HASH_REMOTE}\"")
+        remote = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else ""
+        if remote != local_hash:
+            raise RuntimeError(f"engine files on {host} differ from the operator's ({remote[:12] or r.stderr.strip()[-120:]} vs "
+                               f"{local_hash[:12]}); git pull on {host} (same SHA) or copy them")
         info["engine_sha256"] = local_hash
-        sums[host] = model_hashes(peer, host, L.model_dir, run, osname)
-        info["model_sha256"] = sums[host]
+        r = run(peer, f"{py} {TIMESYNC}", 60)
+        info["timesync"] = _json_line(r.stdout) or {"error": (r.stderr or r.stdout).strip()[-200:] or "no output"}
+        if timeline:
+            r = run(peer, f"{py} -c 'import psutil; print(psutil.__version__)'", 30)
+            info["psutil"] = r.stdout.strip() if r.returncode == 0 else None
+        if host == op.coord:
+            r = run(peer, f"{py} -c 'import transformers; print(transformers.__version__)'", 60)
+            if r.returncode:
+                raise RuntimeError(f"the coordinator host {host} cannot import transformers (it tokenizes the prompts): {r.stderr.strip()[-200:]}")
+            info["transformers"] = r.stdout.strip()
+        if host in model_hosts(op, ship):
+            from .launch import model_dir_of
+            sums[host] = model_hashes(peer, host, model_dir_of(op.placement.model, op.peers, host), run, osname)
+            info["model_sha256"] = sums[host]
         out["hosts"][host] = info
     if len({json.dumps(v, sort_keys=True) for v in sums.values()}) > 1:
         raise RuntimeError(f"model files differ between hosts: {sums}")
     return out
 
 
+def clock_report(clocks: dict, pre: dict, coord: str) -> dict:
+    """Adds to every rank's clock entry what the OS time sync predicts for it and the gap to the engine's measurement."""
+    from . import clock
+    sntp = {h: (v.get("timesync") or {}).get("sntp", {}).get("offset_s") for h, v in pre.get("hosts", {}).items()}
+    bound = {h: (v.get("timesync") or {}).get("sntp", {}).get("bound_s") for h, v in pre.get("hosts", {}).items()}
+    for name, c in clocks.items():
+        m = c.get("end") or c.get("start")
+        if not m:
+            continue
+        h = c.get("host")
+        if h == coord:
+            c["os"] = {"os_predicted_ns": 0, "gap_ns": m["offset_wall_ns"], "disagree": abs(m["offset_wall_ns"]) > clock.DISAGREE_NS,
+                       "same_host": True}
+        else:
+            c["os"] = clock.compare_with_os(m["offset_wall_ns"], sntp.get(coord), sntp.get(h))
+            c["os"]["os_bound_ns"] = round(((bound.get(coord) or 0) + (bound.get(h) or 0)) * 1e9) if c["os"]["gap_ns"] is not None else None
+    return clocks
+
+
+def load_prompts(subset: int, tokens: int, n_long: int, fixed: int) -> list[dict]:
+    """The job's prompt list: `subset` eval prompts with `tokens` greedy tokens, `n_long` long prompts with `fixed` tokens."""
+    rows = [json.loads(l) for l in (PROMPTS / "eval_set.jsonl").read_text().splitlines() if l.strip()][:subset]
+    longs = [json.loads(l) for l in (PROMPTS / "eval_long.jsonl").read_text().splitlines() if l.strip()]
+    longs = [r for r in longs if "id" in r][:n_long]
+    out = [{"id": r["id"], "kind": "eval", "prompt": r["prompt"], "n": tokens, "ignore_eos": False, "cap": int(r.get("max_tokens") or tokens),
+            "category": r["category"], "expected": r["expected"]} for r in rows]
+    return out + [{"id": r["id"], "kind": "long", "prompt": r["prompt"], "n": fixed, "ignore_eos": True} for r in longs]
+
+
 def find_run(run_id: str) -> Path:
-    """The run folder of an earlier run: this session's runs first, then session 6."""
+    """The run folder of an earlier run: this session's runs first, then session 6. A run id with a slash is a path to
+    a run folder, absolute or from the repository root (a reference recorded by another session)."""
+    if "/" in run_id:
+        for cand in (Path(os.path.expanduser(run_id)), ROOT / run_id):
+            if cand.is_dir():
+                return cand
+        raise FileNotFoundError(f"no run folder at {run_id}")
     for base in (RUNS, SESSION6 / "runs"):
         if (base / run_id).exists():
             return base / run_id
@@ -202,25 +269,26 @@ def main(argv=None) -> int:
     ap.add_argument("--reduce-dtype", choices=["float32", "bfloat16"])
     ap.add_argument("--reference", nargs="*", default=None, help="R0 run ids to compare with (default: by model and device)")
     ap.add_argument("--save-reference", action="store_true")
-    ap.add_argument("--transformers", action="store_true", help="R0: compare with transformers generate after the run")
+    ap.add_argument("--transformers", action="store_true", help="R0: compare with transformers generate after the run (on this machine)")
     ap.add_argument("--transformers-dir", default=None, help="safetensors directory for --transformers (default: the placement's model; "
                     "needed when the placement reads a GGUF file)")
-    ap.add_argument("--tokenizer-dir", default=None, help="tokenizer directory for the prompts (default: the placement's model; the "
-                    "tokenizer of the GGUF file is built by transformers from its metadata)")
+    ap.add_argument("--tokenizer-dir", default=None, help="tokenizer directory for the prompts, on the coordinator host (default: the "
+                    "placement's model; the tokenizer of a GGUF file is built by transformers from its metadata)")
     ap.add_argument("--force", action="store_true", help="skip the planner's budget check (ranks still enforce budgets)")
     ap.add_argument("--mps-fraction-cap", action="store_true", help="also set torch's MPS memory fraction to the budget")
+    ap.add_argument("--timeline", action="store_true", help="record compute, waits and bytes per rank and write the timeline files")
+    ap.add_argument("--ship-weights", action=argparse.BooleanOptionalAction, default=SHIP_DEFAULT,
+                    help="the coordinator sends every rank its slices; only the coordinator host holds the model")
+    ap.add_argument("--cache-dir", default=None, help="slice cache of the ranks (default ~/.nocturne/cache on each host)")
+    ap.add_argument("--dtype", default=None, help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     global OUT, RUNS, HASHES
     OUT = Path(a.session_dir).resolve()
     RUNS, HASHES = OUT / "runs", OUT / "model_hashes.json"
 
-    import torch
-    from .gguf_source import load_tokenizer
     from ...bench.check.graders import grade
-    from .engine import chat_ids
-    from .hybrid import RankFailed, decode_frames
-    from .launch import Launch
-    from .plan import PlanError, frames_per_step
+    from .operate import Operator
+    from .plan import PlanError
 
     run_dir = RUNS / a.run_id
     if (run_dir / "record.json").exists():
@@ -242,106 +310,111 @@ def main(argv=None) -> int:
            "git": {"sha": subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip(),
                    "dirty": bool(subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "nocturne/engines"],
                                                 capture_output=True, text=True).stdout.strip())},
-           "torch_coordinator": torch.__version__, "args": vars(a), "outcome": None}
+           "args": vars(a), "outcome": None}
 
     def save():
         (run_dir / "record.json").write_text(json.dumps(rec, indent=1, default=str))
 
     try:
-        L = Launch(str(pl_path), a.peers, str(run_dir), force=a.force, mps_fraction_cap=a.mps_fraction_cap,
-                   reduce_dtype=a.reduce_dtype, tag=a.run_id, log=log)
+        op = Operator(str(pl_path), a.peers, run_dir, tag=a.run_id, log=log, ship_weights=a.ship_weights, cache_dir=a.cache_dir)
     except PlanError as e:
         rec["outcome"], rec["error"] = "plan_rejected", str(e)
-        log(f"[run] planner rejected the placement: {e}")
+        log(f"[run] the placement is rejected: {e}")
         save()
         return 3
-    rec["model"] = {"key": L.placement.model, "dir": L.model_dir}
-    rec["reduce_dtype"] = L.placement.reduce_dtype
-    rec["planned"] = [s.to_json() for s in L.specs]
-    pred = frames_per_step(L.specs)
+    import socket
+    rec["model"] = {"key": op.placement.model, "dir": op.model_dir}
+    rec["coordinator"] = {"host": op.coord, "hostname": op.peer(op.coord).get("host"), "operator_hostname": socket.gethostname().split(".")[0],
+                          "remote": bool(op.peer(op.coord).get("ssh")), "run_dir": op.host_dir(op.coord)}
+    job = op.job(load_prompts(a.subset, a.tokens, a.long, a.fixed), force=a.force, mps_fraction_cap=a.mps_fraction_cap,
+                 reduce_dtype=a.reduce_dtype, timeline=a.timeline, tokenizer_dir=a.tokenizer_dir, dtype=a.dtype)
+    meta = {q["id"]: q for q in job["prompts"]}
+    try:
+        op.push_job(job)
+        pl = op.plan()
+    except Exception as e:      # noqa: BLE001
+        pl = {"ok": False, "fatal": True, "error": f"{type(e).__name__}: {e}"}
+    if not pl["ok"]:
+        rec["outcome"], rec["error"] = ("preflight_failed" if pl.get("fatal") else "plan_rejected"), pl["error"]
+        log(f"[run] {'the coordinator host could not plan' if pl.get('fatal') else 'planner rejected the placement'}: {pl['error']}")
+        rec["commands"] = op.commands()
+        save()
+        return 4 if pl.get("fatal") else 3
+    rec["reduce_dtype"] = pl["reduce_dtype"]
+    rec["planned"] = pl["specs"]
+    rec["planner_host"] = pl.get("planner_host")
+    pred = pl["frames_predicted"]
     rec["frames"] = {"predicted": pred}
     try:
-        rec["preflight"] = preflight(L, log)
-        rec["model"]["sha256"] = rec["preflight"]["hosts"][L.specs[0].host]["model_sha256"]
+        rec["preflight"] = preflight(op, log, ship=a.ship_weights, timeline=a.timeline)
+        rec["model"]["sha256"] = rec["preflight"]["hosts"][op.coord]["model_sha256"]
     except Exception as e:      # noqa: BLE001
         rec["outcome"], rec["error"] = "preflight_failed", str(e)
         log(f"[run] preflight failed: {e}")
+        rec["commands"] = op.commands()
         save()
         return 4
     save()
-    co = None
+    crec = {}
     try:
-        t0 = time.time()
-        co = L.start()
-        rec["load_s"] = time.time() - t0
-        tok = load_tokenizer(os.path.expanduser(a.tokenizer_dir) if a.tokenizer_dir else L.local_model_dir)
-        rows = [json.loads(l) for l in (PROMPTS / "eval_set.jsonl").read_text().splitlines() if l.strip()][:a.subset]
-        longs = [json.loads(l) for l in (PROMPTS / "eval_long.jsonl").read_text().splitlines() if l.strip()]
-        longs = [r for r in longs if "id" in r][:a.long]
-        m0 = co.metrics()
-        out, logits = [], {}
-        for r, fixed in [(r, None) for r in rows] + [(r, a.fixed) for r in longs]:
-            ids = chat_ids(tok, [{"role": "user", "content": r["prompt"]}])
-            n = fixed or a.tokens
-            res = co.generate(ids, n, ignore_eos=bool(fixed), rid=r["id"], first_logits=True)
-            logits[r["id"]] = res["first_logits"].numpy().astype(np.float32)
-            item = {"id": r["id"], "kind": "long" if fixed else "eval", "prompt_n": len(ids), "tokens": res["tokens"],
-                    "finish": res["finish_reason"], "ms_per_step": res["timings"]["predicted_per_token_ms"]}
-            if not fixed:
-                cap = int(r.get("max_tokens") or a.tokens)
-                text = tok.decode([t for t in res["tokens"][:cap] if t not in co.cfg.eos_token_ids], skip_special_tokens=True)
-                item.update({"category": r["category"], "cap": cap, "text": text, "score": grade(r["category"], text, r["expected"])})
-            else:
-                item["text"] = tok.decode(res["tokens"], skip_special_tokens=True)
-            out.append(item)
-            log(f"[run] {r['id']}: {len(res['tokens'])} tokens")
-        m1 = co.metrics()
-        steps = m1["decode_steps"] - m0["decode_steps"]
-        f0, f1 = decode_frames(m0), decode_frames(m1)
-        rec["frames"].update({"decode_steps": steps, "measured_per_step": (f1["sent_frames"] - f0["sent_frames"]) / steps if steps else None,
-                              "bytes_per_step": (f1["sent_bytes"] - f0["sent_bytes"]) / steps if steps else None,
-                              "per_link_per_step": {k: {kk: (v[kk] - f0["per_link"].get(k, {}).get(kk, 0)) / steps for kk in v}
-                                                    for k, v in f1["per_link"].items()} if steps else None})
-        rec["frames"]["formula_holds"] = rec["frames"]["measured_per_step"] == pred["total"]
-        rec["link_counters"] = {k: v["links"] for k, v in m1["ranks"].items()}
-        rec["ranks"] = [{k: v for k, v in r.items() if k != "links"} for r in m1["ranks"].values()]
-        rec["prompts"] = out
-        rec["outcome"] = "completed"
-    except RankFailed as e:
-        rec["outcome"], rec["error"] = "rank_failed", str(e)
-        log(f"[run] a rank failed: {e}")
-    except (ConnectionError, OSError) as e:
-        rec["outcome"], rec["error"] = "rpc_disconnect", f"{type(e).__name__}: {e}"
-        log(f"[run] link lost: {e}")
+        op.start_ranks()
+        rc = op.run_coordinator()
+        got = op.collect()
+        rec["collected"] = got
+        cpath = run_dir / "coordinator_record.json"
+        if cpath.exists():
+            crec = json.loads(cpath.read_text())
+        else:
+            crec = {"outcome": "error", "error": f"the coordinator process on {op.coord} ended with rc {rc} and left no record"}
     except Exception as e:      # noqa: BLE001
-        rec["outcome"], rec["error"] = "error", f"{type(e).__name__}: {e}"
+        crec = {"outcome": "error", "error": f"{type(e).__name__}: {e}"}
         log(traceback.format_exc())
     finally:
         try:
-            L.stop()
+            op.stop()
         except Exception as e:      # noqa: BLE001
             log(f"[run] stop: {e}")
-        rec["commands"] = L.commands()
-        save()
+        rec["commands"] = op.commands()
+    for k in ("load_s", "link_counters", "ranks", "requests", "shipping", "torch_coordinator", "error"):
+        if k in crec:
+            rec[k] = crec[k]
+    rec["frames"].update({k: v for k, v in (crec.get("frames") or {}).items() if k != "predicted"})
+    rec["outcome"] = crec.get("outcome") or "error"
+    if crec.get("clock"):
+        rec["clock"] = clock_report(crec["clock"], rec["preflight"], op.coord)
+    out = crec.get("prompts") or []
+    for item in out:
+        q = meta[item["id"]]
+        if item["kind"] == "eval":
+            item.update({"category": q["category"], "cap": q["cap"], "score": grade(q["category"], item["text"], q["expected"])})
+    rec["prompts"] = out
+    save()
     if rec["outcome"] != "completed":
+        log(f"[run] outcome {rec['outcome']}: {rec.get('error')}")
         return 1
 
+    if a.timeline:
+        from . import timeline
+        try:
+            rec["timeline"] = timeline.build(run_dir, rec.get("clock"), rec.get("requests"),
+                                             {"run_id": a.run_id, "model": op.placement.model, "placement": rec["placement"]["file"],
+                                              "date": rec["date"]})
+            if rec["timeline"]:
+                log(f"[run] timeline: {rec['timeline']['decode_bytes_per_step']:.0f} bytes per decode step by the recorder, "
+                    f"{rec['frames'].get('bytes_per_step')} by the link counters")
+        except Exception as e:      # noqa: BLE001 - a broken chart must not lose the run
+            rec["timeline"] = {"error": f"{type(e).__name__}: {e}"}
+            log(traceback.format_exc())
+    logits = dict(np.load(run_dir / "first_logits.npz"))
     if a.save_reference:
-        (run_dir / "reference.json").write_text(json.dumps({"run_id": a.run_id, "model": L.placement.model,
-                                                            "device": L.specs[0].device, "prompts": {p["id"]: p for p in out}}, indent=1))
-        np.savez_compressed(run_dir / "first_logits.npz", **logits)
+        (run_dir / "reference.json").write_text(json.dumps({"run_id": a.run_id, "model": op.placement.model,
+                                                            "device": op.slots[0].device, "prompts": {p["id"]: p for p in out}}, indent=1))
     if a.transformers:
-        import gc
-        L.coordinator.rank.model = None       # free the engine's weights before transformers loads its own copy
-        L.coordinator = co = None
-        gc.collect()
-        if torch.backends.mps.is_available():
-            torch.mps.empty_cache()
-        rec["transformers"] = transformers_check(L, out, a, log)
+        rec["transformers"] = transformers_check(op, out, a, log)
     refs = a.reference
     if refs is None:
-        devs = sorted({s.device.split(":")[0] for s in L.specs})
-        refs = [latest_reference(L.placement.model, d) for d in devs]
+        devs = sorted({s.device.split(":")[0] for s in op.slots})
+        refs = [latest_reference(op.placement.model, d) for d in devs]
         refs = [r for r in refs if r and r != a.run_id]
     rec["correctness"] = {r: compare(out, logits, *load_reference(r)) for r in refs}
     for r, c in rec["correctness"].items():
@@ -384,8 +457,8 @@ def transformers_check(L, out: list[dict], a, log) -> dict:
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
     from .engine import chat_ids
-    dev = L.specs[0].device
-    tdir = os.path.expanduser(a.transformers_dir) if a.transformers_dir else L.local_model_dir
+    dev = L.slots[0].device
+    tdir = os.path.expanduser(a.transformers_dir if a.transformers_dir else L.model_dir)
     from .gguf_source import load_tokenizer
     tok = load_tokenizer(os.path.expanduser(a.tokenizer_dir) if a.tokenizer_dir else tdir)
     model = AutoModelForCausalLM.from_pretrained(tdir, torch_dtype=torch.bfloat16).to(dev).eval()

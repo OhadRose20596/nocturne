@@ -145,7 +145,7 @@ def test_recorder_cursor_leaves_no_gap_inside_a_step(tmp_path):
     assert r.ev[-1][3] == 1 and r.ev[-1][4] == 4 and r.ev[-1][7] == 5 and r.ev[-1][1] >= r.ev[-2][2]
     head, ev = timeline.read_jsonl(r.write(tmp_path))
     assert head["rank"] == "s0/1" and head["events"] == 5 and head["cols"] == list(recorder.COLS) and len(ev) == 5
-    assert (tmp_path / "timeline_s0_1.jsonl").exists()
+    assert (tmp_path / "timeline_s0_1.jsonl.gz").exists()
 
 
 def test_nvidia_smi_line_parsing_and_command():
@@ -211,8 +211,8 @@ def test_timeline_on_gives_identical_tokens_and_logits(tiny, tmp_path):
         assert a["tokens"] == b["tokens"]
         assert torch.equal(a["first_logits"], b["first_logits"])
     assert co_off.rank.rec is None and co_off.run_dir is None
-    assert sorted(p.name for p in tmp_path.glob("timeline_*.jsonl")) == ["timeline_s0_0.jsonl", "timeline_s0_1.jsonl", "timeline_s0_2.jsonl",
-                                                                          "timeline_s1_0.jsonl"]
+    assert sorted(p.name for p in tmp_path.glob("timeline_*.jsonl.gz")) == ["timeline_s0_0.jsonl.gz", "timeline_s0_1.jsonl.gz", "timeline_s0_2.jsonl.gz",
+                                                                          "timeline_s1_0.jsonl.gz"]
 
 
 def test_clock_is_measured_at_start_and_end_without_a_timeline(tiny):
@@ -263,7 +263,7 @@ def test_build_writes_trace_breakdown_samples_and_html(tiny, tmp_path):
     specs, out, co, *_ = run(tiny, tp_pp_placement(free_ports(4)), tmp_path, timeline_on=True, n_tokens=14)
     s = timeline.build(tmp_path, co.clock_record(), co.requests, {"run_id": "t"}, steps=3)
     assert s["decode_steps"] == 26 and not s["not_aligned"]
-    tr = json.loads((tmp_path / "trace.json").read_text())
+    tr = json.loads(__import__("gzip").open(tmp_path / "trace.json.gz", "rt").read())
     x = [e for e in tr["traceEvents"] if e["ph"] == "X"]
     assert len(x) == sum(s["events"].values()) and all(e["dur"] >= 0 for e in x)
     assert {e["args"]["name"] for e in tr["traceEvents"] if e["ph"] == "M" and e["name"] == "thread_name"} >= {"s0/0 compute", "s1/0 communication"}
@@ -276,9 +276,9 @@ def test_build_writes_trace_breakdown_samples_and_html(tiny, tmp_path):
     data = json.loads(html.split("const D = ", 1)[1].split(";\nconst $", 1)[0])
     assert data["window"]["last_step"] - data["window"]["first_step"] == 2 and len(data["ranks"]) == 4 and data["spans"]
     assert (tmp_path / "samples_h.jsonl").exists() and "h" in s["hosts"] and s["hosts"]["h"]["ranks"]
-    head, _ = timeline.read_jsonl(tmp_path / "samples_rank_s0_0.jsonl")
+    head, _ = timeline.read_jsonl(tmp_path / "samples_rank_s0_0.jsonl.gz")
     assert head["host_level"] is True
-    assert timeline.read_jsonl(tmp_path / "samples_rank_s0_1.jsonl")[0]["host_level"] is False     # one host sampler per host
+    assert timeline.read_jsonl(tmp_path / "samples_rank_s0_1.jsonl.gz")[0]["host_level"] is False     # one host sampler per host
     assert timeline.main([str(tmp_path)]) == 0
 
 

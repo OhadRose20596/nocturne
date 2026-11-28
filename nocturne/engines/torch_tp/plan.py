@@ -6,7 +6,9 @@ balances total bytes per rank: heads first, then vocab rows by share, then MLP g
 Bytes assume bf16 unless the model carries quantization info (GGUF): then the stored block bytes of every tensor type are
 counted, per layer, and the workspace adds the largest transient dequantized chunk. Row split layers (o_proj, down_proj)
 may be cut only at block boundaries; heads and MLP rows are allocated in units that respect it. Workspace is an estimate.
-Global rank order is stage order, then rank order; gid 0 (stage 0, rank 0) is also the coordinator."""
+Global rank order is stage order, then rank order; gid 0 (stage 0, rank 0) is also the coordinator.
+Session 10: slots(placement) lists the ranks (host, port, device, order) without the model, so the operator can start
+the rank processes on any host; the full plan needs the model and runs where the coordinator runs."""
 import math
 from dataclasses import asdict, dataclass, field
 
@@ -224,6 +226,46 @@ def placement_from_dict(y: dict) -> Placement:
                      allow_mixed_devices=bool(y.get("allow_mixed_devices", False)))
 
 
+# ---- ranks without the model (session 10) --------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class RankSlot:
+    """Where a rank runs and its place in the order. Has the fields needed_peers and listen_addrs read from a RankSpec."""
+    gid: int
+    name: str
+    stage: int
+    stage_name: str
+    group_rank: int
+    group_size: int
+    host: str
+    device: str
+    port: int
+
+
+def coordinator_host(p: Placement) -> str:
+    """The host that runs the coordinator: rank 0 of the first stage. `coordinator: {host: ...}` must name the same host."""
+    if not p.stages or not p.stages[0].ranks:
+        raise PlanError("no stages")
+    host = p.stages[0].ranks[0].host
+    if p.coordinator_host and p.coordinator_host != host:
+        raise PlanError(f"the coordinator runs in rank 0 of the first stage, on {host}, not on {p.coordinator_host}")
+    return host
+
+
+def slots(p: Placement) -> list[RankSlot]:
+    """Ranks in global order from the placement alone. Checks what needs no model: stages, ports, the coordinator host."""
+    coordinator_host(p)
+    out, seen = [], set()
+    for si, s in enumerate(p.stages):
+        if not s.ranks:
+            raise PlanError(f"stage {s.name}: no ranks")
+        for i, r in enumerate(s.ranks):
+            if (r.host, r.port) in seen:
+                raise PlanError(f"port {r.port} used twice on {r.host}")
+            seen.add((r.host, r.port))
+            out.append(RankSlot(len(out), f"{s.name}/{i}", si, s.name, i, len(s.ranks), r.host, r.device, r.port))
+    return out
+
+
 # ---- helpers -----------------------------------------------------------------------------------------------------------
 def largest_remainder(x: list[float], total: int) -> list[int]:
     """Integers summing to `total`, each the floor of x[i] plus one for the largest remainders (ties to lower i)."""
@@ -310,9 +352,7 @@ def validate(d: Dims, p: Placement) -> None:
             if (r.host, r.port) in seen:
                 raise PlanError(f"port {r.port} used twice on {r.host}")
             seen.add((r.host, r.port))
-    if p.coordinator_host and p.coordinator_host != p.stages[0].ranks[0].host:
-        raise PlanError(f"the coordinator runs in rank 0 of the first stage, on {p.stages[0].ranks[0].host}, "
-                        f"not on {p.coordinator_host}")
+    coordinator_host(p)
 
 
 def plan(cfg, p: Placement, check_budget: bool = True) -> list[RankSpec]:
@@ -399,7 +439,7 @@ def plan(cfg, p: Placement, check_budget: bool = True) -> list[RankSpec]:
     return specs
 
 
-def needed_peers(spec: RankSpec, specs: list[RankSpec]) -> dict[int, str]:
+def needed_peers(spec, specs: list) -> dict[int, str]:
     """gid -> role ("grp", "up", "down") of every data link a rank needs: its group, the previous stage's leader,
     and, for a leader, every rank of the next stage."""
     p = {s.gid: "grp" for s in specs if s.stage == spec.stage and s.gid != spec.gid}
@@ -413,7 +453,7 @@ def needed_peers(spec: RankSpec, specs: list[RankSpec]) -> dict[int, str]:
     return p
 
 
-def listen_addrs(specs: list[RankSpec], hosts: dict[str, str]) -> dict[int, list[str]]:
+def listen_addrs(specs: list, hosts: dict[str, str]) -> dict[int, list[str]]:
     """Per rank, the addresses its inbound peers need: 127.0.0.1 for a peer on the same host, the host's chosen
     address for a peer on another host. Inbound peers are the coordinator (ctl link, gid 0's host) and every needed
     peer with a higher gid."""

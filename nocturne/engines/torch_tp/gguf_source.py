@@ -34,7 +34,25 @@ class TensorSource(Protocol):
     def read(self, name: str, rows: slice | None = None, cols: slice | None = None) -> tuple[torch.Tensor, str]: ...
 
 
+_OPEN: dict = {}
+
+
+def open_gguf(path: str | Path) -> "GgufSource":
+    """One GgufSource per file and file state (size, mtime). Reading the header of a real model takes seconds (the
+    tokenizer vocabulary), and a run opens the same file for the config, the planner, the loader and the shipper."""
+    p = Path(path)
+    if not p.is_file():
+        raise FileNotFoundError(f"GGUF file not found: {p}")
+    st = p.stat()
+    key = (str(p.resolve()), st.st_size, st.st_mtime_ns)
+    if key not in _OPEN:
+        _OPEN[key] = GgufSource(p)
+    return _OPEN[key]
+
+
 class GgufSource:
+    kind = "gguf"
+
     def __init__(self, path: str | Path):
         import gguf
         self.path = Path(path)
@@ -79,6 +97,11 @@ class GgufSource:
         return self._meta
 
     def config(self) -> ModelConfig:
+        if getattr(self, "_config", None) is None:
+            self._config = self._read_config()
+        return self._config
+
+    def _read_config(self) -> ModelConfig:
         a = self.arch_name
         n_heads = int(self._num("attention.head_count"))
         hidden = int(self._num("embedding_length"))
@@ -165,7 +188,7 @@ class GgufSource:
 
 def weight_meta(path: str) -> dict | None:
     """Tensor metadata of a .gguf file (for the planner's byte accounting); None for a safetensors directory."""
-    return GgufSource(path).meta() if str(path).endswith(".gguf") else None
+    return open_gguf(path).meta() if str(path).endswith(".gguf") else None
 
 
 def load_tokenizer(path: str):

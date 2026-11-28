@@ -3,11 +3,12 @@ Recorder: a cursor on time.monotonic_ns(). lap(kind) closes the span from the cu
 instant of a step belongs to exactly one span. Kinds: compute (ends after a device sync, so it is real device time),
 host_copy (tensor to the host, sum, tensor back to the device), send (bytes, destination), recv_wait (blocked on the
 upstream link or on a head rank, with source), allreduce_wait (blocked on a group peer), other (Python between steps).
-Events stay in memory and are written once, at shutdown, as timeline_<rank>.jsonl: a header line, then one JSON array
-per event in the order of COLS.
+Events stay in memory and are written once, at shutdown, as timeline_<rank>.jsonl.gz: a header line, then one JSON
+array per event in the order of COLS (gzip: a TP run of 500 steps is 7 MB per rank as plain text).
 Sampler: a thread that reads cumulative counters every 20 ms (process CPU seconds; for the host sampler also host busy
 CPU seconds and bytes per network interface) and, on a CUDA rank, nvidia-smi every 100 ms. Written as
-samples_rank_<rank>.jsonl (timeline.py merges them into samples_<host>.jsonl). Rates are formed later from differences (timeline.py)."""
+samples_rank_<rank>.jsonl.gz (timeline.py merges them into samples_<host>.jsonl). Rates are formed later from differences (timeline.py)."""
+import gzip
 import json
 import os
 import shutil
@@ -23,7 +24,7 @@ GPU_INTERVAL_MS = 100
 
 
 def file_name(prefix: str, rank: str) -> str:
-    return f"{prefix}_{rank.replace('/', '_')}.jsonl"
+    return f"{prefix}_{rank.replace('/', '_')}.jsonl.gz"
 
 
 class Recorder:
@@ -52,7 +53,7 @@ class Recorder:
         d = Path(run_dir)
         d.mkdir(parents=True, exist_ok=True)
         p = d / file_name("timeline", self.meta["rank"])
-        with p.open("w") as f:
+        with gzip.open(p, "wt") as f:
             f.write(json.dumps(dict(self.meta, events=len(self.ev))) + "\n")
             for e in self.ev:
                 f.write(json.dumps(e, separators=(",", ":")) + "\n")
@@ -129,13 +130,15 @@ class Sampler:
         return row
 
     def _loop(self) -> None:
+        t0, k = time.monotonic(), 0
         while not self._stop.is_set():
             try:
                 self.rows.append(self._sample())
             except Exception as e:      # noqa: BLE001 - a sampler must never end a run
                 self.meta["notes"].append(f"sample failed: {type(e).__name__}: {e}")
                 return
-            self._stop.wait(self.interval)
+            k = max(k + 1, int((time.monotonic() - t0) / self.interval) + 1)      # the next slot on the grid, never a burst
+            self._stop.wait(max(0.0, t0 + k * self.interval - time.monotonic()))
 
     def _gpu_loop(self) -> None:
         for line in self._smi.stdout:
@@ -161,7 +164,7 @@ class Sampler:
         d.mkdir(parents=True, exist_ok=True)
         p = d / file_name("samples_rank", self.meta["rank"])
         rows = sorted(self.rows, key=lambda r: r["t"])
-        with p.open("w") as f:
+        with gzip.open(p, "wt") as f:
             f.write(json.dumps(dict(self.meta, rows=len(rows))) + "\n")
             for r in rows:
                 f.write(json.dumps(r, separators=(",", ":")) + "\n")

@@ -25,9 +25,13 @@ def load_peers(path: str = PEERS) -> dict:
     return yaml.safe_load(Path(os.path.expanduser(path)).read_text())
 
 
-def model_dir_of(model: str, peers: dict) -> str:
+def model_dir_of(model: str, peers: dict, host: str | None = None) -> str:
     """The weights of a model key of peers.yaml, or a path: a safetensors directory or a .gguf file. `torch_model` wins;
-    else `path` when it is a .gguf (the llama.cpp file works for the torch engine too). Unexpanded (~ stays for ssh)."""
+    else `path` when it is a .gguf (the llama.cpp file works for the torch engine too). Unexpanded (~ stays for ssh).
+    A host may hold the model elsewhere: peers.<host>.models.<key> (a path) wins over the shared entry."""
+    own = ((peers.get("peers") or {}).get(host) or {}).get("models") or {}
+    if own.get(model):
+        return own[model]
     m = (peers.get("models") or {}).get(model)
     if m:
         if m.get("torch_model"):

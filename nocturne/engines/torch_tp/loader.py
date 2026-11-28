@@ -1,5 +1,7 @@
 """Load one rank's slice of a Qwen2 safetensors checkpoint with safe_open and tensor slicing. The full model is never
 materialized: every tensor is read as the slice the rank needs, straight to the compute device.
+load_from_source loads the same slices from any TensorSource: a GGUF file, or the cache of slices the coordinator
+shipped (shipping.CacheSource, session 10), which may hold GGUF blocks or plain safetensors values.
 LoadSpec says what a rank holds: a layer range, the head and MLP slice inside those layers, and vocab rows of the
 embedding and of the output head. With tied embeddings the head rows come from the embedding tensor; a rank holding
 both with the same rows keeps one tensor. A budget (bytes) is enforced while loading: the load stops with
@@ -91,7 +93,10 @@ def _wanted(names, cfg: Qwen2Config, spec: LoadSpec) -> dict[str, tuple]:
     return want
 
 
-def _load_gguf(source, cfg: Qwen2Config, spec: LoadSpec, device: str, dtype: torch.dtype, budget: int | None):
+def load_from_source(source, cfg: Qwen2Config, spec: LoadSpec, device: str, dtype: torch.dtype, budget: int | None,
+                     plain: bool = False):
+    """{name: tensor or QuantLinear on device}, bytes loaded. `plain`: the source holds safetensors values; every tensor
+    is converted to `dtype` and held as a plain tensor, exactly as the safetensors path of load_slices does."""
     meta = source.meta()
     want = _wanted(meta.keys(), cfg, spec)
     out: dict = {}
@@ -103,7 +108,7 @@ def _load_gguf(source, cfg: Qwen2Config, spec: LoadSpec, device: str, dtype: tor
             dim, s = sl
             rows, cols = (s, None) if dim == 0 else (None, s)
         t, qtype = source.read(src, rows, cols)
-        if t.dim() == 1:
+        if plain or t.dim() == 1:
             t = t.to(dtype) if t.is_floating_point() else t
             n = t.numel() * t.element_size()
             val = t
@@ -128,14 +133,17 @@ def _load_gguf(source, cfg: Qwen2Config, spec: LoadSpec, device: str, dtype: tor
     return out, nbytes
 
 
+_load_gguf = load_from_source
+
+
 def load_slices(model_dir: str | Path, cfg: Qwen2Config, spec: LoadSpec, device: str, dtype: torch.dtype = torch.bfloat16,
                 budget: int | None = None, log=print) -> tuple[dict[str, torch.Tensor], int]:
     """{name: tensor on device}, bytes loaded. Names keep the checkpoint's names; embedding and head hold only their
     rows (the model knows the offsets from the spec). A .gguf path loads quantized blocks as QuantLinear (2-D weights)."""
     model_dir = Path(model_dir)
     if model_dir.suffix == ".gguf":
-        from .gguf_source import GgufSource
-        return _load_gguf(GgufSource(model_dir), cfg, spec, device, dtype, budget)
+        from .gguf_source import open_gguf
+        return load_from_source(open_gguf(model_dir), cfg, spec, device, dtype, budget)
     files = weight_files(model_dir)
     want = _wanted(files.keys(), cfg, spec)
     by_file: dict[Path, list[str]] = {}

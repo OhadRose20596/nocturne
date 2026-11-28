@@ -45,6 +45,20 @@ class ModelConfig:
 Qwen2Config = ModelConfig       # name kept for old imports
 
 
+def config_to_json(cfg: ModelConfig) -> dict:
+    from dataclasses import asdict
+    return asdict(cfg)
+
+
+def config_from_json(d: dict) -> ModelConfig:
+    """A ModelConfig that travelled in the PLAN message (JSON turns its tuples into lists)."""
+    d = dict(d)
+    d["eos_token_ids"] = tuple(d.get("eos_token_ids") or ())
+    if d.get("rope_factors") is not None:
+        d["rope_factors"] = tuple(d["rope_factors"])
+    return ModelConfig(**d)
+
+
 def llama3_factors(head_dim: int, theta: float, rs: dict) -> tuple[float, ...]:
     """Per frequency divisors, the formula of convert_hf_to_gguf (conversion/llama.py, generate_extra_tensors)."""
     freqs = [1.0 / (theta ** (i / head_dim)) for i in range(0, head_dim, 2)]
@@ -68,8 +82,8 @@ def load_config(model_dir: str | Path) -> ModelConfig:
     """A safetensors directory (config.json) or a .gguf file."""
     p = Path(model_dir)
     if p.suffix == ".gguf":
-        from .gguf_source import GgufSource
-        return GgufSource(p).config()
+        from .gguf_source import open_gguf
+        return open_gguf(p).config()
     d = json.loads((p / "config.json").read_text())
     arch = d.get("model_type")
     get_arch(arch)

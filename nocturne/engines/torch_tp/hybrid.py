@@ -12,6 +12,9 @@ in fp32 rounded to the activation dtype once (or in bf16 for the control run), s
 identical activations, whatever their device.
 Session 10: after READY and before shutdown the coordinator measures every rank's clock offset on the ctl link
 (clock.py). With `timeline` in the plan every rank records spans (recorder.py) and writes them at shutdown.
+With `ship` in the plan a rank holds no model file: after its data links are up it receives its slices on the ctl
+link into a cache and loads them from there (shipping.py). The coordinator sends to all ranks at once while it loads
+its own slice from the local file. The model config always travels in the PLAN message.
 Security: listeners accept any peer; deferred by ADR-009. Never bind 0.0.0.0 (CLAUDE.md rule 7)."""
 import ctypes
 import json
@@ -25,10 +28,10 @@ import time
 import numpy as np
 import torch
 
-from . import clock, transport
-from .config import Qwen2Config, load_config
+from . import clock, shipping, transport
+from .config import Qwen2Config, config_from_json, config_to_json, load_config
 from .engine import LinkLost, REDUCE_DTYPES, _from_bytes, mem_metrics, pick_device
-from .loader import BudgetExceeded, LoadSpec, load_slices
+from .loader import BudgetExceeded, LoadSpec, load_from_source, load_slices
 from .model import Comm, Qwen2TP, pick_global
 from .plan import Dims, RankSpec, needed_peers
 from .recorder import Recorder, Sampler, ifaces_for
@@ -181,6 +184,8 @@ class RankRuntime:
                  dtype: str = "bfloat16", timeline: bool = False):
         self.rec = Recorder(spec.name, spec.gid, spec.host, device) if timeline else None
         self.sampler: Sampler | None = None
+        self.source = None                  # a shipping.CacheSource when the weights were shipped
+        self.shipping: dict | None = None
         self.spec, self.specs, self.cfg, self.model_dir = spec, specs, cfg, model_dir
         self.dtype = TORCH_DT[dtype]
         self.device, self.max_seq, self.reduce_dtype, self.phase, self.log = device, max_seq, reduce_dtype, phase, log
@@ -209,7 +214,10 @@ class RankRuntime:
         budget = self.spec.budget if self.enforce_budget else None
         t0 = time.time()
         try:
-            w, self.loaded_bytes = load_slices(self.model_dir, self.cfg, ls, self.device, dtype=self.dtype, budget=budget, log=self.log)
+            if self.source is not None:
+                w, self.loaded_bytes = load_from_source(self.source, self.cfg, ls, self.device, self.dtype, budget, plain=self.source.plain)
+            else:
+                w, self.loaded_bytes = load_slices(self.model_dir, self.cfg, ls, self.device, dtype=self.dtype, budget=budget, log=self.log)
             self.model = Qwen2TP(self.cfg, w, sl, self.device, self.max_seq, dtype=self.dtype, layers=self.spec.layers,
                                  embed_rows=self.spec.embed_rows, head_rows=self.spec.head_rows)
         except torch.cuda.OutOfMemoryError as e:
@@ -300,7 +308,8 @@ class RankRuntime:
         m = {"name": self.spec.name, "gid": self.spec.gid, "host": self.spec.host, "device": self.device,
              "pid": os.getpid(), "torch": torch.__version__, "loaded_tensor_bytes": self.loaded_bytes,
              "kv_bytes": self.kv_bytes, "idle": self.idle, "planned": self.spec.planned, "budget": self.spec.budget, "load_s": self.load_s,
-             "steps": self.steps, "allreduce_calls": self.comm.calls, "links": {k: l.counters.snapshot() for k, l in self.links.items()}}
+             "steps": self.steps, "allreduce_calls": self.comm.calls, "links": {k: l.counters.snapshot() for k, l in self.links.items()},
+             "shipping": self.shipping}
         m.update(mem_metrics(self.device))
         m.update(cuda_metrics(self.device))
         m.update(footprint())
@@ -439,8 +448,8 @@ def host_samplers(specs: list[RankSpec]) -> set[int]:
     return set(first.values())
 
 
-def rank_main(addrs: list[str], port: int, model_dir: str, device: str | None, log=_flush_print,
-              run_dir: str | None = None) -> int:
+def rank_main(addrs: list[str], port: int, model_dir: str | None, device: str | None, log=_flush_print,
+              run_dir: str | None = None, cache_dir: str | None = None) -> int:
     """A rank process (gid > 0): wait for the coordinator's ctl link and plan, link up, load, serve."""
     device = pick_device(device)
     phase = transport.Phase()
@@ -458,7 +467,8 @@ def rank_main(addrs: list[str], port: int, model_dir: str, device: str | None, l
     pl = json.loads(bytes(payload).decode())
     specs = [RankSpec.from_json(s) for s in pl["specs"]]
     spec = specs[pl["gid"]]
-    cfg = load_config(model_dir)
+    ship = bool(pl.get("ship"))
+    cfg = config_from_json(pl["cfg"]) if pl.get("cfg") else load_config(model_dir)
     timeline = bool(pl.get("timeline"))
     out_dir = (run_dir or default_run_dir(pl.get("run_tag"))) if timeline else None
     rt = RankRuntime(spec, specs, cfg, model_dir, device, pl["max_seq_len"], pl["reduce_dtype"], phase, log,
@@ -467,6 +477,12 @@ def rank_main(addrs: list[str], port: int, model_dir: str, device: str | None, l
         rt.start_sampler(addrs, spec.gid in host_samplers(specs))
     try:
         links = build_links(rt, pl["hosts"], listener, pending)
+        if not ship and not model_dir:       # reported after the links are up, so the coordinator reads it instead of waiting for a link
+            raise RuntimeError("started without --model, and the plan ships no weights")
+        if ship:
+            root = shipping.cache_root(cache_dir)
+            manifest, rt.shipping = shipping.receive_slices(ctl, root, log)
+            rt.source = shipping.CacheSource(manifest, root)
         if device == "mps" and pl.get("mps_fraction_cap") and spec.budget:
             torch.mps.set_per_process_memory_fraction(spec.budget / torch.mps.recommended_max_memory())
         rt.load()
@@ -497,8 +513,11 @@ class Coordinator:
     def __init__(self, specs: list[RankSpec], model_dir: str, hosts: dict[str, str], listen_addrs: list[str],
                  max_seq_len: int, reduce_dtype: str, prefill_max: int, device: str | None = None, log=_flush_print,
                  enforce_budget: bool = True, mps_fraction_cap: bool = False, ready_timeout_s: float = 1800.0,
-                 dtype: str = "bfloat16", timeline: bool = False, run_dir: str | None = None, run_tag: str | None = None):
+                 dtype: str = "bfloat16", timeline: bool = False, run_dir: str | None = None, run_tag: str | None = None,
+                 ship_weights: bool = False, cache_dir: str | None = None):
         self.log, self.specs, self.max_seq_len, self.prefill_max = log, specs, max_seq_len, prefill_max
+        self.ship_weights, self.cache_dir = ship_weights, cache_dir
+        self.shipping: dict | None = None
         self.run_dir = (run_dir or default_run_dir(run_tag)) if timeline else None
         self.clock: dict = {"start": {}, "end": {}}
         self.requests: list[dict] = []
@@ -525,17 +544,43 @@ class Coordinator:
     def _bring_up(self, specs, hosts, model_dir, max_seq_len, reduce_dtype, enforce_budget, mps_fraction_cap, dtype,
                   timeline, run_tag, ready_timeout_s) -> None:
         log, me = self.log, specs[0]
+        ship = self.ship_weights and len(specs) > 1
+        source = manifests = memo = None
+        if ship:        # every slice of every rank is named and hashed before any rank is told to expect weights
+            t0 = time.time()
+            root = shipping.cache_root(self.cache_dir)
+            model_sha, sums = shipping.model_identity(model_dir, root / "file_hashes.json")
+            source = shipping.open_source(model_dir)
+            memo, memo_path = shipping.load_memo(root, model_sha)
+            known = len(memo)
+            manifests = {s.gid: shipping.build_manifest(source, self.cfg, shipping.load_spec_of(s, self.cfg), model_sha, memo) for s in specs[1:]}
+            if len(memo) != known:
+                shipping.save_memo(memo, memo_path)
+            self.shipping = {"model_sha256": model_sha, "model_files": sums, "kind": source.kind, "manifest_s": time.time() - t0,
+                             "slices_hashed": len(memo) - known, "ranks": {}}
+            log(f"[ship] manifests for {len(manifests)} ranks, {sum(m['total_bytes'] for m in manifests.values()) / 1e9:.3f} GB, "
+                f"{len(memo) - known} slices hashed in {time.time() - t0:.1f} s")
         plan_msg = {"specs": [s.to_json() for s in specs], "hosts": hosts, "max_seq_len": max_seq_len,
                     "reduce_dtype": reduce_dtype, "enforce_budget": enforce_budget, "mps_fraction_cap": mps_fraction_cap,
-                    "dtype": dtype, "timeline": timeline, "run_tag": run_tag}
+                    "dtype": dtype, "timeline": timeline, "run_tag": run_tag, "ship": ship, "cfg": config_to_json(self.cfg)}
         for s in specs[1:]:
             link = connect_link(address(s, me.host, hosts), s.port, {"role": "ctl"}, self.phase)
             link.sock.settimeout(CTL_TIMEOUT_S)
             link.send(transport.KIND_PLAN, json.dumps(dict(plan_msg, gid=s.gid)).encode(), "uint8")
             self.ctl[s.gid] = link
         links = build_links(self.rank, hosts, self.listener, [])
+        threads = []
+        if ship:
+            stats, ship_errors, threads = shipping.ship_all(self.ctl, source, manifests, {s.gid: s.name for s in specs})
         self.rank.load()
         self.rank.attach(links, None)
+        if ship:
+            for t in threads:
+                t.join()
+            self.shipping["ranks"] = stats
+            self.shipping["ship_s"] = max((v["ship_s"] for v in stats.values()), default=0.0)
+            if ship_errors:
+                raise RankFailed("; ".join(sorted(ship_errors)))
         self.ready = {}
         errors = []
         for gid, link in self.ctl.items():
@@ -547,6 +592,8 @@ class Coordinator:
                 errors.append(f"{msg['rank']}: {msg['error']}")
             elif kind == transport.KIND_READY:
                 self.ready[gid] = msg
+                if self.shipping is not None and msg.get("shipping"):
+                    self.shipping["ranks"].setdefault(specs[gid].name, {}).update(msg["shipping"])
             else:
                 errors.append(f"{specs[gid].name}: unexpected {transport.KIND_NAMES.get(kind, kind)}")
         if errors:

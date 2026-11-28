@@ -1,11 +1,12 @@
-"""Timeline of one recorded run (session 10, A3): reads timeline_<rank>.jsonl and samples_rank_<rank>.jsonl of a run folder,
-puts every time on the coordinator's monotonic clock (clock.py), and writes trace.json (Trace Event Format, opens in
-ui.perfetto.dev), breakdown.csv (per step and rank: ms per kind, bytes per peer), samples_<host>.jsonl (aligned), and
+"""Timeline of one recorded run (session 10, A3): reads timeline_<rank>.jsonl.gz and samples_rank_<rank>.jsonl.gz of a run
+folder, puts every time on the coordinator's monotonic clock (clock.py), and writes trace.json.gz (Trace Event Format,
+opens in ui.perfetto.dev as it is), breakdown.csv (per step and rank: ms per kind, bytes per peer), samples_<host>.jsonl (aligned), and
 timeline.html (per rank one compute row and one communication row, colors by peer; bytes per link).
 Usage: python -m nocturne.engines.torch_tp.timeline <run_dir> [--req N] [--from-step K] [--steps 3]
 The clock offsets and the request list come from record.json (keys `clock`, `requests`) in the run folder."""
 import argparse
 import csv
+import gzip
 import json
 import sys
 from pathlib import Path
@@ -19,7 +20,7 @@ TEMPLATE = Path(__file__).with_name("timeline_page.html")
 
 # ---- loading and alignment -----------------------------------------------------------------------------------------------
 def read_jsonl(path: Path) -> tuple[dict, list]:
-    with path.open() as f:
+    with (gzip.open(path, "rt") if path.suffix == ".gz" else path.open()) as f:
         head = json.loads(f.readline())
         return head, [json.loads(l) for l in f if l.strip()]
 
@@ -29,7 +30,7 @@ def load(run_dir: str | Path, clocks: dict | None = None) -> dict:
     d = Path(run_dir)
     clocks = clocks or {}
     ranks, samples = [], []
-    for p in sorted(d.glob("timeline_*.jsonl")):
+    for p in sorted(d.glob("timeline_*.jsonl*")):
         meta, ev = read_jsonl(p)
         c = clocks.get(meta["rank"]) or {}
         st, en = c.get("start") or clock.ZERO, c.get("end")
@@ -39,7 +40,7 @@ def load(run_dir: str | Path, clocks: dict | None = None) -> dict:
             e["t1"] = clock.to_coordinator(e.pop("t1_ns"), st, en)
         ranks.append({"meta": meta, "events": events, "aligned": bool(c.get("start")) or meta["gid"] == 0})
     ranks.sort(key=lambda r: r["meta"]["gid"])
-    for p in sorted(d.glob("samples_rank_*.jsonl")):
+    for p in sorted(d.glob("samples_rank_*.jsonl*")):
         meta, rows = read_jsonl(p)
         c = clocks.get(meta["rank"]) or {}
         st, en = c.get("start") or clock.ZERO, c.get("end")
@@ -268,12 +269,13 @@ def build(run_dir: str | Path, clocks: dict | None = None, requests: list[dict] 
     write_breakdown(rows, d / "breakdown.csv")
     summ = summary(rows)
     hosts = write_host_samples(run, d)
-    (d / "trace.json").write_text(json.dumps(trace(run), separators=(",", ":")))
+    with gzip.open(d / "trace.json.gz", "wt") as f:
+        json.dump(trace(run), f, separators=(",", ":"))
     window = pick_window(rows, req, from_step, steps)
     write_html(page_data(run, rows, summ, clocks or {}, hosts, info or {}, window), d / "timeline.html")
     summ.update({"hosts": hosts, "events": {rk["meta"]["rank"]: len(rk["events"]) for rk in run["ranks"]}, "all_bytes": all_bytes(run),
-                 "files": ["trace.json", "breakdown.csv", "timeline.html"] + sorted(p.name for p in d.glob("timeline_*.jsonl")) +
-                          sorted(p.name for p in d.glob("samples_*.jsonl")),
+                 "files": ["trace.json.gz", "breakdown.csv", "timeline.html"] + sorted(p.name for p in d.glob("timeline_*.jsonl*")) +
+                          sorted(p.name for p in d.glob("samples_*.jsonl*")),
                  "not_aligned": [rk["meta"]["rank"] for rk in run["ranks"] if not rk["aligned"]]})
     return summ
 
@@ -291,7 +293,7 @@ def main(argv=None) -> int:
             "date": rec.get("date")}
     s = build(a.run_dir, rec.get("clock"), rec.get("requests"), info, a.req, a.from_step, a.steps)
     if s is None:
-        print(f"no timeline_*.jsonl in {a.run_dir}")
+        print(f"no timeline_*.jsonl.gz in {a.run_dir}")
         return 1
     print(f"decode steps {s['decode_steps']}, bytes per decode step {s['decode_bytes_per_step']}, wrote {', '.join(s['files'][:3])}")
     return 0

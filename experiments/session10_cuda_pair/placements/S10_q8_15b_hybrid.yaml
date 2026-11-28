@@ -1,0 +1,19 @@
+# Session 10 V3: 1.5B Q8_0, hybrid: a TP pair for layers 0 to 13, one rank for layers 14 to 27 and the head, M5 loopback
+model: ~/models/gguf/Qwen2.5-1.5B-Instruct-Q8_0.gguf
+coordinator: {host: m5}
+reduce_dtype: float32
+max_seq_len: 4096
+prefill_max: 256
+granule: 128
+stages:
+  - name: s0
+    layers: [0, 14]
+    embed: true
+    ranks:
+      - {host: m5, device: mps, port: 50070}
+      - {host: m5, device: mps, port: 50071}
+  - name: s1
+    layers: [14, 28]
+    lm_head: true
+    ranks:
+      - {host: m5, device: mps, port: 50072}

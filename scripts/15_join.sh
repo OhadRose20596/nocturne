@@ -300,7 +300,7 @@ for f in "$HOME"/models/*.gguf "$HOME"/models/gguf/*.gguf; do
 done
 fact models "$MODELS"; fact gguf_models "$GGUFS"
 if [ -n "$MODELS$GGUFS" ]; then check models PASS "hf: ${MODELS:-none}; gguf: $(printf '%s' "$GGUFS" | tr ',' '\n' | grep -c .) file(s)"
-else check models FAIL "none under ~/models/hf or ~/models/*.gguf. The coordinator copies them (16_join_apply.py prints the commands)"; fi
+else check models SKIP "none under ~/models/hf or ~/models/*.gguf. Fine for a worker of the torch engine (the coordinator ships its slices); llama.cpp cells and a coordinator host need the file (16_join_apply.py prints the copy commands)"; fi
 log disk 'df -h "$HOME" | tail -1'
 
 # ---- firewall

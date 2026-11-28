@@ -7,7 +7,8 @@ compare: greedy output against transformers generate (stage 1 and 2 of the B1t p
 Session 6, hybrid placement (stages of TP groups; README "Placement file"):
   python -m nocturne.engines.torch_tp plan --placement <yaml> [--force]          planner table and frame formula
   python -m nocturne.engines.torch_tp launch --placement <yaml> --port 8092       start every rank, serve HTTP
-  python -m nocturne.engines.torch_tp rank --listen <addr[,addr]> --port N --model <dir> --device mps   (started by launch)"""
+  python -m nocturne.engines.torch_tp rank --listen <addr[,addr]> --port N [--model <dir>] --device mps   (started by the operator)
+  python -m nocturne.engines.torch_tp.coordinate --job <job.json>   (the coordinator of a recorded run, started by hybrid_run)"""
 import argparse
 import sys
 
@@ -33,8 +34,11 @@ def main(argv=None):
     c.add_argument("--max-seq-len", type=int, default=4096); c.add_argument("--device")
     r = sub.add_parser("rank")
     r.add_argument("--listen", required=True, help="comma separated addresses chosen on purpose (never 0.0.0.0)")
-    r.add_argument("--port", type=int, required=True); r.add_argument("--model", required=True); r.add_argument("--device")
+    r.add_argument("--port", type=int, required=True); r.add_argument("--device")
+    r.add_argument("--model", default=None, help="local weights; leave out when the coordinator ships them")
     r.add_argument("--name", default=""); r.add_argument("--tag", default="", help="run tag, lets the launcher find the process")
+    r.add_argument("--run-dir", default=None, help="where this rank writes its timeline files")
+    r.add_argument("--cache-dir", default=None, help="slice cache for shipped weights (default ~/.nocturne/cache)")
     pl = sub.add_parser("plan")
     pl.add_argument("--placement", required=True); pl.add_argument("--peers", default="~/.nocturne/peers.yaml")
     pl.add_argument("--force", action="store_true", help="print the plan even when a rank is over its budget")
@@ -46,7 +50,9 @@ def main(argv=None):
     if a.cmd == "rank":
         import os
         from .hybrid import rank_main
-        return rank_main(a.listen.split(","), a.port, os.path.expanduser(a.model), a.device)
+        return rank_main(a.listen.split(","), a.port, os.path.expanduser(a.model) if a.model else None, a.device,
+                         run_dir=os.path.expanduser(a.run_dir) if a.run_dir else None,
+                         cache_dir=os.path.expanduser(a.cache_dir) if a.cache_dir else None)
     if a.cmd == "plan":
         import os
         from .config import load_config
