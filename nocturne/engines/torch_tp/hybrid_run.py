@@ -380,6 +380,8 @@ def main(argv=None) -> int:
             rec[k] = crec[k]
     rec["frames"].update({k: v for k, v in (crec.get("frames") or {}).items() if k != "predicted"})
     rec["outcome"] = crec.get("outcome") or "error"
+    if rec.get("shipping"):       # two hashes of the model: the coordinator's own, and the operator's shell command on that host
+        rec["shipping"]["agrees_with_preflight"] = rec["shipping"].get("model_files") == rec["preflight"]["hosts"][op.coord].get("model_sha256")
     if crec.get("clock"):
         rec["clock"] = clock_report(crec["clock"], rec["preflight"], op.coord)
     out = crec.get("prompts") or []

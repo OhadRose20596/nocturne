@@ -254,6 +254,10 @@ def test_recorded_spans_tile_every_step_and_bytes_equal_the_transport_counters(t
     assert {"s0/0 -> s0/1", "s0/0 -> s1/0", "s1/0 -> s0/0", "s0/2 -> s0/0"} <= set(s["links"])
     # the group peers of a TP stage exchange the same bytes both ways
     assert s["links"]["s0/1 -> s0/2"]["bytes"] == s["links"]["s0/2 -> s0/1"]["bytes"]
+    # direction: the last stage receives a hidden state (fp32 here, 64 values) and sends back a head frame with no payload
+    last = next(r for r in rows if r["rank"] == "s1/0" and r["phase"] == "decode")
+    assert last["sent"] == {"s0/0": transport.frame_bytes(0)} and last["recv"] == {"s0/0": transport.frame_bytes(64 * 4, 2)}
+    assert s["links"]["s0/0 -> s1/0"]["bytes"] == 10 * transport.frame_bytes(64 * 4, 2) and s["links"]["s1/0 -> s0/0"]["bytes"] == 10 * 16
     for row in rows:                                   # the kinds add up to the step
         assert sum(row[k] for k in recorder.KINDS) == pytest.approx(row["t1"] - row["t0"], abs=50)
 
