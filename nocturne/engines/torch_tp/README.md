@@ -4,6 +4,7 @@ Our own PyTorch tensor parallel engine for Qwen2, Llama and Qwen3 (bf16 safetens
 Session 3 built the two rank engine (`serve`, `worker`, cell B1t of the bench).
 Session 6 added hybrid placement: PP stages, each a TP group of any size with uneven shares.
 Session 10 added: any host as coordinator, weights shipped by the coordinator, clock alignment, and a recorder with a timeline.
+Session 10 part 3 added the overlap options: several requests in flight, chunked prefill, two requests interleaved in a TP group, sends off the compute thread, and a host in several pipeline stages. All are off by default.
 The whole flow of a run is in `docs/ENGINE_DESIGN.md`. Where every number comes from is in `docs/MEASUREMENT.md`.
 Nothing here is evidence about llama.cpp, and nothing here picks the product engine (ADR-007 symmetric rule).
 
@@ -145,6 +146,25 @@ The coordinator host is the one the placement names. It needs the model file, `t
 peers.yaml keys added: `peers.<host>.models.<key>` (the model path on that host), `peers.<host>.run_root` (where that host writes its run files; default `~/.nocturne/runs`).
 The slice cache is never cleaned. Delete `~/.nocturne/cache/<model sha256>` by hand when a model is no longer used.
 
+## Overlap options (session 10, part 3)
+
+Design: `docs/ENGINE_DESIGN.md` section 11. Every option is off by default, and with every option off the engine sends the same frames and the same bytes as before.
+The rule: the tokens of a request do not depend on how the work was scheduled.
+
+| option of `hybrid_run` | default | what |
+|---|---|---|
+| `--slots K` | 1 | Up to K requests in flight. Every rank keeps K KV caches, and the planner counts them. The slot id travels in every TOKEN, HIDDEN and HEAD frame |
+| `--prefill-chunk C` | 0 | The prompt travels in chunks of C tokens. Only the last chunk gets a head result. A last chunk of one token joins the chunk before it |
+| `--tp-interleave 2` | 1 | Two ready requests go through a TP group in lockstep: both partials are sent before either sum is read. Needs `--slots 2` or more |
+| `--async-send` | off | A sender thread per rank sends in hand-over order. On CUDA the copy to the host is non blocking into pinned memory. On MPS and CPU the copy stays on the compute thread (`NOCTURNE_ASYNC_COPY` overrides) |
+
+A host in several stages is a placement, not a flag: name the host in more than one stage. Each stage is its own rank process and port. `host_budget_gb: {host: GB}` in the placement gives the planner a budget for all rank processes of a host together; it adds 150 MiB per CUDA process and 200 MiB per MPS process, and rejects a placement that goes over.
+
+With any of the first three options on, the coordinator takes all prompts of the run at once (`Coordinator.generate_many`). With all of them off it runs the prompts one by one, as before (`Coordinator.generate`).
+A run folder of a completed run can be a `--reference`. So a run with options is compared with the options-off run of the same placement.
+
+Added to the record: `overlap` (the options), `throughput` (tokens per second of the whole system), `frames.prefill_measured` against `frames.prefill_predicted`, `planned_hosts`, per rank `slots` and `async_send`, per prompt its slot and number of chunks, and with `--timeline` the busy share and the overlap share per rank and per device (`timeline.overlap`, `docs/MEASUREMENT.md` section 3.1).
+
 ## Network exposure
 
 Each rank opens one TCP port.
@@ -171,5 +191,6 @@ The record holds:
 ## Known limits
 
 - **MPS memory is allocated in heaps (torch 2.14.1).** A tensor of 10 MiB or more opens a 1 GiB heap on Apple Silicon. That 1 GiB is resident. So an MPS rank that holds any tensor of 10 MiB or more costs at least about 1.2 GB of real memory, whatever its budget. `torch.mps.set_per_process_memory_fraction` counts heaps, so it refuses a budget below about 1.07 GB as soon as a second large tensor arrives. Budgets are therefore enforced on tensor bytes (loader and KV). The footprint is reported next to them.
-- **Greedy only.** Decode runs one token at a time, with no micro batching.
+- **Greedy only.** Decode runs one token at a time per request. Requests in flight are never batched into one tensor.
+- **On a Mac `--async-send` moves only the socket send.** Two threads may not use the MPS device at once, so the copy to the host stays on the compute thread.
 - **No recovery.** A broken link ends the run.
