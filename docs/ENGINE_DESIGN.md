@@ -302,7 +302,7 @@ Every feature is an option. Every option is off by default. An option at its off
 Two things are not byte for byte the same, and the Codex review of part 3 named both (`experiments/session10_cuda_pair/REVIEW_CODEX_overlap.md`):
 
 - READY and the METRICS reply are JSON reports. They gained three fields (`slots`, `socket_buffers`, `async_send`), so they are longer. They carry no data.
-- With `--timeline` a frame carries the request number modulo 65536 (before part 3: modulo 16.7 million). So from request 65536 of one run on, a recorded frame differs from the frame of the old engine in that field. A rank rebuilds the full number from the last one it saw (`Recorder.full_req`), so the record keeps the requests apart.
+- With `--timeline` a frame carries the request number modulo 65536 (before part 3: modulo 16.7 million). So from request 65536 of one run on, a recorded frame differs from the frame of the old engine in that field. A rank rebuilds the full number from the last one it saw (`Recorder.full_req`), so the record keeps the requests apart. This holds while the numbers a rank sees move by less than 32768 at a time, which is always the case in a run: the counter starts at 1 and every rank sees every request.
 
 | option | off value | what it does | for |
 |---|---|---|---|
@@ -449,7 +449,7 @@ A frame is **in flight** from the start of its send until the receiver has read 
 
 When the sends and receives of a socket do not match in count or bytes, the frames in flight of the run are not known: one missing receive shifts every later match on that socket. Such a run has a busy share and no overlap share (`null` in the record, "n/a" on the page), and the links are named.
 
-**The correctness rule of a run with options.** A run is compared with every reference it names. When the reference is a run of the same placement file (same content hash), the same dtype and the same prefill chunk, the two differ in scheduling only, and every token of every prompt must match, the long prompts included (`correctness.<ref>.rule` is "every token"). Against any other reference the rule of the placements holds: seven of eight evaluation prompts and the same accuracy.
+**The correctness rule of a run with options.** A run is compared with every reference it names. When the reference is a run with the same placement content (the hash of the file, whatever its path), the same dtype, the same reduce dtype and the same prefill chunk, the two differ in scheduling only. Then every token of every prompt must match, the long prompts included, and the reference must hold every prompt of the run (`correctness.<ref>.rule` is "every token"). A reference saved with `--save-reference` carries the same four values. Against any other reference the rule of the placements holds: seven of eight evaluation prompts and the same accuracy.
 
 **A prompt of one token.** Every rank tells a decode frame from a prefill frame by its token count, on the old path as well. So the frames of a one token prompt are counted as decode frames, and the frame check of such a run does not hold. The step counts are right (one prefill step). No prompt of the project has one token.
 

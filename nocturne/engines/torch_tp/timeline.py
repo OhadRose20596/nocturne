@@ -233,7 +233,7 @@ def overlap(run: dict, requests: list[dict] | None = None, flights: dict | None 
         d["in"] += i
     per_device = {k: dict(shares(d["comp"], d["out"], d["in"]), ranks=d["ranks"]) for k, d in dev.items()}
     links = {k: {"frames": len(l["frames"]), "sent": l["sent"], "received": l["received"], "bytes_match": l["bytes_match"],
-                 "in_flight_ms_mean": length([(f[0], f[1]) for f in l["frames"]]) / len(l["frames"]) / 1e6 if l["frames"] else None}
+                 "in_flight_ms_mean": length([(f[0], f[1]) for f in l["frames"]]) / len(l["frames"]) / 1e6 if l["frames"] and k not in unmatched else None}
              for k, l in flights.items()}
     return {"window_ms": total / 1e6, "per_rank": per_rank, "per_device": per_device, "links": links,
             "unmatched_links": unmatched,

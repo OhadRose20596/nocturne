@@ -247,6 +247,8 @@ def load_reference(run_id: str) -> tuple[dict, dict]:
     d = find_run(run_id)
     if (d / "reference.json").exists():
         ref = json.loads((d / "reference.json").read_text())
+        if ref.get("numerics") is None and (d / "record.json").exists():     # a reference saved before the field existed
+            ref["numerics"] = numerics_of(json.loads((d / "record.json").read_text()))
     else:
         rec = json.loads((d / "record.json").read_text())
         if rec.get("outcome") != "completed":
@@ -259,12 +261,13 @@ def load_reference(run_id: str) -> tuple[dict, dict]:
 
 
 def numerics_of(rec: dict) -> list | None:
-    """What decides the numbers of a run: the placement file and its content hash, the dtype, the prefill chunk. Two runs
-    that agree on all of it differ in scheduling only (slots, pairs, where the sends run), and must give the same tokens."""
+    """What decides the numbers of a run: the content hash of the placement file (not its path), the dtype, the reduce
+    dtype, the prefill chunk. Two runs that agree on all of it differ in scheduling only (slots, pairs, where the sends
+    run), and must give the same tokens."""
     pl, args = rec.get("placement") or {}, rec.get("args") or {}
-    if not pl.get("file"):
+    if not pl.get("sha256"):
         return None
-    return [pl["file"], pl.get("sha256"), args.get("dtype"), int(args.get("prefill_chunk") or 0)]
+    return [pl["sha256"], args.get("dtype"), rec.get("reduce_dtype") or args.get("reduce_dtype"), int(args.get("prefill_chunk") or 0)]
 
 
 def scheduling_only(rec: dict, ref: dict) -> bool:
@@ -482,7 +485,8 @@ def main(argv=None) -> int:
     logits = dict(np.load(run_dir / "first_logits.npz"))
     if a.save_reference:
         (run_dir / "reference.json").write_text(json.dumps({"run_id": a.run_id, "model": op.placement.model,
-                                                            "device": op.slots[0].device, "prompts": {p["id"]: p for p in out}}, indent=1))
+                                                            "device": op.slots[0].device, "prompts": {p["id"]: p for p in out},
+                                                            "numerics": numerics_of(rec)}, indent=1))
     if a.transformers:
         rec["transformers"] = transformers_check(op, out, a, log)
     refs = a.reference
@@ -519,7 +523,7 @@ def latest_reference(model: str, device: str) -> str | None:
 
 def compare(out: list[dict], logits: dict, ref: dict, ref_logits: dict, exact: bool = False) -> dict:
     """`exact`: the reference is a run with the same numerics (numerics_of), so the two differ in scheduling only. Then
-    every token of every prompt must match, the long prompts included. Otherwise the rule of the placements holds:
+    every token of every prompt must match, the long prompts included, and the reference must hold every prompt. Otherwise the rule of the placements holds:
     seven of eight evaluation prompts and the same accuracy."""
     rp = ref["prompts"]
     missing = [p["id"] for p in out if p["id"] not in rp]       # a reference recorded with fewer prompts: compare what it has
@@ -536,7 +540,7 @@ def compare(out: list[dict], logits: dict, ref: dict, ref_logits: dict, exact: b
     longs = [p for p in out if p["kind"] == "long"]
     complete = bool(ev) and not any(i in ev_ids for i in missing)
     if exact:
-        met = complete and all(same) and all(p["tokens"] == rp[p["id"]]["tokens"] for p in longs)
+        met = complete and not missing and all(same) and all(p["tokens"] == rp[p["id"]]["tokens"] for p in longs)
     else:
         met = complete and sum(same) >= min(7, len(ev)) and acc == racc
     return {"rule": "every token" if exact else "seven of eight",

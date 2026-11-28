@@ -1352,6 +1352,7 @@ class Coordinator:
         finally:
             if reader is not None:
                 reader.stop()
+                self.reader_stuck = reader.thread.is_alive()      # after a failure it can be in the middle of a frame
         return results
 
     # ---- control ----------------------------------------------------------------------------------------------------------
@@ -1388,7 +1389,9 @@ class Coordinator:
 
     def shutdown(self) -> None:
         try:
-            if not self.clock["end"] and self.ctl and getattr(self, "stage0_remote", None) is not None:
+            if getattr(self, "reader_stuck", False):      # that thread still reads a control link: a clock exchange would race it
+                self.log("[hybrid] no end clock measurement: the head reader did not stop")
+            elif not self.clock["end"] and self.ctl and getattr(self, "stage0_remote", None) is not None:
                 for link in self.ctl.values():       # a dead rank must not hold the shutdown for the ctl timeout
                     link.sock.settimeout(END_CLOCK_TIMEOUT_S)
                 self.clock_sync(END_CLOCK_TIMEOUT_S)

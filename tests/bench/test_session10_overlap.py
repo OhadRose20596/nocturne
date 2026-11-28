@@ -1005,9 +1005,9 @@ def _socket_pair(monkeypatch, buf=212992):
     return transport.Link(c), transport.Link(d)
 
 
-def _capacity(monkeypatch) -> int:
+def _capacity(monkeypatch, buf=212992) -> int:
     """Bytes the two kernels take on one tuned link while nobody reads (it differs per kernel, so it is measured)."""
-    a, b = _socket_pair(monkeypatch)
+    a, b = _socket_pair(monkeypatch, buf)
     import time
     a.sock.setblocking(False)
     n, chunk, quiet = 0, b"x" * 8192, None
@@ -1166,6 +1166,8 @@ def test_a_large_head_frame_does_not_block_the_work_of_the_next_slot(big_vocab, 
     coordinator waits for the peer's partial, which comes after the head frame. The head frame is held until the
     coordinator has started slot B, so the order does not depend on timing."""
     prompts = [[5, 17, 99], [8, 61, 7]]
+    if _capacity(monkeypatch, 4096) >= 1 << 20:       # pass 4, N8: 528384 bytes on macOS; the test shows nothing where a link takes the frame
+        pytest.skip("this loopback takes a 1 MiB head frame unread")
     monkeypatch.setattr(transport, "SOCK_BUF", 4096)
     _, ref, _ = alone(big_vocab, tp2, prompts, 2)
     gate, seen = threading.Event(), {"token": 0, "head": 0}
@@ -1216,15 +1218,18 @@ def test_head_frames_are_read_while_the_scheduler_is_busy_and_the_reader_ends_wi
         co.shutdown()
 
 
-def test_a_lost_control_link_ends_a_run_with_slots(tiny4):
-    """Codex 1. The reader thread hands a failure on its link to the scheduler, which raises it."""
+def test_a_lost_control_link_ends_a_run_with_slots(tiny4, monkeypatch):
+    """Codex 1. The reader thread hands a failure on its link to the scheduler, which raises it. The wait for a head
+    frame is cut to 5 s here, so a failure that is not handed over shows as that time limit and not as a hang."""
     from nocturne.engines.torch_tp.engine import LinkLost
+    monkeypatch.setattr(hybrid, "CTL_TIMEOUT_S", 5.0)
     specs, co, th = boot(tiny4, pp3(free_ports(8)), slots=2)
     r = reqs(PROMPTS[:2], 40)
     r[0]["on_token"] = lambda tok: co.ctl[2].sock.shutdown(2)       # the head rank's control link breaks at the first token
     try:
-        with pytest.raises(LinkLost):
+        with pytest.raises(LinkLost) as e:
             co.generate_many(r)
+        assert "no head result" not in str(e.value)
     finally:
         for link in list(co.rank.links.values()):
             link.close()
@@ -1288,12 +1293,16 @@ def test_a_request_number_past_the_bits_of_the_frame_stays_apart_in_the_record(t
 class _FailingLink(_FakeLink):
     """The first frame cannot be sent; every later one can."""
 
+    def __init__(self):
+        super().__init__()
+        self.go = threading.Event()
+
     def send(self, kind, payload=b"", dtype=None, shape=(), aux0=0, aux1=0, decode=None):
         with self.lock:
             first = not getattr(self, "_started", False)
             self._started = True
         if first:
-            self._sleep(self.slow)
+            self.go.wait(10)                # the test lets the first frame fail when it has queued the second
             raise OSError("no route")
         self.sent.append((kind, bytes(payload), aux0, aux1))
 
@@ -1302,11 +1311,12 @@ def test_a_frame_behind_one_that_failed_is_not_sent_and_the_all_reduce_raises(mo
     """Codex 4. Two frames of a pair leave on threads. The first fails. The second must not take its place on the link
     (the peer tells all-reduce frames apart by order), the link is closed, and the all-reduce raises the failure."""
     monkeypatch.setattr(transport, "SMALL_FRAME", 8)
-    link = _FailingLink(slow=0.2)           # the second frame is queued while the first is still on its way to failing
+    link = _FailingLink()
     link.answers = [(4, 8), (1, 8)]
     comm = hybrid.GroupComm(0, 2, {1: link}, "cpu")
     ta = comm.send_partial(torch.full((4, 8), 1.0), 0)
-    tb = comm.send_partial(torch.full((1, 8), 2.0), 1)
+    tb = comm.send_partial(torch.full((1, 8), 2.0), 1)        # queued behind the first, which has not failed yet
+    link.go.set()
     for t in ta[2] + tb[2]:
         t.join(timeout=5)
     assert link.sent == [] and link.closed is True
@@ -1319,6 +1329,15 @@ def test_a_frame_behind_one_that_failed_is_not_sent_and_the_all_reduce_raises(mo
     with pytest.raises(ConnectionError, match="could not be sent"):
         comm.send_partial(torch.full((1, 8), 3.0))
     assert link.sent == []
+    # pass 4, N7: a receive that fails because the frame thread closed the link names the frame's failure, not the closed link
+    link = _FailingLink()
+    link.recv = lambda *a, **kw: (link.go.wait(10), (_ for _ in ()).throw(OSError("bad file descriptor")))[1]
+    comm = hybrid.GroupComm(0, 2, {1: link}, "cpu")
+    t = comm.send_partial(torch.full((4, 8), 1.0))
+    link.go.set()
+    t[2][0].join(timeout=5)
+    with pytest.raises(ConnectionError, match="an all-reduce frame could not be sent: OSError: no route"):
+        comm.recv_sum(t)
 
 
 def test_a_run_that_differs_in_scheduling_only_must_give_every_token(tmp_path):
@@ -1338,24 +1357,34 @@ def test_a_run_that_differs_in_scheduling_only_must_give_every_token(tmp_path):
     assert hybrid_run.compare(long_off, {}, ref, {})["criterion_met"] is True
     assert hybrid_run.compare(long_off, {}, ref, {}, exact=True)["criterion_met"] is False
     assert hybrid_run.compare([dict(p) for p in ev] + [dict(lng)], {}, ref, {}, exact=True)["criterion_met"] is True
-    # what makes a comparison exact: the reference is a run folder with the same placement file and hash, dtype and prefill chunk
+    # pass 4, N2: under this rule a prompt the reference lacks is a failure, a long prompt too
+    extra = [dict(p) for p in ev] + [dict(lng), {"id": "L2", "kind": "long", "tokens": [1, 2], "score": None}]
+    assert hybrid_run.compare(extra, {}, ref, {}, exact=True)["criterion_met"] is False
+    assert hybrid_run.compare(extra, {}, ref, {})["criterion_met"] is True
+    # what makes a comparison exact: the reference is a run with the same placement content, dtype, reduce dtype and prefill chunk
     d = tmp_path / "X_off_r1"
     d.mkdir()
     rec = {"run_id": "X_off_r1", "outcome": "completed", "prompts": ev, "placement": {"file": "p.yaml", "sha256": "abc"},
-           "args": {"dtype": None, "prefill_chunk": 0, "slots": 1}}
+           "reduce_dtype": "float32", "args": {"dtype": None, "prefill_chunk": 0, "slots": 1}}
     (d / "record.json").write_text(json.dumps(rec))
     np.savez(d / "first_logits.npz", e0=np.zeros(4, np.float32))
     got, _ = hybrid_run.load_reference(str(d))
-    mine = lambda **a: hybrid_run.numerics_of({"placement": {"file": "p.yaml", "sha256": "abc"}, "args": dict({"dtype": None, "prefill_chunk": 0}, **a)})
-    assert got["numerics"] == mine(slots=3, tp_interleave=2, async_send=True)             # scheduling options do not count
-    assert got["numerics"] != mine(prefill_chunk=16) and got["numerics"] != mine(dtype="float32")
-    assert got["numerics"] != hybrid_run.numerics_of({"placement": {"file": "p.yaml", "sha256": "other"}, "args": {}})
-    assert hybrid_run.numerics_of({"run_id": "old"}) is None
-    me = {"placement": {"file": "p.yaml", "sha256": "abc"}, "args": {"dtype": None, "prefill_chunk": 0, "slots": 4}}
-    assert hybrid_run.scheduling_only(me, got) is True
-    assert hybrid_run.scheduling_only(dict(me, args={"dtype": None, "prefill_chunk": 16}), got) is False
-    assert hybrid_run.scheduling_only(me, {"run_id": "R0", "prompts": {}}) is False          # a reference.json of another placement
-    assert hybrid_run.scheduling_only({"run_id": "old"}, {"numerics": None}) is False
+    me = lambda file="p.yaml", sha="abc", red="float32", **a: {"placement": {"file": file, "sha256": sha}, "reduce_dtype": red,
+                                                                "args": dict({"dtype": None, "prefill_chunk": 0}, **a)}
+    assert hybrid_run.scheduling_only(me(slots=3, tp_interleave=2, async_send=True), got) is True      # scheduling options do not count
+    assert hybrid_run.scheduling_only(me(file="/somewhere/else/p.yaml"), got) is True                   # pass 4, N1: the content counts, not the path
+    assert hybrid_run.scheduling_only(me(prefill_chunk=16), got) is False
+    assert hybrid_run.scheduling_only(me(dtype="float32"), got) is False
+    assert hybrid_run.scheduling_only(me(red="bfloat16"), got) is False
+    assert hybrid_run.scheduling_only(me(sha="other"), got) is False
+    assert hybrid_run.scheduling_only(me(), {"run_id": "R0", "prompts": {}}) is False                   # a reference without numerics
+    assert hybrid_run.numerics_of({"run_id": "old"}) is None and hybrid_run.scheduling_only({"run_id": "old"}, {"numerics": None}) is False
+    # pass 4, N1: a folder saved with --save-reference keeps its numerics, also one saved before the field existed
+    (d / "reference.json").write_text(json.dumps({"run_id": "X_off_r1", "prompts": {p["id"]: p for p in ev}}))
+    assert hybrid_run.scheduling_only(me(slots=2), hybrid_run.load_reference(str(d))[0]) is True
+    (d / "reference.json").write_text(json.dumps({"run_id": "X_off_r1", "prompts": {p["id"]: p for p in ev}, "numerics": ["abc", None, "float32", 16]}))
+    assert hybrid_run.scheduling_only(me(slots=2), hybrid_run.load_reference(str(d))[0]) is False
+    assert hybrid_run.scheduling_only(me(slots=2, prefill_chunk=16), hybrid_run.load_reference(str(d))[0]) is True
 
 
 def test_a_prompt_of_one_token_is_a_prefill_step(tiny4):
@@ -1400,6 +1429,7 @@ def test_a_run_with_an_unmatched_link_has_a_busy_share_and_no_overlap_share():
     for v in list(o["per_rank"].values()) + list(o["per_device"].values()):
         assert v["overlap_share"] is None and v["overlap_out_share"] is None and v["overlap_in_share"] is None and v["in_flight_share"] is None
     assert o["per_rank"]["a"]["busy_share"] == pytest.approx(0.3) and o["per_rank"]["b"]["busy_share"] == 0
+    assert o["links"]["a -> b"]["in_flight_ms_mean"] is None          # pass 4, N7: no number from shifted pairs
     full = overlap(_run(a, b + [_ev("recv_wait", 8, 9, "a", 100)]), [{"t0_mono_ns": 0, "t1_mono_ns": 10}])
     assert full["unmatched_links"] == [] and full["per_rank"]["a"]["overlap_share"] == pytest.approx(0.3)
 
@@ -1462,3 +1492,40 @@ def test_the_coordinator_empties_its_sender_before_a_clock_or_shutdown_frame(tin
         s.flush(0.5)
     hold.set()
     s.stop()
+
+
+@pytest.mark.parametrize("kind,error", [(transport.KIND_ERROR, "RankFailed"), (transport.KIND_METRICS_REPLY, "RuntimeError")])
+def test_a_frame_that_is_no_head_result_is_never_taken_for_one(tiny4, monkeypatch, kind, error):
+    """Pass 4, N4. Through the reader thread an ERROR frame ends the run with the rank's text, and a frame of any other
+    kind is named. Neither becomes a token."""
+    def send_head(self, res, flags, unit):
+        if res is not None:
+            self.ctl.send(kind, json.dumps({"rank": self.spec.name, "error": "boom"}).encode(), "uint8")
+    monkeypatch.setattr(hybrid.RankRuntime, "_send_head", send_head)
+    monkeypatch.setattr(hybrid, "CTL_TIMEOUT_S", 5.0)
+    specs, co, th = boot(tiny4, pp3(free_ports(8)), slots=2)
+    try:
+        with pytest.raises(Exception) as e:
+            co.generate_many(reqs(PROMPTS[:2], 3))
+        assert type(e.value).__name__ == error
+        assert ("boom" in str(e.value)) if kind == transport.KIND_ERROR else ("expected a head frame from s2/0, got metrics_reply" in str(e.value))
+    finally:
+        for link in list(co.rank.links.values()):
+            link.close()
+        co.listener.close()
+
+
+def test_both_requests_of_a_pair_keep_their_full_request_number(tiny4, tmp_path, monkeypatch):
+    """Pass 4, N7. The partner frame of a pair is read at its own place in the rank loop."""
+    from nocturne.engines.torch_tp import timeline
+    monkeypatch.setattr(hybrid, "REQ_MASK", 7)
+    specs, co, th = boot(tiny4, tp3(free_ports(8)), slots=2, timeline=True, run_dir=str(tmp_path))
+    try:
+        co.generate_many(reqs([PROMPTS[k % 5] for k in range(12)], 3), tp_interleave=2)
+        assert co.schedule["pair_steps"] > 0
+    finally:
+        co.shutdown()
+    for t in th:
+        t.join(timeout=10)
+    for rk in timeline.load(tmp_path)["ranks"]:
+        assert {e["req"] for e in rk["events"] if e["step"] >= 0} == set(range(1, 13)), rk["meta"]["rank"]
