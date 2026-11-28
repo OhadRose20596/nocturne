@@ -1,0 +1,168 @@
+{
+ "run_id": "OVx_15b_pp3_off_r1",
+ "tag": "OVx_15b_pp3_off_r1",
+ "coordinator": "m5",
+ "coordinator_hostname": "MMF4FWRG4R",
+ "placement": {
+  "model": "~/models/gguf/Qwen2.5-1.5B-Instruct-Q8_0.gguf",
+  "coordinator": {
+   "host": "m5"
+  },
+  "reduce_dtype": "float32",
+  "max_seq_len": 4096,
+  "prefill_max": 256,
+  "granule": 128,
+  "stages": [
+   {
+    "name": "s0",
+    "layers": [
+     0,
+     9
+    ],
+    "embed": true,
+    "ranks": [
+     {
+      "host": "m5",
+      "device": "mps",
+      "port": 50070
+     }
+    ]
+   },
+   {
+    "name": "s1",
+    "layers": [
+     9,
+     19
+    ],
+    "ranks": [
+     {
+      "host": "m5",
+      "device": "mps",
+      "port": 50071
+     }
+    ]
+   },
+   {
+    "name": "s2",
+    "layers": [
+     19,
+     28
+    ],
+    "lm_head": true,
+    "ranks": [
+     {
+      "host": "m5",
+      "device": "mps",
+      "port": 50072
+     }
+    ]
+   }
+  ]
+ },
+ "model_dir": "~/models/gguf/Qwen2.5-1.5B-Instruct-Q8_0.gguf",
+ "hosts": {
+  "m5": "192.168.1.242"
+ },
+ "prompts": [
+  {
+   "id": "arith_01",
+   "kind": "eval",
+   "prompt": "Compute 347 + 589. Reply with the number only.",
+   "n": 32,
+   "ignore_eos": false,
+   "cap": 16,
+   "category": "arithmetic",
+   "expected": 936
+  },
+  {
+   "id": "arith_02",
+   "kind": "eval",
+   "prompt": "Compute 1000 - 457. Reply with the number only.",
+   "n": 32,
+   "ignore_eos": false,
+   "cap": 16,
+   "category": "arithmetic",
+   "expected": 543
+  },
+  {
+   "id": "arith_03",
+   "kind": "eval",
+   "prompt": "Compute 23 * 19. Reply with the number only.",
+   "n": 32,
+   "ignore_eos": false,
+   "cap": 16,
+   "category": "arithmetic",
+   "expected": 437
+  },
+  {
+   "id": "arith_04",
+   "kind": "eval",
+   "prompt": "Compute 144 / 12. Reply with the number only.",
+   "n": 32,
+   "ignore_eos": false,
+   "cap": 16,
+   "category": "arithmetic",
+   "expected": 12
+  },
+  {
+   "id": "arith_05",
+   "kind": "eval",
+   "prompt": "A train travels 60 km per hour for 2.5 hours. How many km does it travel? Reply with the number only.",
+   "n": 32,
+   "ignore_eos": false,
+   "cap": 16,
+   "category": "arithmetic",
+   "expected": 150
+  },
+  {
+   "id": "arith_06",
+   "kind": "eval",
+   "prompt": "What is 15 percent of 240? Reply with the number only.",
+   "n": 32,
+   "ignore_eos": false,
+   "cap": 16,
+   "category": "arithmetic",
+   "expected": 36
+  },
+  {
+   "id": "extract_01",
+   "kind": "eval",
+   "prompt": "Text: 'Order 7781 was shipped to Dana Levi on March 3 and arrived on March 7.' Question: who received the order? Reply with the name only.",
+   "n": 32,
+   "ignore_eos": false,
+   "cap": 16,
+   "category": "extraction",
+   "expected": "Dana Levi"
+  },
+  {
+   "id": "extract_02",
+   "kind": "eval",
+   "prompt": "Text: 'The meeting moved from Room 204 to Room 311 because of a projector fault.' Question: which room is the meeting in now? Reply with the room only.",
+   "n": 32,
+   "ignore_eos": false,
+   "cap": 16,
+   "category": "extraction",
+   "expected": "Room 311"
+  },
+  {
+   "id": "longopen_01",
+   "kind": "long",
+   "prompt": "Explain how a home Wi-Fi network carries a video stream from the internet to a laptop. Cover the router, the access point, radio channels, packets and what happens when two devices transmit at once. Write in plain prose, no lists.",
+   "n": 256,
+   "ignore_eos": true
+  }
+ ],
+ "ship_weights": true,
+ "cache_dir": "/private/tmp/claude-501/-Users-orosentswaig-Library-Mobile-Documents-com-apple-CloudDocs-Documents------------------------nocturne/5a5953c6-361b-4d46-bd6a-8ee1643507e1/scratchpad/s10_cache",
+ "force": false,
+ "mps_fraction_cap": false,
+ "reduce_dtype": null,
+ "timeline": true,
+ "tokenizer_dir": null,
+ "dtype": null,
+ "verify_cache": false,
+ "slots": 1,
+ "prefill_chunk": 0,
+ "tp_interleave": 1,
+ "async_send": false
+}
