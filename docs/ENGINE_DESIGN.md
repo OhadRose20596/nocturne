@@ -281,3 +281,138 @@ A TP group may mix Metal and CUDA only with `allow_mixed_devices: true`, because
 - The coordinator remembers slice hashes per model. That memo is dropped when the code that cuts slices changes.
 - The raw recorder files are gzipped (`timeline_<rank>.jsonl.gz`, `trace.json.gz`): a TP run of 500 steps is 7 MB per rank and a 60 MB trace as plain text.
 - A native Windows peer is not supported (WSL2 only).
+
+## 11. Overlap: compute while data is on the network
+
+Status: design, written on 2026-11-28 before the code (session 10, part 3). It is kept in step with the code as the code lands.
+
+### 11.1 The problem and the rule
+
+Today every machine computes, sends, then waits (section 1). On two Macs in PP a machine waited more than half of each token. In TP it waited two thirds.
+A machine can only fill that wait with other work. Inside one conversation the next token needs the previous one, so the other work is another request, or another part of the same prompt.
+
+Two goals:
+
+1. A machine computes other work while its data is on the network.
+2. With several units of work in the pipeline, no machine waits long. For that a machine may hold several layer ranges that are not adjacent (the Megatron interleaved schedule).
+
+The rule that does not move: **the tokens of a request do not depend on how the work was scheduled.**
+Every feature is an option. Every option is off by default. An option at its off value gives the old behaviour byte for byte: the same frames, the same bytes per link, the same tokens.
+
+| option | off value | what it does | for |
+|---|---|---|---|
+| `--slots K` | 1 | up to K requests in flight | PP, hybrid, and TP together with `--tp-interleave` |
+| `--prefill-chunk C` | 0 (whole prompt) | the prompt travels in chunks of C tokens | PP, hybrid |
+| `--tp-interleave 2` | 1 | two requests share a TP group in lockstep | TP groups |
+| `--async-send` | off | the copy to the host and the send leave the compute thread | all |
+| a host in several stages | (a placement, not a flag) | interleaved pipeline stages | PP, hybrid |
+
+### 11.2 O1. Several requests in flight (`--slots K`)
+
+**State.** Every rank keeps its KV cache with a slot dimension: K caches instead of one. The planner counts K times the KV bytes. With K = 1 the tensors are the ones of today.
+
+**On the wire.** Every TOKEN, HIDDEN and HEAD frame carries the slot id (section 6). Slot 0 writes zeros into bits that are zero today, so K = 1 changes no byte.
+
+**A rank** does not schedule. It processes frames in the order they arrive on its upstream link and uses the slot of each frame. A link keeps order. The leader of a stage sends the same sequence to every rank of the next stage, so all ranks of a group see the same order and their all-reduces pair up.
+
+**The coordinator** schedules. It keeps a table of slots. A slot is ready when its next input exists: the prompt at the start, later the token it just chose.
+
+1. While a slot is ready, the coordinator runs the first stage for it (it is rank 0 of that stage) and the hidden state leaves for the next stage.
+2. Between steps it reads the HEAD frames that have arrived, without blocking. When all head ranks have answered for a slot, it chooses the token of that slot. The slot is ready again, or its request is finished and the slot takes the next waiting request.
+3. When no slot is ready it blocks on the head links.
+
+So stage 1 works on request A while stage 0 works on request B.
+Order of service is first ready, first served.
+
+**Why the tokens are the same.** A step of one slot reads and writes only that slot's cache and that slot's hidden state, with the same operations on the same shapes as when the request runs alone. Requests are never batched into one tensor.
+
+**Recorded.** Per request: tokens, the slot it used, start and end. Per run: tokens per second of the whole system. `ms_per_step` of one request is still recorded but now includes waiting for the other slots.
+
+### 11.3 O2. Chunked prefill (`--prefill-chunk C`)
+
+The prompt of T tokens is cut into chunks of C tokens. A chunk is a step like any other, with its position offset. The first stage computes chunk 1 and sends it on, then computes chunk 2 while the second stage computes chunk 1.
+
+- A chunk attends to the cached prefix of its own request and causally inside itself. This path exists (`pos0 > 0`).
+- Only the last chunk needs the output head. The other chunks carry a "no head" flag, and the head ranks send nothing for them.
+- A last chunk of one token would look like a decode step to the counters. So a remainder of one token is joined to the chunk before it.
+- With slots, chunks of different requests interleave freely.
+
+**Tokens.** The math is the same as for the whole prompt. The attention kernel runs on other shapes, so the rounding can differ in the last bit. The criterion is at least 7 of 8 prompts identical to unchunked prefill, with the first step logit difference reported and any difference explained.
+
+### 11.4 O3. Two requests interleaved in a TP group (`--tp-interleave 2`)
+
+In a TP group a rank waits for its peers twice per layer. With two requests A and B the group fills that wait:
+
+1. compute A's partial sum, send it, do not wait;
+2. compute B's partial sum, send it;
+3. receive the peers' partials for A and add them, then the same for B.
+
+A's transfer happens behind B's compute. This repeats for every all-reduce: the embedding, and after the attention and after the MLP of every layer.
+
+- The all-reduce is split into its two halves, "send my partial" and "receive and add". The plain all-reduce is the first half followed at once by the second, which is what the code does today.
+- The add order inside each all-reduce stays as it is: all partials in group rank order, in float32, rounded once. The sums are the same bytes.
+- Every rank of the group handles A before B, so on every link the frames arrive in the order A, B.
+- The coordinator forms the pair when two slots are ready. The first frame of a pair carries a "pair" flag, and the receiver then reads the partner before it starts. The flag travels with the pair through later stages. A stage with one rank just computes A, then B. With one slot ready, the step runs alone as today.
+- It needs `--slots` of 2 or more.
+
+### 11.5 O4. Send without blocking the device (`--async-send`)
+
+Today a rank waits for the device, copies the tensor to the host, and sends, all on the compute thread.
+With the option:
+
+- CUDA: the tensor is copied into pinned host memory with a non blocking copy, and a device event marks the end of the copy. The compute thread goes on. A sender thread waits for the event and sends.
+- MPS: PyTorch has no non blocking copy. The sender thread does the copy, if that proves stable on the M5. If not, the copy stays on the compute thread and only the send moves. The record says which.
+- Per link, frames leave in the order they were handed over.
+
+It gives nothing alone: a rank with one request has nothing else to compute. It is meant for O1, O2 and O3.
+Tokens are identical with and without: the same bytes leave in the same order.
+
+**The recorder.** The sender thread records its own spans: the wait for the device and the copy, then the send. So the timeline shows where the device sync now happens. On the compute thread a `compute` span then measures handing work to the device, not the device finishing it; `docs/MEASUREMENT.md` says so.
+
+### 11.6 O5. Interleaved pipeline stages
+
+A placement may name a host in several stages. Each is its own rank process, on its own port, with its own layer range. For two machines: gtx layers 0 to 6, pc 7 to 13, gtx 14 to 20, pc 21 to 27.
+The runtime already allows it: links, ports and listen addresses are per rank, and the loopback runs put every rank on one host.
+With one request this only adds hops. With several requests, or with chunks, each machine gets work twice per pass and waits half as long.
+
+**New in the planner.** One GPU serves all rank processes of a host. So the planner sums them: the planned bytes of every rank of the host, plus a fixed cost per process, against a budget of the host (`host_budget_gb` per host in the placement). It rejects a placement that goes over and names the host.
+
+Cost of one more process, measured on 2026-11-28:
+
+| device | cost per extra process |
+|---|---|
+| CUDA, GTX 1070 and RTX 2000 Ada | about 105 MiB for the context, 135 to 145 MiB after its first multiply |
+| MPS, M5 | about 190 MiB of process memory when idle, and a 1 GiB heap as soon as the process holds a tensor of 10 MiB or more |
+
+On an 8 GB card that is under 2 percent per extra process. So separate processes are affordable on CUDA. If part 4 shows otherwise, the alternative is one process that holds several stage slices. That is not built without a decision.
+
+### 11.7 Frames
+
+The frame formula is extended, and every run compares measured with predicted:
+
+- slots: the formula is per step of one request. K requests give K times the steps, not other frames per step.
+- chunks: a prompt of T tokens in chunks of C gives one set of step frames per chunk, without the head frames for all chunks but the last.
+- interleaved stages: each stage boundary is a hop, as today.
+- a pair in a TP group sends the frames of two steps.
+
+Changes on the wire, all inside fields that exist (also listed in section 6 and in `transport.py`):
+
+| frame | field | today | with the options |
+|---|---|---|---|
+| TOKEN, HIDDEN | second 32 bit field | bits 0 to 7 flags (bit 0: send logits), bits 8 to 31 request number, recorder only | bits 0 to 7 flags (bit 1: no head for this chunk, bit 2: first of a pair), bits 8 to 23 request number, recorder only, bits 24 to 31 slot |
+| HEAD | first 32 bit field | index of the best token | bits 0 to 23 index, bits 24 to 31 slot |
+
+With every option off the new bits are zero. A vocabulary must stay under 16.7 million tokens and a run under 256 slots; both are checked.
+The PLAN message gains the number of slots, the chunk size, and the two switches.
+
+### 11.8 What is measured
+
+The recorder already writes per rank spans with the request number. It adds the slot.
+A new figure in `timeline.html`, per device: **the share of time in which the device computes while it also has data in flight.**
+A transfer is in flight from the start of the sender's send to the end of the receiver's wait for that frame. The two are matched by their order on the link, which needs no new field. The clocks are aligned as in section 3.9.
+
+### 11.9 Not in this part
+
+**Speculative decoding.** A small draft model proposes k tokens, and the large model checks them in one step of k positions. It would need: the draft model on the coordinator (or on an idle machine), a step that returns the best token for each of the k positions (today the head returns one), a KV cache that can be rolled back to the last accepted position, and an acceptance rule that keeps greedy output unchanged. It is the one idea that speeds up a single conversation in decode.
+
+**Keeping a conversation's KV cache between requests.** A follow up question would send only its new tokens. It would need: a conversation id on the request, a slot that stays bound to a conversation after the answer, a rule for when to free it, and a prefill that starts at the cached length (the chunk path of O2 already starts at any position). The slot table of O1 is the place where this would live.
