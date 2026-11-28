@@ -1426,8 +1426,9 @@ def test_the_pool_of_pinned_buffers_stays_within_its_limit(monkeypatch):
 
 def test_the_coordinator_empties_its_sender_before_a_clock_or_shutdown_frame(tiny4):
     """Codex 10. Design section 11.5: no control frame overtakes a data frame. The coordinator's own sender is flushed
-    before CLOCK and before SHUTDOWN, and a sender that is stuck does not hold the shutdown."""
-    specs, co, th = boot(tiny4, pp3(free_ports(8)), slots=2, async_send=True)
+    before CLOCK and before SHUTDOWN, and a sender that is stuck does not hold the shutdown. The first stage has a
+    remote rank here, so the coordinator's first SHUTDOWN frame leaves on a control link, before it forwards any."""
+    specs, co, th = boot(tiny4, hybrid_tp_first(free_ports(8)), slots=2, async_send=True)
     ev = []
     real_flush = co.rank.flush
     co.rank.flush = lambda *a: (ev.append("flush"), real_flush(*a))[1]
@@ -1445,7 +1446,7 @@ def test_the_coordinator_empties_its_sender_before_a_clock_or_shutdown_frame(tin
         assert ev[0] == "flush" and "clock" in ev
         del ev[:]
         co.shutdown()                       # the end clock is measured already: the next control frame is SHUTDOWN
-        assert ev[0] == "flush" and ev.index("flush") < ev.index("shutdown")
+        assert ev[0] == "flush" and ev.count("shutdown") == 2        # to s0/1 on its control link, then forwarded to the next stage
     finally:
         transport.Link.send = real
     # a sender that never finishes: flush gives up after its timeout
