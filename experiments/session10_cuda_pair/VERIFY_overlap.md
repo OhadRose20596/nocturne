@@ -4,18 +4,19 @@ Date: 2026-11-28. Operator: the M5 (24 GB, MPS, torch 2.14.1, Python 3.12). Star
 The compute path is final at `c352d39`. After it: `511fd68` adds one placement file, `be73eed` changes tests and one document, `dd3f8f5` changes comments and the early check of a reference. The column "commit" says which code a run used.
 gtx (GTX 1070, WSL2, torch 2.14.1+cu126) ran the CUDA checks. Lior's laptop (`pc`, RTX 2000 Ada, WSL2) ran the pair checks of the first round and was then switched off.
 No experiment rows were run. Every run below verifies the build. Time is background (T1).
-Design: `docs/ENGINE_DESIGN.md` section 11. Numbers: `docs/MEASUREMENT.md` section 3.1. Reviews: `REVIEW_overlap.md`, `REVIEW_overlap_pass2.md`, `REVIEW_overlap_pass3.md`.
+Design: `docs/ENGINE_DESIGN.md` section 11. Numbers: `docs/MEASUREMENT.md` section 3.1. Reviews: `REVIEW_overlap.md`, `REVIEW_overlap_pass2.md`, `REVIEW_overlap_pass3.md`, `REVIEW_CODEX_overlap.md`, `REVIEW_overlap_pass4.md`.
+The Codex review came after this record was first written. It found one high finding and nine more. They are fixed in `c82ec1c`; see "After the Codex review" below. The rows of the gate that it changed say so.
 
 ## Gate
 
 | condition | result |
 |---|---|
 | correctness rules met | yes. O1, O3, O4, O5: every request gives exactly the tokens of the run with the options off, on the 8 eval prompts and on the long prompts, with bit equal first step logits. O2: 8 of 8 eval prompts identical, the difference is reported and explained below |
-| options off give the old behaviour | yes. Same tokens, frames and bytes per link as the recorded part 1 runs (table "Options off"), and the frame structure is pinned against the engine of `965385f` by a test. Three reviewers ran the old engine against the new one frame by frame: identical |
+| options off give the old behaviour | yes for the tokens, the data frames and the PLAN frame; not for every byte (Codex finding 2): READY and the METRICS reply are JSON reports and gained three fields, and before the fix the PLAN frame was 33 bytes longer. Same tokens, frames and bytes per link as the recorded part 1 runs (table "Options off"), and the frame structure is pinned against the engine of `965385f` by a test. Three reviewers ran the old engine against the new one frame by frame: identical |
 | frame formula holds | yes, in every run: frames per decode step and prefill frames, measured equal predicted |
-| mutations caught | yes: 88 of 88 on the final compute path, 53 of them for part 3, the four named breaks included (round 1 had two that were caught only by a hung test; both now fail fast) |
-| tests pass | yes: 420 passed and 3 skipped (CUDA only) on the M5, `tests/bench`, 5.4 minutes, on the last commit. 89 tests are new in part 3. On gtx (Linux, CUDA) the overlap test file gives 88 passed, the pinned copy tests and the socket tests on a Linux kernel included; one run there did not return (see Open) |
-| no open high finding | yes. Three review passes: the first found one high finding (socket buffers on Linux), the second found one high finding in that fix, the third found both closed and no new high finding |
+| mutations caught | yes: 119 of 119 after the Codex fixes (table in "After the Codex review"). Before the review: 88 of 88 on the final compute path, 53 of them for part 3, the four named breaks included (round 1 had two that were caught only by a hung test; both now fail fast) |
+| tests pass | yes: 470 passed and 3 skipped after the Codex fixes (all of `tests`, on the M5). Before the review: 420 passed and 3 skipped (CUDA only) on the M5, `tests/bench`, 5.4 minutes, on the last commit. 89 tests are new in part 3. On gtx (Linux, CUDA) the overlap test file gives 88 passed, the pinned copy tests and the socket tests on a Linux kernel included; one run there did not return (see Open) |
+| no open high finding | yes, after the fix of the Codex finding. Three review passes: the first found one high finding (socket buffers on Linux), the second found one high finding in that fix, the third found both closed and no new high finding. The Codex review then found a high finding that all three had missed (two slots could deadlock on a large head frame). It is fixed and has a fresh review pass of its own (pass 4, below) |
 
 ## What was built
 
@@ -224,9 +225,68 @@ Two limits a reader must know (both in `docs/MEASUREMENT.md` 3.1):
 | 1 | fresh subagent, on the whole change | 0 high, 7 medium, 8 low. One medium (F6, socket buffers) became **high** when checked on gtx. All addressed (`REVIEW_overlap.md`, disposition at the end) |
 | 2 | fresh subagent, on the fixes | of pass 1: 10 closed, 5 partly, 0 not closed. New: **1 high** (P1), 2 medium, 6 low. All addressed (`REVIEW_overlap_pass2.md`, disposition at the end) |
 | 3 | fresh subagent, on the fix of pass 2 | P1 closed. Of pass 2: 7 closed, 2 partly, 0 not closed. New: 0 high, 1 medium (the test of the fix passed without the fix), 5 low. All addressed (`REVIEW_overlap_pass3.md`, disposition at the end) |
-| Codex | for Ohad to run | `REVIEW_REQUEST_CODEX_overlap.md` |
+| Codex | run by Ohad on 2026-11-28 | **1 high**, 7 medium, 2 low. All confirmed and addressed (`REVIEW_CODEX_overlap.md`, disposition at the end) |
+| 4 | fresh subagent, on the Codex fixes | 0 high, 1 medium, 7 low. Of the ten Codex findings: 7 closed, 3 partly (3, 5, 6). It could not break the fix of the high finding. All addressed (`REVIEW_overlap_pass4.md`, disposition at the end) |
 
 All three reviewers ran the engine of `965385f` against the new engine with every option off: every data frame on every link identical and in the same order, tokens and logits identical (24, 24 and 12 cases; the later two also with the helper thread path forced, which is the path Linux takes).
+
+## After the Codex review (2026-11-28, evening)
+
+The review: `REVIEW_CODEX_overlap.md`, with my answer to each finding at its end. Code: `c82ec1c`. Operator and device: the M5, MPS for the runs, CPU loopback for the tests.
+
+**The high finding.** With several requests in flight, a head frame with first step logits can be larger than the socket buffers. The head rank cannot finish sending it until the coordinator reads. The coordinator read head frames only between its own steps, so it could be blocked at that moment, and both then waited for good.
+
+| form | who waits for what | reproduced on `3616976` | after the fix |
+|---|---|---|---|
+| TP group at the first stage, as the review describes | the coordinator waits for the peer's partial of slot B; the peer is in the head frame of slot A | yes, with and without `--async-send` | completes, same tokens |
+| plain pipeline, not in the review | the coordinator is in the prefill send of a third request; the last stage is in the head frame of the second | yes | completes, with and without `--async-send` |
+
+Both were made deterministic: the head frame is held until the coordinator has started the next piece of work, and the socket buffers are set small. In the verification runs before the review the cycle never showed, because on the Macs a link takes 8 MiB and the largest head frame of Qwen2.5 is 0.6 MiB. On Linux a link grants 0.4 MiB, so the CUDA pair was exposed.
+The fix: a thread of the coordinator reads head frames at any time (`hybrid.HeadReader`), only inside `generate_many`. The path with one request has no such cycle and is unchanged.
+
+**The other nine**, in one line each (details in the review file): the PLAN frame names an option only when it is set (2); a rank rebuilds the full request number from its 16 bits (3); a frame behind a failed all-reduce frame is not sent and the all-reduce raises (4); a comparison with a run of the same numerics asks for every token (5); the step counts follow the scheduled unit (6, partly); a KV tensor of all slots counts for the MPS heap floor (7); a run with an unmatched link has no overlap share (8); the pinned pool counts the returning buffer (9); the coordinator empties its sender before CLOCK and SHUTDOWN (10).
+
+**Tests.** 13 new tests in `tests/bench/test_session10_overlap.py`. Run against the engine of `3616976`, 12 of them fail (the two forms of the first hang there); the thirteenth guards the new reader on a lost control link. Three more came with review pass 4. On the fixed engine: 470 passed and 3 skipped (CUDA only), all of `tests`, 6.6 minutes, on `99b40e9`. The commits after it change test bodies only; the three session 10 test files on the last commit (`ff1b9b2`): 150 passed, 3 skipped.
+
+**Runs on the fixed engine** (1.5B Q8_0, three ranks on the M5, MPS; `OVx` on the engine code of `c82ec1c`, `OVy` on `99b40e9`, the last commit that changes the engine):
+
+| run | placement | options | commit | identical to the one rank run (8; long first divergence) | against the options-off run of the placement (8; long; largest first step logit difference) | frames per step measured / predicted | prefill frames measured / predicted | bytes per decode step | tokens per s | steps in pairs / alone; most requests in flight | busy % per device | overlap % per rank (sent part) | links where sends and receives do not match |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| OVx_15b_hybrid_all_l3_r1 | S10_q8_15b_hybrid.yaml | slots 4, chunk 16, pair, async (inline) | ed4a8c2 | 8/8; 96 (2 prompts not in the reference) | 8/8; first divergence [20, 88, 96]; 0.4375 | 61.0 / 61 | 2591 / 2591 | 182708 | 2.35 | 36 / 316; 4 | m5 mps: 7 | s0/0 4.9 (4.9), s0/1 0.6 (0.2), s1/0 1.3 (0.0) | none |
+| OVx_15b_hybrid_off_r1 | S10_q8_15b_hybrid.yaml | off | ed4a8c2 | 8/8; 20 | - | 61.0 / 61 | 549 / 549 | 182708 | 2.27 | - | m5 mps: 97 | s0/0 0.4 (0.0), s0/1 0.5 (0.0), s1/0 0.0 (0.0) | none |
+| OVx_15b_pp3_off_r1 | S10_q8_15b_pp3.yaml | off | ed4a8c2 | 8/8; 256 | - | 3.0 / 3 | 27 / 27 | 6208 | 2.38 | - | m5 mps: 100 | s0/0 0.0 (0.0), s1/0 0.0 (0.0), s2/0 0.0 (0.0) | none |
+| OVx_15b_pp3_s3_l3_r1 | S10_q8_15b_pp3.yaml | slots 3 | ed4a8c2 | 8/8; 96 (2 prompts not in the reference) | 8/8; identical; 0 | 3.0 / 3 | 33 / 33 | 6208 | 2.59 | 0 / 320; 3 | m5 mps: 100 | s0/0 0.1 (0.1), s1/0 30.5 (30.3), s2/0 53.8 (0.0) | none |
+| OVx_15b_tp3_off_r1 | S10_q8_15b_tp3.yaml | off | ed4a8c2 | 8/8; 77 | - | 346.0 / 346 | 3114 / 3114 | 1058920 | 2.26 | - | m5 mps: 94 | s0/0 3.7 (0.1), s0/1 5.7 (0.1), s0/2 6.5 (0.0) | none |
+| OVx_15b_tp3_s2_pair_async_l3_r1 | S10_q8_15b_tp3.yaml | slots 2, pair, async (inline) | ed4a8c2 | 8/8; 77 (2 prompts not in the reference) | 8/8; identical; 0 | 346.0 / 346 | 3806 / 3806 | 1058920 | 2.29 | 104 / 216; 2 | m5 mps: 35 | s0/0 9.6 (0.8), s0/1 4.5 (2.0), s0/2 4.7 (1.4) | none |
+| OVx_15b_tp3_s2_pair_l3_r1 | S10_q8_15b_tp3.yaml | slots 2, pair | ed4a8c2 | 8/8; 77 (2 prompts not in the reference) | 8/8; identical; 0 | 346.0 / 346 | 3806 / 3806 | 1058920 | 2.29 | 136 / 184; 2 | m5 mps: 95 | s0/0 37.5 (12.2), s0/1 34.7 (29.8), s0/2 35.8 (30.4) | none |
+| OVy_15b_hybrid_all_l3_r1 | S10_q8_15b_hybrid.yaml | slots 4, chunk 16, pair, async (inline) | 99b40e9 | 8/8; 96 (2 prompts not in the reference) | 8/8; first divergence [20, 88, 96]; 0.4375 | 61.0 / 61 | 2591 / 2591 | 182708 | 2.33 | 36 / 316; 4 | m5 mps: 8 | s0/0 5.4 (5.4), s0/1 0.6 (0.2), s1/0 1.5 (0.0) | none |
+| OVy_15b_tp3_off_r1 | S10_q8_15b_tp3.yaml | off | 99b40e9 | 8/8; 77 | - | 346.0 / 346 | 3114 / 3114 | 1058920 | 2.23 | - | m5 mps: 94 | s0/0 3.3 (0.0), s0/1 5.2 (0.0), s0/2 5.8 (0.0) | none |
+
+Every comparison with a run of the same placement, dtype and prefill chunk is under the rule "every token" and is met, with a first step logit difference of exactly 0. That includes `OVx_15b_hybrid_all_l3_r1` against `OV_15b_hybrid_c16_l3_r1`: four slots, pairs and async send on top of chunks of 16 give the tokens of chunks of 16 alone, bit for bit. Against the unchunked run the long prompts differ late, as before (the rounding of chunked prefill, section "O2" above).
+
+The options-off gate again, against the recorded part 1 runs:
+
+| options-off run | recorded part 1 run | same tokens, 9 prompts | frames per step | bytes per step | frames and bytes per link per step |
+|---|---|---|---|---|---|
+| OVx_15b_hybrid_off_r1 | V3final_q8_15b_hybrid_tl_r1 | yes | 61.0 = 61.0 | 182708 = 182708 | identical |
+| OVx_15b_pp3_off_r1 | V3codex_q8_15b_pp3_tl_r1 | yes | 3.0 = 3.0 | 6208 = 6208 | identical |
+| OVx_15b_tp3_off_r1 | V3post_q8_15b_tp3_tl_r4 | yes | 346.0 = 346.0 | 1058920 = 1058920 | identical |
+| OVy_15b_tp3_off_r1 | V3post_q8_15b_tp3_tl_r4 | yes | 346.0 = 346.0 | 1058920 = 1058920 | identical |
+
+**Mutations.** The list has 119 entries now: the 88 from before, 22 for the Codex fixes and 9 for the fixes of pass 4. Entries that the fixes made stale were corrected. On the fixed code 119 of 119 are caught, none only by a hung test.
+
+| round | code | result | file |
+|---|---|---|---|
+| 4 | `ed4a8c2` | the 22 Codex mutations: 21 caught. Missed: SHUTDOWN without a flush, because the test used a first stage with one rank. The test was changed | `mutations_overlap_round4.json` |
+| 4b | `6605c15` | the three mutations of finding 10: 3 of 3 | `mutations_overlap_round4b.json` |
+| 4c | `6605c15` | 67 mutations from before the review, the 53 of part 3 among them: 67 of 67 | `mutations_overlap_round4c.json` |
+| 5 | `99b40e9` | Codex and pass 4 mutations: 33 of 34. Missed: the request number of a pair partner, because pairs formed only among the first requests. The test now puts the first pair past the request bits | `mutations_overlap_round5.json` |
+| 5c | `ff1b9b2` | the three mutations of that test: 3 of 3 | `mutations_overlap_round5c.json` |
+| 5d | `ff1b9b2` | the other 27 mutations from before the review, all of part 1: 27 of 27 | `mutations_overlap_round5d.json` |
+
+**Fresh review of the fixes (pass 4).** `REVIEW_overlap_pass4.md`. No high finding. The reviewer reproduced the hang on the old engine in the TP form and the pipeline form and could not hang the fixed engine: 336 stress runs with a cap on unread bytes per link, 0 hangs, 0 token differences. One medium finding: the rule "every token" did not apply to a reference saved with `--save-reference`, or when the same placement was recorded under another path. Fixed: the rule goes by the content hash of the placement, the dtype, the reduce dtype and the prefill chunk. The seven low findings were gaps in the new tests and two small code points; all but two test gaps are closed (the disposition names them).
+
+What the reviewer could not show, and what is therefore still open: the hybrid shapes have no failing baseline (the old engine did not hang in them either, so their closure rests on reading the code), and nothing in pass 4 ran on MPS, CUDA, Linux buffers or two hosts.
 
 ## Findings worth knowing
 
@@ -260,5 +320,6 @@ On CUDA a second process per GPU costs under 2 percent of an 8 GB card, so separ
 - The pc did not run the final code. It ran the first round, and gtx ran everything after it.
 - When a sender thread fails, the record names its error only if the failed frame was the head frame of a head rank. Otherwise the record says a link was lost and the rank's log has the error (review pass 3, Q2).
 - On a Mac the planner's per host sum is below the real footprint (table above).
-- The Codex review of this part has not run yet.
+- Nothing ran on Linux or CUDA after the Codex fixes. gtx and the Air were closed for the day before the review arrived. The first step of the next session: `git pull` on gtx, then the overlap test file there (the pinned copy tests and the socket tests on a Linux kernel).
+- A prompt of one token: its frames are counted as decode frames by every rank, on the old path as well (Codex finding 6, partly fixed).
 - **One run of the overlap test file on gtx did not return, and it is not explained.** It was the first run on the last commit. gtx was idle, and the output with the stack dump was lost, because I had piped it through `tail`. The same file then passed there 9 of 9 times (one verbose run, then a loop of 8 with the stack dump kept), and the tests that shrink the socket buffers passed 14 of 14 in a loop. The three real check runs on that commit completed. I could not make it happen again, so I cannot say whether it was a test or the engine. To catch it: run the file on gtx with `timeout` and `-v` into a file, as `/tmp/ov_hunt.sh` there does.
