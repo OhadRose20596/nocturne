@@ -1535,4 +1535,4 @@ def test_both_requests_of_a_pair_keep_their_full_request_number(tiny4, tmp_path,
     steps = [sorted({(e["req"], e["step"]) for e in rk["events"] if e["step"] >= 0}) for rk in timeline.load(tmp_path)["ranks"]]
     count = lambda st: {q: sum(1 for r, _ in st if r == q) for q in range(0, 13)}
     assert len(steps) == 3 and count(steps[0]) == count(steps[1]) == count(steps[2])
-    assert count(steps[0]) == dict({0: 0}, **{q: 2 for q in range(1, 9)}, **{q: 3 for q in range(9, 13)})
+    assert count(steps[0]) == {q: 0 if q == 0 else 2 if q < 9 else 3 for q in range(0, 13)}
