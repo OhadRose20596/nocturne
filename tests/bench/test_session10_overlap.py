@@ -526,10 +526,15 @@ def test_sender_keeps_hand_over_order_and_reports_a_failure_to_the_compute_threa
             raise ConnectionError("peer closed the connection")
     h = s.copy(torch.zeros(1, 4))
     s.send(h, Broken(), transport.KIND_HIDDEN, 0, 0, True, "x")
-    with pytest.raises(ConnectionError, match="sender thread failed"):
-        s.flush()
+    import time
+    for _ in range(100):                    # the sender thread stores its error within a moment
+        if s.error is not None:
+            break
+        time.sleep(0.02)
     with pytest.raises(ConnectionError, match="sender thread failed"):
         s.copy(torch.zeros(1, 4))
+    with pytest.raises(ConnectionError, match="sender thread failed"):
+        s.flush()
 
 
 def test_async_send_records_sender_spans_and_the_bytes_of_every_link(tiny4, tmp_path, monkeypatch):

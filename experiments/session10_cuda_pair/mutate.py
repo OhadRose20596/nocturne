@@ -140,7 +140,7 @@ MUTATIONS = [
     ("overlap: the compute thread does not wait for its partial to reach the host", E + "hybrid.py",
      "        while not h.ready.wait(0.2):\n            self.check()\n        return h.host", "        return h.host", [OV, "-k", "sender_keeps"]),
     ("overlap: a failure of the sender thread is not reported", E + "hybrid.py",
-     "        if self.error is not None:\n            raise ConnectionError(", "        if False:\n            raise ConnectionError(", [OV]),
+     "        if self.error is not None:\n            raise ConnectionError(", "        if False:\n            raise ConnectionError(", [OV, "-k", "sender_keeps"]),
     ("overlap: a frame is in flight only until the receiver starts to wait", E + "timeline.py",
      '        frames = [[a["t0"], max(a["t0"], b["t1"]), a["bytes"]', '        frames = [[a["t0"], max(a["t0"], b["t0"]), a["bytes"]', [OV]),
     ("overlap: the overlap share counts all compute time", E + "timeline.py",
