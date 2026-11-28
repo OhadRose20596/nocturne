@@ -1516,19 +1516,23 @@ def test_a_frame_that_is_no_head_result_is_never_taken_for_one(tiny4, monkeypatc
 
 
 def test_both_requests_of_a_pair_keep_their_full_request_number(tiny4, tmp_path, monkeypatch):
-    """Pass 4, N7. The partner frame of a pair is read at its own place in the rank loop."""
+    """Pass 4, N7. The partner frame of a pair is read at its own place in the rank loop. Eight requests run alone first,
+    so the first pair is requests 9 and 10, past the 3 bits this test gives the frame; the two slots are ready together
+    at the start, so that pair always forms."""
     from nocturne.engines.torch_tp import timeline
     monkeypatch.setattr(hybrid, "REQ_MASK", 7)
     specs, co, th = boot(tiny4, tp3(free_ports(8)), slots=2, timeline=True, run_dir=str(tmp_path))
     try:
-        co.generate_many(reqs([PROMPTS[k % 5] for k in range(12)], 3), tp_interleave=2)
-        assert co.schedule["pair_steps"] > 0
+        for k in range(8):
+            co.generate(list(PROMPTS[k % 5]), 2, ignore_eos=True)
+        co.generate_many(reqs(PROMPTS[:4], 3), tp_interleave=2)
+        assert co.schedule["pair_steps"] >= 2
     finally:
         co.shutdown()
     for t in th:
         t.join(timeout=10)
-    # steps per request, per rank: a partner recorded under its number modulo 8 would move steps of requests 9 to 12 to 1 to 4
+    # steps per request, per rank: a partner recorded under its number modulo 8 would move the steps of request 10 to request 2
     steps = [sorted({(e["req"], e["step"]) for e in rk["events"] if e["step"] >= 0}) for rk in timeline.load(tmp_path)["ranks"]]
-    count = lambda st: {q: sum(1 for r, _ in st if r == q) for q in range(1, 13)}
+    count = lambda st: {q: sum(1 for r, _ in st if r == q) for q in range(0, 13)}
     assert len(steps) == 3 and count(steps[0]) == count(steps[1]) == count(steps[2])
-    assert all(n >= 3 for n in count(steps[0]).values()) and {r for st in steps for r, _ in st} == set(range(1, 13))
+    assert count(steps[0]) == dict({0: 0}, **{q: 2 for q in range(1, 9)}, **{q: 3 for q in range(9, 13)})
