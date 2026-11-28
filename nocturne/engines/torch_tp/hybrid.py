@@ -10,6 +10,8 @@ travel the same path and every rank answers on its ctl link.
 All-reduce: every rank sends its partial to every other rank and sums all partials in group rank order on the host,
 in fp32 rounded to the activation dtype once (or in bf16 for the control run), so all ranks of a group hold bitwise
 identical activations, whatever their device.
+Session 10: after READY and before shutdown the coordinator measures every rank's clock offset on the ctl link
+(clock.py). With `timeline` in the plan every rank records spans (recorder.py) and writes them at shutdown.
 Security: listeners accept any peer; deferred by ADR-009. Never bind 0.0.0.0 (CLAUDE.md rule 7)."""
 import ctypes
 import json
@@ -23,16 +25,19 @@ import time
 import numpy as np
 import torch
 
-from . import transport
+from . import clock, transport
 from .config import Qwen2Config, load_config
 from .engine import LinkLost, REDUCE_DTYPES, _from_bytes, mem_metrics, pick_device
 from .loader import BudgetExceeded, LoadSpec, load_slices
 from .model import Comm, Qwen2TP, pick_global
 from .plan import Dims, RankSpec, needed_peers
+from .recorder import Recorder, Sampler, ifaces_for
 
 FLAG_LOGITS = 1
+REQ_SHIFT = 8                # aux1 of a TOKEN or HIDDEN frame: flags in the low byte, the request number above it
 DATA_TIMEOUT_S = None
 CTL_TIMEOUT_S = 1800.0
+END_CLOCK_TIMEOUT_S = 20.0
 TORCH_DT = {"bfloat16": torch.bfloat16, "float32": torch.float32, "float16": torch.float16}
 
 
@@ -113,30 +118,43 @@ def bits_f32(b: int) -> float:
 class GroupComm(Comm):
     """All-to-all all-reduce over a group of n ranks. `links` maps every other group rank to its Link."""
 
-    def __init__(self, me: int, n: int, links: dict[int, transport.Link], device: str, reduce_dtype: str = "float32"):
+    def __init__(self, me: int, n: int, links: dict[int, transport.Link], device: str, reduce_dtype: str = "float32",
+                 rec: Recorder | None = None, names: dict[int, str] | None = None):
         if reduce_dtype not in REDUCE_DTYPES:
             raise ValueError(f"reduce_dtype must be one of {REDUCE_DTYPES}")
         self.me, self.n, self.links, self.device = me, n, links, device
         self.fp32 = reduce_dtype == "float32"
         self.calls = 0
+        self.rec, self.names = rec, names or {}
 
     def all_reduce(self, x: torch.Tensor) -> torch.Tensor:
         if self.n == 1:
             return x
         self.calls += 1
+        rec = self.rec
+        if rec:
+            sync(self.device)
+            rec.lap("compute")
         xc = x.contiguous().cpu()
         wire, dt = _host_bytes(xc)
+        if rec:
+            rec.lap("host_copy")
+        nb = transport.frame_bytes(len(wire), xc.dim())
         pending = []
         for r in sorted(self.links):
             if len(wire) <= transport.SMALL_FRAME:
                 self.links[r].send(transport.KIND_ALLREDUCE, wire, dt, tuple(xc.shape))
             else:
                 pending.append(self.links[r].send_async(transport.KIND_ALLREDUCE, bytes(wire), dt, tuple(xc.shape)))
+            if rec:
+                rec.lap("send", self.names.get(r), nb)
         parts = {self.me: xc}
         for r in sorted(self.links):
             kind, payload, pdt, shape, _, _ = self.links[r].recv()
             if kind != transport.KIND_ALLREDUCE:
                 raise RuntimeError(f"expected an all-reduce frame from group rank {r}, got {transport.KIND_NAMES.get(kind, kind)}")
+            if rec:
+                rec.lap("allreduce_wait", self.names.get(r), self.links[r].last_recv)
             parts[r] = _from_wire(payload, shape, pdt)
         for t in pending:
             t.join()
@@ -149,14 +167,20 @@ class GroupComm(Comm):
             out = parts[0].clone()
             for r in range(1, self.n):
                 out = out + parts[r]
-        return out.to(self.device)
+        out = out.to(self.device)
+        if rec:
+            sync(self.device)
+            rec.lap("host_copy")
+        return out
 
 
 # ---- one rank ------------------------------------------------------------------------------------------------------------
 class RankRuntime:
     def __init__(self, spec: RankSpec, specs: list[RankSpec], cfg: Qwen2Config, model_dir: str, device: str, max_seq: int,
                  reduce_dtype: str, phase: transport.Phase, log=_flush_print, enforce_budget: bool = True,
-                 dtype: str = "bfloat16"):
+                 dtype: str = "bfloat16", timeline: bool = False):
+        self.rec = Recorder(spec.name, spec.gid, spec.host, device) if timeline else None
+        self.sampler: Sampler | None = None
         self.spec, self.specs, self.cfg, self.model_dir = spec, specs, cfg, model_dir
         self.dtype = TORCH_DT[dtype]
         self.device, self.max_seq, self.reduce_dtype, self.phase, self.log = device, max_seq, reduce_dtype, phase, log
@@ -218,7 +242,10 @@ class RankRuntime:
             else:
                 self.down.append(link)
         self.down_order = [links[s.gid] for s in self.down_specs]
-        self.comm = GroupComm(self.spec.group_rank, self.spec.group_size, grp, self.device, self.reduce_dtype)
+        self.down_names = [s.name for s in self.down_specs]
+        self.up_name = self.specs[0].name if self.spec.stage == 0 else self.up_spec.name
+        self.comm = GroupComm(self.spec.group_rank, self.spec.group_size, grp, self.device, self.reduce_dtype, rec=self.rec,
+                              names={s.group_rank: s.name for s in self.group})
 
     @torch.inference_mode()
     def step(self, ids: list[int] | None = None, h: torch.Tensor | None = None, pos0: int = 0, flags: int = 0):
@@ -229,20 +256,45 @@ class RankRuntime:
             if self.spec.group_size > 1:
                 h = self.comm.all_reduce(h)
         h = self.model.layers_forward(h, pos0, self.comm)
+        rec = self.rec
         if self.down_order:
+            if rec:
+                sync(self.device)
+                rec.lap("compute")
             hc = h.contiguous().cpu()
             wire, dt = _host_bytes(hc)
             data = bytes(wire)
-            for link in self.down_order:
+            if rec:
+                rec.lap("host_copy")
+            for link, name in zip(self.down_order, self.down_names):
                 link.send(transport.KIND_HIDDEN, data, dt, tuple(hc.shape), aux0=pos0, aux1=flags)
+                if rec:
+                    rec.lap("send", name, link.last_sent)
         self.steps += 1
         if self.spec.head_rows is not None:
-            return self.model.head_argmax(h)
+            res = self.model.head_argmax(h)
+            if rec:
+                sync(self.device)
+                rec.lap("compute")
+            return res
         return None
 
-    def forward_control(self, kind: int) -> None:
+    def forward_control(self, kind: int, aux1: int = 0) -> None:
         for link in self.down_order:
-            link.send(kind)
+            link.send(kind, aux1=aux1)
+
+    def start_sampler(self, listen_addrs: list[str], host_level: bool) -> None:
+        self.sampler = Sampler(self.spec.name, self.spec.host, self.device, ifaces_for(listen_addrs), host_level).start()
+
+    def close(self, run_dir: str | None) -> None:
+        """Stop the sampler and write the timeline and the samples (only when the run asked for a timeline)."""
+        if self.sampler is not None:
+            self.sampler.stop()
+            if run_dir:
+                self.sampler.write(run_dir)
+            self.sampler = None
+        if self.rec is not None and run_dir:
+            self.rec.write(run_dir)
 
     def metrics(self) -> dict:
         m = {"name": self.spec.name, "gid": self.spec.gid, "host": self.spec.host, "device": self.device,
@@ -257,13 +309,20 @@ class RankRuntime:
     def serve(self) -> None:
         """Remote rank loop: read the upstream link (ctl for stage 0, the previous leader otherwise)."""
         up = self.ctl if self.spec.stage == 0 else self.up
+        rec = self.rec
         while True:
             kind, payload, dtype, shape, aux0, aux1 = up.recv()
             if kind in (transport.KIND_TOKEN, transport.KIND_HIDDEN):
+                if rec:
+                    rec.begin(aux1 >> REQ_SHIFT, shape[0])
+                    rec.lap("recv_wait", self.up_name, up.last_recv)
                 if kind == transport.KIND_TOKEN:
                     res = self.step(ids=np.frombuffer(payload, dtype=np.int64).tolist(), pos0=aux0, flags=aux1)
                 else:
-                    res = self.step(h=_from_bytes(payload, shape, dtype, self.device), pos0=aux0, flags=aux1)
+                    h = _from_bytes(payload, shape, dtype, self.device)
+                    if rec:
+                        rec.lap("host_copy")
+                    res = self.step(h=h, pos0=aux0, flags=aux1)
                 if res is not None:
                     val, idx, lg = res
                     if aux1 & FLAG_LOGITS:
@@ -272,6 +331,11 @@ class RankRuntime:
                         self.ctl.send(transport.KIND_HEAD, wire, dt, tuple(lc.shape), aux0=idx, aux1=f32_bits(val))
                     else:
                         self.ctl.send(transport.KIND_HEAD, aux0=idx, aux1=f32_bits(val))
+                    if rec:
+                        rec.lap("send", self.specs[0].name, self.ctl.last_sent)
+            elif kind == transport.KIND_CLOCK:
+                self.forward_control(kind, aux1=clock.BEGIN)
+                clock.answer(self.ctl)
             elif kind == transport.KIND_METRICS:
                 self.forward_control(kind)
                 self.ctl.send(transport.KIND_METRICS_REPLY, json.dumps(self.metrics()).encode(), "uint8")
@@ -363,7 +427,20 @@ def build_links(rt: RankRuntime, hosts: dict[str, str], listener: Listener, pend
     return links
 
 
-def rank_main(addrs: list[str], port: int, model_dir: str, device: str | None, log=_flush_print) -> int:
+def default_run_dir(tag: str | None) -> str:
+    return os.path.join(os.path.expanduser("~/.nocturne/runs"), tag or "untagged")
+
+
+def host_samplers(specs: list[RankSpec]) -> set[int]:
+    """The gid that samples host level counters on each host: the lowest gid there."""
+    first: dict[str, int] = {}
+    for s in specs:
+        first.setdefault(s.host, s.gid)
+    return set(first.values())
+
+
+def rank_main(addrs: list[str], port: int, model_dir: str, device: str | None, log=_flush_print,
+              run_dir: str | None = None) -> int:
     """A rank process (gid > 0): wait for the coordinator's ctl link and plan, link up, load, serve."""
     device = pick_device(device)
     phase = transport.Phase()
@@ -382,8 +459,12 @@ def rank_main(addrs: list[str], port: int, model_dir: str, device: str | None, l
     specs = [RankSpec.from_json(s) for s in pl["specs"]]
     spec = specs[pl["gid"]]
     cfg = load_config(model_dir)
+    timeline = bool(pl.get("timeline"))
+    out_dir = (run_dir or default_run_dir(pl.get("run_tag"))) if timeline else None
     rt = RankRuntime(spec, specs, cfg, model_dir, device, pl["max_seq_len"], pl["reduce_dtype"], phase, log,
-                     enforce_budget=pl.get("enforce_budget", True), dtype=pl.get("dtype", "bfloat16"))
+                     enforce_budget=pl.get("enforce_budget", True), dtype=pl.get("dtype", "bfloat16"), timeline=timeline)
+    if timeline:
+        rt.start_sampler(addrs, spec.gid in host_samplers(specs))
     try:
         links = build_links(rt, pl["hosts"], listener, pending)
         if device == "mps" and pl.get("mps_fraction_cap") and spec.budget:
@@ -393,16 +474,19 @@ def rank_main(addrs: list[str], port: int, model_dir: str, device: str | None, l
         log(f"[hybrid] {spec.name}: failed: {type(e).__name__}: {e}")
         ctl.send(transport.KIND_ERROR, json.dumps({"rank": spec.name, "error": f"{type(e).__name__}: {e}"}).encode(), "uint8")
         time.sleep(1.0)
+        rt.close(None)
         return 1
     rt.attach(links, ctl)
     ctl.send(transport.KIND_READY, json.dumps(rt.metrics()).encode(), "uint8")
     try:
+        clock.answer(ctl)
         rt.serve()
     except (ConnectionError, OSError) as e:
         log(f"[hybrid] {spec.name}: link lost ({e}); exiting")
         return 1
     finally:
         listener.close()
+        rt.close(out_dir)
     return 0
 
 
@@ -413,8 +497,12 @@ class Coordinator:
     def __init__(self, specs: list[RankSpec], model_dir: str, hosts: dict[str, str], listen_addrs: list[str],
                  max_seq_len: int, reduce_dtype: str, prefill_max: int, device: str | None = None, log=_flush_print,
                  enforce_budget: bool = True, mps_fraction_cap: bool = False, ready_timeout_s: float = 1800.0,
-                 dtype: str = "bfloat16"):
+                 dtype: str = "bfloat16", timeline: bool = False, run_dir: str | None = None, run_tag: str | None = None):
         self.log, self.specs, self.max_seq_len, self.prefill_max = log, specs, max_seq_len, prefill_max
+        self.run_dir = (run_dir or default_run_dir(run_tag)) if timeline else None
+        self.clock: dict = {"start": {}, "end": {}}
+        self.requests: list[dict] = []
+        self.req_seq = 0
         self.reduce_dtype = reduce_dtype
         self.cfg: Qwen2Config = load_config(model_dir)
         self.world = len(specs)
@@ -422,12 +510,24 @@ class Coordinator:
         me = specs[0]
         self.device = pick_device(device or me.device)
         self.rank = RankRuntime(me, specs, self.cfg, model_dir, self.device, max_seq_len, reduce_dtype, self.phase, log,
-                                enforce_budget=enforce_budget, dtype=dtype)
+                                enforce_budget=enforce_budget, dtype=dtype, timeline=timeline)
         self.listener = Listener(listen_addrs, me.port, self.phase, log)
         self.ctl: dict[int, transport.Link] = {}
+        if timeline:
+            self.rank.start_sampler(listen_addrs, True)
+        try:
+            self._bring_up(specs, hosts, model_dir, max_seq_len, reduce_dtype, enforce_budget, mps_fraction_cap, dtype,
+                           timeline, run_tag, ready_timeout_s)
+        except BaseException:
+            self.rank.close(None)
+            raise
+
+    def _bring_up(self, specs, hosts, model_dir, max_seq_len, reduce_dtype, enforce_budget, mps_fraction_cap, dtype,
+                  timeline, run_tag, ready_timeout_s) -> None:
+        log, me = self.log, specs[0]
         plan_msg = {"specs": [s.to_json() for s in specs], "hosts": hosts, "max_seq_len": max_seq_len,
                     "reduce_dtype": reduce_dtype, "enforce_budget": enforce_budget, "mps_fraction_cap": mps_fraction_cap,
-                    "dtype": dtype}
+                    "dtype": dtype, "timeline": timeline, "run_tag": run_tag}
         for s in specs[1:]:
             link = connect_link(address(s, me.host, hosts), s.port, {"role": "ctl"}, self.phase)
             link.sock.settimeout(CTL_TIMEOUT_S)
@@ -456,20 +556,28 @@ class Coordinator:
         self.stage0_remote = [s for s in specs if s.stage == 0 and s.gid != 0]
         self.head_remote = [s for s in specs if s.head_rows is not None and s.gid != 0]
         self.decode_steps = self.prefill_steps = self.tokens_generated = 0
+        for gid, link in self.ctl.items():        # every rank answers clock requests right after READY
+            self.clock["start"][specs[gid].name] = clock.measure(link)
         log(f"[hybrid] all {len(specs)} ranks ready")
 
     # ---- one step -------------------------------------------------------------------------------------------------------
     def _step(self, ids: list[int], pos0: int, want_logits: bool = False) -> tuple[int, torch.Tensor | None]:
-        flags = FLAG_LOGITS if want_logits else 0
+        flags = (FLAG_LOGITS if want_logits else 0) | (self.req_seq << REQ_SHIFT)
         self.phase.decode = len(ids) == 1
+        rec = self.rank.rec
+        if rec:
+            rec.begin(self.req_seq, len(ids))
+            rec.lap("other")
         data = np.asarray(ids, dtype=np.int64).tobytes()
         for s in self.stage0_remote:
             self.ctl[s.gid].send(transport.KIND_TOKEN, data, "int64", (len(ids),), aux0=pos0, aux1=flags)
+            if rec:
+                rec.lap("send", s.name, self.ctl[s.gid].last_sent)
         res = self.rank.step(ids=ids, pos0=pos0, flags=flags)
         cands, parts = [], []
         if res is not None:
             cands.append((res[0], res[1]))
-            if flags:
+            if want_logits:
                 parts.append((self.specs[0].head_rows[0], res[2].float().cpu()))
         for s in self.head_remote:
             kind, payload, dtype, shape, aux0, aux1 = self.ctl[s.gid].recv()
@@ -477,11 +585,13 @@ class Coordinator:
                 raise RankFailed(bytes(payload).decode())
             if kind != transport.KIND_HEAD:
                 raise RuntimeError(f"expected a head frame from {s.name}, got {transport.KIND_NAMES.get(kind, kind)}")
+            if rec:
+                rec.lap("recv_wait", s.name, self.ctl[s.gid].last_recv)
             cands.append((bits_f32(aux1), aux0))
-            if flags:
+            if want_logits:
                 parts.append((s.head_rows[0], _from_wire(payload, shape, dtype).float()))
         tok = pick_global(cands)
-        logits = torch.cat([p for _, p in sorted(parts, key=lambda x: x[0])]) if flags else None
+        logits = torch.cat([p for _, p in sorted(parts, key=lambda x: x[0])]) if want_logits else None
         return tok, logits
 
     def generate(self, ids: list[int], max_tokens: int, on_token=None, ignore_eos: bool = False, rid: str = "req-0",
@@ -491,10 +601,16 @@ class Coordinator:
         if len(ids) + max_tokens > self.max_seq_len:
             raise ValueError(f"{len(ids)} + {max_tokens} tokens exceed max_seq_len {self.max_seq_len}")
         self.log(f"[hybrid] request {rid} prompt_n={len(ids)} max_tokens={max_tokens}")
+        self.req_seq += 1
+        rec = self.rank.rec
+        if rec:
+            rec.skip()
+        m0 = time.monotonic_ns()
         try:
             t0 = time.time()
             nxt, lg = self._step(ids, 0, want_logits=first_logits)
             t1 = time.time()
+            m1 = time.monotonic_ns()
             self.prefill_steps += 1
             out = [nxt]
             if on_token:
@@ -513,8 +629,12 @@ class Coordinator:
                 if on_token:
                     on_token(nxt)
             t2 = time.time()
+            if rec:
+                rec.lap("other")
         except (ConnectionError, OSError) as e:
             raise LinkLost(str(e)) from e
+        self.requests.append({"req": self.req_seq, "rid": rid, "prompt_n": len(ids), "n_gen": len(out), "t0_mono_ns": m0,
+                              "first_token_mono_ns": m1, "t1_mono_ns": time.monotonic_ns()})
         self.tokens_generated += len(out)
         steps = len(out) - 1
         tm = {"prompt_n": len(ids), "prompt_ms": (t1 - t0) * 1000, "predicted_n": len(out), "predicted_ms": (t2 - t1) * 1000,
@@ -536,7 +656,33 @@ class Coordinator:
         return {"world": self.world, "ranks": ranks, "decode_steps": self.decode_steps, "prefill_steps": self.prefill_steps,
                 "tokens_generated": self.tokens_generated, "torch": torch.__version__, "reduce_dtype": self.reduce_dtype}
 
+    def clock_sync(self) -> dict:
+        """Measure every rank's clock offset again (the end measurement). The begin frame travels the data path, as
+        metrics do; then every rank answers on its ctl link."""
+        for s in self.stage0_remote:
+            self.ctl[s.gid].send(transport.KIND_CLOCK, aux1=clock.BEGIN)
+        self.rank.forward_control(transport.KIND_CLOCK, aux1=clock.BEGIN)
+        for gid, link in self.ctl.items():
+            self.clock["end"][self.specs[gid].name] = clock.measure(link)
+        return self.clock
+
+    def clock_record(self) -> dict:
+        """Per rank: start and end measurements and the drift between them. The coordinator's own rank is zero."""
+        out = {self.specs[0].name: {"start": dict(clock.ZERO), "end": dict(clock.ZERO), "drift": None, "host": self.specs[0].host}}
+        for s in self.specs[1:]:
+            st, en = self.clock["start"].get(s.name), self.clock["end"].get(s.name)
+            out[s.name] = {"start": st, "end": en, "drift": clock.drift(st, en) if st else None, "host": s.host}
+        return out
+
     def shutdown(self) -> None:
+        try:
+            if not self.clock["end"] and self.ctl and getattr(self, "stage0_remote", None) is not None:
+                for link in self.ctl.values():       # a dead rank must not hold the shutdown for the ctl timeout
+                    link.sock.settimeout(END_CLOCK_TIMEOUT_S)
+                self.clock_sync()
+        except (OSError, RuntimeError) as e:
+            self.clock["end"] = {}
+            self.log(f"[hybrid] end clock measurement failed: {e}")
         try:
             for s in self.stage0_remote:
                 self.ctl[s.gid].send(transport.KIND_SHUTDOWN)
@@ -547,6 +693,7 @@ class Coordinator:
         for link in list(self.ctl.values()):
             link.close()
         self.listener.close()
+        self.rank.close(self.run_dir)
 
 
 def decode_frames(metrics: dict) -> dict:

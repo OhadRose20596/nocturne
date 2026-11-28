@@ -5,6 +5,14 @@ receive. Frames up to SMALL_FRAME are sent inline on the caller's thread (both k
 frames in flight cannot deadlock); larger frames (prefill) go through a thread. recv(into=...) fills a caller's
 buffer when the payload length matches, so the decode path makes no copies. Frame and byte counters per direction
 are read by the bench (comm.rpc_commands_per_step = all-reduce frames per decode step).
+Session 10 added two frame kinds, both on the ctl link (coordinator to one rank), neither is a data frame:
+CLOCK (clock.py): aux1 is the operation (0 request, 1 reply, 2 done, 3 begin), aux0 the round number. A reply carries
+  16 bytes: the rank's wall clock and monotonic clock in ns (two little endian int64).
+WEIGHTS (shipping.py): aux0 = operation | slice index << 8. Operations: 1 MANIFEST (JSON, coordinator to rank), 2 NEED
+  (JSON list of slice indexes, rank to coordinator), 3 CHUNK (raw bytes of one slice, at most CHUNK bytes, aux1 = CRC32
+  of the payload), 4 END (end of one slice), 5 ACK (rank to coordinator, aux1 = 0 accepted, 1 rejected; JSON reason),
+  6 DONE (no more slices). One slice at a time, in manifest order; the rank answers every END with an ACK.
+In TOKEN and HIDDEN frames aux1 holds the flags in bits 0 to 7 and the request number in bits 8 to 31 (recorder only).
 Security: the listening side accepts any peer; deferred by ADR-009, never bind 0.0.0.0 (CLAUDE.md rule 7)."""
 import socket
 import struct
@@ -15,14 +23,21 @@ KIND_STEP, KIND_ALLREDUCE, KIND_RESET, KIND_METRICS, KIND_METRICS_REPLY, KIND_SH
 # session 6 (hybrid placement): token ids to the first stage, hidden state between stages, (value, index) or local
 # logits from a head rank, the plan, readiness, and a rank's fatal error
 KIND_TOKEN, KIND_HIDDEN, KIND_HEAD, KIND_PLAN, KIND_READY, KIND_ERROR = range(8, 14)
+KIND_CLOCK, KIND_WEIGHTS = 14, 15
 KIND_NAMES = {KIND_STEP: "step", KIND_ALLREDUCE: "allreduce", KIND_RESET: "reset", KIND_METRICS: "metrics",
               KIND_METRICS_REPLY: "metrics_reply", KIND_SHUTDOWN: "shutdown", KIND_HELLO: "hello", KIND_TOKEN: "token",
-              KIND_HIDDEN: "hidden", KIND_HEAD: "head", KIND_PLAN: "plan", KIND_READY: "ready", KIND_ERROR: "error"}
+              KIND_HIDDEN: "hidden", KIND_HEAD: "head", KIND_PLAN: "plan", KIND_READY: "ready", KIND_ERROR: "error",
+              KIND_CLOCK: "clock", KIND_WEIGHTS: "weights"}
 DATA_KINDS = (KIND_STEP, KIND_ALLREDUCE, KIND_TOKEN, KIND_HIDDEN, KIND_HEAD)
 DTYPES = {0: None, 1: "bfloat16", 2: "float32", 3: "int64", 4: "uint8"}
 DTYPE_CODES = {v: k for k, v in DTYPES.items()}
 SOCK_BUF = 8 << 20
 SMALL_FRAME = 1 << 20
+
+
+def frame_bytes(payload_len: int, ndim: int = 0) -> int:
+    """Bytes of one frame on the wire (header, dims, payload)."""
+    return HEADER.size + 4 * ndim + payload_len
 
 
 class Phase:
@@ -100,6 +115,7 @@ class Link:
         self.sock = sock
         self.counters = counters or Counters()
         self.phase = phase
+        self.last_sent = self.last_recv = 0        # wire bytes of the latest frame, read by the recorder
         self._send_lock = threading.Lock()
 
     def send(self, kind: int, payload=b"", dtype: str | None = None, shape: tuple[int, ...] = (),
@@ -108,6 +124,7 @@ class Link:
         head = HEADER.pack(n, kind, DTYPE_CODES[dtype], len(shape), aux0, aux1) + struct.pack(f"<{len(shape)}I", *shape)
         with self._send_lock:
             self.sock.sendall(head + payload)
+        self.last_sent = len(head) + n
         self.counters.add(True, kind, len(head) + n, bool(self.phase and self.phase.decode))
 
     def recv(self, into: memoryview | None = None) -> tuple[int, bytes | memoryview, str | None, tuple[int, ...], int, int]:
@@ -123,7 +140,8 @@ class Link:
             payload = _recv_exact(self.sock, n) if n else b""
         # a received data frame is a decode frame when it carries one token (shape[0] == 1); HEAD frames follow the phase
         dec = (shape[0] == 1) if shape and kind != KIND_HEAD else bool(self.phase and self.phase.decode)
-        self.counters.add(False, kind, HEADER.size + 4 * ndim + n, dec)
+        self.last_recv = HEADER.size + 4 * ndim + n
+        self.counters.add(False, kind, self.last_recv, dec)
         return kind, payload, DTYPES[dcode], shape, aux0, aux1
 
     def send_async(self, *a, **kw) -> threading.Thread:

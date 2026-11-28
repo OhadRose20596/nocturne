@@ -91,6 +91,11 @@ Format: `- [tag] Title — why it matters for us. URL`
 - [must] **matplotlib, stacked bar charts** (`bar(..., bottom=)`) — the session 5 memory edge figures (per node model, KV and compute against the capacity line). https://matplotlib.org/stable/gallery/lines_bars_and_markers/bar_stacked.html
 - [must] **PyTorch, `torch.mps.set_per_process_memory_fraction`**: caps one process's MPS allocations; session 6 uses it to enforce a rank's memory budget (checked first by a probe that allocates above the cap). https://docs.pytorch.org/docs/stable/generated/torch.mps.set_per_process_memory_fraction.html
 - [must] **gguf-py (llama.cpp `gguf-py`, pinned at 1e7bcf3)**: `GGUFReader` for the header and tensor table, `gguf.quants.dequantize` as the independent reference our own torch dequant is tested against. https://github.com/ggml-org/llama.cpp/tree/master/gguf-py
+- [must] **RFC 4330, Simple Network Time Protocol (SNTP)**: the four timestamps and the offset and delay formulas. `scripts/17_timesync.sh` and the engine's clock exchange use the same formula (session 10). https://www.rfc-editor.org/rfc/rfc4330
+- [must] **chrony, `chronyc tracking`** and **`timedatectl timesync-status`**: the offset the OS reports on Linux and WSL2. macOS uses `sntp` (`man sntp`). https://chrony-project.org/doc/4.5/chronyc.html
+- [should] **Microsoft, `w32tm`**: Windows time service status and resync. WSL2 takes its clock from Windows. https://learn.microsoft.com/en-us/windows-server/networking/windows-time-service/windows-time-service-tools-and-settings
+- [must] **psutil**: CPU time per host and per process, and bytes per network interface, read as cumulative counters by the session 10 sampler. https://psutil.readthedocs.io/en/latest/
+- [must] **Trace Event Format (Chrome JSON), opened by Perfetto**: the format of `trace.json` written by the session 10 recorder. Open it at ui.perfetto.dev. https://perfetto.dev/docs/getting-started/other-formats
 
 ---
 
